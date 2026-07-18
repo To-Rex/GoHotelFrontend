@@ -1,6 +1,12 @@
 import axios from "axios";
 
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+// Dev rejimida nisbiy "/api/v1" ishlatiladi (vite dev-server proxy backendga uzatadi).
+// Production buildda esa proxy bo'lmaydi — shuning uchun backendning to'liq manzili
+// ishlatiladi (VITE_API_URL to'liq URL qilib berilsa, o'sha ustun turadi).
+const PROD_URL = "https://gohotel-gohotel-backend-lhyen5-ecceab-13-140-185-49.sslip.io";
+const envUrl = import.meta.env.VITE_API_URL || "/api/v1";
+export const API_URL =
+  import.meta.env.DEV || envUrl.startsWith("http") ? envUrl : `${PROD_URL}${envUrl}`;
 
 export const api = axios.create({
   baseURL: API_URL,
