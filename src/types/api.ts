@@ -5,8 +5,12 @@ export interface Guest {
   last_name: string;
   email?: string;
   phone?: string;
-  document_type?: string;
-  document_number?: string;
+  // Backend maydon nomlari (app/application/dto/guest.py)
+  passport_number?: string;
+  id_document_type?: string;
+  id_document_number?: string;
+  birth_date?: string;
+  notes?: string;
   nationality?: string;
   address?: string;
   city?: string;

@@ -51,7 +51,7 @@ export const GuestsPage = () => {
                   </TableCell>
                   <TableCell>{guest.phone || '-'}</TableCell>
                   <TableCell>{guest.email || '-'}</TableCell>
-                  <TableCell>{guest.document_number || '-'}</TableCell>
+                  <TableCell>{guest.passport_number || guest.id_document_number || '-'}</TableCell>
                 </TableRow>
               ))
             )}

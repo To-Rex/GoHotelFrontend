@@ -13,6 +13,8 @@ import {
   Loader2,
   Pencil,
   Ban,
+  Upload,
+  CalendarDays,
 } from "lucide-react"
 import {
   startOfMonth,
@@ -35,9 +37,17 @@ import {
   useCancelReservation,
 } from "../api/reservations"
 import { useRooms, useRoomTypes } from "@/features/rooms/api/rooms"
-import { useGuests, useCreateGuest } from "@/features/guests/api/guests"
+import {
+  useGuests,
+  useCreateGuest,
+  uploadGuestFile,
+  GUEST_PHOTO_ACCEPT,
+  GUEST_PHOTO_MAX_BYTES,
+} from "@/features/guests/api/guests"
 import { useAuthStore } from "@/store/auth"
+import { usePermissions } from "@/lib/permissions"
 
+import { HourlyBoard } from "../components/HourlyBoard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -189,6 +199,11 @@ function findFreeSlot(busy: Array<[number, number]>): [number, number] | null {
 }
 
 export function BookingPage() {
+  // Sahifa tablari: "calendar" — avvalgi oylik kalendar (o'zgarishsiz),
+  // "hourly" — kalendarsiz, bir kunlik soatlik bron taxtasi.
+  const [activeTab, setActiveTab] = useState<"calendar" | "hourly">("calendar")
+  const [hourlyDate, setHourlyDate] = useState(() => format(new Date(), "yyyy-MM-dd"))
+
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null)
   const [selectionStart, setSelectionStart] = useState<string | null>(null)
@@ -196,6 +211,33 @@ export function BookingPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [guestSearch, setGuestSearch] = useState("")
   const [showNewGuest, setShowNewGuest] = useState(false)
+
+  // Yangi mehmon surati (passport rasmi / mehmon fotosi)
+  const [guestPhoto, setGuestPhoto] = useState<File | null>(null)
+  const [guestPhotoPreview, setGuestPhotoPreview] = useState<string | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+
+  // Tanlangan faylni tekshirib, oldindan ko'rish uchun URL tayyorlash
+  const handlePhotoChange = (file: File | null) => {
+    if (guestPhotoPreview) URL.revokeObjectURL(guestPhotoPreview)
+    if (!file) {
+      setGuestPhoto(null)
+      setGuestPhotoPreview(null)
+      return
+    }
+    if (!GUEST_PHOTO_ACCEPT.split(",").includes(file.type)) {
+      setErrorDialog("Faqat JPG, PNG yoki WEBP formatdagi rasm yuklash mumkin.")
+      return
+    }
+    if (file.size > GUEST_PHOTO_MAX_BYTES) {
+      setErrorDialog("Rasm hajmi 5 MB dan oshmasligi kerak.")
+      return
+    }
+    setGuestPhoto(file)
+    setGuestPhotoPreview(URL.createObjectURL(file))
+  }
+
+  const clearGuestPhoto = () => handlePhotoChange(null)
   const [selectedGuestId, setSelectedGuestId] = useState<string>("")
   const [bookingType, setBookingType] = useState<"DAILY" | "HOURLY">("DAILY")
 
@@ -240,6 +282,13 @@ export function BookingPage() {
   const { data: guests = [] } = useGuests()
   const { data: roomTypesData = [] } = useRoomTypes()
   const { user } = useAuthStore()
+
+  // Ruxsatlar: tugma va amallar shularga qarab ko'rsatiladi
+  const { can } = usePermissions()
+  const canCreate = can("reservation.create")
+  const canUpdate = can("reservation.update")
+  const canCancel = can("reservation.cancel")
+  const canCreateGuest = can("guest.create")
 
   const createReservationMutation = useCreateReservation()
   const createGuestMutation = useCreateGuest()
@@ -311,6 +360,13 @@ export function BookingPage() {
       new_guest_first_name: z.string().optional(),
       new_guest_last_name: z.string().optional(),
       new_guest_phone: z.string().optional(),
+      // Passport / hujjat ma'lumotlari (ixtiyoriy)
+      new_guest_passport_number: z.string().optional(),
+      new_guest_id_document_type: z.string().optional(),
+      new_guest_id_document_number: z.string().optional(),
+      new_guest_birth_date: z.string().optional(),
+      new_guest_nationality: z.string().optional(),
+      new_guest_address: z.string().optional(),
       payment_amount: z.coerce.number().min(0).optional(),
       payment_method: z.string().optional(),
     })
@@ -386,6 +442,8 @@ export function BookingPage() {
   )
 
   const handleCellClick = (room: any, date: Date) => {
+    // Bron yaratish ruxsati bo'lmasa — kunlarni tanlash ham mantiqsiz
+    if (!canCreate) return
     if (isDateOccupied(room.id, date)) return
 
     const dateStr = format(date, "yyyy-MM-dd")
@@ -500,7 +558,37 @@ export function BookingPage() {
     setModalOpen(true)
   }
 
+  // Soatlik taxtada bo'sh oraliq bosilganda — o'sha xona/kun/vaqt bilan
+  // xuddi shu "Yangi bandlov" modalini soatlik rejimda ochamiz.
+  const openHourlyModal = (room: any, startMin: number, endMin: number) => {
+    const inT = minToTime(startMin)
+    const outT = minToTime(endMin)
+    setSelectedRoom(room)
+    setSelectionStart(hourlyDate)
+    setSelectionEnd(hourlyDate)
+    setBookingType("HOURLY")
+    setValue("booking_type", "HOURLY")
+    setValue("room_id", room.id)
+    setValue("check_in_date", hourlyDate)
+    setValue("check_out_date", addDaysStr(hourlyDate, 1))
+    setValue("check_in_time", inT)
+    setValue("check_out_time", outT)
+    setValue("adults", 1)
+    setValue("children", 0)
+    setValue("guest_id", "")
+    setValue(
+      "payment_amount",
+      Math.round((getRoomPrice(room) / 24) * hourlyDuration(inT, outT))
+    )
+    setValue("payment_method", "CASH")
+    setSelectedGuestId("")
+    setGuestSearch("")
+    setModalOpen(true)
+  }
+
   const onSubmit = async (values: BookingForm) => {
+    // Surat yuklanmay qolsa — bron yaratilgandan keyin ogohlantiramiz
+    let photoUploadFailed = false
     try {
       // Bron aynan bir xona uchun — branch_id va hotel_id ni o'sha xonadan olamiz.
       // (Foydalanuvchida hotel/branch bo'lmasligi mumkin: masalan SUPER_ADMIN.)
@@ -518,9 +606,31 @@ export function BookingPage() {
           first_name: values.new_guest_first_name,
           last_name: values.new_guest_last_name || "",
           phone: values.new_guest_phone || undefined,
+          // Passport / hujjat ma'lumotlari — bo'sh maydonlar yuborilmaydi
+          passport_number: values.new_guest_passport_number || undefined,
+          id_document_type: values.new_guest_id_document_type || undefined,
+          id_document_number: values.new_guest_id_document_number || undefined,
+          birth_date: values.new_guest_birth_date || undefined,
+          nationality: values.new_guest_nationality || undefined,
+          address: values.new_guest_address || undefined,
           hotelId,
         })
         guestId = guest.id
+
+        // Surat tanlangan bo'lsa — mehmon yaratilgandan keyin yuklaymiz.
+        // Yuklash muvaffaqiyatsiz bo'lsa bron yaratish to'xtatilmaydi, faqat
+        // oxirida ogohlantirish ko'rsatiladi (mehmon va bron saqlanib qoladi).
+        if (guestPhoto && guestId) {
+          try {
+            setPhotoUploading(true)
+            await uploadGuestFile(guestId, guestPhoto, "photo", hotelId)
+          } catch (uploadError) {
+            console.error("Surat yuklashda xatolik", uploadError)
+            photoUploadFailed = true
+          } finally {
+            setPhotoUploading(false)
+          }
+        }
       }
 
       const basePayload = {
@@ -581,7 +691,14 @@ export function BookingPage() {
       setShowNewGuest(false)
       setSelectedGuestId("")
       setBookingType("DAILY")
+      clearGuestPhoto()
       reset()
+
+      if (photoUploadFailed) {
+        setErrorDialog(
+          "Bron va mehmon saqlandi, lekin suratni yuklab bo'lmadi. Suratni keyinroq qayta yuklashingiz mumkin."
+        )
+      }
     } catch (error: any) {
       console.error(error)
       setErrorDialog(apiErrorMessage(error))
@@ -748,7 +865,9 @@ export function BookingPage() {
   useEffect(() => {
     if (!dragRes) return
 
-    const locked = ["CHECKED_OUT", "CANCELLED", "NO_SHOW"].includes(dragRes.status)
+    // Tahrirlash ruxsati bo'lmasa surib ko'chirish ishlamaydi (bosish — ko'rish uchun qoladi)
+    const locked =
+      !canUpdate || ["CHECKED_OUT", "CANCELLED", "NO_SHOW"].includes(dragRes.status)
 
     const onMove = (e: MouseEvent) => {
       const dx = e.clientX - dragStartX.current
@@ -834,7 +953,47 @@ export function BookingPage() {
   const calendarWidth = days.length * DAY_WIDTH
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] -m-6">
+    // Layout booking sahifasini "full bleed" qilib beradi (padding/max-width yo'q),
+    // shuning uchun bu yerda h-full bilan mavjud balandlikni to'liq egallaymiz.
+    <div className="flex flex-col h-full w-full min-w-0">
+      {/* Tablar: Kalendar (oylik ko'rinish) / Soatlik bron (bir kunlik taxta) */}
+      <div className="flex-shrink-0 flex items-center gap-1 px-6 pt-3 bg-white border-b border-gray-200">
+        {([
+          { key: "calendar", label: "Kalendar", icon: CalendarDays },
+          { key: "hourly", label: "Soatlik bron", icon: Clock },
+        ] as const).map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 -mb-px text-sm font-medium border-b-2 transition-colors",
+              activeTab === tab.key
+                ? "border-primary-600 text-primary-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "hourly" ? (
+        <HourlyBoard
+          date={hourlyDate}
+          onDateChange={setHourlyDate}
+          rooms={rooms}
+          reservations={reservations}
+          onSlotClick={openHourlyModal}
+          onReservationClick={openManageModal}
+          canCreate={canCreate}
+          getRoomPrice={getRoomPrice}
+          getGuestName={getGuestName}
+          statusColors={statusColors}
+        />
+      ) : (
+      <>
       {/* Top bar */}
       <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -987,7 +1146,8 @@ export function BookingPage() {
                       <div
                         key={day.toISOString()}
                         className={cn(
-                          "flex-shrink-0 border-r border-gray-50 h-full cursor-pointer",
+                          "flex-shrink-0 border-r border-gray-50 h-full",
+                          canCreate ? "cursor-pointer" : "cursor-default",
                           isToday(day) && "bg-primary-50/30",
                           isInSelectionRange(room.id, day) && "bg-primary-100/70"
                         )}
@@ -1167,18 +1327,28 @@ export function BookingPage() {
           {rooms.length} xonalar · {format(currentMonth, "MMMM yyyy")}
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" onClick={clearSelection} disabled={!selectedRoom}>
-            Bekor qilish
-          </Button>
-          <Button
-            onClick={openBookingModal}
-            disabled={!selectedRoom || !selectionStart || !selectionEnd}
-          >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            Tasdiqlash
-          </Button>
+          {canCreate ? (
+            <>
+              <Button variant="secondary" onClick={clearSelection} disabled={!selectedRoom}>
+                Bekor qilish
+              </Button>
+              <Button
+                onClick={openBookingModal}
+                disabled={!selectedRoom || !selectionStart || !selectionEnd}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Tasdiqlash
+              </Button>
+            </>
+          ) : (
+            <span className="text-xs text-gray-400">
+              Yangi bron yaratish uchun ruxsatingiz yo'q
+            </span>
+          )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Booking Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -1366,13 +1536,15 @@ export function BookingPage() {
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    onClick={() => setShowNewGuest(true)}
-                  >
-                    + Yangi mijoz qo'shish
-                  </button>
+                  {canCreateGuest && (
+                    <button
+                      type="button"
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                      onClick={() => setShowNewGuest(true)}
+                    >
+                      + Yangi mijoz qo'shish
+                    </button>
+                  )}
                   {errors.guest_id && <p className="text-xs text-red-500">{errors.guest_id.message}</p>}
                 </div>
               ) : (
@@ -1387,10 +1559,101 @@ export function BookingPage() {
                       <Input placeholder="Familiya" {...register("new_guest_last_name")} />
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Telefon</label>
-                    <Input placeholder="Telefon" {...register("new_guest_phone")} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">Telefon</label>
+                      <Input placeholder="Telefon" {...register("new_guest_phone")} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">Tug'ilgan sana</label>
+                      <Input type="date" {...register("new_guest_birth_date")} />
+                    </div>
                   </div>
+
+                  {/* Passport / hujjat ma'lumotlari */}
+                  <div className="pt-2 border-t border-gray-200 space-y-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Hujjat ma'lumotlari
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">Passport raqami</label>
+                        <Input placeholder="AA1234567" {...register("new_guest_passport_number")} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">Fuqaroligi</label>
+                        <Input placeholder="O'zbekiston" {...register("new_guest_nationality")} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">Hujjat turi</label>
+                        <select
+                          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                          {...register("new_guest_id_document_type")}
+                        >
+                          <option value="">Tanlang</option>
+                          <option value="PASSPORT">Passport</option>
+                          <option value="ID_CARD">ID karta</option>
+                          <option value="DRIVER_LICENSE">Haydovchilik guvohnomasi</option>
+                          <option value="BIRTH_CERTIFICATE">Tug'ilganlik guvohnomasi</option>
+                          <option value="OTHER">Boshqa</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">Hujjat raqami</label>
+                        <Input placeholder="Hujjat raqami" {...register("new_guest_id_document_number")} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">Manzil</label>
+                      <Input placeholder="Yashash manzili" {...register("new_guest_address")} />
+                    </div>
+                  </div>
+
+                  {/* Mehmon surati / passport nusxasi */}
+                  <div className="pt-2 border-t border-gray-200 space-y-2">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Surat (ixtiyoriy)
+                    </p>
+                    {guestPhotoPreview ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={guestPhotoPreview}
+                          alt="Mehmon surati"
+                          className="h-20 w-20 rounded-lg object-cover border border-gray-200"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-gray-600 truncate">{guestPhoto?.name}</p>
+                          <p className="text-[11px] text-gray-400">
+                            {guestPhoto ? Math.round(guestPhoto.size / 1024) : 0} KB
+                          </p>
+                          <button
+                            type="button"
+                            className="mt-1 text-xs text-red-600 hover:text-red-700 font-medium"
+                            onClick={clearGuestPhoto}
+                          >
+                            O'chirish
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
+                        <Upload className="h-5 w-5 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          Passport surati yoki mehmon fotosini tanlang
+                        </span>
+                        <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · maks. 5 MB</span>
+                        <input
+                          type="file"
+                          accept={GUEST_PHOTO_ACCEPT}
+                          className="hidden"
+                          onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)}
+                        />
+                      </label>
+                    )}
+                  </div>
+
                   <button
                     type="button"
                     className="text-sm text-gray-500 hover:text-gray-700 font-medium"
@@ -1399,6 +1662,13 @@ export function BookingPage() {
                       setValue("new_guest_first_name", "")
                       setValue("new_guest_last_name", "")
                       setValue("new_guest_phone", "")
+                      setValue("new_guest_passport_number", "")
+                      setValue("new_guest_id_document_type", "")
+                      setValue("new_guest_id_document_number", "")
+                      setValue("new_guest_birth_date", "")
+                      setValue("new_guest_nationality", "")
+                      setValue("new_guest_address", "")
+                      clearGuestPhoto()
                     }}
                   >
                     Beketish
@@ -1471,12 +1741,13 @@ export function BookingPage() {
                 disabled={
                   createReservationMutation.isPending ||
                   createGuestMutation.isPending ||
+                  photoUploading ||
                   selectedTimeConflict
                 }
               >
-                {(createReservationMutation.isPending || createGuestMutation.isPending) && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {(createReservationMutation.isPending ||
+                  createGuestMutation.isPending ||
+                  photoUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Tasdiqlash
               </Button>
             </DialogFooter>
@@ -1490,7 +1761,11 @@ export function BookingPage() {
           {selectedReservation && (() => {
             const res = selectedReservation
             const isHourly = editValues.booking_type === "HOURLY"
-            const locked = ["CHECKED_OUT", "CANCELLED", "NO_SHOW"].includes(res.status)
+            // Yakunlangan holatdagi bronni tahrirlab ham, bekor qilib ham bo'lmaydi
+            const statusLocked = ["CHECKED_OUT", "CANCELLED", "NO_SHOW"].includes(res.status)
+            // Tahrirlash / bekor qilish alohida ruxsatlarga bog'liq
+            const locked = !canUpdate || statusLocked
+            const cancelLocked = !canCancel || statusLocked
             const roomObj = rooms.find((r) => r.id === res.room_id)
             const saving = updateReservationMutation.isPending
             const cancelling = cancelReservationMutation.isPending
@@ -1667,9 +1942,11 @@ export function BookingPage() {
                     </div>
                   )}
 
-                  {locked && !cancelMode && (
+                  {locked && cancelLocked && !cancelMode && (
                     <p className="text-xs text-gray-400">
-                      Bu holatdagi bronni tahrirlab bo'lmaydi.
+                      {statusLocked
+                        ? "Bu holatdagi bronni tahrirlab bo'lmaydi."
+                        : "Bu bronni o'zgartirish uchun ruxsatingiz yo'q."}
                     </p>
                   )}
                 </div>
@@ -1697,7 +1974,7 @@ export function BookingPage() {
                     </>
                   ) : (
                     <div className="flex w-full items-center justify-between">
-                      {!locked ? (
+                      {!cancelLocked ? (
                         <Button
                           variant="ghost"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"

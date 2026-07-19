@@ -12,6 +12,9 @@ export interface User {
   user_type: Role;
   hotel_id?: string;
   branch_id?: string;
+  // Backend `/auth/me` da qaytaradigan ruxsat kodlari (faqat EMPLOYEE uchun to'ladi).
+  // `undefined` — profil hali yuklanmagan (eski sessiya).
+  permissions?: string[];
 }
 
 interface AuthState {
@@ -20,6 +23,7 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setUser: (user: User) => void;
   logout: () => void;
 }
 
@@ -35,6 +39,8 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem("refreshToken", refreshToken);
         set({ user, accessToken, refreshToken, isAuthenticated: true });
       },
+      // Profilni (shu jumladan ruxsatlarni) tokenlarga tegmasdan yangilash
+      setUser: (user) => set({ user }),
       logout: () => {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");

@@ -2,25 +2,26 @@ import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, DoorOpen, CalendarCheck, CalendarDays, Wallet, Settings, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { useAuthStore } from "@/store/auth";
+import { usePermissions } from "@/lib/permissions";
 
 export const Sidebar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(true);
-  const { user } = useAuthStore();
+  const { canRoute } = usePermissions();
 
-  const links = [
+  const allLinks = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Booking", href: "/booking", icon: CalendarDays },
     { name: "Reservations", href: "/reservations", icon: CalendarCheck },
     { name: "Rooms", href: "/rooms", icon: DoorOpen },
     { name: "Guests", href: "/guests", icon: Users },
     { name: "Finance", href: "/finance", icon: Wallet },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
-  if (user?.user_type === "ADMIN" || user?.user_type === "SUPER_ADMIN") {
-    links.push({ name: "Settings", href: "/settings", icon: Settings });
-  }
+  // Foydalanuvchining ruxsatlariga mos sahifalargina ko'rsatiladi.
+  // (Settings avvalgidek faqat ADMIN/SUPER_ADMIN uchun — ADMIN_ONLY_ROUTES.)
+  const links = allLinks.filter((l) => canRoute(l.href));
 
   return (
     <div
