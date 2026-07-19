@@ -3,8 +3,12 @@ import { format, addDays, parseISO } from "date-fns"
 import { ChevronLeft, ChevronRight, ChevronDown, Clock, Plus, Layers, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const DAY_MINUTES = 24 * 60
+// Joriy vaqtga fokuslangan rejimda ko'rsatiladigan soatlar oynasi
+const WINDOW_HOURS = 10
+// Oyna joriy soatdan boshlanadi. O'tgan soatlarni ko'rish uchun "◀" tugmasi
+// bilan oynani orqaga surish mumkin (bron qilish baribir taqiqlanadi).
+const WINDOW_SHIFT_STEP = 3
 // Tez bron uchun tayyor davomiyliklar (soatlarda)
 const QUICK_DURATIONS = [1, 2, 3]
 
@@ -18,8 +22,11 @@ export interface HourlyBoardProps {
   collapsedFloors: Set<string>
   onToggleFloor: (key: string) => void
   reservations: any[]
-  /** Bo'sh vaqt oralig'i bosilganda (minutlarda) */
-  onSlotClick: (room: any, startMin: number, endMin: number) => void
+  /**
+   * Bo'sh vaqt oralig'i bosilganda. `dateStr` — bron qaysi kunga tegishli
+   * (yarim tundan keyingi ustunlar ertangi kunga tushadi).
+   */
+  onSlotClick: (room: any, startMin: number, endMin: number, dateStr: string) => void
   /** Mavjud bron bosilganda */
   onReservationClick: (res: any) => void
   canCreate: boolean
@@ -29,9 +36,8 @@ export interface HourlyBoardProps {
 }
 
 function minToTime(min: number): string {
-  const h = Math.floor(min / 60) % 24
-  const m = min % 60
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+  const m = ((min % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`
 }
 
 function timeToMin(t: string): number {
@@ -45,14 +51,25 @@ function shiftDate(dateStr: string, days: number): string {
   return format(addDays(parseISO(dateStr), days), "yyyy-MM-dd")
 }
 
+// Taxtadagi bron/band oraliq — vaqt "mutlaq minut" o'qida:
+// 0 = tanlangan kunning 00:00 i, 1440 = ertangi kunning 00:00 i.
+interface Interval {
+  start: number
+  end: number
+  res: any
+  daily: boolean
+}
+
 /**
- * Kalendarsiz, bitta kunga mo'ljallangan soatlik bron taxtasi.
- * Har bir xona uchun 24 soatlik chiziq: band oraliqlar rangli bloklar,
- * bo'sh joyga bosilsa — o'sha soatdan boshlanadigan yangi soatlik bron.
+ * Kalendarsiz, soatlik bron taxtasi.
+ *
+ * Vaqt o'qi tanlangan kunning 00:00 idan boshlanadi va kerak bo'lsa ertangi
+ * kunga o'tadi: kech soatlarda (masalan 23:30) oyna 18:00 dan 04:00 gacha
+ * cho'ziladi, shunda tundagi bo'sh soatlarга ham shu yerdan bron qilinadi.
  *
  * Asosiy stsenariy — eshikdan kirib kelgan mehmonni hoziroq joylashtirish:
- * shuning uchun joriy vaqt chizig'i, "hozir bo'sh" belgisi va bir bosishda
- * hozirgi vaqtdan boshlanadigan tez bron tugmalari mavjud.
+ * joriy vaqt chizig'i, "hozir bo'sh" belgisi va bir bosishda hozirgi vaqtdan
+ * boshlanadigan tez bron tugmalari mavjud.
  */
 export function HourlyBoard({
   date,
@@ -68,7 +85,7 @@ export function HourlyBoard({
   getGuestName,
   statusColors,
 }: HourlyBoardProps) {
-  // Joriy vaqt — har 30 soniyada yangilanadi (chiziq va "hozir" hisob-kitobi uchun)
+  // Joriy vaqt — har 30 soniyada yangilanadi
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 30_000)
@@ -77,81 +94,129 @@ export function HourlyBoard({
 
   // Faqat hozir bo'sh xonalarni ko'rsatish filtri
   const [onlyFree, setOnlyFree] = useState(false)
+  // Butun kunni (00:00-24:00) ko'rsatish rejimi
+  const [fullDay, setFullDay] = useState(false)
+  // Oynani soatlar bo'yicha surish (manfiy — o'tgan soatlarni ko'rish uchun)
+  const [hourShift, setHourShift] = useState(0)
+
+  // Kun almashsa ko'rinish boshlang'ich holatga qaytadi
+  useEffect(() => {
+    setHourShift(0)
+    setFullDay(false)
+  }, [date])
 
   const today = format(now, "yyyy-MM-dd")
   const isToday = date === today
   const nowMin = now.getHours() * 60 + now.getMinutes()
+  const nextDate = shiftDate(date, 1)
 
-  // Shu kundagi soatlik bronlar (xona bo'yicha)
-  const hourlyByRoom: Record<string, any[]> = {}
-  // Shu kunni to'liq egallagan kunlik bronlar (xona bo'yicha)
-  const dailyByRoom: Record<string, any> = {}
+  // --- Ko'rinadigan soatlar oynasi (mutlaq minutlarda) ---
+  // Boshlanish doim joriy soatdan WINDOW_LOOKBACK soat oldin; oyna WINDOW_HOURS
+  // soat davom etadi va kerak bo'lsa yarim tundan o'tib ketadi (h >= 24 —
+  // ertangi kun ustunlari).
+  const focused = isToday && !fullDay
+  // Oyna joriy soatdan boshlanadi; `hourShift` bilan orqaga/oldinga suriladi
+  const startHour = focused ? Math.max(0, now.getHours() + hourShift) : 0
+  const endHour = focused ? startHour + WINDOW_HOURS : 24
+  const visibleHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i)
+  const winStart = startHour * 60
+  const winEnd = endHour * 60
+  const pct = (min: number) => ((min - winStart) / (winEnd - winStart)) * 100
+
+  // Sana qaysi kunga to'g'ri kelishi (mutlaq o'qdagi siljish)
+  const dayOffset = (d: string): number | null =>
+    d === date ? 0 : d === nextDate ? DAY_MINUTES : null
+
+  // --- Bronlarni mutlaq o'qqa joylash ---
+  const intervalsByRoom: Record<string, Interval[]> = {}
+  const pushInterval = (roomId: string, iv: Interval) => {
+    if (!intervalsByRoom[roomId]) intervalsByRoom[roomId] = []
+    intervalsByRoom[roomId].push(iv)
+  }
 
   for (const r of reservations) {
     if (r.status === "CANCELLED") continue
+
     if (r.booking_type === "HOURLY") {
       if (!r.check_in_datetime || !r.check_out_datetime) continue
-      const ciDate = r.check_in_datetime.slice(0, 10)
-      const coDate = r.check_out_datetime.slice(0, 10)
-      if (ciDate !== date && coDate !== date) continue
-      if (!hourlyByRoom[r.room_id]) hourlyByRoom[r.room_id] = []
-      hourlyByRoom[r.room_id].push(r)
+      const ciOff = dayOffset(r.check_in_datetime.slice(0, 10))
+      const coOff = dayOffset(r.check_out_datetime.slice(0, 10))
+      if (ciOff === null && coOff === null) continue
+      // Oynadan oldin boshlangan / keyin tugaydigan bronlar chegarada kesiladi
+      const start =
+        ciOff !== null ? ciOff + timeToMin(r.check_in_datetime.slice(11, 16)) : 0
+      const end =
+        coOff !== null
+          ? coOff + timeToMin(r.check_out_datetime.slice(11, 16))
+          : 2 * DAY_MINUTES
+      pushInterval(r.room_id, { start, end, res: r, daily: false })
     } else {
       if (!r.check_in_date || !r.check_out_date) continue
-      if (r.check_in_date <= date && date <= r.check_out_date) {
-        dailyByRoom[r.room_id] = r
-      }
+      // Kunlik bron ko'rinadigan ikkala kunning qaysi birini qamrasa — o'sha kun
+      // to'liq band hisoblanadi
+      ;[date, nextDate].forEach((d, idx) => {
+        if (r.check_in_date <= d && d <= r.check_out_date) {
+          pushInterval(r.room_id, {
+            start: idx * DAY_MINUTES,
+            end: (idx + 1) * DAY_MINUTES,
+            res: r,
+            daily: true,
+          })
+        }
+      })
     }
   }
 
-  // Xonaning shu kundagi band oraliqlari (minutlarda)
-  const busyOf = (roomId: string): Array<[number, number]> =>
-    (hourlyByRoom[roomId] || [])
-      .map((r) => {
-        const ciDate = r.check_in_datetime.slice(0, 10)
-        const coDate = r.check_out_datetime.slice(0, 10)
-        const s = ciDate === date ? timeToMin(r.check_in_datetime.slice(11, 16)) : 0
-        const e = coDate === date ? timeToMin(r.check_out_datetime.slice(11, 16)) : DAY_MINUTES
-        return [s, e] as [number, number]
-      })
-      .sort((a, b) => a[0] - b[0])
+  const busyOf = (roomId: string): Interval[] =>
+    (intervalsByRoom[roomId] || []).slice().sort((a, b) => a.start - b.start)
 
-  // Berilgan vaqtdan boshlab qancha daqiqa bo'sh (keyingi band oralig'igacha)
+  // Berilgan nuqtadan boshlab qancha daqiqa bo'sh (keyingi band oralig'igacha)
   const freeMinutesFrom = (roomId: string, startMin: number): number => {
-    if (dailyByRoom[roomId]) return 0
     const busy = busyOf(roomId)
-    if (busy.some(([s, e]) => s <= startMin && startMin < e)) return 0
-    const nextBusy = busy.filter(([s]) => s > startMin).reduce((m, [s]) => Math.min(m, s), DAY_MINUTES)
+    if (busy.some((b) => b.start <= startMin && startMin < b.end)) return 0
+    const nextBusy = busy
+      .filter((b) => b.start > startMin)
+      .reduce((m, b) => Math.min(m, b.start), 2 * DAY_MINUTES)
     return Math.max(0, nextBusy - startMin)
   }
 
-  // Tez bron boshlanish vaqti: joriy vaqtni 15 daqiqagacha pastga yaxlitlaymiz,
-  // agar u band oraliqqa tushib qolsa — aniq joriy vaqtni olamiz.
+  // Tez bron boshlanishi: joriy vaqtni 15 daqiqagacha pastga yaxlitlaymiz
   const quickStartFor = (roomId: string): number => {
     const rounded = Math.floor(nowMin / 15) * 15
     return freeMinutesFrom(roomId, rounded) > 0 ? rounded : nowMin
   }
 
   const isFreeNow = (roomId: string): boolean =>
-    isToday && !dailyByRoom[roomId] && freeMinutesFrom(roomId, nowMin) > 0
+    isToday && freeMinutesFrom(roomId, nowMin) > 0
 
-  // Bron blokining kun ichidagi joylashuvi (foizda) — tunab qoluvchi bronlar kesiladi
-  const blockPosition = (r: any): { left: number; width: number; label: string } => {
-    const ciDate = r.check_in_datetime.slice(0, 10)
-    const coDate = r.check_out_datetime.slice(0, 10)
-    const startMin = ciDate === date ? timeToMin(r.check_in_datetime.slice(11, 16)) : 0
-    const endMin = coDate === date ? timeToMin(r.check_out_datetime.slice(11, 16)) : DAY_MINUTES
-    const safeEnd = Math.max(endMin, startMin + 15)
+  // Mutlaq minutni (room, boshlanish, tugash) -> ota-komponent kutgan
+  // "kun + kun ichidagi minut" ko'rinishiga o'tkazish
+  const emitSlot = (room: any, startAbs: number, endAbs: number) => {
+    const dayIdx = Math.floor(startAbs / DAY_MINUTES)
+    const dateStr = dayIdx === 0 ? date : shiftDate(date, dayIdx)
+    onSlotClick(room, startAbs - dayIdx * DAY_MINUTES, endAbs - dayIdx * DAY_MINUTES, dateStr)
+  }
+
+  // Blokning oyna ichidagi joylashuvi; butunlay tashqarida bo'lsa — null
+  const blockPosition = (iv: Interval) => {
+    const safeEnd = Math.max(iv.end, iv.start + 15)
+    if (safeEnd <= winStart || iv.start >= winEnd) return null
+    const left = pct(Math.max(iv.start, winStart))
+    const right = pct(Math.min(safeEnd, winEnd))
     return {
-      left: (startMin / DAY_MINUTES) * 100,
-      width: ((safeEnd - startMin) / DAY_MINUTES) * 100,
-      label: `${minToTime(startMin)} - ${minToTime(endMin)}`,
+      left,
+      width: right - left,
+      label: `${minToTime(iv.start)} - ${minToTime(iv.end)}`,
     }
   }
 
-  // Bosilgan soatdan keyingi birinchi band vaqtgacha bo'sh oraliq (maks. 2 soat)
+  // Bosilgan soatdan keyingi bo'sh oraliq (maks. 2 soat).
+  // O'tgan vaqtga bron qilinmaydi: to'liq o'tib ketgan soatlar umuman
+  // bosilmaydi, joriy soat esa hozirgi vaqtdan boshlanadi.
   const freeSlotAt = (roomId: string, hour: number): [number, number] | null => {
-    const start = hour * 60
+    const hourStart = hour * 60
+    if (isToday && hourStart + 60 <= nowMin) return null // soat allaqachon o'tgan
+    const start = isToday ? Math.max(hourStart, Math.floor(nowMin / 15) * 15) : hourStart
     const free = freeMinutesFrom(roomId, start)
     if (free <= 0) return null
     return [start, start + Math.min(120, free)]
@@ -162,10 +227,9 @@ export function HourlyBoard({
     const start = quickStartFor(room.id)
     const free = freeMinutesFrom(room.id, start)
     if (free <= 0) return
-    onSlotClick(room, start, start + Math.min(hours * 60, free))
+    emitSlot(room, start, start + Math.min(hours * 60, free))
   }
 
-  // Filtrlangan guruhlar (faqat bo'sh xonalar rejimi uchun)
   const visibleGroups = onlyFree
     ? roomGroups
         .map((g) => ({ ...g, rooms: g.rooms.filter((r: any) => isFreeNow(r.id)) }))
@@ -177,6 +241,8 @@ export function HourlyBoard({
     (n, g) => n + g.rooms.filter((r: any) => isFreeNow(r.id)).length,
     0
   )
+  // Oyna ertangi kunga o'tadimi (sarlavhada ko'rsatish uchun)
+  const crossesMidnight = endHour > 24
 
   return (
     <div className="flex flex-col h-full">
@@ -212,22 +278,68 @@ export function HourlyBoard({
           >
             Bugun
           </button>
+          {crossesMidnight && (
+            <span className="text-[11px] text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-md px-2 py-1">
+              Ertangi kun soatlari ham ko'rsatilgan
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
           {isToday && (
             <>
-              {/* Joriy vaqt */}
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-100">
                 <Clock className="h-4 w-4 text-red-500" />
                 <span className="text-sm font-bold text-red-600">{format(now, "HH:mm")}</span>
               </div>
-              {/* Hozir bo'sh xonalar soni */}
               <div className="text-sm text-gray-600">
-                Hozir bo'sh:{" "}
-                <span className="font-bold text-emerald-600">{freeNowCount}</span>
+                Hozir bo'sh: <span className="font-bold text-emerald-600">{freeNowCount}</span>
                 <span className="text-gray-400"> / {totalRooms}</span>
               </div>
+              {/* Oynani soatlar bo'yicha surish — o'tgan bronlarni ko'rish uchun */}
+              {!fullDay && (
+                <div className="flex items-center rounded-md border border-gray-200 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setHourShift((v) => v - WINDOW_SHIFT_STEP)}
+                    disabled={startHour === 0}
+                    className="h-8 px-2 text-gray-500 hover:bg-gray-50 disabled:text-gray-300 disabled:hover:bg-transparent"
+                    title="Oldingi soatlarni ko'rish"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {hourShift !== 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setHourShift(0)}
+                      className="h-8 px-2 text-[11px] font-medium text-primary-700 hover:bg-primary-50"
+                      title="Hozirgi vaqtga qaytish"
+                    >
+                      Hozir
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setHourShift((v) => v + WINDOW_SHIFT_STEP)}
+                    className="h-8 px-2 text-gray-500 hover:bg-gray-50"
+                    title="Keyingi soatlarni ko'rish"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setFullDay((v) => !v)}
+                className="h-8 px-3 rounded-md text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+                title={
+                  fullDay
+                    ? "Joriy vaqt atrofidagi soatlarni ko'rsatish"
+                    : "Butun kunni (00:00-24:00) ko'rsatish"
+                }
+              >
+                {fullDay ? "Hozirgi vaqt" : "Butun kun"}
+              </button>
               <button
                 type="button"
                 onClick={() => setOnlyFree((v) => !v)}
@@ -260,27 +372,37 @@ export function HourlyBoard({
                 Xonalar
               </span>
             </div>
-            <div className="flex flex-1 relative">
-              {HOURS.map((h) => (
-                <div
-                  key={h}
-                  className={cn(
-                    "flex-1 h-10 flex items-center justify-center border-r border-gray-100",
-                    isToday && Math.floor(nowMin / 60) === h && "bg-red-50"
-                  )}
-                >
-                  <span
+            <div className="flex flex-1">
+              {visibleHours.map((h) => {
+                const nextDay = h >= 24
+                const isNowHour = isToday && Math.floor(nowMin / 60) === h
+                return (
+                  <div
+                    key={h}
                     className={cn(
-                      "text-[11px] font-medium",
-                      isToday && Math.floor(nowMin / 60) === h
-                        ? "text-red-600 font-bold"
-                        : "text-gray-400"
+                      "flex-1 h-10 flex items-center justify-center gap-1 border-r border-gray-100",
+                      nextDay && "bg-indigo-50/60",
+                      isNowHour && "bg-red-50"
                     )}
                   >
-                    {String(h).padStart(2, "0")}
-                  </span>
-                </div>
-              ))}
+                    <span
+                      className={cn(
+                        "text-[11px] font-medium",
+                        isNowHour
+                          ? "text-red-600 font-bold"
+                          : nextDay
+                            ? "text-indigo-500"
+                            : "text-gray-400"
+                      )}
+                    >
+                      {String(h % 24).padStart(2, "0")}
+                    </span>
+                    {nextDay && (
+                      <span className="text-[9px] font-bold text-indigo-400">+1</span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
 
@@ -312,8 +434,7 @@ export function HourlyBoard({
 
                 {!collapsed &&
                   group.rooms.map((room: any) => {
-                    const daily = dailyByRoom[room.id]
-                    const hourly = hourlyByRoom[room.id] || []
+                    const intervals = busyOf(room.id)
                     const freeNow = isFreeNow(room.id)
                     const freeMin = freeNow ? freeMinutesFrom(room.id, quickStartFor(room.id)) : 0
                     return (
@@ -380,22 +501,28 @@ export function HourlyBoard({
                         <div className="flex-1 relative">
                           {/* Soat kataklari (bo'sh joy — bosish mumkin) */}
                           <div className="flex h-full">
-                            {HOURS.map((h) => {
-                              const slot = daily ? null : freeSlotAt(room.id, h)
+                            {visibleHours.map((h) => {
+                              const slot = freeSlotAt(room.id, h)
                               const clickable = canCreate && !!slot
                               const isPast = isToday && h < Math.floor(nowMin / 60)
+                              const nextDay = h >= 24
                               return (
                                 <div
                                   key={h}
                                   className={cn(
                                     "flex-1 border-r border-gray-50 h-full group",
                                     isPast && "bg-gray-50/60",
+                                    nextDay && "bg-indigo-50/30",
                                     clickable && "cursor-pointer hover:bg-primary-50"
                                   )}
                                   onClick={() => {
-                                    if (clickable && slot) onSlotClick(room, slot[0], slot[1])
+                                    if (clickable && slot) emitSlot(room, slot[0], slot[1])
                                   }}
-                                  title={clickable ? `${minToTime(h * 60)} dan bron qilish` : undefined}
+                                  title={
+                                    clickable
+                                      ? `${minToTime(h * 60)}${nextDay ? " (ertangi kun)" : ""} dan bron qilish`
+                                      : undefined
+                                  }
                                 >
                                   {clickable && (
                                     <div className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -407,52 +534,38 @@ export function HourlyBoard({
                             })}
                           </div>
 
-                          {/* Kunlik bron — kun to'liq band */}
-                          {daily && (
-                            <div
-                              className={cn(
-                                "absolute top-2 bottom-2 left-1 right-1 rounded-lg flex items-center px-3 gap-2 cursor-pointer",
-                                statusColors[daily.status] || statusColors.PENDING
-                              )}
-                              onClick={() => onReservationClick(daily)}
-                              title="Kunlik bron — batafsil"
-                            >
-                              <span className="text-xs font-semibold truncate">
-                                Kunlik bron · {getGuestName(daily)}
-                              </span>
-                            </div>
-                          )}
+                          {/* Bronlar (kunlik va soatlik) */}
+                          {intervals.map((iv, i) => {
+                            const pos = blockPosition(iv)
+                            if (!pos) return null
+                            return (
+                              <div
+                                key={`${iv.res.id}-${i}`}
+                                className={cn(
+                                  "absolute top-2 bottom-2 rounded-lg flex flex-col justify-center px-2 cursor-pointer overflow-hidden hover:brightness-95 transition-all",
+                                  statusColors[iv.res.status] || statusColors.PENDING
+                                )}
+                                style={{ left: `${pos.left}%`, width: `${pos.width}%` }}
+                                onClick={() => onReservationClick(iv.res)}
+                                title={`${getGuestName(iv.res)} · ${
+                                  iv.daily ? "Kunlik bron" : pos.label
+                                }`}
+                              >
+                                <span className="text-[11px] font-bold leading-tight truncate">
+                                  {iv.daily ? "Kunlik bron" : pos.label}
+                                </span>
+                                <span className="text-[10px] opacity-80 leading-tight truncate">
+                                  {getGuestName(iv.res)}
+                                </span>
+                              </div>
+                            )
+                          })}
 
-                          {/* Soatlik bronlar */}
-                          {!daily &&
-                            hourly.map((r) => {
-                              const pos = blockPosition(r)
-                              return (
-                                <div
-                                  key={r.id}
-                                  className={cn(
-                                    "absolute top-2 bottom-2 rounded-lg flex flex-col justify-center px-2 cursor-pointer overflow-hidden hover:brightness-95 transition-all",
-                                    statusColors[r.status] || statusColors.PENDING
-                                  )}
-                                  style={{ left: `${pos.left}%`, width: `${pos.width}%` }}
-                                  onClick={() => onReservationClick(r)}
-                                  title={`${getGuestName(r)} · ${pos.label}`}
-                                >
-                                  <span className="text-[11px] font-bold leading-tight truncate">
-                                    {pos.label}
-                                  </span>
-                                  <span className="text-[10px] opacity-80 leading-tight truncate">
-                                    {getGuestName(r)}
-                                  </span>
-                                </div>
-                              )
-                            })}
-
-                          {/* Joriy vaqt chizig'i */}
-                          {isToday && (
+                          {/* Joriy vaqt chizig'i (ko'rinadigan oyna ichida bo'lsa) */}
+                          {isToday && nowMin >= winStart && nowMin <= winEnd && (
                             <div
                               className="absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none z-10"
-                              style={{ left: `${(nowMin / DAY_MINUTES) * 100}%` }}
+                              style={{ left: `${pct(nowMin)}%` }}
                             />
                           )}
                         </div>

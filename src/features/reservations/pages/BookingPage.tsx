@@ -49,6 +49,7 @@ import {
   GUEST_PHOTO_MAX_BYTES,
 } from "@/features/guests/api/guests"
 import { NATIONALITIES, DEFAULT_NATIONALITY } from "@/features/guests/constants"
+import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { useAuthStore } from "@/store/auth"
 import { usePermissions } from "@/lib/permissions"
 
@@ -711,17 +712,24 @@ export function BookingPage() {
 
   // Soatlik taxtada bo'sh oraliq bosilganda — o'sha xona/kun/vaqt bilan
   // xuddi shu "Yangi bandlov" modalini soatlik rejimda ochamiz.
-  const openHourlyModal = (room: any, startMin: number, endMin: number) => {
+  // `dateStr` — taxtadagi ustun qaysi kunga tegishli bo'lsa o'sha kun
+  // (yarim tundan keyingi ustunlarda ertangi kun keladi).
+  const openHourlyModal = (
+    room: any,
+    startMin: number,
+    endMin: number,
+    dateStr: string = hourlyDate
+  ) => {
     const inT = minToTime(startMin)
     const outT = minToTime(endMin)
     setSelectedRoom(room)
-    setSelectionStart(hourlyDate)
-    setSelectionEnd(hourlyDate)
+    setSelectionStart(dateStr)
+    setSelectionEnd(dateStr)
     setBookingType("HOURLY")
     setValue("booking_type", "HOURLY")
     setValue("room_id", room.id)
-    setValue("check_in_date", hourlyDate)
-    setValue("check_out_date", addDaysStr(hourlyDate, 1))
+    setValue("check_in_date", dateStr)
+    setValue("check_out_date", addDaysStr(dateStr, 1))
     setValue("check_in_time", inT)
     setValue("check_out_time", outT)
     setValue("adults", 1)
@@ -1095,6 +1103,7 @@ export function BookingPage() {
   const watchFormDate = watch("check_in_date")
   const watchFormRoom = watch("room_id")
   const watchNationality = watch("new_guest_nationality")
+  const watchBirthDate = watch("new_guest_birth_date")
   const dialogBusyTimes = useMemo(() => {
     if (!modalOpen || bookingType !== "HOURLY") return []
     const roomId = selectedRoom?.id || watchFormRoom
@@ -1827,15 +1836,21 @@ export function BookingPage() {
                       <Input placeholder="Familiya" {...register("new_guest_last_name")} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium">Telefon</label>
-                      <Input placeholder="Telefon" {...register("new_guest_phone")} />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium">Tug'ilgan sana</label>
-                      <Input type="date" {...register("new_guest_birth_date")} />
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Telefon</label>
+                    <Input placeholder="Telefon" {...register("new_guest_phone")} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Tug'ilgan sana</label>
+                    {/* Maydon RHF'da ro'yxatdan o'tgan bo'lishi uchun yashirin input */}
+                    <input type="hidden" {...register("new_guest_birth_date")} />
+                    <BirthDateSelect
+                      value={watchBirthDate}
+                      onChange={(v) =>
+                        setValue("new_guest_birth_date", v, { shouldDirty: true })
+                      }
+                    />
                   </div>
 
                   {/* Passport / hujjat ma'lumotlari */}
