@@ -15,6 +15,8 @@ import {
   Ban,
   Upload,
   CalendarDays,
+  Layers,
+  ChevronDown,
 } from "lucide-react"
 import {
   startOfMonth,
@@ -36,7 +38,7 @@ import {
   useUpdateReservation,
   useCancelReservation,
 } from "../api/reservations"
-import { useRooms, useRoomTypes } from "@/features/rooms/api/rooms"
+import { useRooms, useRoomTypes, useFloors } from "@/features/rooms/api/rooms"
 import {
   useGuests,
   useCreateGuest,
@@ -199,10 +201,21 @@ function findFreeSlot(busy: Array<[number, number]>): [number, number] | null {
 }
 
 export function BookingPage() {
-  // Sahifa tablari: "calendar" — avvalgi oylik kalendar (o'zgarishsiz),
-  // "hourly" — kalendarsiz, bir kunlik soatlik bron taxtasi.
-  const [activeTab, setActiveTab] = useState<"calendar" | "hourly">("calendar")
+  // Sahifa tablari: "hourly" — kalendarsiz, bir kunlik soatlik bron taxtasi (birinchi),
+  // "calendar" — avvalgi oylik kalendar (o'zgarishsiz).
+  const [activeTab, setActiveTab] = useState<"hourly" | "calendar">("hourly")
   const [hourlyDate, setHourlyDate] = useState(() => format(new Date(), "yyyy-MM-dd"))
+
+  // Yig'ilgan (qisqartirilgan) qavatlar — kalendar va soatlik tab uchun umumiy
+  const [collapsedFloors, setCollapsedFloors] = useState<Set<string>>(new Set())
+  const toggleFloor = useCallback((key: string) => {
+    setCollapsedFloors((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
 
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null)
@@ -278,6 +291,37 @@ export function BookingPage() {
       ),
     [roomsData]
   )
+  const { data: floorsData = [] } = useFloors()
+
+  // Xonalarni qavatlar bo'yicha guruhlaymiz. Qavatlar raqami bo'yicha,
+  // ichidagi xonalar esa avvalgidek xona raqami bo'yicha tartiblanadi.
+  // Qavati topilmagan xonalar oxirida "Boshqa xonalar" guruhida ko'rsatiladi.
+  const roomGroups = useMemo(() => {
+    const floorMap: Record<string, { number: number; label: string }> = {}
+    for (const f of floorsData) {
+      floorMap[f.id] = {
+        number: f.floor_number,
+        label: f.name || `${f.floor_number}-qavat`,
+      }
+    }
+
+    const grouped: Record<string, any[]> = {}
+    for (const room of rooms) {
+      const key = room.floor_id && floorMap[room.floor_id] ? room.floor_id : "__other__"
+      if (!grouped[key]) grouped[key] = []
+      grouped[key].push(room)
+    }
+
+    return Object.entries(grouped)
+      .map(([key, groupRooms]) => ({
+        key,
+        label: floorMap[key]?.label ?? "Boshqa xonalar",
+        order: floorMap[key]?.number ?? Number.MAX_SAFE_INTEGER,
+        rooms: groupRooms,
+      }))
+      .sort((a, b) => a.order - b.order)
+  }, [rooms, floorsData])
+
   const { data: reservations = [] } = useReservations()
   const { data: guests = [] } = useGuests()
   const { data: roomTypesData = [] } = useRoomTypes()
@@ -959,8 +1003,8 @@ export function BookingPage() {
       {/* Tablar: Kalendar (oylik ko'rinish) / Soatlik bron (bir kunlik taxta) */}
       <div className="flex-shrink-0 flex items-center gap-1 px-6 pt-3 bg-white border-b border-gray-200">
         {([
-          { key: "calendar", label: "Kalendar", icon: CalendarDays },
           { key: "hourly", label: "Soatlik bron", icon: Clock },
+          { key: "calendar", label: "Kalendar", icon: CalendarDays },
         ] as const).map((tab) => (
           <button
             key={tab.key}
@@ -983,7 +1027,9 @@ export function BookingPage() {
         <HourlyBoard
           date={hourlyDate}
           onDateChange={setHourlyDate}
-          rooms={rooms}
+          roomGroups={roomGroups}
+          collapsedFloors={collapsedFloors}
+          onToggleFloor={toggleFloor}
           reservations={reservations}
           onSlotClick={openHourlyModal}
           onReservationClick={openManageModal}
@@ -1110,9 +1156,37 @@ export function BookingPage() {
               </div>
             </div>
 
-            {/* Room rows */}
+            {/* Room rows — qavatlar bo'yicha guruhlangan */}
             <div>
-              {rooms.map((room) => (
+              {roomGroups.map((group) => {
+                const collapsed = collapsedFloors.has(group.key)
+                return (
+                <div key={group.key}>
+                  {/* Qavat sarlavhasi — bosilsa qavat yig'iladi/ochiladi */}
+                  <div
+                    className="flex bg-gray-100 border-y border-gray-200 cursor-pointer hover:bg-gray-200/70 transition-colors"
+                    onClick={() => toggleFloor(group.key)}
+                    title={collapsed ? "Qavatni ochish" : "Qavatni yig'ish"}
+                  >
+                    <div
+                      className="flex-shrink-0 flex items-center gap-2 px-4 h-9 bg-gray-100 border-r border-gray-200 sticky left-0 z-20"
+                      style={{ width: ROOM_COL_WIDTH }}
+                    >
+                      {collapsed ? (
+                        <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+                      )}
+                      <Layers className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="text-xs font-bold text-gray-600 uppercase tracking-wider truncate">
+                        {group.label}
+                      </span>
+                      <span className="text-[10px] text-gray-400">({group.rooms.length})</span>
+                    </div>
+                    <div className="h-9" style={{ width: calendarWidth }} />
+                  </div>
+
+                  {!collapsed && group.rooms.map((room: any) => (
                 <div
                   key={room.id}
                   className="flex border-b border-gray-100 bg-white hover:bg-gray-50/50 transition-colors"
@@ -1315,7 +1389,10 @@ export function BookingPage() {
                       })}
                   </div>
                 </div>
-              ))}
+                  ))}
+                </div>
+                )
+              })}
             </div>
           </div>
         )}

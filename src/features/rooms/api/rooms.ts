@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { Room } from '@/types/api';
+import type { Room, Floor } from '@/types/api';
 
 export const useRooms = (status?: string) => {
   return useQuery({
@@ -8,6 +8,18 @@ export const useRooms = (status?: string) => {
     queryFn: async () => {
       const { data } = await api.get<{ items: Room[] }>('/rooms/', {
         params: { status, limit: 500, page_size: 500 }
+      });
+      return Array.isArray(data) ? data : (data.items || []);
+    },
+  });
+};
+
+export const useFloors = () => {
+  return useQuery({
+    queryKey: ['floors'],
+    queryFn: async () => {
+      const { data } = await api.get<{ items: Floor[] }>('/floors/', {
+        params: { limit: 200 }
       });
       return Array.isArray(data) ? data : (data.items || []);
     },

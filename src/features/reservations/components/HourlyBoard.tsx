@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, Clock, Plus, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -8,7 +8,11 @@ export interface HourlyBoardProps {
   /** Ko'rsatilayotgan kun — "yyyy-MM-dd" */
   date: string
   onDateChange: (date: string) => void
-  rooms: any[]
+  /** Xonalar qavatlar bo'yicha guruhlangan holda */
+  roomGroups: Array<{ key: string; label: string; rooms: any[] }>
+  /** Yig'ilgan qavatlar (kalendar tabi bilan umumiy holat) */
+  collapsedFloors: Set<string>
+  onToggleFloor: (key: string) => void
   reservations: any[]
   /** Bo'sh vaqt oralig'i bosilganda (minutlarda) */
   onSlotClick: (room: any, startMin: number, endMin: number) => void
@@ -45,7 +49,9 @@ function shiftDate(dateStr: string, days: number): string {
 export function HourlyBoard({
   date,
   onDateChange,
-  rooms,
+  roomGroups,
+  collapsedFloors,
+  onToggleFloor,
   reservations,
   onSlotClick,
   onReservationClick,
@@ -180,8 +186,33 @@ export function HourlyBoard({
             </div>
           </div>
 
-          {/* Xona qatorlari */}
-          {rooms.map((room) => {
+          {/* Xona qatorlari — qavatlar bo'yicha guruhlangan */}
+          {roomGroups.map((group) => {
+            const collapsed = collapsedFloors.has(group.key)
+            return (
+            <div key={group.key}>
+              {/* Qavat sarlavhasi — bosilsa qavat yig'iladi/ochiladi */}
+              <div
+                className="flex bg-gray-100 border-y border-gray-200 cursor-pointer hover:bg-gray-200/70 transition-colors"
+                onClick={() => onToggleFloor(group.key)}
+                title={collapsed ? "Qavatni ochish" : "Qavatni yig'ish"}
+              >
+                <div className="flex-shrink-0 w-44 flex items-center gap-2 px-4 h-8 border-r border-gray-200">
+                  {collapsed ? (
+                    <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+                  )}
+                  <Layers className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-xs font-bold text-gray-600 uppercase tracking-wider truncate">
+                    {group.label}
+                  </span>
+                  <span className="text-[10px] text-gray-400">({group.rooms.length})</span>
+                </div>
+                <div className="flex-1 h-8" />
+              </div>
+
+              {!collapsed && group.rooms.map((room: any) => {
             const daily = dailyByRoom[room.id]
             const hourly = hourlyByRoom[room.id] || []
             return (
@@ -270,9 +301,12 @@ export function HourlyBoard({
                 </div>
               </div>
             )
+              })}
+            </div>
+            )
           })}
 
-          {rooms.length === 0 && (
+          {roomGroups.length === 0 && (
             <p className="py-10 text-center text-sm text-gray-400">Xonalar topilmadi</p>
           )}
         </div>
