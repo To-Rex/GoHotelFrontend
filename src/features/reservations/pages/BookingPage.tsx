@@ -17,6 +17,8 @@ import {
   CalendarDays,
   Layers,
   ChevronDown,
+  ArrowLeft,
+  Camera,
 } from "lucide-react"
 import {
   startOfMonth,
@@ -46,6 +48,7 @@ import {
   GUEST_PHOTO_ACCEPT,
   GUEST_PHOTO_MAX_BYTES,
 } from "@/features/guests/api/guests"
+import { NATIONALITIES, DEFAULT_NATIONALITY } from "@/features/guests/constants"
 import { useAuthStore } from "@/store/auth"
 import { usePermissions } from "@/lib/permissions"
 
@@ -78,6 +81,15 @@ const statusLabels: Record<string, string> = {
 }
 
 const weekDays = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"]
+
+// Soatlik bron uchun tayyor davomiyliklar (1 dan 12 soatgacha)
+const DURATION_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
+
+// Passport raqami: faqat lotin bosh harflari va raqamlar.
+// Bo'sh joy, tire, tinish belgilari va boshqa alifbolar olib tashlanadi.
+function sanitizePassport(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "")
+}
 
 function addDaysStr(dateStr: string, amount: number) {
   const d = parseISO(dateStr)
@@ -225,6 +237,9 @@ export function BookingPage() {
   const [guestSearch, setGuestSearch] = useState("")
   const [showNewGuest, setShowNewGuest] = useState(false)
 
+  // Fuqarolik ro'yxatda bo'lmasa ("Boshqa") — qo'lda kiritiladigan davlat nomi
+  const [nationalityOther, setNationalityOther] = useState("")
+
   // Yangi mehmon surati (passport rasmi / mehmon fotosi)
   const [guestPhoto, setGuestPhoto] = useState<File | null>(null)
   const [guestPhotoPreview, setGuestPhotoPreview] = useState<string | null>(null)
@@ -251,6 +266,97 @@ export function BookingPage() {
   }
 
   const clearGuestPhoto = () => handlePhotoChange(null)
+
+  // --- Kamera orqali surat olish ---
+  // Faylni kompyuterdan tanlash imkoniyati saqlanadi; bu qo'shimcha yo'l.
+  // getUserMedia faqat xavfsiz kontekstda (https yoki localhost) ishlaydi.
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+    setCameraOpen(false)
+  }, [])
+
+  const startCamera = async () => {
+    setCameraError(null)
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError("Bu brauzer kamerani qo'llab-quvvatlamaydi. Faylni tanlang.")
+      return
+    }
+    try {
+      // Telefonda orqa kamera afzal, kompyuterda mavjud kamera ochiladi
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      })
+      streamRef.current = stream
+      setCameraOpen(true)
+    } catch (err: any) {
+      setCameraError(
+        err?.name === "NotAllowedError"
+          ? "Kameraga ruxsat berilmadi. Brauzer sozlamalaridan ruxsat bering."
+          : err?.name === "NotFoundError"
+            ? "Kamera topilmadi."
+            : "Kamerani ochib bo'lmadi. Faylni tanlashingiz mumkin."
+      )
+    }
+  }
+
+  // Video elementi paydo bo'lgach oqimni ulaymiz
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current
+      videoRef.current.play().catch(() => {})
+    }
+  }, [cameraOpen])
+
+  // Modal yopilganda yoki komponent o'chganda kamerani albatta to'xtatamiz
+  useEffect(() => {
+    if (!modalOpen) stopCamera()
+  }, [modalOpen, stopCamera])
+  useEffect(() => () => stopCamera(), [stopCamera])
+
+  // Videodan kadr olib, uni JPEG fayl sifatida saqlaymiz
+  const capturePhoto = () => {
+    const video = videoRef.current
+    if (!video) return
+    const canvas = document.createElement("canvas")
+    canvas.width = video.videoWidth || 640
+    canvas.height = video.videoHeight || 480
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return
+        const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" })
+        handlePhotoChange(file)
+        stopCamera()
+      },
+      "image/jpeg",
+      0.9
+    )
+  }
+
+  // "Yangi mehmon" formasidan mavjud mehmonlar ro'yxatiga qaytish
+  // (kiritilgan ma'lumotlar va tanlangan surat tozalanadi)
+  const backToGuestList = () => {
+    setShowNewGuest(false)
+    setValue("new_guest_first_name", "")
+    setValue("new_guest_last_name", "")
+    setValue("new_guest_phone", "")
+    setValue("new_guest_passport_number", "")
+    setValue("new_guest_id_document_type", "")
+    setValue("new_guest_id_document_number", "")
+    setValue("new_guest_birth_date", "")
+    setValue("new_guest_nationality", DEFAULT_NATIONALITY)
+    setValue("new_guest_address", "")
+    setNationalityOther("")
+    clearGuestPhoto()
+  }
   const [selectedGuestId, setSelectedGuestId] = useState<string>("")
   const [bookingType, setBookingType] = useState<"DAILY" | "HOURLY">("DAILY")
 
@@ -589,6 +695,7 @@ export function BookingPage() {
     setValue("adults", 1)
     setValue("children", 0)
     setValue("guest_id", "")
+    setValue("new_guest_nationality", DEFAULT_NATIONALITY)
     // To'lov summasini umumiy narx bilan avtomatik to'ldirish
     setValue(
       "payment_amount",
@@ -620,6 +727,7 @@ export function BookingPage() {
     setValue("adults", 1)
     setValue("children", 0)
     setValue("guest_id", "")
+    setValue("new_guest_nationality", DEFAULT_NATIONALITY)
     setValue(
       "payment_amount",
       Math.round((getRoomPrice(room) / 24) * hourlyDuration(inT, outT))
@@ -651,11 +759,19 @@ export function BookingPage() {
           last_name: values.new_guest_last_name || "",
           phone: values.new_guest_phone || undefined,
           // Passport / hujjat ma'lumotlari — bo'sh maydonlar yuborilmaydi
-          passport_number: values.new_guest_passport_number || undefined,
+          // Tozalash yuborishdan oldin ham kafolatlanadi (masalan brauzer
+          // avtoto'ldirishi yoki nusxa-joylashtirish orqali kirgan qiymat uchun)
+          passport_number: values.new_guest_passport_number
+            ? sanitizePassport(values.new_guest_passport_number) || undefined
+            : undefined,
           id_document_type: values.new_guest_id_document_type || undefined,
           id_document_number: values.new_guest_id_document_number || undefined,
           birth_date: values.new_guest_birth_date || undefined,
-          nationality: values.new_guest_nationality || undefined,
+          // "Boshqa" tanlangan bo'lsa — qo'lda kiritilgan davlat nomi yuboriladi
+          nationality:
+            values.new_guest_nationality === "Boshqa"
+              ? nationalityOther.trim() || undefined
+              : values.new_guest_nationality || undefined,
           address: values.new_guest_address || undefined,
           hotelId,
         })
@@ -736,6 +852,7 @@ export function BookingPage() {
       setSelectedGuestId("")
       setBookingType("DAILY")
       clearGuestPhoto()
+      setNationalityOther("")
       reset()
 
       if (photoUploadFailed) {
@@ -977,6 +1094,7 @@ export function BookingPage() {
   // Yangi bandlov dialogida tanlangan sana/xona uchun band soat oraliqlari
   const watchFormDate = watch("check_in_date")
   const watchFormRoom = watch("room_id")
+  const watchNationality = watch("new_guest_nationality")
   const dialogBusyTimes = useMemo(() => {
     if (!modalOpen || bookingType !== "HOURLY") return []
     const roomId = selectedRoom?.id || watchFormRoom
@@ -993,6 +1111,27 @@ export function BookingPage() {
     return dialogBusyTimes.some(([bs, be]) => bs < eClamped && be > s)
   }, [bookingType, watchInTime, watchOutTime, dialogBusyTimes])
   const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : totalPrice
+
+  // --- Soatlik bronda davomiylikni tugma bilan tanlash ---
+  // Tanlangan soat kirish vaqtiga qo'shilib, chiqish vaqti avtomatik hisoblanadi.
+  // Chiqish vaqtini qo'lda kiritish imkoniyati o'zgarishsiz qoladi.
+  const applyDuration = (hours: number) => {
+    const inT = normalizeTime(watchInTime || "14:00")
+    const outMin = (timeToMin(inT) + hours * 60) % (24 * 60)
+    const outT = minToTime(outMin)
+    setValue("check_in_time", inT)
+    setValue("check_out_time", outT)
+    setValue("payment_amount", Math.round((roomPrice / 24) * hours))
+  }
+
+  // Tanlangan davomiylik band soatlar bilan kesishadimi (tugmani belgilash uchun)
+  const durationConflicts = (hours: number): boolean => {
+    if (!watchInTime) return false
+    const s = timeToMin(normalizeTime(watchInTime))
+    const e = s + hours * 60
+    const eClamped = Math.min(e, 24 * 60) // tunab qolsa kun oxirigacha tekshiramiz
+    return dialogBusyTimes.some(([bs, be]) => bs < eClamped && be > s)
+  }
 
   const calendarWidth = days.length * DAY_WIDTH
 
@@ -1521,16 +1660,51 @@ export function BookingPage() {
                   <Input type="date" {...register("check_in_date")} />
                   {errors.check_in_date && <p className="text-xs text-red-500">{errors.check_in_date.message}</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Kirish vaqti *</label>
-                    <Input type="time" {...register("check_in_time")} />
-                    {errors.check_in_time && <p className="text-xs text-red-500">{errors.check_in_time.message}</p>}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Kirish vaqti *</label>
+                  <Input type="time" {...register("check_in_time")} />
+                  {errors.check_in_time && <p className="text-xs text-red-500">{errors.check_in_time.message}</p>}
+                </div>
+
+                {/* Davomiylikni tanlash — bir bosishda chiqish vaqti hisoblanadi */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Necha soat?</label>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {DURATION_OPTIONS.map((h) => {
+                      const conflict = durationConflicts(h)
+                      const active = Math.abs(hourCount - h) < 0.01
+                      return (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => applyDuration(h)}
+                          className={cn(
+                            "h-9 rounded-md text-sm font-semibold border transition-colors",
+                            active
+                              ? "bg-primary-600 text-white border-primary-600"
+                              : conflict
+                                ? "border-red-100 bg-red-50 text-red-300 hover:border-red-200"
+                                : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                          )}
+                          title={
+                            conflict
+                              ? "Bu davomiylik band soatlar bilan kesishadi"
+                              : `${h} soat`
+                          }
+                        >
+                          {h}
+                        </button>
+                      )
+                    })}
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Chiqish vaqti *</label>
-                    <Input type="time" {...register("check_out_time")} />
-                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Tugmani bosing yoki chiqish vaqtini qo'lda kiriting
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Chiqish vaqti *</label>
+                  <Input type="time" {...register("check_out_time")} />
                 </div>
                 {dialogBusyTimes.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -1617,7 +1791,11 @@ export function BookingPage() {
                     <button
                       type="button"
                       className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                      onClick={() => setShowNewGuest(true)}
+                      onClick={() => {
+                        // Fuqarolik standart holda O'zbekiston bo'lib turadi
+                        setValue("new_guest_nationality", DEFAULT_NATIONALITY)
+                        setShowNewGuest(true)
+                      }}
                     >
                       + Yangi mijoz qo'shish
                     </button>
@@ -1626,6 +1804,19 @@ export function BookingPage() {
                 </div>
               ) : (
                 <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+                  {/* Blok sarlavhasi + ro'yxatga qaytish tugmasi (forma uzun bo'lgani
+                      uchun qaytish tugmasi tepada ham, pastda ham mavjud) */}
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-200">
+                    <span className="text-sm font-semibold text-gray-900">Yangi mehmon</span>
+                    <button
+                      type="button"
+                      onClick={backToGuestList}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      Ro'yxatga qaytish
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs font-medium">Ism *</label>
@@ -1655,11 +1846,41 @@ export function BookingPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-xs font-medium">Passport raqami</label>
-                        <Input placeholder="AA1234567" {...register("new_guest_passport_number")} />
+                        <Input
+                          placeholder="AA1234567"
+                          autoCapitalize="characters"
+                          {...register("new_guest_passport_number", {
+                            // Harflar doim bosh harfda; bo'sh joy, tire va boshqa
+                            // belgilar qabul qilinmaydi — faqat A-Z va 0-9
+                            onChange: (e) =>
+                              setValue(
+                                "new_guest_passport_number",
+                                sanitizePassport(e.target.value)
+                              ),
+                          })}
+                        />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-medium">Fuqaroligi</label>
-                        <Input placeholder="O'zbekiston" {...register("new_guest_nationality")} />
+                        <select
+                          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                          {...register("new_guest_nationality")}
+                        >
+                          {NATIONALITIES.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                        {/* "Boshqa" tanlansa — davlat nomini qo'lda kiritish */}
+                        {watchNationality === "Boshqa" && (
+                          <Input
+                            className="mt-1.5"
+                            placeholder="Davlat nomini yozing"
+                            value={nationalityOther}
+                            onChange={(e) => setNationalityOther(e.target.value)}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -1714,55 +1935,68 @@ export function BookingPage() {
                           </button>
                         </div>
                       </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
-                        <Upload className="h-5 w-5 text-gray-400" />
-                        <span className="text-xs text-gray-500">
-                          Passport surati yoki mehmon fotosini tanlang
-                        </span>
-                        <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · maks. 5 MB</span>
-                        <input
-                          type="file"
-                          accept={GUEST_PHOTO_ACCEPT}
-                          className="hidden"
-                          onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)}
+                    ) : cameraOpen ? (
+                      /* Kamera rejimi: jonli ko'rinish + kadr olish */
+                      <div className="space-y-2">
+                        <video
+                          ref={videoRef}
+                          playsInline
+                          muted
+                          className="w-full h-44 object-cover rounded-lg bg-black"
                         />
-                      </label>
+                        <div className="flex items-center gap-2">
+                          <Button type="button" size="sm" onClick={capturePhoto}>
+                            <Camera className="h-4 w-4 mr-2" />
+                            Suratga olish
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" onClick={stopCamera}>
+                            Bekor qilish
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
+                          <Upload className="h-5 w-5 text-gray-400" />
+                          <span className="text-xs text-gray-600 font-medium">Fayl tanlash</span>
+                          <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · 5 MB</span>
+                          <input
+                            type="file"
+                            accept={GUEST_PHOTO_ACCEPT}
+                            className="hidden"
+                            onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={startCamera}
+                          className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-400 hover:bg-white transition-colors"
+                        >
+                          <Camera className="h-5 w-5 text-gray-400" />
+                          <span className="text-xs text-gray-600 font-medium">Kamera</span>
+                          <span className="text-[11px] text-gray-400">Hoziroq suratga olish</span>
+                        </button>
+                      </div>
                     )}
+                    {cameraError && <p className="text-xs text-red-500">{cameraError}</p>}
                   </div>
 
                   <button
                     type="button"
-                    className="text-sm text-gray-500 hover:text-gray-700 font-medium"
-                    onClick={() => {
-                      setShowNewGuest(false)
-                      setValue("new_guest_first_name", "")
-                      setValue("new_guest_last_name", "")
-                      setValue("new_guest_phone", "")
-                      setValue("new_guest_passport_number", "")
-                      setValue("new_guest_id_document_type", "")
-                      setValue("new_guest_id_document_number", "")
-                      setValue("new_guest_birth_date", "")
-                      setValue("new_guest_nationality", "")
-                      setValue("new_guest_address", "")
-                      clearGuestPhoto()
-                    }}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 font-medium"
+                    onClick={backToGuestList}
                   >
-                    Beketish
+                    <ArrowLeft className="h-4 w-4" />
+                    Mehmonlar ro'yxatiga qaytish
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Kattalar soni</label>
-                <Input type="number" min="1" {...register("adults")} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Bolalar soni</label>
-                <Input type="number" min="0" {...register("children")} />
-              </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Mehmonlar soni</label>
+              <Input type="number" min="1" {...register("adults")} />
+              {errors.adults && <p className="text-xs text-red-500">{errors.adults.message}</p>}
             </div>
 
             <div className="space-y-1">
