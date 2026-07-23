@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,6 +21,11 @@ export const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
+
+  // Login ekranida tab sarlavhasi standart nomga qaytadi
+  useEffect(() => {
+    document.title = "GoHotel";
+  }, []);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),

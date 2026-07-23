@@ -11,6 +11,8 @@ export interface User {
   last_name: string;
   user_type: Role;
   hotel_id?: string;
+  // Mehmonxona nomi (/auth/me dan) — brauzer tab sarlavhasida ko'rsatiladi
+  hotel_name?: string;
   branch_id?: string;
   // Backend `/auth/me` da qaytaradigan ruxsat kodlari (faqat EMPLOYEE uchun to'ladi).
   // `undefined` — profil hali yuklanmagan (eski sessiya).

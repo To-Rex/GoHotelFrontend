@@ -544,6 +544,11 @@ export function BookingPage() {
       },
       { message: "Soatlik bron uchun kirish va chiqish vaqtini kiriting", path: ["check_in_time"] }
     )
+    .refine(
+      (data) =>
+        !data.check_in_date || data.check_in_date >= format(new Date(), "yyyy-MM-dd"),
+      { message: "O'tgan sanaga bron qilib bo'lmaydi", path: ["check_in_date"] }
+    )
 
   type BookingForm = z.infer<typeof reservationSchema>
 
@@ -592,9 +597,14 @@ export function BookingPage() {
     [roomReservations]
   )
 
+  // O'tgan sanaga bron qilib bo'lmaydi (bugun mumkin)
+  const todayStr = format(new Date(), "yyyy-MM-dd")
+  const isPastDay = (d: Date) => format(d, "yyyy-MM-dd") < todayStr
+
   const handleCellClick = (room: any, date: Date) => {
     // Bron yaratish ruxsati bo'lmasa — kunlarni tanlash ham mantiqsiz
     if (!canCreate) return
+    if (isPastDay(date)) return
     if (isDateOccupied(room.id, date)) return
 
     const dateStr = format(date, "yyyy-MM-dd")
@@ -1065,6 +1075,11 @@ export function BookingPage() {
 
       const fromDate = resStartDate(res)
       const toDate = addDaysStr(fromDate, offset)
+      // O'tgan sanaga ko'chirishga yo'l qo'ymaymiz
+      if (toDate < format(new Date(), "yyyy-MM-dd")) {
+        setErrorDialog("Bronni o'tgan sanaga ko'chirib bo'lmaydi.")
+        return
+      }
       // Tasdiqlashni dialog orqali so'raymiz (window.confirm o'rniga)
       setMoveConfirm({ res, offset, from: fromDate, to: toDate })
     }
@@ -1369,7 +1384,8 @@ export function BookingPage() {
                         key={day.toISOString()}
                         className={cn(
                           "flex-shrink-0 border-r border-gray-50 h-full",
-                          canCreate ? "cursor-pointer" : "cursor-default",
+                          canCreate && !isPastDay(day) ? "cursor-pointer" : "cursor-default",
+                          isPastDay(day) && "bg-gray-100/60",
                           isToday(day) && "bg-primary-50/30",
                           isInSelectionRange(room.id, day) && "bg-primary-100/70"
                         )}
@@ -1666,7 +1682,7 @@ export function BookingPage() {
               <>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Sana *</label>
-                  <Input type="date" {...register("check_in_date")} />
+                  <Input type="date" min={todayStr} {...register("check_in_date")} />
                   {errors.check_in_date && <p className="text-xs text-red-500">{errors.check_in_date.message}</p>}
                 </div>
                 <div className="space-y-1">
@@ -1738,12 +1754,12 @@ export function BookingPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Kirish sanasi *</label>
-                  <Input type="date" {...register("check_in_date")} />
+                  <Input type="date" min={todayStr} {...register("check_in_date")} />
                   {errors.check_in_date && <p className="text-xs text-red-500">{errors.check_in_date.message}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Chiqish sanasi *</label>
-                  <Input type="date" {...register("check_out_date")} />
+                  <Input type="date" min={todayStr} {...register("check_out_date")} />
                   {errors.check_out_date && <p className="text-xs text-red-500">{errors.check_out_date.message}</p>}
                 </div>
               </div>

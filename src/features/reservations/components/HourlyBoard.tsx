@@ -107,6 +107,8 @@ export function HourlyBoard({
 
   const today = format(now, "yyyy-MM-dd")
   const isToday = date === today
+  // O'tgan sana — faqat ko'rish uchun, yangi bron qilib bo'lmaydi
+  const isPastDate = date < today
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const nextDate = shiftDate(date, 1)
 
@@ -214,6 +216,7 @@ export function HourlyBoard({
   // O'tgan vaqtga bron qilinmaydi: to'liq o'tib ketgan soatlar umuman
   // bosilmaydi, joriy soat esa hozirgi vaqtdan boshlanadi.
   const freeSlotAt = (roomId: string, hour: number): [number, number] | null => {
+    if (isPastDate) return null // o'tgan sanaga bron qilinmaydi
     const hourStart = hour * 60
     if (isToday && hourStart + 60 <= nowMin) return null // soat allaqachon o'tgan
     const start = isToday ? Math.max(hourStart, Math.floor(nowMin / 15) * 15) : hourStart
@@ -356,7 +359,9 @@ export function HourlyBoard({
           )}
           {!isToday && (
             <span className="text-xs text-gray-400">
-              Tez bron faqat bugungi kun uchun ishlaydi
+              {isPastDate
+                ? "O'tgan sana — bron qilib bo'lmaydi, faqat ko'rish"
+                : "Tez bron faqat bugungi kun uchun ishlaydi"}
             </span>
           )}
         </div>

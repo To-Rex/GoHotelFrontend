@@ -12,9 +12,15 @@ import { cn } from "@/lib/utils";
 const FULL_BLEED_ROUTES = ["/booking"];
 
 export const MainLayout = () => {
-  const { isAuthenticated, setUser } = useAuthStore();
+  const { isAuthenticated, setUser, user } = useAuthStore();
   const { pathname } = useLocation();
   const { canRoute, firstAllowedRoute } = usePermissions();
+
+  // Brauzer tab sarlavhasi — foydalanuvchi mehmonxonasining nomi.
+  // SUPER_ADMIN da (yoki nom hali yuklanmagan bo'lsa) "GoHotel" qoladi.
+  useEffect(() => {
+    document.title = user?.hotel_name || "GoHotel";
+  }, [user?.hotel_name]);
 
   // Sahifa yangilanganda profilni (ruxsatlarni ham) qayta o'qiymiz — localStorage'dagi
   // eski sessiyada `permissions` bo'lmasligi yoki admin ruxsatlarni o'zgartirgan
