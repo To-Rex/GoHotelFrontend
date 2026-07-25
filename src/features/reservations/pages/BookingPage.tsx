@@ -86,6 +86,16 @@ const weekDays = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"]
 // Soatlik bron uchun tayyor davomiyliklar (1 dan 12 soatgacha)
 const DURATION_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
 
+// Qisman (bo'lib) to'lovdagi qo'shimcha qatorlar uchun to'lov usullari
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "CASH", label: "Naqd pul" },
+  { value: "CREDIT_CARD", label: "Kredit karta" },
+  { value: "DEBIT_CARD", label: "Debit karta" },
+  { value: "BANK_TRANSFER", label: "Bank o'tkazmasi" },
+  { value: "MOBILE_PAYMENT", label: "Mobil to'lov" },
+  { value: "ONLINE", label: "Onlayn" },
+] as const
+
 // Passport raqami: faqat lotin bosh harflari va raqamlar.
 // Bo'sh joy, tire, tinish belgilari va boshqa alifbolar olib tashlanadi.
 function sanitizePassport(value: string): string {
@@ -360,6 +370,11 @@ export function BookingPage() {
   }
   const [selectedGuestId, setSelectedGuestId] = useState<string>("")
   const [bookingType, setBookingType] = useState<"DAILY" | "HOURLY">("DAILY")
+
+  // Qisman (bo'lib) to'lov: birinchi qator formadagi payment_amount/payment_method
+  // maydonlarida, qo'shimcha qatorlar (masalan bir qismi naqd, qolgani karta)
+  // shu ro'yxatda saqlanadi
+  const [extraPayments, setExtraPayments] = useState<Array<{ amount: string; method: string }>>([])
 
   // Xato xabarini brauzer alert() o'rniga dialog sifatida ko'rsatish
   const [errorDialog, setErrorDialog] = useState<string | null>(null)
@@ -715,6 +730,7 @@ export function BookingPage() {
         : totalPrice
     )
     setValue("payment_method", "CASH")
+    setExtraPayments([])
     setSelectedGuestId("")
     setGuestSearch("")
     setModalOpen(true)
@@ -751,6 +767,7 @@ export function BookingPage() {
       Math.round((getRoomPrice(room) / 24) * hourlyDuration(inT, outT))
     )
     setValue("payment_method", "CASH")
+    setExtraPayments([])
     setSelectedGuestId("")
     setGuestSearch("")
     setModalOpen(true)
@@ -759,6 +776,33 @@ export function BookingPage() {
   const onSubmit = async (values: BookingForm) => {
     // Surat yuklanmay qolsa — bron yaratilgandan keyin ogohlantiramiz
     let photoUploadFailed = false
+
+    // Qisman (bo'lib) to'lov qatorlarini yig'amiz: birinchi qator formadan,
+    // qo'shimchalari extraPayments dan. Summasi 0 bo'lgan qatorlar tashlanadi.
+    // Tekshiruvlar mehmon yaratilishidan OLDIN — xato bo'lsa hech narsa saqlanmaydi.
+    const paymentRows = [
+      {
+        amount: Number(values.payment_amount) || 0,
+        payment_method: values.payment_method || "",
+      },
+      ...extraPayments.map((p) => ({
+        amount: Number(p.amount) || 0,
+        payment_method: p.method,
+      })),
+    ].filter((p) => p.amount > 0)
+
+    if (paymentRows.some((p) => !p.payment_method)) {
+      setErrorDialog("Har bir to'lov qatorida to'lov turini tanlang.")
+      return
+    }
+    const paymentsTotal = paymentRows.reduce((s, p) => s + p.amount, 0)
+    if (effectiveTotal > 0 && paymentsTotal > effectiveTotal) {
+      setErrorDialog(
+        `To'lovlar yig'indisi (${paymentsTotal.toLocaleString()} So'm) umumiy narxdan (${effectiveTotal.toLocaleString()} So'm) oshib ketdi. Iltimos, summalarni to'g'rilang.`
+      )
+      return
+    }
+
     try {
       // Bron aynan bir xona uchun — branch_id va hotel_id ni o'sha xonadan olamiz.
       // (Foydalanuvchida hotel/branch bo'lmasligi mumkin: masalan SUPER_ADMIN.)
@@ -819,8 +863,11 @@ export function BookingPage() {
         adults: values.adults,
         children: values.children || 0,
         notes: values.notes,
-        payment_amount: values.payment_amount || 0,
-        payment_method: (values.payment_method as any) || null,
+        // Eski maydonlar saqlanadi (backend eski klientlar bilan ham ishlaydi),
+        // qisman to'lov esa payments ro'yxatida yuboriladi
+        payment_amount: paymentsTotal,
+        payment_method: (paymentRows[0]?.payment_method as any) || null,
+        payments: paymentRows,
       }
 
       let payload: any
@@ -871,6 +918,7 @@ export function BookingPage() {
       setBookingType("DAILY")
       clearGuestPhoto()
       setNationalityOther("")
+      setExtraPayments([])
       reset()
 
       if (photoUploadFailed) {
@@ -1136,6 +1184,33 @@ export function BookingPage() {
   }, [bookingType, watchInTime, watchOutTime, dialogBusyTimes])
   const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : totalPrice
 
+  // --- Qisman (bo'lib) to'lov hisob-kitobi ---
+  // Barcha qatorlar (birinchi + qo'shimchalar) yig'indisi va qolgan summa
+  const watchPaymentAmount = watch("payment_amount")
+  const paidTotal =
+    (Number(watchPaymentAmount) || 0) +
+    extraPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0)
+  const remainingAmount = Math.max(effectiveTotal - paidTotal, 0)
+
+  // Yangi qator qolgan summa bilan ochiladi — usulni foydalanuvchi tanlaydi
+  const addExtraPayment = () => {
+    setExtraPayments((prev) => [
+      ...prev,
+      { amount: remainingAmount > 0 ? String(remainingAmount) : "", method: "" },
+    ])
+  }
+
+  const updateExtraPayment = (
+    index: number,
+    patch: Partial<{ amount: string; method: string }>
+  ) => {
+    setExtraPayments((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)))
+  }
+
+  const removeExtraPayment = (index: number) => {
+    setExtraPayments((prev) => prev.filter((_, i) => i !== index))
+  }
+
   // --- Soatlik bronda davomiylikni tugma bilan tanlash ---
   // Tanlangan soat kirish vaqtiga qo'shilib, chiqish vaqti avtomatik hisoblanadi.
   // Chiqish vaqtini qo'lda kiritish imkoniyati o'zgarishsiz qoladi.
@@ -1146,6 +1221,8 @@ export function BookingPage() {
     setValue("check_in_time", inT)
     setValue("check_out_time", outT)
     setValue("payment_amount", Math.round((roomPrice / 24) * hours))
+    // Summa qayta hisoblandi — qo'shimcha to'lov qatorlari eskirdi
+    setExtraPayments([])
   }
 
   // Tanlangan davomiylik band soatlar bilan kesishadimi (tugmani belgilash uchun)
@@ -1629,6 +1706,9 @@ export function BookingPage() {
                     } else {
                       setValue("payment_amount", totalPrice)
                     }
+                    // To'lov summasi qayta hisoblanganda qo'shimcha to'lov
+                    // qatorlari eskirib qoladi — tozalaymiz
+                    setExtraPayments([])
                   }}
                   className={cn(
                     "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
@@ -2071,6 +2151,67 @@ export function BookingPage() {
                   </select>
                 </div>
                 {errors.payment_method && <p className="text-xs text-red-500 mt-1">{errors.payment_method.message}</p>}
+
+                {/* Qisman (bo'lib) to'lov: qo'shimcha qatorlar — masalan bir
+                    qismi naqd, qolgani bank kartasi bilan */}
+                {extraPayments.map((p, i) => (
+                  <div key={i} className="mt-2 flex items-center gap-3">
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={p.amount}
+                      onChange={(e) => updateExtraPayment(i, { amount: e.target.value })}
+                      className="flex-1"
+                    />
+                    <select
+                      className="flex-1 flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      value={p.method}
+                      onChange={(e) => updateExtraPayment(i, { method: e.target.value })}
+                    >
+                      <option value="">To'lov turini tanlang</option>
+                      {PAYMENT_METHOD_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => removeExtraPayment(i)}
+                      className="flex-shrink-0 p-1.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                      title="Qatorni o'chirish"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={addExtraPayment}
+                    className="text-xs font-medium text-primary-700 hover:text-primary-800"
+                  >
+                    + To'lov usulini qo'shish
+                  </button>
+                  {(extraPayments.length > 0 || paidTotal > 0) && (
+                    <span
+                      className={cn(
+                        "text-xs text-right",
+                        effectiveTotal > 0 && paidTotal > effectiveTotal
+                          ? "text-red-500 font-medium"
+                          : "text-gray-500"
+                      )}
+                    >
+                      Jami to'lov: {paidTotal.toLocaleString()} So'm
+                      {effectiveTotal > 0 && paidTotal <= effectiveTotal && remainingAmount > 0 && (
+                        <> · Qolgan: {remainingAmount.toLocaleString()} So'm</>
+                      )}
+                      {effectiveTotal > 0 && paidTotal > effectiveTotal && " (narxdan oshiq!)"}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

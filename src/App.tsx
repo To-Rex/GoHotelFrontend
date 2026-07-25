@@ -5,6 +5,7 @@ import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
 import { BookingPage } from "./features/reservations/pages/BookingPage";
 import { ReservationsPage } from "./features/reservations/pages/ReservationsPage";
 import { RoomsPage } from "./features/rooms/pages/RoomsPage";
+import { FloorsPage } from "./features/rooms/pages/FloorsPage";
 import { GuestsPage } from "./features/guests/pages/GuestsPage";
 import { FinancePage } from "./features/finance/pages/FinancePage";
 import { useAuthStore } from "./store/auth";
@@ -35,6 +36,7 @@ function App() {
           <Route path="booking" element={<BookingPage />} />
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="rooms" element={<RoomsPage />} />
+          <Route path="floors" element={<FloorsPage />} />
           <Route path="guests" element={<GuestsPage />} />
           <Route path="finance" element={<FinancePage />} />
           <Route path="settings" element={<div>Sozlamalar (Tez kunda)</div>} />

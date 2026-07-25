@@ -15,6 +15,8 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   "/booking": ["reservation.create", "reservation.view"],
   "/reservations": ["reservation.view"],
   "/rooms": ["room.view"],
+  // Qavatlar — ADMIN/SUPER_ADMIN (isAdmin bypass) yoki floor ruxsatli xodim ko'radi
+  "/floors": ["floor.create", "floor.update", "floor.delete"],
   "/guests": ["guest.view"],
   "/finance": ["finance.view"],
 };
