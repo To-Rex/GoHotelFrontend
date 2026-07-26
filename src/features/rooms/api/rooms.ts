@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { Room, Floor } from '@/types/api';
+import type { Room, Floor, RoomType } from '@/types/api';
 
 export interface Branch {
   id: string;
@@ -112,5 +112,142 @@ export const useRoomTypes = () => {
       });
       return Array.isArray(data) ? data : (data.items || []);
     },
+  });
+};
+
+// --- Xona turlari CRUD (boshqaruv sahifasi uchun) ---
+
+interface RoomTypePayload {
+  name: string;
+  description?: string;
+  capacity?: number;
+  base_price: number;
+}
+
+export const useCreateRoomType = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: RoomTypePayload) => {
+      const { data } = await api.post<RoomType>('/room-types/', payload);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['roomTypes'] }),
+  });
+};
+
+export const useUpdateRoomType = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: Partial<RoomTypePayload> & { id: string }) => {
+      const { data } = await api.put<RoomType>(`/room-types/${id}`, payload);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['roomTypes'] }),
+  });
+};
+
+export const useDeleteRoomType = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/room-types/${id}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['roomTypes'] }),
+  });
+};
+
+// Holatni yoqish/o'chirish — backend buni query param sifatida kutadi
+export const useUpdateRoomTypeStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { data } = await api.patch<RoomType>(`/room-types/${id}/status`, null, {
+        params: { is_active },
+      });
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['roomTypes'] }),
+  });
+};
+
+// --- Xonalar CRUD (boshqaruv uchun) ---
+
+interface RoomPayload {
+  branch_id: string;
+  floor_id: string;
+  room_type_id: string;
+  room_number: string;
+  base_price?: number;
+  capacity?: number;
+  notes?: string;
+}
+
+export const useCreateRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ hotelId, ...body }: RoomPayload & { hotelId?: string }) => {
+      const { data } = await api.post<Room>('/rooms/', body, {
+        params: hotelId ? { hotel_id: hotelId } : {},
+      });
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
+  });
+};
+
+export const useUpdateRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      hotelId,
+      ...body
+    }: Partial<Omit<RoomPayload, 'branch_id' | 'room_number'>> & {
+      id: string;
+      hotelId?: string;
+    }) => {
+      const { data } = await api.put<Room>(`/rooms/${id}`, body, {
+        params: hotelId ? { hotel_id: hotelId } : {},
+      });
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
+  });
+};
+
+export const useDeleteRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, hotelId }: { id: string; hotelId?: string }) => {
+      await api.delete(`/rooms/${id}`, {
+        params: hotelId ? { hotel_id: hotelId } : {},
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
+  });
+};
+
+export const useUpdateRoomStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      status,
+      notes,
+      hotelId,
+    }: {
+      id: string;
+      status: string;
+      notes?: string;
+      hotelId?: string;
+    }) => {
+      const { data } = await api.patch<Room>(
+        `/rooms/${id}/status`,
+        { status, notes: notes || null },
+        { params: hotelId ? { hotel_id: hotelId } : {} }
+      );
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
   });
 };

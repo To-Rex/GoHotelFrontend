@@ -8,6 +8,12 @@ import { RoomsPage } from "./features/rooms/pages/RoomsPage";
 import { FloorsPage } from "./features/rooms/pages/FloorsPage";
 import { GuestsPage } from "./features/guests/pages/GuestsPage";
 import { FinancePage } from "./features/finance/pages/FinancePage";
+import { RoomTypesPage } from "./features/rooms/pages/RoomTypesPage";
+import { AmenitiesPage } from "./features/amenities/pages/AmenitiesPage";
+import { ServicesPage } from "./features/services/pages/ServicesPage";
+import { HousekeepingPage } from "./features/housekeeping/pages/HousekeepingPage";
+import { EmployeesPage } from "./features/employees/pages/EmployeesPage";
+import { PermissionsPage } from "./features/employees/pages/PermissionsPage";
 import { useAuthStore } from "./store/auth";
 
 // Auth Guard Component
@@ -39,6 +45,13 @@ function App() {
           <Route path="floors" element={<FloorsPage />} />
           <Route path="guests" element={<GuestsPage />} />
           <Route path="finance" element={<FinancePage />} />
+          {/* Boshqaruv bo'limlari (admin/menejer) */}
+          <Route path="room-types" element={<RoomTypesPage />} />
+          <Route path="amenities" element={<AmenitiesPage />} />
+          <Route path="services" element={<ServicesPage />} />
+          <Route path="housekeeping" element={<HousekeepingPage />} />
+          <Route path="employees" element={<EmployeesPage />} />
+          <Route path="permissions" element={<PermissionsPage />} />
           <Route path="settings" element={<div>Sozlamalar (Tez kunda)</div>} />
         </Route>
 

@@ -19,6 +19,33 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   "/floors": ["floor.create", "floor.update", "floor.delete"],
   "/guests": ["guest.view"],
   "/finance": ["finance.view"],
+  // --- Boshqaruv bo'limlari (admin/menejer) ---
+  // ADMIN/SUPER_ADMIN isAdmin bypass orqali doim ko'radi; xodim (menejer)
+  // esa quyidagi ruxsatlardan kamida bittasiga ega bo'lsa ko'radi.
+  "/room-types": ["room_type.create", "room_type.update", "room_type.delete"],
+  "/amenities": ["service.manage"],
+  // Diqqat: service.view ataylab kiritilmagan — u faqat xizmatlarni ko'rish
+  // (masalan, bronga xizmat qo'shish) uchun; boshqaruv sahifasi esa faqat
+  // boshqaruv ruxsatlariga ega bo'lganlarga (va ADMIN/SUPER_ADMIN'ga) ochiq.
+  "/services": [
+    "service.manage",
+    "service.create",
+    "service.update",
+    "hotel_service.manage",
+  ],
+  "/housekeeping": [
+    "housekeeping.task.create",
+    "housekeeping.task.assign",
+    "housekeeping.task.update",
+  ],
+  "/employees": [
+    "employee.view",
+    "employee.create",
+    "employee.update",
+    "employee.delete",
+    "employee.manage",
+  ],
+  "/permissions": ["permission.view", "permission.assign", "employee.manage"],
 };
 
 // Faqat ADMIN/SUPER_ADMIN uchun ochiq marshrutlar (avvalgi xatti-harakat saqlangan).
@@ -48,7 +75,17 @@ export function usePermissions() {
 
   // Ruxsat berilmagan sahifaga kirishga urinilganda yo'naltiriladigan manzil.
   const firstAllowedRoute = (): string => {
-    const order = ["/", "/booking", "/reservations", "/guests", "/rooms", "/finance"];
+    const order = [
+      "/",
+      "/booking",
+      "/reservations",
+      "/guests",
+      "/rooms",
+      "/finance",
+      "/housekeeping",
+      "/employees",
+      "/services",
+    ];
     return order.find((p) => canRoute(p)) ?? "/";
   };
 

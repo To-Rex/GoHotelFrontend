@@ -97,6 +97,95 @@ export interface ReservationDetail extends Reservation {
   invoice?: any;
 }
 
+// --- Boshqaruv bo'limlari (admin/menejer) uchun tiplar ---
+
+export interface Amenity {
+  id: string;
+  name: string;
+  icon?: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+// Global xizmatlar katalogi (GET /services/)
+export interface ServiceCatalogItem {
+  id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  category: string;
+  is_active: boolean;
+  created_at?: string | null;
+}
+
+// Mehmonxona xizmatlari — narx bilan (GET /hotel-services/ yassi javob qaytaradi)
+export interface HotelServiceItem {
+  id: string;
+  service_id: string;
+  name: string;
+  code: string;
+  category: string;
+  price: number;
+  is_active: boolean;
+}
+
+export type HousekeepingTaskType =
+  | 'CLEANING'
+  | 'DEEP_CLEANING'
+  | 'MAINTENANCE'
+  | 'INSPECTION'
+  | 'TURN_DOWN';
+export type HousekeepingTaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type HousekeepingTaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+export interface HousekeepingTask {
+  id: string;
+  hotel_id: string;
+  branch_id: string;
+  room_id: string;
+  task_type: HousekeepingTaskType;
+  status: HousekeepingTaskStatus;
+  priority: HousekeepingTaskPriority;
+  assigned_to?: string | null;
+  notes?: string | null;
+  scheduled_date?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  created_by: string;
+  created_at: string;
+  photo_count: number;
+  room?: { id: string; room_number: string } | null;
+  assigned_user?: { id: string; first_name: string; last_name: string } | null;
+  branch?: { id: string; name: string } | null;
+}
+
+// Xodim (GET /employees/ — backend UserResponse)
+export interface Employee {
+  id: string;
+  user_type: 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE';
+  hotel_id?: string | null;
+  branch_id?: string | null;
+  username: string;
+  first_name: string;
+  last_name: string;
+  email?: string | null;
+  phone?: string | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
+  hire_date?: string | null;
+  termination_date?: string | null;
+  is_deleted: boolean;
+  last_login_at?: string | null;
+  created_at: string;
+}
+
+export interface Permission {
+  id: string;
+  code: string;
+  name: string;
+  module: string;
+  description?: string | null;
+}
+
 export interface Invoice {
   id: string;
   hotel_id: string;

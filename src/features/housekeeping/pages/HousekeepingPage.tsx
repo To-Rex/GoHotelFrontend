@@ -1,0 +1,527 @@
+import { useState, useEffect, useMemo } from "react"
+import { ClipboardList, Plus, Loader2, UserPlus } from "lucide-react"
+import {
+  useHousekeepingTasks,
+  useCreateHousekeepingTask,
+  useUpdateTaskStatus,
+  useAssignTask,
+} from "../api/housekeeping"
+import { useBranches, useRooms } from "@/features/rooms/api/rooms"
+import { useEmployees } from "@/features/employees/api/employees"
+import type { HousekeepingTask } from "@/types/api"
+import { usePermissions } from "@/lib/permissions"
+import { useAuthStore } from "@/store/auth"
+import { apiErrorMessage } from "@/lib/apiError"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+
+const selectClass =
+  "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+
+const TASK_TYPES: Record<string, string> = {
+  CLEANING: "Tozalash",
+  DEEP_CLEANING: "Chuqur tozalash",
+  MAINTENANCE: "Ta'mirlash",
+  INSPECTION: "Tekshiruv",
+  TURN_DOWN: "Kechki tayyorlash",
+}
+
+const PRIORITIES: Record<string, string> = {
+  LOW: "Past",
+  MEDIUM: "O'rta",
+  HIGH: "Yuqori",
+  URGENT: "Shoshilinch",
+}
+
+const STATUSES: Record<string, string> = {
+  OPEN: "Ochiq",
+  IN_PROGRESS: "Jarayonda",
+  COMPLETED: "Bajarildi",
+  CANCELLED: "Bekor qilingan",
+}
+
+const statusBadge: Record<string, string> = {
+  OPEN: "bg-amber-100 text-amber-700",
+  IN_PROGRESS: "bg-blue-100 text-blue-700",
+  COMPLETED: "bg-emerald-100 text-emerald-700",
+  CANCELLED: "bg-gray-100 text-gray-500",
+}
+
+const priorityBadge: Record<string, string> = {
+  LOW: "bg-gray-100 text-gray-600",
+  MEDIUM: "bg-sky-100 text-sky-700",
+  HIGH: "bg-orange-100 text-orange-700",
+  URGENT: "bg-red-100 text-red-700",
+}
+
+export const HousekeepingPage = () => {
+  const { can } = usePermissions()
+  const canCreate = can("housekeeping.task.create")
+  const canUpdate = can("housekeeping.task.update")
+  const canAssign = can("housekeeping.task.assign")
+  const user = useAuthStore((s) => s.user)
+
+  const [statusFilter, setStatusFilter] = useState("")
+  const [search, setSearch] = useState("")
+
+  const { data: tasks = [], isLoading } = useHousekeepingTasks(statusFilter || undefined)
+  const { data: branches = [] } = useBranches()
+  const { data: rooms = [] } = useRooms()
+  const { data: employees = [] } = useEmployees()
+
+  const createMutation = useCreateHousekeepingTask()
+  const statusMutation = useUpdateTaskStatus()
+  const assignMutation = useAssignTask()
+
+  // Xona raqamlari xaritasi — javobda room kelmasa ham raqam ko'rsatish uchun
+  const roomMap = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const r of rooms) m[r.id] = r.room_number
+    return m
+  }, [rooms])
+
+  const employeeMap = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const e of employees) m[e.id] = `${e.first_name} ${e.last_name}`
+    return m
+  }, [employees])
+
+  const filtered = tasks.filter((t) => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    const roomNumber = t.room?.room_number || roomMap[t.room_id] || ""
+    const assignee =
+      (t.assigned_user
+        ? `${t.assigned_user.first_name} ${t.assigned_user.last_name}`
+        : t.assigned_to
+          ? employeeMap[t.assigned_to] || ""
+          : "") || ""
+    return (
+      roomNumber.toLowerCase().includes(q) ||
+      (TASK_TYPES[t.task_type] || t.task_type).toLowerCase().includes(q) ||
+      assignee.toLowerCase().includes(q)
+    )
+  })
+
+  // --- Yaratish dialogi ---
+  const [modalOpen, setModalOpen] = useState(false)
+  const [branchId, setBranchId] = useState("")
+  const [roomId, setRoomId] = useState("")
+  const [taskType, setTaskType] = useState("CLEANING")
+  const [priority, setPriority] = useState("MEDIUM")
+  const [assignedTo, setAssignedTo] = useState("")
+  const [scheduledDate, setScheduledDate] = useState("")
+  const [notes, setNotes] = useState("")
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!branchId && branches.length > 0) setBranchId(branches[0].id)
+  }, [branches, branchId])
+
+  const branchRooms = rooms.filter((r) => r.branch_id === branchId)
+
+  const openCreate = () => {
+    setRoomId("")
+    setTaskType("CLEANING")
+    setPriority("MEDIUM")
+    setAssignedTo("")
+    setScheduledDate(new Date().toISOString().slice(0, 10))
+    setNotes("")
+    setErrorMsg(null)
+    setModalOpen(true)
+  }
+
+  const onSubmit = async () => {
+    if (!branchId) {
+      setErrorMsg("Filialni tanlang")
+      return
+    }
+    if (!roomId) {
+      setErrorMsg("Xonani tanlang")
+      return
+    }
+    try {
+      await createMutation.mutateAsync({
+        branch_id: branchId,
+        room_id: roomId,
+        task_type: taskType,
+        priority,
+        assigned_to: assignedTo || undefined,
+        notes: notes.trim() || undefined,
+        scheduled_date: scheduledDate || undefined,
+        hotelId: user?.hotel_id,
+      })
+      setModalOpen(false)
+    } catch (e) {
+      setErrorMsg(apiErrorMessage(e))
+    }
+  }
+
+  // --- Mas'ul biriktirish dialogi ---
+  const [assignTask, setAssignTask] = useState<HousekeepingTask | null>(null)
+  const [assignUserId, setAssignUserId] = useState("")
+  const [assignError, setAssignError] = useState<string | null>(null)
+
+  const openAssign = (t: HousekeepingTask) => {
+    setAssignTask(t)
+    setAssignUserId(t.assigned_to || "")
+    setAssignError(null)
+  }
+
+  const onAssign = async () => {
+    if (!assignTask || !assignUserId) {
+      setAssignError("Xodimni tanlang")
+      return
+    }
+    try {
+      await assignMutation.mutateAsync({ id: assignTask.id, assigned_to: assignUserId })
+      setAssignTask(null)
+    } catch (e) {
+      setAssignError(apiErrorMessage(e))
+    }
+  }
+
+  const onStatusChange = async (t: HousekeepingTask, status: string) => {
+    if (!status || status === t.status) return
+    if (status === "CANCELLED" && !confirm("Vazifani bekor qilasizmi?")) return
+    try {
+      await statusMutation.mutateAsync({ id: t.id, status })
+    } catch (e) {
+      alert(apiErrorMessage(e))
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Xo'jalik ishlari</h1>
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Xo'jalik ishlari</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Tozalash, ta'mirlash va boshqa vazifalarni boshqarish
+          </p>
+        </div>
+        {canCreate && (
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Vazifa qo'shish
+          </Button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="max-w-xs flex-1 min-w-[180px]">
+          <Input
+            placeholder="Xona, tur yoki mas'ul bo'yicha qidirish..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          className={cn(selectClass, "w-auto min-w-[160px]")}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="">Barcha holatlar</option>
+          {Object.entries(STATUSES).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Xona</TableHead>
+              <TableHead>Turi</TableHead>
+              <TableHead>Muhimlik</TableHead>
+              <TableHead>Holat</TableHead>
+              <TableHead>Mas'ul</TableHead>
+              <TableHead>Sana</TableHead>
+              {(canUpdate || canAssign) && (
+                <TableHead className="text-right">Amallar</TableHead>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-6 text-gray-400">
+                  Vazifalar topilmadi
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((t) => {
+                const roomNumber = t.room?.room_number || roomMap[t.room_id] || "—"
+                const assignee = t.assigned_user
+                  ? `${t.assigned_user.first_name} ${t.assigned_user.last_name}`
+                  : t.assigned_to
+                    ? employeeMap[t.assigned_to] || "—"
+                    : ""
+                const active = t.status === "OPEN" || t.status === "IN_PROGRESS"
+                return (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-medium">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+                          <ClipboardList className="h-4 w-4" />
+                        </span>
+                        {roomNumber}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-gray-600">
+                      {TASK_TYPES[t.task_type] || t.task_type}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "text-xs font-medium px-2 py-0.5 rounded-full",
+                          priorityBadge[t.priority] || priorityBadge.MEDIUM
+                        )}
+                      >
+                        {PRIORITIES[t.priority] || t.priority}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "text-xs font-medium px-2 py-0.5 rounded-full",
+                          statusBadge[t.status] || statusBadge.OPEN
+                        )}
+                      >
+                        {STATUSES[t.status] || t.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-gray-600">{assignee || "—"}</TableCell>
+                    <TableCell className="text-gray-600">
+                      {t.scheduled_date || "—"}
+                    </TableCell>
+                    {(canUpdate || canAssign) && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end items-center gap-2">
+                          {canUpdate && active && (
+                            <select
+                              className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                              value=""
+                              onChange={(e) => onStatusChange(t, e.target.value)}
+                            >
+                              <option value="">Holat...</option>
+                              {t.status === "OPEN" && (
+                                <option value="IN_PROGRESS">Boshlash</option>
+                              )}
+                              {t.status === "IN_PROGRESS" && (
+                                <option value="COMPLETED">Yakunlash</option>
+                              )}
+                              <option value="CANCELLED">Bekor qilish</option>
+                            </select>
+                          )}
+                          {canAssign && active && (
+                            <Button variant="ghost" size="sm" onClick={() => openAssign(t)}>
+                              <UserPlus className="h-3.5 w-3.5 mr-1" />
+                              Mas'ul
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Yaratish dialogi */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>Yangi vazifa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {branches.length > 1 && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Filial *</label>
+                <select
+                  className={selectClass}
+                  value={branchId}
+                  onChange={(e) => {
+                    setBranchId(e.target.value)
+                    setRoomId("")
+                  }}
+                >
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Xona *</label>
+              <select
+                className={selectClass}
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+              >
+                <option value="">Xonani tanlang</option>
+                {branchRooms.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.room_number}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Vazifa turi *</label>
+                <select
+                  className={selectClass}
+                  value={taskType}
+                  onChange={(e) => setTaskType(e.target.value)}
+                >
+                  {Object.entries(TASK_TYPES).map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Muhimlik</label>
+                <select
+                  className={selectClass}
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                >
+                  {Object.entries(PRIORITIES).map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Mas'ul xodim</label>
+              <select
+                className={selectClass}
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+              >
+                <option value="">Biriktirilmagan</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.first_name} {e.last_name} (@{e.username})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Rejalashtirilgan sana</label>
+                <Input
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Izoh</label>
+                <Input
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Izoh..."
+                />
+              </div>
+            </div>
+            {errorMsg && (
+              <p className="text-sm text-red-500 whitespace-pre-line">{errorMsg}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>
+              Bekor qilish
+            </Button>
+            <Button onClick={onSubmit} disabled={createMutation.isPending}>
+              {createMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Qo'shish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mas'ul biriktirish dialogi */}
+      <Dialog open={!!assignTask} onOpenChange={(o) => !o && setAssignTask(null)}>
+        <DialogContent className="sm:max-w-[380px]">
+          <DialogHeader>
+            <DialogTitle>Mas'ul biriktirish</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Xodim *</label>
+              <select
+                className={selectClass}
+                value={assignUserId}
+                onChange={(e) => setAssignUserId(e.target.value)}
+              >
+                <option value="">Xodimni tanlang</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.first_name} {e.last_name} (@{e.username})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {assignError && (
+              <p className="text-sm text-red-500 whitespace-pre-line">{assignError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignTask(null)}>
+              Bekor qilish
+            </Button>
+            <Button onClick={onAssign} disabled={assignMutation.isPending}>
+              {assignMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Biriktirish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
