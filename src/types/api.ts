@@ -159,6 +159,17 @@ export interface HousekeepingTask {
   branch?: { id: string; name: string } | null;
 }
 
+// Xo'jalik vazifasi fotohisoboti (GET /tasks/{id}/photos)
+export interface TaskPhoto {
+  id: string;
+  file_name: string;
+  mime_type?: string;
+  file_size?: number;
+  uploaded_by?: string | null;
+  created_at?: string | null;
+  download_url?: string;
+}
+
 // Xodim (GET /employees/ — backend UserResponse)
 export interface Employee {
   id: string;

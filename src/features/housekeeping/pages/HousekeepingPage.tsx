@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from "react"
-import { ClipboardList, Plus, Loader2, UserPlus } from "lucide-react"
+import { ClipboardList, Plus, Loader2, UserPlus, Image as ImageIcon } from "lucide-react"
 import {
   useHousekeepingTasks,
   useCreateHousekeepingTask,
   useUpdateTaskStatus,
   useAssignTask,
+  useTaskPhotos,
 } from "../api/housekeeping"
+import { api } from "@/lib/api"
 import { useBranches, useRooms } from "@/features/rooms/api/rooms"
 import { useEmployees } from "@/features/employees/api/employees"
 import type { HousekeepingTask } from "@/types/api"
@@ -69,6 +71,51 @@ const priorityBadge: Record<string, string> = {
   MEDIUM: "bg-sky-100 text-sky-700",
   HIGH: "bg-orange-100 text-orange-700",
   URGENT: "bg-red-100 text-red-700",
+}
+
+// Fotohisobot suratini avtorizatsiya bilan yuklab ko'rsatish. Endpoint bearer
+// token talab qiladi, shuning uchun <img src> to'g'ridan-to'g'ri ishlamaydi —
+// blob qilib olamiz va vaqtinchalik object URL yaratamiz.
+function PhotoImage({
+  taskId,
+  photoId,
+  fileName,
+}: {
+  taskId: string
+  photoId: string
+  fileName: string
+}) {
+  const [src, setSrc] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    let objectUrl: string | null = null
+    api
+      .get(`/tasks/${taskId}/photos/${photoId}/view`, { responseType: "blob" })
+      .then((res) => {
+        if (!cancelled) {
+          objectUrl = URL.createObjectURL(res.data)
+          setSrc(objectUrl)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError(true)
+      })
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [taskId, photoId])
+
+  if (error)
+    return (
+      <div className="flex h-40 w-full items-center justify-center bg-gray-100 px-2 text-center text-sm text-gray-400">
+        {fileName}
+      </div>
+    )
+  if (!src) return <div className="h-40 w-full animate-pulse bg-gray-50" />
+  return <img src={src} alt={fileName} className="h-40 w-full object-cover" />
 }
 
 export const HousekeepingPage = () => {
@@ -174,6 +221,13 @@ export const HousekeepingPage = () => {
     }
   }
 
+  // --- Fotohisobot dialogi ---
+  const [photoTask, setPhotoTask] = useState<HousekeepingTask | null>(null)
+  const { data: taskPhotos = [], isLoading: photosLoading } = useTaskPhotos(
+    photoTask?.id,
+    photoTask?.hotel_id
+  )
+
   // --- Mas'ul biriktirish dialogi ---
   const [assignTask, setAssignTask] = useState<HousekeepingTask | null>(null)
   const [assignUserId, setAssignUserId] = useState("")
@@ -267,9 +321,7 @@ export const HousekeepingPage = () => {
               <TableHead>Holat</TableHead>
               <TableHead>Mas'ul</TableHead>
               <TableHead>Sana</TableHead>
-              {(canUpdate || canAssign) && (
-                <TableHead className="text-right">Amallar</TableHead>
-              )}
+              <TableHead className="text-right">Amallar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -325,34 +377,51 @@ export const HousekeepingPage = () => {
                     <TableCell className="text-gray-600">
                       {t.scheduled_date || "—"}
                     </TableCell>
-                    {(canUpdate || canAssign) && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end items-center gap-2">
-                          {canUpdate && active && (
-                            <select
-                              className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-                              value=""
-                              onChange={(e) => onStatusChange(t, e.target.value)}
-                            >
-                              <option value="">Holat...</option>
-                              {t.status === "OPEN" && (
-                                <option value="IN_PROGRESS">Boshlash</option>
-                              )}
-                              {t.status === "IN_PROGRESS" && (
-                                <option value="COMPLETED">Yakunlash</option>
-                              )}
-                              <option value="CANCELLED">Bekor qilish</option>
-                            </select>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end items-center gap-2">
+                        {/* Fotohisobot — suratlar soni badge bilan, doim ko'rinadi */}
+                        <button
+                          type="button"
+                          title="Fotohisobotni ko'rish"
+                          onClick={() => setPhotoTask(t)}
+                          className={cn(
+                            "relative p-1.5 rounded-lg transition-colors",
+                            t.photo_count > 0
+                              ? "text-blue-600 hover:bg-blue-50"
+                              : "text-gray-300 hover:text-gray-500 hover:bg-gray-50"
                           )}
-                          {canAssign && active && (
-                            <Button variant="ghost" size="sm" onClick={() => openAssign(t)}>
-                              <UserPlus className="h-3.5 w-3.5 mr-1" />
-                              Mas'ul
-                            </Button>
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                          {t.photo_count > 0 && (
+                            <span className="absolute -top-1 -right-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-blue-500 rounded-full">
+                              {t.photo_count}
+                            </span>
                           )}
-                        </div>
-                      </TableCell>
-                    )}
+                        </button>
+                        {canUpdate && active && (
+                          <select
+                            className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                            value=""
+                            onChange={(e) => onStatusChange(t, e.target.value)}
+                          >
+                            <option value="">Holat...</option>
+                            {t.status === "OPEN" && (
+                              <option value="IN_PROGRESS">Boshlash</option>
+                            )}
+                            {t.status === "IN_PROGRESS" && (
+                              <option value="COMPLETED">Yakunlash</option>
+                            )}
+                            <option value="CANCELLED">Bekor qilish</option>
+                          </select>
+                        )}
+                        {canAssign && active && (
+                          <Button variant="ghost" size="sm" onClick={() => openAssign(t)}>
+                            <UserPlus className="h-3.5 w-3.5 mr-1" />
+                            Mas'ul
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 )
               })
@@ -520,6 +589,50 @@ export const HousekeepingPage = () => {
               Biriktirish
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fotohisobot dialogi — farrosh yuklagan suratlar */}
+      <Dialog open={!!photoTask} onOpenChange={(o) => !o && setPhotoTask(null)}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>
+              Fotohisobot — Xona{" "}
+              {photoTask
+                ? photoTask.room?.room_number || roomMap[photoTask.room_id] || "—"
+                : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            {photosLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : taskPhotos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-12 text-gray-400">
+                <ImageIcon className="h-8 w-8" />
+                <p className="text-sm">Bu vazifa uchun fotohisobotlar yo'q</p>
+              </div>
+            ) : (
+              <div className="grid max-h-[60vh] grid-cols-1 gap-4 overflow-y-auto pr-1 sm:grid-cols-2 md:grid-cols-3">
+                {taskPhotos.map((photo) => (
+                  <div
+                    key={photo.id}
+                    className="block overflow-hidden rounded-lg border border-gray-200 transition-shadow hover:shadow-md"
+                  >
+                    <PhotoImage
+                      taskId={photoTask!.id}
+                      photoId={photo.id}
+                      fileName={photo.file_name}
+                    />
+                    <div className="truncate p-2 text-xs text-gray-500">
+                      {photo.file_name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

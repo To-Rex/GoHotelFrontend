@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { HousekeepingTask } from '@/types/api';
+import type { HousekeepingTask, TaskPhoto } from '@/types/api';
 
 export const useHousekeepingTasks = (status?: string) => {
   return useQuery({
@@ -63,6 +63,20 @@ export const useUpdateTaskStatus = () => {
       // Tozalash yakunlanganda xona holati AVAILABLE bo'lishi mumkin
       qc.invalidateQueries({ queryKey: ['rooms'] });
     },
+  });
+};
+
+// Vazifaning fotohisobotlari ro'yxati (farrosh mobil ilovadan yuklagan suratlar)
+export const useTaskPhotos = (taskId?: string, hotelId?: string) => {
+  return useQuery({
+    queryKey: ['taskPhotos', taskId],
+    queryFn: async () => {
+      const { data } = await api.get<TaskPhoto[]>(`/tasks/${taskId}/photos`, {
+        params: hotelId ? { hotel_id: hotelId } : {},
+      });
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!taskId,
   });
 };
 
