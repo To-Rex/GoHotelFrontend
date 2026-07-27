@@ -1,24 +1,17 @@
-import { useState, useEffect } from "react"
-import { Layers, Plus, Pencil, Trash2, Loader2 } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { Layers, Plus, Pencil, Trash2, Loader2, DoorOpen, Building2 } from "lucide-react"
 import {
   useBranches,
   useFloorsByBranch,
   useCreateFloor,
   useUpdateFloor,
   useDeleteFloor,
+  useRooms,
 } from "../api/rooms"
 import type { Floor } from "@/types/api"
 import { usePermissions } from "@/lib/permissions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -44,6 +37,16 @@ export const FloorsPage = () => {
 
   const selectedBranch = branches.find((b) => b.id === branchId) || null
   const { data: floors = [], isLoading: floorsLoading } = useFloorsByBranch(branchId)
+
+  // Har bir qavatdagi xonalar soni (kartada ko'rsatish uchun)
+  const { data: rooms = [] } = useRooms()
+  const roomCountByFloor = useMemo(() => {
+    const m: Record<string, number> = {}
+    for (const r of rooms) {
+      if (r.floor_id) m[r.floor_id] = (m[r.floor_id] || 0) + 1
+    }
+    return m
+  }, [rooms])
 
   const createMutation = useCreateFloor()
   const updateMutation = useUpdateFloor()
@@ -134,7 +137,9 @@ export const FloorsPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Qavatlar</h1>
-          <p className="text-sm text-gray-500 mt-1">Filial qavatlarini boshqarish</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Filial qavatlarini boshqarish · {floors.length} ta qavat
+          </p>
         </div>
         {canCreate && branchId && (
           <Button onClick={openCreate}>
@@ -145,8 +150,11 @@ export const FloorsPage = () => {
       </div>
 
       {branches.length === 0 ? (
-        <div className="rounded-md border py-12 text-center text-sm text-gray-400">
-          Filiallar topilmadi
+        <div className="rounded-lg border bg-white py-14">
+          <div className="flex flex-col items-center gap-2 text-gray-400">
+            <Building2 className="h-8 w-8" />
+            <p className="text-sm">Filiallar topilmadi</p>
+          </div>
         </div>
       ) : (
         <>
@@ -168,69 +176,84 @@ export const FloorsPage = () => {
             </div>
           )}
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Qavat raqami</TableHead>
-                  <TableHead>Nomi</TableHead>
-                  {(canEdit || canDelete) && <TableHead className="text-right">Amallar</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {floorsLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-6 text-gray-400">
-                      Yuklanmoqda…
-                    </TableCell>
-                  </TableRow>
-                ) : floors.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-6 text-gray-400">
-                      Bu filialda qavatlar yo'q
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  floors.map((f) => (
-                    <TableRow key={f.id}>
-                      <TableCell className="font-medium">
-                        <span className="inline-flex items-center gap-2">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-600">
-                            <Layers className="h-4 w-4" />
-                          </span>
-                          {f.floor_number}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-gray-600">{f.name || "—"}</TableCell>
-                      {(canEdit || canDelete) && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            {canEdit && (
-                              <Button variant="ghost" size="sm" onClick={() => openEdit(f)}>
-                                <Pencil className="h-3.5 w-3.5 mr-1" />
-                                Tahrirlash
-                              </Button>
-                            )}
-                            {canDelete && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={() => onDelete(f)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                O'chirish
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))
+          {floorsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <Skeleton className="h-36 w-full rounded-lg" />
+              <Skeleton className="h-36 w-full rounded-lg" />
+              <Skeleton className="h-36 w-full rounded-lg" />
+            </div>
+          ) : floors.length === 0 ? (
+            <div className="rounded-lg border bg-white py-14">
+              <div className="flex flex-col items-center gap-2 text-gray-400">
+                <Layers className="h-8 w-8" />
+                <p className="text-sm">Bu filialda hali qavatlar yo'q</p>
+                {canCreate && (
+                  <Button variant="outline" size="sm" className="mt-2" onClick={openCreate}>
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Birinchi qavatni qo'shish
+                  </Button>
                 )}
-              </TableBody>
-            </Table>
-          </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {floors.map((f) => {
+                const roomCount = roomCountByFloor[f.id] || 0
+                return (
+                  <div
+                    key={f.id}
+                    className="group rounded-lg border bg-white p-4 transition-shadow hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                        <Layers className="h-5 w-5" />
+                      </span>
+                      {(canEdit || canDelete) && (
+                        <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                          {canEdit && (
+                            <button
+                              type="button"
+                              title="Tahrirlash"
+                              onClick={() => openEdit(f)}
+                              className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              type="button"
+                              title="O'chirish"
+                              onClick={() => onDelete(f)}
+                              className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="mt-3 text-lg font-bold text-gray-900 leading-tight truncate">
+                      {f.name || `${f.floor_number}-qavat`}
+                    </p>
+                    <p className="text-xs text-gray-400">Qavat raqami: {f.floor_number}</p>
+
+                    <div className="mt-3 flex items-center gap-1.5 border-t pt-3 text-sm text-gray-600">
+                      <DoorOpen className="h-4 w-4 text-gray-400" />
+                      {roomCount > 0 ? (
+                        <span>
+                          <span className="font-semibold text-gray-900">{roomCount}</span> ta xona
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">Xonalar yo'q</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </>
       )}
 

@@ -5,7 +5,10 @@ import {
   useCreateEmployee,
   useUpdateEmployee,
   useDeleteEmployee,
+  usePermissionsList,
+  useSetUserPermissions,
 } from "../api/employees"
+import { PERMISSION_TEMPLATES, templatePermissionIds } from "../permissionTemplates"
 import { useBranches } from "@/features/rooms/api/rooms"
 import type { Employee } from "@/types/api"
 import { usePermissions } from "@/lib/permissions"
@@ -53,7 +56,7 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 export const EmployeesPage = () => {
-  const { can } = usePermissions()
+  const { can, isAdmin } = usePermissions()
   const canCreate = can("employee.create")
   const canEdit = can("employee.update")
   const canDelete = can("employee.delete")
@@ -61,10 +64,20 @@ export const EmployeesPage = () => {
 
   const { data: employees = [], isLoading } = useEmployees()
   const { data: branches = [] } = useBranches()
+  const { data: allPermissions = [] } = usePermissionsList()
 
   const createMutation = useCreateEmployee()
   const updateMutation = useUpdateEmployee()
   const deleteMutation = useDeleteEmployee()
+  const setPermsMutation = useSetUserPermissions()
+
+  // Yangi xodimga beriladigan rol shablonlari: menejer (admin emas) faqat
+  // "Farrosh" rolini bera oladi — backend ham xuddi shuni tekshiradi;
+  // ADMIN/SUPER_ADMIN istalgan rolni tanlashi mumkin.
+  const roleOptions = useMemo(
+    () => PERMISSION_TEMPLATES.filter((t) => isAdmin || t.id === "housekeeper"),
+    [isAdmin]
+  )
 
   const branchMap = useMemo(() => {
     const m: Record<string, string> = {}
@@ -97,6 +110,8 @@ export const EmployeesPage = () => {
   const [branchId, setBranchId] = useState("")
   const [hireDate, setHireDate] = useState("")
   const [status, setStatus] = useState("ACTIVE")
+  // Yangi xodimga biriktiriladigan rol shabloni (bo'sh — rolsiz)
+  const [roleTemplateId, setRoleTemplateId] = useState("")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const openCreate = () => {
@@ -110,6 +125,8 @@ export const EmployeesPage = () => {
     setBranchId(user?.branch_id || branches[0]?.id || "")
     setHireDate(new Date().toISOString().slice(0, 10))
     setStatus("ACTIVE")
+    // Menejer uchun yagona variant — Farrosh; admin xohlasa keyin tanlaydi
+    setRoleTemplateId(isAdmin ? "" : "housekeeper")
     setErrorMsg(null)
     setModalOpen(true)
   }
@@ -164,7 +181,7 @@ export const EmployeesPage = () => {
           setErrorMsg("Mehmonxona aniqlanmadi")
           return
         }
-        await createMutation.mutateAsync({
+        const created = await createMutation.mutateAsync({
           hotel_id: hotelId,
           branch_id: branchId,
           first_name: firstName.trim(),
@@ -175,6 +192,31 @@ export const EmployeesPage = () => {
           phone: phone.trim() || undefined,
           hire_date: hireDate || undefined,
         })
+
+        // Rol tanlangan bo'lsa — shablon ruxsatlarini avtomatik biriktiramiz.
+        // Xodim allaqachon yaratilgan, shuning uchun bu bosqich xato bersa ham
+        // yaratish bekor bo'lmaydi — faqat ogohlantiramiz.
+        const template = PERMISSION_TEMPLATES.find((t) => t.id === roleTemplateId)
+        const permissionIds = template
+          ? templatePermissionIds(template, allPermissions)
+          : []
+        if (permissionIds.length > 0) {
+          try {
+            await setPermsMutation.mutateAsync({
+              userId: created.id,
+              permissionIds,
+              currentIds: [],
+            })
+          } catch (permError) {
+            setModalOpen(false)
+            alert(
+              "Xodim qo'shildi, lekin rol ruxsatlarini biriktirishda xatolik yuz berdi:\n" +
+                apiErrorMessage(permError) +
+                "\nRolni keyinroq \"Ruxsatnomalar\" sahifasidan belgilashingiz mumkin."
+            )
+            return
+          }
+        }
       }
       setModalOpen(false)
     } catch (e) {
@@ -191,7 +233,8 @@ export const EmployeesPage = () => {
     }
   }
 
-  const saving = createMutation.isPending || updateMutation.isPending
+  const saving =
+    createMutation.isPending || updateMutation.isPending || setPermsMutation.isPending
 
   if (isLoading) {
     return (
@@ -415,6 +458,28 @@ export const EmployeesPage = () => {
                 </div>
               )}
             </div>
+            {/* Rol — faqat yangi xodim qo'shishda; menejer faqat Farroshni
+                tanlay oladi, admin barcha rollarni */}
+            {!editing && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Rol {!isAdmin && "*"}</label>
+                <select
+                  className={selectClass}
+                  value={roleTemplateId}
+                  onChange={(e) => setRoleTemplateId(e.target.value)}
+                >
+                  {isAdmin && <option value="">Rolsiz (keyin belgilanadi)</option>}
+                  {roleOptions.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400">
+                  Tanlangan rolga mos ruxsatlar xodimga avtomatik biriktiriladi.
+                </p>
+              </div>
+            )}
             {errorMsg && (
               <p className="text-sm text-red-500 whitespace-pre-line">{errorMsg}</p>
             )}

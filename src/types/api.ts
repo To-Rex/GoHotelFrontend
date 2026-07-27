@@ -197,6 +197,20 @@ export interface Permission {
   description?: string | null;
 }
 
+// To'lov yozuvi (GET /finance/payments)
+export interface PaymentRecord {
+  id: string;
+  hotel_id: string;
+  invoice_id: string;
+  payment_number: string;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  reference?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
 export interface Invoice {
   id: string;
   hotel_id: string;

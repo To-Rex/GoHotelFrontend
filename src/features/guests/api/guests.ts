@@ -33,6 +33,23 @@ export const useCreateGuest = () => {
   });
 };
 
+export const useUpdateGuest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: Partial<Guest> & { id: string; hotelId?: string }) => {
+      const { id, hotelId, ...body } = payload;
+      const { data } = await api.put<Guest>(`/guests/${id}`, body, {
+        params: hotelId ? { hotel_id: hotelId } : {},
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guests'] });
+    },
+  });
+};
+
 // Mehmon hujjati/surati uchun ruxsat etilgan formatlar va maksimal hajm
 export const GUEST_PHOTO_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 export const GUEST_PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp';

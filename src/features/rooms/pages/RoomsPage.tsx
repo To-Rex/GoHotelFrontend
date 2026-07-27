@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react"
+import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users } from "lucide-react"
 import {
   useRooms,
   useBranches,
@@ -57,6 +57,17 @@ const statusBadge: Record<string, string> = {
   OUT_OF_SERVICE: "bg-gray-200 text-gray-600",
 }
 
+// Filtr chiplaridagi rang nuqtasi uchun
+const statusDot: Record<string, string> = {
+  AVAILABLE: "bg-emerald-500",
+  RESERVED: "bg-blue-500",
+  OCCUPIED: "bg-red-500",
+  CLEANING: "bg-amber-500",
+  MAINTENANCE: "bg-orange-500",
+  INSPECTION: "bg-purple-500",
+  OUT_OF_SERVICE: "bg-gray-400",
+}
+
 export const RoomsPage = () => {
   const { can } = usePermissions()
   const canCreate = can("room.create", "room.manage")
@@ -88,6 +99,9 @@ export const RoomsPage = () => {
   }, [roomTypes])
 
   const [search, setSearch] = useState("")
+  // Holat bo'yicha filtr ("" — barcha holatlar)
+  const [statusFilter, setStatusFilter] = useState("")
+
   const sortedRooms = useMemo(
     () =>
       [...rooms]
@@ -96,14 +110,24 @@ export const RoomsPage = () => {
             !search.trim() ||
             r.room_number?.toLowerCase().includes(search.toLowerCase())
         )
+        .filter((r) => !statusFilter || r.current_status === statusFilter)
         .sort((a, b) =>
           String(a.room_number).localeCompare(String(b.room_number), undefined, {
             numeric: true,
             sensitivity: "base",
           })
         ),
-    [rooms, search]
+    [rooms, search, statusFilter]
   )
+
+  // Holatlar bo'yicha sonlar (filtr chiplarida ko'rsatiladi)
+  const statusCounts = useMemo(() => {
+    const m: Record<string, number> = {}
+    for (const r of rooms) {
+      m[r.current_status] = (m[r.current_status] || 0) + 1
+    }
+    return m
+  }, [rooms])
 
   // --- Yaratish/tahrirlash dialogi ---
   const [modalOpen, setModalOpen] = useState(false)
@@ -249,7 +273,9 @@ export const RoomsPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Xonalar</h1>
-          <p className="text-sm text-gray-500 mt-1">Mehmonxona xonalarini boshqarish</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Mehmonxona xonalarini boshqarish · jami {rooms.length} ta xona
+          </p>
         </div>
         {canCreate && (
           <Button onClick={openCreate}>
@@ -259,19 +285,61 @@ export const RoomsPage = () => {
         )}
       </div>
 
-      <div className="max-w-xs">
-        <Input
-          placeholder="Xona raqami bo'yicha qidirish..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {/* Qidiruv + holat bo'yicha filtr chiplari */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-xs flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            className="pl-9"
+            placeholder="Xona raqami bo'yicha qidirish..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("")}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+              !statusFilter
+                ? "border-primary-600 bg-primary-50 text-primary-700"
+                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+            )}
+          >
+            Barchasi ({rooms.length})
+          </button>
+          {Object.entries(STATUS_LABELS)
+            .filter(([value]) => statusCounts[value])
+            .map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatusFilter(statusFilter === value ? "" : value)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                  statusFilter === value
+                    ? "border-primary-600 bg-primary-50 text-primary-700"
+                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    statusDot[value] || "bg-gray-400"
+                  )}
+                />
+                {label} ({statusCounts[value]})
+              </button>
+            ))}
+        </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-lg border bg-white overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Raqami</TableHead>
+            <TableRow className="bg-gray-50/80">
+              <TableHead>Xona</TableHead>
               <TableHead>Turi</TableHead>
               <TableHead>Qavat</TableHead>
               <TableHead>Narxi</TableHead>
@@ -285,32 +353,47 @@ export const RoomsPage = () => {
           <TableBody>
             {sortedRooms.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-gray-400">
-                  Ma'lumot topilmadi
+                <TableCell colSpan={7} className="py-12">
+                  <div className="flex flex-col items-center gap-2 text-gray-400">
+                    <DoorOpen className="h-8 w-8" />
+                    <p className="text-sm">
+                      {search.trim() || statusFilter
+                        ? "Filtr bo'yicha xona topilmadi"
+                        : "Hozircha xonalar yo'q"}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               sortedRooms.map((room) => (
                 <TableRow key={room.id}>
-                  <TableCell className="font-medium">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+                  <TableCell>
+                    <span className="inline-flex items-center gap-2.5">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                         <DoorOpen className="h-4 w-4" />
                       </span>
-                      {room.room_number}
+                      <span className="font-semibold text-gray-900">{room.room_number}</span>
                     </span>
                   </TableCell>
                   <TableCell className="text-gray-600">
-                    {typeMap[room.room_type_id] || "—"}
+                    {typeMap[room.room_type_id] || <span className="text-gray-300">—</span>}
                   </TableCell>
                   <TableCell className="text-gray-600">
-                    {floorMap[room.floor_id] || "—"}
+                    {floorMap[room.floor_id] || <span className="text-gray-300">—</span>}
                   </TableCell>
-                  <TableCell className="font-medium">
-                    {Number(room.base_price || 0).toLocaleString()} So'm
+                  <TableCell className="font-medium text-gray-900">
+                    {Number(room.base_price || 0).toLocaleString()}{" "}
+                    <span className="text-xs font-normal text-gray-400">So'm</span>
                   </TableCell>
-                  <TableCell className="text-gray-600">
-                    {room.capacity || "-"} kishi
+                  <TableCell>
+                    {room.capacity ? (
+                      <span className="inline-flex items-center gap-1.5 text-gray-600">
+                        <Users className="h-3.5 w-3.5 text-gray-400" />
+                        {room.capacity} kishi
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <button
@@ -322,7 +405,7 @@ export const RoomsPage = () => {
                       }}
                       title={canStatus ? "Holatni o'zgartirish" : undefined}
                       className={cn(
-                        "text-xs font-medium px-2 py-0.5 rounded-full",
+                        "text-xs font-medium px-2.5 py-1 rounded-full",
                         statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
                         canStatus && "cursor-pointer hover:opacity-80"
                       )}
@@ -332,23 +415,26 @@ export const RoomsPage = () => {
                   </TableCell>
                   {(canEdit || canDelete) && (
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
+                      <div className="flex justify-end gap-0.5">
                         {canEdit && (
-                          <Button variant="ghost" size="sm" onClick={() => openEdit(room)}>
-                            <Pencil className="h-3.5 w-3.5 mr-1" />
-                            Tahrirlash
-                          </Button>
+                          <button
+                            type="button"
+                            title="Tahrirlash"
+                            onClick={() => openEdit(room)}
+                            className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
                         )}
                         {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
+                          <button
+                            type="button"
+                            title="O'chirish"
                             onClick={() => onDelete(room)}
+                            className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
                           >
-                            <Trash2 className="h-3.5 w-3.5 mr-1" />
-                            O'chirish
-                          </Button>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         )}
                       </div>
                     </TableCell>

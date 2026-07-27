@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { Plus, Search, Loader2, Upload, X } from "lucide-react";
+import { Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone } from "lucide-react";
 import {
   useGuests,
   useCreateGuest,
+  useUpdateGuest,
   uploadGuestFile,
   GUEST_PHOTO_ACCEPT,
   GUEST_PHOTO_MAX_BYTES,
 } from "../api/guests";
 import { NATIONALITIES, DEFAULT_NATIONALITY } from "../constants";
 import { BirthDateSelect } from "../components/BirthDateSelect";
+import type { Guest } from "@/types/api";
 import { usePermissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,6 +32,7 @@ const emptyForm = {
   first_name: "",
   last_name: "",
   phone: "",
+  email: "",
   birth_date: "",
   passport_number: "",
   id_document_type: "",
@@ -42,16 +45,29 @@ function sanitizePassport(v: string): string {
   return v.toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
+// Jadvaldagi avatar uchun ism-familiya bosh harflari
+function initials(first?: string, last?: string): string {
+  return (`${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?");
+}
+
+const DOC_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  DOC_TYPES.filter((d) => d.value).map((d) => [d.value, d.label])
+);
+
 export const GuestsPage = () => {
   const { data: guests, isLoading, isError } = useGuests();
   const { can } = usePermissions();
   const canCreate = can("guest.create");
+  const canEdit = can("guest.update");
   const user = useAuthStore((s) => s.user);
 
   const createGuest = useCreateGuest();
+  const updateGuest = useUpdateGuest();
 
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  // null — yangi mehmon qo'shish; aks holda tanlangan mehmon tahrirlanadi
+  const [editing, setEditing] = useState<Guest | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -80,7 +96,28 @@ export const GuestsPage = () => {
   };
 
   const openModal = () => {
+    setEditing(null);
     setForm({ ...emptyForm });
+    handlePhoto(null);
+    setErrorMsg(null);
+    setModalOpen(true);
+  };
+
+  // Mavjud mehmon ma'lumotlarini formaga yuklab, tahrirlash rejimida ochamiz
+  const openEdit = (g: Guest) => {
+    setEditing(g);
+    setForm({
+      first_name: g.first_name || "",
+      last_name: g.last_name || "",
+      phone: g.phone || "",
+      email: g.email || "",
+      birth_date: (g.birth_date || "").slice(0, 10),
+      passport_number: g.passport_number || "",
+      id_document_type: g.id_document_type || "",
+      id_document_number: g.id_document_number || "",
+      nationality: g.nationality || DEFAULT_NATIONALITY,
+      address: g.address || "",
+    });
     handlePhoto(null);
     setErrorMsg(null);
     setModalOpen(true);
@@ -100,27 +137,68 @@ export const GuestsPage = () => {
     }
     setErrorMsg(null);
     try {
-      const guest = await createGuest.mutateAsync({
-        first_name: form.first_name.trim(),
-        last_name: form.last_name.trim() || "",
-        phone: form.phone || undefined,
-        birth_date: form.birth_date || undefined,
-        passport_number: form.passport_number ? sanitizePassport(form.passport_number) : undefined,
-        id_document_type: form.id_document_type || undefined,
-        id_document_number: form.id_document_number || undefined,
-        nationality: form.nationality === "Boshqa" ? undefined : form.nationality || undefined,
-        address: form.address || undefined,
-        hotelId: user?.hotel_id,
-      } as any);
+      if (editing) {
+        // Tahrirlash: bo'shatilgan ixtiyoriy maydonlar "" bilan tozalanadi.
+        // last_name backendda min_length=1 — bo'sh bo'lsa yuborilmaydi
+        // (avvalgi qiymati saqlanadi).
+        await updateGuest.mutateAsync({
+          id: editing.id,
+          hotelId: editing.hotel_id || user?.hotel_id,
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim() || undefined,
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+          birth_date: form.birth_date || undefined,
+          passport_number: form.passport_number
+            ? sanitizePassport(form.passport_number)
+            : "",
+          id_document_type: form.id_document_type,
+          id_document_number: form.id_document_number.trim(),
+          nationality:
+            form.nationality === "Boshqa" ? undefined : form.nationality || undefined,
+          address: form.address.trim(),
+        } as any);
 
-      if (photo && guest?.id) {
-        try {
-          setUploading(true);
-          await uploadGuestFile(guest.id, photo, "photo", user?.hotel_id);
-        } catch {
-          // surat yuklanmasa ham mehmon saqlanadi
-        } finally {
-          setUploading(false);
+        // Yangi surat tanlangan bo'lsa — mavjud mehmonga yuklaymiz
+        if (photo) {
+          try {
+            setUploading(true);
+            await uploadGuestFile(
+              editing.id,
+              photo,
+              "photo",
+              editing.hotel_id || user?.hotel_id
+            );
+          } catch {
+            // surat yuklanmasa ham o'zgarishlar saqlanadi
+          } finally {
+            setUploading(false);
+          }
+        }
+      } else {
+        const guest = await createGuest.mutateAsync({
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim() || "",
+          phone: form.phone || undefined,
+          email: form.email.trim() || undefined,
+          birth_date: form.birth_date || undefined,
+          passport_number: form.passport_number ? sanitizePassport(form.passport_number) : undefined,
+          id_document_type: form.id_document_type || undefined,
+          id_document_number: form.id_document_number || undefined,
+          nationality: form.nationality === "Boshqa" ? undefined : form.nationality || undefined,
+          address: form.address || undefined,
+          hotelId: user?.hotel_id,
+        } as any);
+
+        if (photo && guest?.id) {
+          try {
+            setUploading(true);
+            await uploadGuestFile(guest.id, photo, "photo", user?.hotel_id);
+          } catch {
+            // surat yuklanmasa ham mehmon saqlanadi
+          } finally {
+            setUploading(false);
+          }
         }
       }
       handlePhoto(null);
@@ -141,7 +219,7 @@ export const GuestsPage = () => {
     );
   });
 
-  const saving = createGuest.isPending || uploading;
+  const saving = createGuest.isPending || updateGuest.isPending || uploading;
 
   if (isLoading) {
     return (
@@ -163,7 +241,12 @@ export const GuestsPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Mehmonlar</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Mehmonlar</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Mehmonlar bazasi · jami {(guests || []).length} ta
+          </p>
+        </div>
         {canCreate && (
           <Button onClick={openModal}>
             <Plus className="h-4 w-4 mr-2" />
@@ -182,32 +265,91 @@ export const GuestsPage = () => {
         />
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-lg border bg-white overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Ism Familiya</TableHead>
+            <TableRow className="bg-gray-50/80">
+              <TableHead>Mehmon</TableHead>
               <TableHead>Telefon</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Hujjat raqami</TableHead>
+              <TableHead>Hujjat</TableHead>
+              <TableHead>Tug'ilgan sana</TableHead>
+              {canEdit && <TableHead className="text-right">Amallar</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-6 text-gray-400">
-                  Ma'lumot topilmadi
+                <TableCell colSpan={canEdit ? 5 : 4} className="py-12">
+                  <div className="flex flex-col items-center gap-2 text-gray-400">
+                    <Users className="h-8 w-8" />
+                    <p className="text-sm">
+                      {search.trim()
+                        ? "Qidiruv bo'yicha mehmon topilmadi"
+                        : "Hozircha mehmonlar yo'q"}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((guest) => (
                 <TableRow key={guest.id}>
-                  <TableCell className="font-medium">
-                    {guest.first_name} {guest.last_name}
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-semibold text-white shadow-sm">
+                        {initials(guest.first_name, guest.last_name)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 leading-tight truncate">
+                          {guest.first_name} {guest.last_name}
+                        </p>
+                        {guest.nationality && (
+                          <p className="text-xs text-gray-400 leading-tight truncate">
+                            {guest.nationality}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>{guest.phone || "-"}</TableCell>
-                  <TableCell>{guest.email || "-"}</TableCell>
-                  <TableCell>{guest.passport_number || guest.id_document_number || "-"}</TableCell>
+                  <TableCell>
+                    {guest.phone ? (
+                      <span className="inline-flex items-center gap-1.5 text-gray-700">
+                        <Phone className="h-3.5 w-3.5 text-gray-400" />
+                        {guest.phone}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {guest.passport_number || guest.id_document_number ? (
+                      <div className="inline-flex items-center gap-1.5">
+                        <IdCard className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="font-mono text-xs font-medium bg-gray-100 text-gray-700 rounded px-2 py-0.5">
+                          {guest.passport_number || guest.id_document_number}
+                        </span>
+                        {guest.id_document_type && (
+                          <span className="text-[11px] text-gray-400">
+                            {DOC_TYPE_LABELS[guest.id_document_type] || guest.id_document_type}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    {guest.birth_date ? String(guest.birth_date).slice(0, 10) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </TableCell>
+                  {canEdit && (
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(guest)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        Tahrirlash
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
@@ -215,11 +357,11 @@ export const GuestsPage = () => {
         </Table>
       </div>
 
-      {/* Yangi mehmon modali */}
+      {/* Mehmon qo'shish/tahrirlash modali */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Yangi mehmon</DialogTitle>
+            <DialogTitle>{editing ? "Mehmonni tahrirlash" : "Yangi mehmon"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
@@ -234,9 +376,15 @@ export const GuestsPage = () => {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Telefon</label>
-              <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998..." />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Telefon</label>
+                <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Email</label>
+                <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="email@..." />
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -263,6 +411,11 @@ export const GuestsPage = () => {
                     value={form.nationality}
                     onChange={(e) => set("nationality", e.target.value)}
                   >
+                    {/* Tahrirlashda ro'yxatda bo'lmagan fuqarolik qiymati ham
+                        yo'qolmasligi uchun uni ro'yxat boshiga qo'shamiz */}
+                    {form.nationality && !NATIONALITIES.includes(form.nationality) && (
+                      <option value={form.nationality}>{form.nationality}</option>
+                    )}
                     {NATIONALITIES.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
