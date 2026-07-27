@@ -86,6 +86,11 @@ const weekDays = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"]
 // Soatlik bron uchun tayyor davomiyliklar (1 dan 12 soatgacha)
 const DURATION_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
 
+// Soatlik bronlar orasidagi majburiy tanaffus (daqiqa) — mijoz chiqib ketgach
+// xonani tayyorlash uchun. Backenddagi HOURLY_TURNOVER_MINUTES bilan bir xil
+// bo'lishi kerak (masalan, 10:00-11:00 bron bo'lsa keyingisi 11:15 dan).
+const HOURLY_TURNOVER_MIN = 15
+
 // Qisman (bo'lib) to'lovdagi qo'shimcha qatorlar uchun to'lov usullari
 const PAYMENT_METHOD_OPTIONS = [
   { value: "CASH", label: "Naqd pul" },
@@ -185,6 +190,8 @@ function minToTime(min: number): string {
 
 // Berilgan xona va sana uchun band vaqt oraliqlari (minutlarda, boshlanish bo'yicha
 // saralangan). Tunab qoluvchi soatlik bronlar kun chegarasida kesiladi.
+// Har bir bron tugagach HOURLY_TURNOVER_MIN daqiqa tanaffus ham "band" deb
+// qo'shiladi — keyingi mijoz shu vaqtdan keyin kirishi mumkin.
 function busyIntervalsFor(list: any[], roomId: string, dateStr: string): Array<[number, number]> {
   const res: Array<[number, number]> = []
   for (const r of list) {
@@ -194,9 +201,10 @@ function busyIntervalsFor(list: any[], roomId: string, dateStr: string): Array<[
     const coDate = r.check_out_datetime.slice(0, 10)
     const ciMin = timeToMin(r.check_in_datetime.slice(11, 16))
     const coMin = timeToMin(r.check_out_datetime.slice(11, 16))
-    if (ciDate === dateStr && coDate === dateStr) res.push([ciMin, coMin])
+    const coBuffered = Math.min(coMin + HOURLY_TURNOVER_MIN, 24 * 60)
+    if (ciDate === dateStr && coDate === dateStr) res.push([ciMin, coBuffered])
     else if (ciDate === dateStr) res.push([ciMin, 24 * 60])
-    else if (coDate === dateStr) res.push([0, coMin])
+    else if (coDate === dateStr) res.push([0, coBuffered])
   }
   return res.sort((a, b) => a[0] - b[0])
 }
@@ -210,7 +218,9 @@ function findFreeSlot(busy: Array<[number, number]>): [number, number] | null {
       let cursor = preferStart
       let found: [number, number] | null = null
       for (const [bs, be] of busy) {
-        if (bs - cursor >= dur) {
+        // Keyingi bron boshlanishidan oldin bizning mijoz chiqishi uchun ham
+        // tanaffus sig'ishi kerak
+        if (bs - cursor >= dur + HOURLY_TURNOVER_MIN) {
           found = [cursor, cursor + dur]
           break
         }
@@ -879,13 +889,14 @@ export function BookingPage() {
         const checkInDate = values.check_in_date
         const checkOutDate = overnight ? addDaysStr(checkInDate, 1) : checkInDate
 
-        // Band soat bilan kesishishga yo'l qo'ymaymiz — bo'sh vaqt tanlanishi shart
+        // Band soat bilan kesishishga yo'l qo'ymaymiz — bo'sh vaqt tanlanishi shart.
+        // Yangi bron tugagach keyingi bron boshlanishigacha ham tanaffus kerak.
         const busy = busyIntervalsFor(reservations, values.room_id, checkInDate)
         const s = timeToMin(inTime)
         const eClamped = overnight ? 24 * 60 : timeToMin(outTime)
-        if (busy.some(([bs, be]) => bs < eClamped && be > s)) {
+        if (busy.some(([bs, be]) => bs < eClamped + HOURLY_TURNOVER_MIN && be > s)) {
           setErrorDialog(
-            "Tanlangan vaqt oralig'i band soatlar bilan kesishadi. Iltimos, bo'sh vaqtni tanlang."
+            `Tanlangan vaqt band soatlar bilan kesishadi. Har bir bron orasida xonani tayyorlash uchun ${HOURLY_TURNOVER_MIN} daqiqa tanaffus bo'lishi kerak. Iltimos, bo'sh vaqtni tanlang.`
           )
           return
         }
@@ -1174,12 +1185,13 @@ export function BookingPage() {
     return busyIntervalsFor(reservations, roomId, watchFormDate)
   }, [modalOpen, bookingType, selectedRoom, watchFormRoom, watchFormDate, reservations])
 
-  // Tanlangan vaqt band oraliqlar bilan kesishadimi (dialogda ogohlantirish uchun)
+  // Tanlangan vaqt band oraliqlar bilan kesishadimi (dialogda ogohlantirish uchun).
+  // Yangi bron tugagach ham tanaffus qoldiriladi.
   const selectedTimeConflict = useMemo(() => {
     if (bookingType !== "HOURLY" || !watchInTime || !watchOutTime) return false
     const s = timeToMin(normalizeTime(watchInTime))
     const e = timeToMin(normalizeTime(watchOutTime))
-    const eClamped = e <= s ? 24 * 60 : e // tunab qolsa shu kunning oxirigacha tekshiramiz
+    const eClamped = e <= s ? 24 * 60 : e + HOURLY_TURNOVER_MIN // tunab qolsa kun oxirigacha
     return dialogBusyTimes.some(([bs, be]) => bs < eClamped && be > s)
   }, [bookingType, watchInTime, watchOutTime, dialogBusyTimes])
   const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : totalPrice
@@ -1225,11 +1237,12 @@ export function BookingPage() {
     setExtraPayments([])
   }
 
-  // Tanlangan davomiylik band soatlar bilan kesishadimi (tugmani belgilash uchun)
+  // Tanlangan davomiylik band soatlar bilan kesishadimi (tugmani belgilash uchun).
+  // Bron tugagach keyingi bron oldidan tanaffus ham hisobga olinadi.
   const durationConflicts = (hours: number): boolean => {
     if (!watchInTime) return false
     const s = timeToMin(normalizeTime(watchInTime))
-    const e = s + hours * 60
+    const e = s + hours * 60 + HOURLY_TURNOVER_MIN
     const eClamped = Math.min(e, 24 * 60) // tunab qolsa kun oxirigacha tekshiramiz
     return dialogBusyTimes.some(([bs, be]) => bs < eClamped && be > s)
   }

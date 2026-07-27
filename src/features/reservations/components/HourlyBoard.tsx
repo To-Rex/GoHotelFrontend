@@ -11,6 +11,9 @@ const WINDOW_HOURS = 10
 const WINDOW_SHIFT_STEP = 3
 // Tez bron uchun tayyor davomiyliklar (soatlarda)
 const QUICK_DURATIONS = [1, 2, 3]
+// Soatlik bronlar orasidagi majburiy tanaffus (daqiqa) — mijoz chiqib ketgach
+// xonani tayyorlash uchun. BookingPage va backenddagi qiymat bilan bir xil.
+const TURNOVER_MIN = 15
 
 export interface HourlyBoardProps {
   /** Ko'rsatilayotgan kun — "yyyy-MM-dd" */
@@ -172,14 +175,21 @@ export function HourlyBoard({
   const busyOf = (roomId: string): Interval[] =>
     (intervalsByRoom[roomId] || []).slice().sort((a, b) => a.start - b.start)
 
-  // Berilgan nuqtadan boshlab qancha daqiqa bo'sh (keyingi band oralig'igacha)
+  // Soatlik bron tugagach xona yana TURNOVER_MIN daqiqa band hisoblanadi
+  // (tozalash tanaffusi). Kunlik bronlarga tanaffus qo'shilmaydi.
+  const availEnd = (b: Interval) => (b.daily ? b.end : b.end + TURNOVER_MIN)
+
+  // Berilgan nuqtadan boshlab qancha daqiqa bo'sh (keyingi band oralig'igacha).
+  // Keyingi bron oldidan ham tanaffus qoldiriladi — bizning mijoz chiqib
+  // ketishi uchun.
   const freeMinutesFrom = (roomId: string, startMin: number): number => {
     const busy = busyOf(roomId)
-    if (busy.some((b) => b.start <= startMin && startMin < b.end)) return 0
+    if (busy.some((b) => b.start <= startMin && startMin < availEnd(b))) return 0
     const nextBusy = busy
       .filter((b) => b.start > startMin)
       .reduce((m, b) => Math.min(m, b.start), 2 * DAY_MINUTES)
-    return Math.max(0, nextBusy - startMin)
+    const limit = nextBusy < 2 * DAY_MINUTES ? nextBusy - TURNOVER_MIN : nextBusy
+    return Math.max(0, limit - startMin)
   }
 
   // Tez bron boshlanishi: joriy vaqtni 15 daqiqagacha pastga yaxlitlaymiz
@@ -219,7 +229,16 @@ export function HourlyBoard({
     if (isPastDate) return null // o'tgan sanaga bron qilinmaydi
     const hourStart = hour * 60
     if (isToday && hourStart + 60 <= nowMin) return null // soat allaqachon o'tgan
-    const start = isToday ? Math.max(hourStart, Math.floor(nowMin / 15) * 15) : hourStart
+    let start = isToday ? Math.max(hourStart, Math.floor(nowMin / 15) * 15) : hourStart
+    // Bosilgan nuqta band bo'lsa — boshlanishni bron tugashi + tanaffusga
+    // surib qo'yamiz: 10:00-11:40 bron bo'lsa, 11 soati bosilganda 11:55
+    // taklif qilinadi. busyOf saralangan, shuning uchun ketma-ket bronlar
+    // zanjiri ham bitta o'tishda hisobga olinadi.
+    for (const b of busyOf(roomId)) {
+      if (b.start <= start && start < availEnd(b)) start = availEnd(b)
+    }
+    // Surilgan boshlanish bosilgan soat katagidan chiqib ketsa — katak to'liq band
+    if (start >= hourStart + 60) return null
     const free = freeMinutesFrom(roomId, start)
     if (free <= 0) return null
     return [start, start + Math.min(120, free)]
@@ -524,14 +543,19 @@ export function HourlyBoard({
                                     if (clickable && slot) emitSlot(room, slot[0], slot[1])
                                   }}
                                   title={
-                                    clickable
-                                      ? `${minToTime(h * 60)}${nextDay ? " (ertangi kun)" : ""} dan bron qilish`
+                                    clickable && slot
+                                      ? `${minToTime(slot[0])}${nextDay ? " (ertangi kun)" : ""} dan bron qilish`
                                       : undefined
                                   }
                                 >
-                                  {clickable && (
-                                    <div className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Plus className="h-3.5 w-3.5 text-primary-500" />
+                                  {clickable && slot && (
+                                    <div className="h-full w-full flex items-center justify-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Plus className="h-3 w-3 text-primary-500" />
+                                      {/* Aniq taklif vaqti — band brondan keyin
+                                          surilgan boshlanish darhol ko'rinadi */}
+                                      <span className="text-[10px] font-semibold text-primary-600">
+                                        {minToTime(slot[0])}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
