@@ -1253,27 +1253,29 @@ export function BookingPage() {
     // Layout booking sahifasini "full bleed" qilib beradi (padding/max-width yo'q),
     // shuning uchun bu yerda h-full bilan mavjud balandlikni to'liq egallaymiz.
     <div className="flex flex-col h-full w-full min-w-0">
-      {/* Tablar: Kalendar (oylik ko'rinish) / Soatlik bron (bir kunlik taxta) */}
-      <div className="flex-shrink-0 flex items-center gap-1 px-6 pt-3 bg-white border-b border-gray-200">
-        {([
-          { key: "hourly", label: "Soatlik bron", icon: Clock },
-          { key: "calendar", label: "Kalendar", icon: CalendarDays },
-        ] as const).map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 -mb-px text-sm font-medium border-b-2 transition-colors",
-              activeTab === tab.key
-                ? "border-primary-600 text-primary-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            )}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </button>
-        ))}
+      {/* Tablar: Soatlik bron / Kalendar — ixcham segment (pill) ko'rinishida */}
+      <div className="flex-shrink-0 flex items-center px-6 py-2.5 bg-white border-b border-gray-200">
+        <div className="flex rounded-lg bg-gray-100 p-1">
+          {([
+            { key: "hourly", label: "Soatlik bron", icon: Clock },
+            { key: "calendar", label: "Kalendar", icon: CalendarDays },
+          ] as const).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
+                activeTab === tab.key
+                  ? "bg-white text-primary-700 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {activeTab === "hourly" ? (
@@ -1293,65 +1295,76 @@ export function BookingPage() {
         />
       ) : (
       <>
-      {/* Top bar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+      {/* Top bar — oy navigatsiyasi chapda; o'ngda tanlov xulosasi yoki
+          (tanlov yo'q payt) ixcham legenda. Alohida legenda qatori olib
+          tashlandi — sahifa bir qatorga ixchamlashdi. */}
+      <div className="flex-shrink-0 flex items-center justify-between px-6 py-2.5 bg-white border-b border-gray-200">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            title="Oldingi oy"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h3 className="text-lg font-bold text-gray-900 min-w-[200px] text-center">
+          <h3 className="text-[15px] font-bold text-gray-900 min-w-[150px] text-center">
             {format(currentMonth, "MMMM yyyy")}
           </h3>
-          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            title="Keyingi oy"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date())}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-1 text-primary-700"
+            onClick={() => setCurrentMonth(new Date())}
+          >
             Bugun
           </Button>
         </div>
 
         <div className="flex items-center gap-3">
-          {selectedRoom && selectionStart && selectionEnd && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-1.5">
-              <span className="font-semibold text-gray-900">{selectedRoom.room_number}</span>
-              <span>·</span>
+          {selectedRoom && selectionStart && selectionEnd ? (
+            <div className="flex items-center gap-2 text-sm text-primary-900 bg-primary-50 border border-primary-100 rounded-lg px-3 py-1.5">
+              <span className="font-semibold">{selectedRoom.room_number}</span>
+              <span className="text-primary-300">·</span>
               <span>{selectionStart} → {selectionEnd}</span>
-              <span>·</span>
+              <span className="text-primary-300">·</span>
               <span>{nightCount} kecha</span>
-              <span>·</span>
-              <span className="font-medium text-primary-700">{totalPrice.toLocaleString()} So'm</span>
+              <span className="text-primary-300">·</span>
+              <span className="font-semibold text-primary-700">{totalPrice.toLocaleString()} So'm</span>
               <button
                 onClick={clearSelection}
-                className="ml-2 p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                title="Tanlovni bekor qilish"
+                className="ml-1 p-0.5 rounded hover:bg-primary-100 text-primary-400 hover:text-primary-700"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-3.5 text-[11px] text-gray-500">
+              {(
+                [
+                  ["bg-blue-600", "Tasdiqlangan"],
+                  ["bg-emerald-600", "Kirgan"],
+                  ["bg-amber-400", "Kutilmoqda"],
+                  ["bg-primary-200 border border-primary-300", "Tanlangan"],
+                  ["bg-gray-400", "Chiqgan"],
+                ] as const
+              ).map(([color, label]) => (
+                <span key={label} className="flex items-center gap-1.5">
+                  <span className={cn("h-2.5 w-2.5 rounded-full", color)} />
+                  {label}
+                </span>
+              ))}
+            </div>
           )}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex-shrink-0 flex items-center gap-5 px-6 py-2 bg-white border-b border-gray-100 text-xs text-gray-500">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-blue-600" />
-          <span>Tasdiqlangan</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-emerald-600" />
-          <span>Kirgan</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-amber-400" />
-          <span>Kutilmoqda</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-primary-100 border border-primary-300" />
-          <span>Tanlangan</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-gray-400" />
-          <span>Chiqgan</span>
         </div>
       </div>
 
@@ -1683,7 +1696,7 @@ export function BookingPage() {
 
       {/* Booking Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[640px] max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Yangi bandlov</DialogTitle>
           </DialogHeader>

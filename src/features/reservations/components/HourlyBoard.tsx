@@ -269,31 +269,34 @@ export function HourlyBoard({
   return (
     <div className="flex flex-col h-full">
       {/* Kun tanlash va tezkor holat paneli */}
-      <div className="flex-shrink-0 flex items-center justify-between gap-4 px-6 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <button
-            className="h-8 w-8 flex items-center justify-center rounded-md border border-gray-200 hover:bg-gray-50"
-            onClick={() => onDateChange(shiftDate(date, -1))}
-            title="Oldingi kun"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => e.target.value && onDateChange(e.target.value)}
-            className="h-9 rounded-md border border-gray-200 px-3 text-sm font-semibold text-gray-900"
-          />
-          <button
-            className="h-8 w-8 flex items-center justify-center rounded-md border border-gray-200 hover:bg-gray-50"
-            onClick={() => onDateChange(shiftDate(date, 1))}
-            title="Keyingi kun"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+      <div className="flex-shrink-0 flex items-center justify-between gap-4 px-6 py-2.5 bg-white border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          {/* Sana navigatsiyasi — bitta ixcham segment */}
+          <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              className="h-9 w-9 flex items-center justify-center text-gray-500 hover:bg-gray-50"
+              onClick={() => onDateChange(shiftDate(date, -1))}
+              title="Oldingi kun"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => e.target.value && onDateChange(e.target.value)}
+              className="h-9 border-x border-gray-200 px-3 text-sm font-semibold text-gray-900 focus:outline-none"
+            />
+            <button
+              className="h-9 w-9 flex items-center justify-center text-gray-500 hover:bg-gray-50"
+              onClick={() => onDateChange(shiftDate(date, 1))}
+              title="Keyingi kun"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
           <button
             className={cn(
-              "h-8 px-3 rounded-md text-sm font-medium",
+              "h-8 px-3 rounded-md text-sm font-medium transition-colors",
               isToday ? "bg-primary-50 text-primary-700" : "text-gray-500 hover:bg-gray-50"
             )}
             onClick={() => onDateChange(today)}
@@ -310,9 +313,11 @@ export function HourlyBoard({
         <div className="flex items-center gap-3">
           {isToday && (
             <>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-100">
-                <Clock className="h-4 w-4 text-red-500" />
-                <span className="text-sm font-bold text-red-600">{format(now, "HH:mm")}</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200">
+                <Clock className="h-4 w-4 text-primary-600" />
+                <span className="text-sm font-bold text-gray-900 tabular-nums">
+                  {format(now, "HH:mm")}
+                </span>
               </div>
               <div className="text-sm text-gray-600">
                 Hozir bo'sh: <span className="font-bold text-emerald-600">{freeNowCount}</span>
