@@ -68,6 +68,9 @@ export const useCancelReservation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      // Bekor qilinganda bog'liq hisob-faktura ham VOID bo'ladi —
+      // Moliya bo'limi darhol yangilanishi uchun keshni tozalaymiz
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
     },
   });
 };

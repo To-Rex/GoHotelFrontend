@@ -32,7 +32,6 @@ const emptyForm = {
   first_name: "",
   last_name: "",
   phone: "",
-  email: "",
   birth_date: "",
   passport_number: "",
   id_document_type: "",
@@ -110,7 +109,6 @@ export const GuestsPage = () => {
       first_name: g.first_name || "",
       last_name: g.last_name || "",
       phone: g.phone || "",
-      email: g.email || "",
       birth_date: (g.birth_date || "").slice(0, 10),
       passport_number: g.passport_number || "",
       id_document_type: g.id_document_type || "",
@@ -147,7 +145,8 @@ export const GuestsPage = () => {
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim() || undefined,
           phone: form.phone.trim(),
-          email: form.email.trim(),
+          // email frontenddan olib tashlangan — mavjud qiymat backendda
+          // o'zgarishsiz saqlanadi (yuborilmagan maydonga tegilmaydi)
           birth_date: form.birth_date || undefined,
           passport_number: form.passport_number
             ? sanitizePassport(form.passport_number)
@@ -180,7 +179,6 @@ export const GuestsPage = () => {
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim() || "",
           phone: form.phone || undefined,
-          email: form.email.trim() || undefined,
           birth_date: form.birth_date || undefined,
           passport_number: form.passport_number ? sanitizePassport(form.passport_number) : undefined,
           id_document_type: form.id_document_type || undefined,
@@ -376,15 +374,9 @@ export const GuestsPage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Telefon</label>
-                <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998..." />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Email</label>
-                <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="email@..." />
-              </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Telefon</label>
+              <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998..." />
             </div>
 
             <div className="space-y-1">
