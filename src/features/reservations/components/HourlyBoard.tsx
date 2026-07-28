@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { format, addDays, parseISO } from "date-fns"
 import { ChevronLeft, ChevronRight, ChevronDown, Clock, Plus, Layers, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const DAY_MINUTES = 24 * 60
-// Joriy vaqtga fokuslangan rejimda ko'rsatiladigan soatlar oynasi
-const WINDOW_HOURS = 10
-// Oyna joriy soatdan boshlanadi. O'tgan soatlarni ko'rish uchun "◀" tugmasi
-// bilan oynani orqaga surish mumkin (bron qilish baribir taqiqlanadi).
-const WINDOW_SHIFT_STEP = 3
+// Bitta soat ustunining kengligi (px) — lenta gorizontal aylantiriladi,
+// shuning uchun istalgan soatni (kun boshidan oxirigacha) ko'rish mumkin.
+const HOUR_WIDTH = 88
+// "Butun kun" rejimida zichroq masshtab — kun bir qarashda ko'rinadi
+const HOUR_WIDTH_COMPACT = 44
+// Chap tomondagi xona ustunining kengligi (w-56 = 224px)
+const ROOM_COL_WIDTH = 224
 // Tez bron uchun tayyor davomiyliklar (soatlarda)
 const QUICK_DURATIONS = [1, 2, 3]
 // Soatlik bronlar orasidagi majburiy tanaffus (daqiqa) — mijoz chiqib ketgach
@@ -100,11 +102,8 @@ export function HourlyBoard({
   // Butun kunni (00:00-24:00) ko'rsatish rejimi
   const [fullDay, setFullDay] = useState(false)
   // Oynani soatlar bo'yicha surish (manfiy — o'tgan soatlarni ko'rish uchun)
-  const [hourShift, setHourShift] = useState(0)
-
   // Kun almashsa ko'rinish boshlang'ich holatga qaytadi
   useEffect(() => {
-    setHourShift(0)
     setFullDay(false)
   }, [date])
 
@@ -115,18 +114,83 @@ export function HourlyBoard({
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const nextDate = shiftDate(date, 1)
 
-  // --- Ko'rinadigan soatlar oynasi (mutlaq minutlarda) ---
-  // Boshlanish doim joriy soatdan WINDOW_LOOKBACK soat oldin; oyna WINDOW_HOURS
-  // soat davom etadi va kerak bo'lsa yarim tundan o'tib ketadi (h >= 24 —
-  // ertangi kun ustunlari).
-  const focused = isToday && !fullDay
-  // Oyna joriy soatdan boshlanadi; `hourShift` bilan orqaga/oldinga suriladi
-  const startHour = focused ? Math.max(0, now.getHours() + hourShift) : 0
-  const endHour = focused ? startHour + WINDOW_HOURS : 24
-  const visibleHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i)
-  const winStart = startHour * 60
-  const winEnd = endHour * 60
+  // --- To'liq kun lentasi (gorizontal aylantiriladigan) ---
+  // Barcha soatlar 00:00 dan boshlab chiziladi — istalgan o'tgan/kelgusi
+  // soatga scroll yoki sichqoncha bilan surib borish mumkin. Bugungi kunda
+  // ertangi kunning dastlabki 6 soati ham qo'shiladi (tungi bronlar uchun).
+  const renderEndHour = isToday ? 30 : 24
+  const hourW = fullDay ? HOUR_WIDTH_COMPACT : HOUR_WIDTH
+  const timelineWidth = renderEndHour * hourW
+  const visibleHours = Array.from({ length: renderEndHour }, (_, i) => i)
+  const winStart = 0
+  const winEnd = renderEndHour * 60
   const pct = (min: number) => ((min - winStart) / (winEnd - winStart)) * 100
+
+  // --- Scroll / pan boshqaruvi ---
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const suppressClick = useRef(false)
+  const panState = useRef<{
+    x: number
+    y: number
+    left: number
+    top: number
+    moved: boolean
+  } | null>(null)
+
+  const scrollToNow = (behavior: ScrollBehavior = "auto") => {
+    const el = scrollRef.current
+    if (!el) return
+    // Joriy vaqtdan 2 soat oldinni chap chetga keltiramiz
+    const targetMin = isToday ? Math.max(0, nowMin - 120) : 0
+    el.scrollTo({ left: (targetMin / 60) * hourW, behavior })
+  }
+
+  // Kun yoki masshtab o'zgarganda joriy vaqt atrofiga olib boramiz
+  useEffect(() => {
+    scrollToNow()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, fullDay])
+
+  const scrollByHours = (h: number) => {
+    scrollRef.current?.scrollBy({ left: h * hourW, behavior: "smooth" })
+  }
+
+  // Sichqoncha bilan surish (drag-to-pan): 5px dan ortiq siljish pan
+  // hisoblanadi va undan keyingi click bosilgan element ustida ishlamaydi —
+  // katak/bron bosish funksiyalari buzilmaydi.
+  const onPanDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return
+    const el = scrollRef.current
+    if (!el) return
+    panState.current = {
+      x: e.clientX,
+      y: e.clientY,
+      left: el.scrollLeft,
+      top: el.scrollTop,
+      moved: false,
+    }
+  }
+  const onPanMove = (e: React.MouseEvent) => {
+    const st = panState.current
+    const el = scrollRef.current
+    if (!st || !el) return
+    const dx = e.clientX - st.x
+    const dy = e.clientY - st.y
+    if (!st.moved && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) st.moved = true
+    if (st.moved) {
+      el.scrollLeft = st.left - dx
+      el.scrollTop = st.top - dy
+    }
+  }
+  const onPanEnd = () => {
+    if (panState.current?.moved) {
+      suppressClick.current = true
+      setTimeout(() => {
+        suppressClick.current = false
+      }, 50)
+    }
+    panState.current = null
+  }
 
   // Sana qaysi kunga to'g'ri kelishi (mutlaq o'qdagi siljish)
   const dayOffset = (d: string): number | null =>
@@ -264,7 +328,7 @@ export function HourlyBoard({
     0
   )
   // Oyna ertangi kunga o'tadimi (sarlavhada ko'rsatish uchun)
-  const crossesMidnight = endHour > 24
+  const crossesMidnight = renderEndHour > 24
 
   return (
     <div className="flex flex-col h-full">
@@ -323,38 +387,34 @@ export function HourlyBoard({
                 Hozir bo'sh: <span className="font-bold text-emerald-600">{freeNowCount}</span>
                 <span className="text-gray-400"> / {totalRooms}</span>
               </div>
-              {/* Oynani soatlar bo'yicha surish — o'tgan bronlarni ko'rish uchun */}
-              {!fullDay && (
-                <div className="flex items-center rounded-md border border-gray-200 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setHourShift((v) => v - WINDOW_SHIFT_STEP)}
-                    disabled={startHour === 0}
-                    className="h-8 px-2 text-gray-500 hover:bg-gray-50 disabled:text-gray-300 disabled:hover:bg-transparent"
-                    title="Oldingi soatlarni ko'rish"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  {hourShift !== 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setHourShift(0)}
-                      className="h-8 px-2 text-[11px] font-medium text-primary-700 hover:bg-primary-50"
-                      title="Hozirgi vaqtga qaytish"
-                    >
-                      Hozir
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setHourShift((v) => v + WINDOW_SHIFT_STEP)}
-                    className="h-8 px-2 text-gray-500 hover:bg-gray-50"
-                    title="Keyingi soatlarni ko'rish"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
+              {/* Lentani soatlar bo'ylab surish — istalgan o'tgan/kelgusi
+                  soatni ko'rish mumkin (sichqoncha bilan surish ham ishlaydi) */}
+              <div className="flex items-center rounded-md border border-gray-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => scrollByHours(-3)}
+                  className="h-8 px-2 text-gray-500 hover:bg-gray-50"
+                  title="Oldingi soatlarni ko'rish"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToNow("smooth")}
+                  className="h-8 px-2 text-[11px] font-medium text-primary-700 hover:bg-primary-50"
+                  title="Hozirgi vaqtga qaytish"
+                >
+                  Hozir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollByHours(3)}
+                  className="h-8 px-2 text-gray-500 hover:bg-gray-50"
+                  title="Keyingi soatlarni ko'rish"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setFullDay((v) => !v)}
@@ -391,25 +451,40 @@ export function HourlyBoard({
         </div>
       </div>
 
-      {/* Soat sarlavhalari + xonalar */}
-      <div className="flex-1 overflow-auto bg-gray-50">
-        <div className="min-w-[1000px]">
+      {/* Soat sarlavhalari + xonalar — gorizontal aylantiriladigan lenta */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-auto bg-gray-50 select-none"
+        onMouseDown={onPanDown}
+        onMouseMove={onPanMove}
+        onMouseUp={onPanEnd}
+        onMouseLeave={onPanEnd}
+        onClickCapture={(e) => {
+          // Pan (surish) dan keyingi tasodifiy click bosilgan elementga o'tmaydi
+          if (suppressClick.current) {
+            e.preventDefault()
+            e.stopPropagation()
+          }
+        }}
+      >
+        <div style={{ width: ROOM_COL_WIDTH + timelineWidth }}>
           {/* Sarlavha qatori */}
           <div className="sticky top-0 z-20 flex bg-white border-b border-gray-200 shadow-sm">
-            <div className="flex-shrink-0 w-56 h-10 flex items-center px-4 bg-gray-50 border-r border-gray-200">
+            <div className="sticky left-0 z-30 flex-shrink-0 w-56 h-10 flex items-center px-4 bg-gray-50 border-r border-gray-200">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Xonalar
               </span>
             </div>
-            <div className="flex flex-1">
+            <div className="flex">
               {visibleHours.map((h) => {
                 const nextDay = h >= 24
                 const isNowHour = isToday && Math.floor(nowMin / 60) === h
                 return (
                   <div
                     key={h}
+                    style={{ width: hourW }}
                     className={cn(
-                      "flex-1 h-10 flex items-center justify-center gap-1 border-r border-gray-100",
+                      "flex-shrink-0 h-10 flex items-center justify-center gap-1 border-r border-gray-100",
                       nextDay && "bg-indigo-50/60",
                       isNowHour && "bg-red-50"
                     )}
@@ -446,7 +521,7 @@ export function HourlyBoard({
                   onClick={() => onToggleFloor(group.key)}
                   title={collapsed ? "Qavatni ochish" : "Qavatni yig'ish"}
                 >
-                  <div className="flex-shrink-0 w-56 flex items-center gap-2 px-4 h-8 border-r border-gray-200">
+                  <div className="sticky left-0 z-10 flex-shrink-0 w-56 flex items-center gap-2 px-4 h-8 bg-gray-100 border-r border-gray-200">
                     {collapsed ? (
                       <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
                     ) : (
@@ -472,7 +547,7 @@ export function HourlyBoard({
                         className="flex border-b border-gray-100 bg-white hover:bg-gray-50/40 transition-colors"
                         style={{ height: 64 }}
                       >
-                        <div className="flex-shrink-0 w-56 flex flex-col justify-center px-4 border-r border-gray-200 gap-1">
+                        <div className="sticky left-0 z-10 flex-shrink-0 w-56 flex flex-col justify-center px-4 bg-white border-r border-gray-200 gap-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-gray-900">
                               {room.room_number}
@@ -527,7 +602,7 @@ export function HourlyBoard({
                           )}
                         </div>
 
-                        <div className="flex-1 relative">
+                        <div className="relative flex-shrink-0" style={{ width: timelineWidth }}>
                           {/* Soat kataklari (bo'sh joy — bosish mumkin) */}
                           <div className="flex h-full">
                             {visibleHours.map((h) => {
@@ -538,8 +613,9 @@ export function HourlyBoard({
                               return (
                                 <div
                                   key={h}
+                                  style={{ width: hourW }}
                                   className={cn(
-                                    "flex-1 border-r border-gray-50 h-full group",
+                                    "flex-shrink-0 border-r border-gray-50 h-full group",
                                     isPast && "bg-gray-50/60",
                                     nextDay && "bg-indigo-50/30",
                                     clickable && "cursor-pointer hover:bg-primary-50"
