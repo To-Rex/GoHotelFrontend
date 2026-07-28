@@ -725,7 +725,7 @@ export function BookingPage() {
     setValue("booking_type", initialType)
     setValue("room_id", selectedRoom?.id || "")
     setValue("check_in_date", selectionStart || "")
-    setValue("check_out_date", selectionEnd ? addDaysStr(selectionEnd, 1) : "")
+    setValue("check_out_date", selectionCheckout || "")
     setValue("check_in_time", inT)
     setValue("check_out_time", outT)
     setValue("adults", 1)
@@ -1176,10 +1176,19 @@ export function BookingPage() {
     setSelectionEnd(null)
   }
 
-  const nightCount =
+  // Tanlov bo'yicha chiqish sanasi: OXIRGI tanlangan kun = chiqish kuni
+  // (29→30 tanlansa — 1 kecha: 29 kirish, 30 chiqish). Bitta kun tanlanganda
+  // ertasi kuni chiqiladi (1 kecha). Backend ham xuddi shunday hisoblaydi:
+  // nights = check_out - check_in.
+  const selectionCheckout =
     selectionStart && selectionEnd
-      ? dayDiff(selectionStart, selectionEnd) + 1
-      : 0
+      ? selectionEnd > selectionStart
+        ? selectionEnd
+        : addDaysStr(selectionEnd, 1)
+      : null
+
+  const nightCount =
+    selectionStart && selectionCheckout ? dayDiff(selectionStart, selectionCheckout) : 0
 
   const roomPrice = selectedRoom ? getRoomPrice(selectedRoom) : 0
   const totalPrice = nightCount * roomPrice
@@ -1189,10 +1198,10 @@ export function BookingPage() {
   const watchOutTime = watch("check_out_time")
   const hourCount =
     bookingType === "HOURLY" ? hourlyDuration(watchInTime, watchOutTime) : 0
-  const hourlyTotal = Math.round((roomPrice / 24) * hourCount)
 
   // Yangi bandlov dialogida tanlangan sana/xona uchun band soat oraliqlari
   const watchFormDate = watch("check_in_date")
+  const watchFormOutDate = watch("check_out_date")
   const watchFormRoom = watch("room_id")
   const watchNationality = watch("new_guest_nationality")
   const watchBirthDate = watch("new_guest_birth_date")
@@ -1238,7 +1247,33 @@ export function BookingPage() {
     setValue("check_out_time", minToTime((nowMin + durMin) % (24 * 60)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalOpen, bookingType, nowTick, watchFormDate, watchInTime, watchOutTime])
-  const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : totalPrice
+  // --- Dialogdagi JONLI hisob-kitob (kunlik) ---
+  // Forma sanalari o'zgarsa kecha soni va narx darhol qayta hisoblanadi.
+  // Xona kalendar tanlovidan yoki dialogdagi selectdan kelishi mumkin.
+  const dialogRoom =
+    selectedRoom || rooms.find((r) => r.id === watchFormRoom) || null
+  const dialogRoomPrice = dialogRoom ? getRoomPrice(dialogRoom) : 0
+  const dialogNightCount =
+    watchFormDate && watchFormOutDate
+      ? Math.max(dayDiff(watchFormDate, watchFormOutDate), 0)
+      : nightCount
+  const dialogDailyTotal = dialogNightCount * dialogRoomPrice
+  // Soatlik jami ham dialogdagi xona narxidan jonli hisoblanadi
+  const hourlyTotal = Math.round((dialogRoomPrice / 24) * hourCount)
+
+  const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : dialogDailyTotal
+
+  // Sana/vaqt/xona o'zgarganda to'lov summasi yangi jamiga moslanadi —
+  // kunlikda ham, soatlikda ham (chiqish vaqti QO'LDA o'zgartirilganda ham).
+  // Vaqtni real-vaqtga surish davomiylikni saqlagani uchun bunda summa
+  // o'zgarmaydi; foydalanuvchi kiritgan qisman summa ham jami o'zgarmaguncha
+  // saqlanadi.
+  useEffect(() => {
+    if (!modalOpen) return
+    setValue("payment_amount", effectiveTotal)
+    setExtraPayments([])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen, bookingType, effectiveTotal])
 
   // --- Qisman (bo'lib) to'lov hisob-kitobi ---
   // Barcha qatorlar (birinchi + qo'shimchalar) yig'indisi va qolgan summa
@@ -1378,7 +1413,7 @@ export function BookingPage() {
             <div className="flex items-center gap-2 text-sm text-primary-900 bg-primary-50 border border-primary-100 rounded-lg px-3 py-1.5">
               <span className="font-semibold">{selectedRoom.room_number}</span>
               <span className="text-primary-300">·</span>
-              <span>{selectionStart} → {selectionEnd}</span>
+              <span>{selectionStart} → {selectionCheckout}</span>
               <span className="text-primary-300">·</span>
               <span>{nightCount} kecha</span>
               <span className="text-primary-300">·</span>
@@ -1804,9 +1839,9 @@ export function BookingPage() {
                       Soatlik bron{hourCount > 0 ? ` (${hourCount} soat)` : ""}
                     </p>
                   ) : (
-                    selectionStart && selectionEnd && (
+                    watchFormDate && watchFormOutDate && (
                       <p className="text-xs text-gray-500">
-                        {selectionStart} → {selectionEnd} ({nightCount} kecha)
+                        {watchFormDate} → {watchFormOutDate} ({dialogNightCount} kecha)
                       </p>
                     )
                   )}
@@ -2196,7 +2231,7 @@ export function BookingPage() {
                 <span className="text-sm text-gray-600">
                   {bookingType === "HOURLY"
                     ? `Xona narxi (${hourCount} soat)`
-                    : `Xona narxi (${nightCount} kecha)`}
+                    : `Xona narxi (${dialogNightCount} kecha)`}
                 </span>
                 <span className="text-sm font-semibold text-gray-900">{effectiveTotal.toLocaleString()} So'm</span>
               </div>
