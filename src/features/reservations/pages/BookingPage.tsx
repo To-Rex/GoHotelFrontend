@@ -882,8 +882,26 @@ export function BookingPage() {
 
       let payload: any
       if (values.booking_type === "HOURLY") {
-        const inTime = normalizeTime(values.check_in_time)
-        const outTime = normalizeTime(values.check_out_time)
+        let inTime = normalizeTime(values.check_in_time)
+        let outTime = normalizeTime(values.check_out_time)
+
+        // Hozirgi vaqtdan oldingi vaqtga bron qilib bo'lmaydi: bugungi kunda
+        // boshlanish o'tib ketgan bo'lsa, uni joriy vaqtga surib, tanlangan
+        // davomiylikni (intervalni) aynan saqlaymiz.
+        const submitNow = new Date()
+        if (values.check_in_date === format(submitNow, "yyyy-MM-dd")) {
+          const nowMin = submitNow.getHours() * 60 + submitNow.getMinutes()
+          const s0 = timeToMin(inTime)
+          if (s0 < nowMin) {
+            let durMin = timeToMin(outTime) - s0
+            if (durMin <= 0) durMin += 24 * 60
+            inTime = minToTime(nowMin)
+            outTime = minToTime((nowMin + durMin) % (24 * 60))
+            setValue("check_in_time", inTime)
+            setValue("check_out_time", outTime)
+          }
+        }
+
         // Chiqish vaqti kirishdan kichik/teng bo'lsa keyingi kunga o'tadi (tunab qolish).
         const overnight = outTime <= inTime
         const checkInDate = values.check_in_date
@@ -1194,6 +1212,32 @@ export function BookingPage() {
     const eClamped = e <= s ? 24 * 60 : e + HOURLY_TURNOVER_MIN // tunab qolsa kun oxirigacha
     return dialogBusyTimes.some(([bs, be]) => bs < eClamped && be > s)
   }, [bookingType, watchInTime, watchOutTime, dialogBusyTimes])
+
+  // --- Dialogdagi vaqtni real vaqtda yangilab turish ---
+  // Dialog ochiq turganda daqiqalar o'tsa, bugungi soatlik bronning kirish
+  // vaqti o'tmishda qolib ketmasligi kerak: boshlanish joriy vaqtga suriladi,
+  // tanlangan davomiylik (interval) esa aynan saqlanadi.
+  const [nowTick, setNowTick] = useState(() => new Date())
+  useEffect(() => {
+    if (!modalOpen) return
+    const id = setInterval(() => setNowTick(new Date()), 10_000)
+    return () => clearInterval(id)
+  }, [modalOpen])
+
+  useEffect(() => {
+    if (!modalOpen || bookingType !== "HOURLY") return
+    if (watchFormDate !== format(nowTick, "yyyy-MM-dd")) return // faqat bugungi kun
+    if (!watchInTime || !watchOutTime) return
+    const nowMin = nowTick.getHours() * 60 + nowTick.getMinutes()
+    const s = timeToMin(normalizeTime(watchInTime))
+    if (s >= nowMin) return // boshlanish hali kelmagan — tegmaymiz
+    // Davomiylikni saqlab, boshlanishni joriy vaqtga suramiz
+    let durMin = timeToMin(normalizeTime(watchOutTime)) - s
+    if (durMin <= 0) durMin += 24 * 60
+    setValue("check_in_time", minToTime(nowMin))
+    setValue("check_out_time", minToTime((nowMin + durMin) % (24 * 60)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen, bookingType, nowTick, watchFormDate, watchInTime, watchOutTime])
   const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : totalPrice
 
   // --- Qisman (bo'lib) to'lov hisob-kitobi ---
@@ -1795,6 +1839,12 @@ export function BookingPage() {
                   <label className="text-sm font-medium">Kirish vaqti *</label>
                   <Input type="time" {...register("check_in_time")} />
                   {errors.check_in_time && <p className="text-xs text-red-500">{errors.check_in_time.message}</p>}
+                  {watchFormDate === todayStr && (
+                    <p className="text-[11px] text-gray-400">
+                      Vaqt o'tsa, kirish vaqti avtomatik joriy vaqtga suriladi —
+                      tanlangan davomiylik saqlanadi
+                    </p>
+                  )}
                 </div>
 
                 {/* Davomiylikni tanlash — bir bosishda chiqish vaqti hisoblanadi */}
