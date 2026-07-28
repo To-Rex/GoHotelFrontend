@@ -14,6 +14,7 @@ import { ServicesPage } from "./features/services/pages/ServicesPage";
 import { HousekeepingPage } from "./features/housekeeping/pages/HousekeepingPage";
 import { EmployeesPage } from "./features/employees/pages/EmployeesPage";
 import { PermissionsPage } from "./features/employees/pages/PermissionsPage";
+import { SettingsPage } from "./features/settings/pages/SettingsPage";
 import { useAuthStore } from "./store/auth";
 
 // Auth Guard Component
@@ -52,7 +53,7 @@ function App() {
           <Route path="housekeeping" element={<HousekeepingPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="permissions" element={<PermissionsPage />} />
-          <Route path="settings" element={<div>Sozlamalar (Tez kunda)</div>} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
