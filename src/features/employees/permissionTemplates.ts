@@ -88,6 +88,7 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
       "finance.view",
       "finance.invoice.*",
       "finance.payment.*",
+      "expense.*",
       "employee.view",
       "employee.create",
       "employee.update",
@@ -99,7 +100,14 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
     description: "Hisob-fakturalar, to'lovlar va moliyaviy hisobotlar",
     icon: Calculator,
     accent: "bg-amber-50 text-amber-600",
-    codes: ["finance.*", "report.*", "reservation.view", "guest.view", "service.view"],
+    codes: [
+      "finance.*",
+      "report.*",
+      "expense.*",
+      "reservation.view",
+      "guest.view",
+      "service.view",
+    ],
   },
   {
     id: "maintenance",

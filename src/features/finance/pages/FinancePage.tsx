@@ -1,7 +1,16 @@
 import { useState, useMemo } from "react"
 import { format, subDays, startOfMonth } from "date-fns"
-import { Wallet, ReceiptText, CircleDollarSign, AlertCircle } from "lucide-react"
+import {
+  Wallet,
+  ReceiptText,
+  CircleDollarSign,
+  AlertCircle,
+  TrendingDown,
+  Scale,
+} from "lucide-react"
 import { useInvoices, usePayments } from "../api/finance"
+import { useExpenses } from "@/features/expenses/api/expenses"
+import { usePermissions } from "@/lib/permissions"
 import {
   Table,
   TableBody,
@@ -64,6 +73,11 @@ export const FinancePage = () => {
     dateTo
   )
 
+  // Xarajatlar hisobotga qo'shiladi (sof natija uchun) — ruxsati bo'lganlarga
+  const { can } = usePermissions()
+  const canExpenses = can("expense.view", "expense.create", "expense.delete")
+  const { data: expenses = [] } = useExpenses(dateFrom, dateTo, canExpenses)
+
   // Tez tanlovlar: bugungi/kechagi kun, 7 kun, shu oy, barcha davr
   const presets = [
     { key: "today", label: "Bugun", from: todayStr, to: todayStr },
@@ -109,6 +123,12 @@ export const FinancePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [payments, dateFrom, dateTo]
   )
+  const filteredExpenses = useMemo(
+    () => expenses.filter((e) => inRange(e.expense_date)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [expenses, dateFrom, dateTo]
+  )
+  const expensesTotal = filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0)
 
   // --- Hisobot ko'rsatkichlari (tanlangan davr bo'yicha) ---
   const summary = useMemo(() => {
@@ -184,6 +204,28 @@ export const FinancePage = () => {
       icon: AlertCircle,
       accent: "bg-amber-50 text-amber-600",
     },
+    // Xarajatlar va sof natija — expense ruxsati bo'lganlarga ko'rsatiladi
+    ...(canExpenses
+      ? [
+          {
+            label: "Xarajatlar",
+            value: `${fmt(expensesTotal)} So'm`,
+            sub: `${filteredExpenses.length} ta chiqim`,
+            icon: TrendingDown,
+            accent: "bg-red-50 text-red-600",
+          },
+          {
+            label: "Sof natija",
+            value: `${fmt(summary.income - expensesTotal)} So'm`,
+            sub: "tushum − xarajat",
+            icon: Scale,
+            accent:
+              summary.income - expensesTotal >= 0
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-red-50 text-red-600",
+          },
+        ]
+      : []),
   ]
 
   return (

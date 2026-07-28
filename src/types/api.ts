@@ -197,6 +197,22 @@ export interface Permission {
   description?: string | null;
 }
 
+// Xarajat (chiqim) yozuvi (GET /expenses/) — kim kiritgani bilan birga
+export interface Expense {
+  id: string;
+  hotel_id: string;
+  branch_id?: string | null;
+  title: string;
+  category?: string | null;
+  amount: number;
+  payment_method: string;
+  expense_date: string;
+  notes?: string | null;
+  created_by: string;
+  created_by_name?: string | null;
+  created_at?: string | null;
+}
+
 // To'lov yozuvi (GET /finance/payments)
 export interface PaymentRecord {
   id: string;

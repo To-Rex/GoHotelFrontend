@@ -15,6 +15,7 @@ import { HousekeepingPage } from "./features/housekeeping/pages/HousekeepingPage
 import { EmployeesPage } from "./features/employees/pages/EmployeesPage";
 import { PermissionsPage } from "./features/employees/pages/PermissionsPage";
 import { SettingsPage } from "./features/settings/pages/SettingsPage";
+import { ExpensesPage } from "./features/expenses/pages/ExpensesPage";
 import { useAuthStore } from "./store/auth";
 
 // Auth Guard Component
@@ -46,6 +47,7 @@ function App() {
           <Route path="floors" element={<FloorsPage />} />
           <Route path="guests" element={<GuestsPage />} />
           <Route path="finance" element={<FinancePage />} />
+          <Route path="expenses" element={<ExpensesPage />} />
           {/* Boshqaruv bo'limlari (admin/menejer) */}
           <Route path="room-types" element={<RoomTypesPage />} />
           <Route path="amenities" element={<AmenitiesPage />} />

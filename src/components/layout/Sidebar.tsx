@@ -11,6 +11,7 @@ import {
   Building2,
   PanelLeftClose,
   PanelLeftOpen,
+  TrendingDown,
   BedDouble,
   Sparkles,
   ConciergeBell,
@@ -37,6 +38,7 @@ export const Sidebar = () => {
     { name: "Qavatlar", href: "/floors", icon: Layers },
     { name: "Mehmonlar", href: "/guests", icon: Users },
     { name: "Moliya", href: "/finance", icon: Wallet },
+    { name: "Xarajatlar", href: "/expenses", icon: TrendingDown },
     { name: "Sozlamalar", href: "/settings", icon: Settings },
   ];
 

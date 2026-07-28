@@ -36,6 +36,7 @@ const MODULE_LABELS: Record<string, string> = {
   floor: "Qavatlar",
   audit: "Audit",
   file: "Fayllar",
+  expense: "Xarajatlar",
 }
 
 // Menejer (EMPLOYEE, permission.assign ruxsati bilan) faqat shu shablon
