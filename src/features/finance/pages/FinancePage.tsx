@@ -136,6 +136,11 @@ export const FinancePage = () => {
       (s, i) => s + Number(i.total_amount || 0),
       0
     )
+    // Davr bo'yicha berilgan chegirmalar yig'indisi
+    const invoiceDiscount = filteredInvoices.reduce(
+      (s, i) => s + Number(i.discount_amount || 0),
+      0
+    )
     const invoicePaid = filteredInvoices.reduce(
       (s, i) => s + Number(i.paid_amount || 0),
       0
@@ -152,7 +157,7 @@ export const FinancePage = () => {
     for (const p of filteredPayments) {
       byMethod[p.payment_method] = (byMethod[p.payment_method] || 0) + Number(p.amount || 0)
     }
-    return { income, invoiceTotal, invoicePaid, debt, byMethod }
+    return { income, invoiceTotal, invoiceDiscount, invoicePaid, debt, byMethod }
   }, [filteredPayments, filteredInvoices])
 
   const isLoading = invoicesLoading || paymentsLoading
@@ -185,7 +190,10 @@ export const FinancePage = () => {
     {
       label: "Hisob-fakturalar",
       value: `${fmt(summary.invoiceTotal)} So'm`,
-      sub: `${filteredInvoices.length} ta hujjat`,
+      sub:
+        summary.invoiceDiscount > 0
+          ? `${filteredInvoices.length} ta hujjat · chegirma −${fmt(summary.invoiceDiscount)} So'm`
+          : `${filteredInvoices.length} ta hujjat`,
       icon: ReceiptText,
       accent: "bg-blue-50 text-blue-600",
     },
@@ -392,6 +400,7 @@ export const FinancePage = () => {
                 <TableHead>Sana</TableHead>
                 <TableHead>Muddati</TableHead>
                 <TableHead>Holati</TableHead>
+                <TableHead className="text-right">Chegirma</TableHead>
                 <TableHead className="text-right">Umumiy summa</TableHead>
                 <TableHead className="text-right">To'landi</TableHead>
                 <TableHead className="text-right">Qoldiq</TableHead>
@@ -400,7 +409,7 @@ export const FinancePage = () => {
             <TableBody>
               {filteredInvoices.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-gray-400">
+                  <TableCell colSpan={8} className="text-center py-6 text-gray-400">
                     Tanlangan davrda hisob-fakturalar yo'q
                   </TableCell>
                 </TableRow>
@@ -424,6 +433,15 @@ export const FinancePage = () => {
                         >
                           {STATUS_LABELS[inv.status] || inv.status}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {Number(inv.discount_amount || 0) > 0 ? (
+                          <span className="font-medium text-red-500">
+                            −{fmt(inv.discount_amount)} So'm
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         {fmt(inv.total_amount)} So'm

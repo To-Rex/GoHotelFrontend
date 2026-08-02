@@ -582,6 +582,14 @@ export const ReservationsPage = () => {
                         {fmt(res.total_amount)}{" "}
                         <span className="text-xs font-normal text-gray-400">So'm</span>
                       </p>
+                      {/* Chegirma qo'llangan bo'lsa — summasi (va foizi) */}
+                      {Number(res.discount_amount || 0) > 0 && (
+                        <p className="text-xs text-red-500 leading-tight mt-0.5">
+                          Chegirma: −{fmt(res.discount_amount)}
+                          {Number(res.discount_percent || 0) > 0 &&
+                            ` (${Number(res.discount_percent)}%)`}
+                        </p>
+                      )}
                       {Number(res.paid_amount || 0) > 0 &&
                         Number(res.paid_amount) < Number(res.total_amount || 0) && (
                           <p className="text-xs text-emerald-600 leading-tight mt-0.5">
