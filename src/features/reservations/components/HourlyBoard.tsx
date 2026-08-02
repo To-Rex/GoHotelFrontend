@@ -13,6 +13,22 @@ const HOUR_WIDTH_COMPACT = 44
 const ROOM_COL_WIDTH = 224
 // Tez bron uchun tayyor davomiyliklar (soatlarda)
 const QUICK_DURATIONS = [1, 2, 3]
+
+// Xonaning MAXSUS holatlari — bronlardan ko'rinmaydigan holatlar belgi bilan
+// ko'rsatiladi (Bo'sh/Band bronlardan hisoblanadi, bular esa alohida)
+const ROOM_STATUS_LABELS: Record<string, string> = {
+  CLEANING: "Tozalanmoqda",
+  MAINTENANCE: "Ta'mirda",
+  INSPECTION: "Tekshiruvda",
+  OUT_OF_SERVICE: "Xizmatdan tashqari",
+}
+
+const roomStatusBadge: Record<string, string> = {
+  CLEANING: "bg-amber-100 text-amber-700",
+  MAINTENANCE: "bg-orange-100 text-orange-700",
+  INSPECTION: "bg-purple-100 text-purple-700",
+  OUT_OF_SERVICE: "bg-gray-200 text-gray-600",
+}
 // Soatlik bronlar orasidagi majburiy tanaffus (daqiqa) — mijoz chiqib ketgach
 // xonani tayyorlash uchun. BookingPage va backenddagi qiymat bilan bir xil.
 const TURNOVER_MIN = 15
@@ -548,7 +564,7 @@ export function HourlyBoard({
                         style={{ height: 64 }}
                       >
                         <div className="sticky left-0 z-10 flex-shrink-0 w-56 flex flex-col justify-center px-4 bg-white border-r border-gray-200 gap-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-sm font-bold text-gray-900">
                               {room.room_number}
                             </span>
@@ -562,6 +578,17 @@ export function HourlyBoard({
                                   Band
                                 </span>
                               ))}
+                            {/* Xonaning maxsus holati (tozalanmoqda/ta'mirda/...) */}
+                            {ROOM_STATUS_LABELS[room.current_status] && (
+                              <span
+                                className={cn(
+                                  "text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap",
+                                  roomStatusBadge[room.current_status]
+                                )}
+                              >
+                                {ROOM_STATUS_LABELS[room.current_status]}
+                              </span>
+                            )}
                           </div>
 
                           {/* Tez bron: hozirgi vaqtdan boshlab */}

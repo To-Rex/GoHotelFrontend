@@ -83,6 +83,23 @@ const statusLabels: Record<string, string> = {
 
 const weekDays = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"]
 
+// Xonaning MAXSUS holatlari — bronlardan ko'rinmaydigan, e'tibor talab
+// qiladigan holatlar rangli belgi bilan ko'rsatiladi (Bo'sh/Band esa
+// bronlarning o'zidan ma'lum bo'ladi).
+const ROOM_STATUS_LABELS: Record<string, string> = {
+  CLEANING: "Tozalanmoqda",
+  MAINTENANCE: "Ta'mirda",
+  INSPECTION: "Tekshiruvda",
+  OUT_OF_SERVICE: "Xizmatdan tashqari",
+}
+
+const roomStatusBadge: Record<string, string> = {
+  CLEANING: "bg-amber-100 text-amber-700",
+  MAINTENANCE: "bg-orange-100 text-orange-700",
+  INSPECTION: "bg-purple-100 text-purple-700",
+  OUT_OF_SERVICE: "bg-gray-200 text-gray-600",
+}
+
 // Soatlik bron uchun tayyor davomiyliklar (1 dan 12 soatgacha)
 const DURATION_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
 
@@ -1542,9 +1559,22 @@ export function BookingPage() {
                     className="flex-shrink-0 flex flex-col justify-center px-4 bg-white border-r border-gray-200 sticky left-0 z-20"
                     style={{ width: ROOM_COL_WIDTH }}
                   >
-                    <span className="text-sm font-bold text-gray-900">
-                      {room.room_number}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-gray-900">
+                        {room.room_number}
+                      </span>
+                      {/* Xonaning maxsus holati (tozalanmoqda/ta'mirda/...) */}
+                      {ROOM_STATUS_LABELS[room.current_status] && (
+                        <span
+                          className={cn(
+                            "text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap",
+                            roomStatusBadge[room.current_status]
+                          )}
+                        >
+                          {ROOM_STATUS_LABELS[room.current_status]}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs text-gray-400 truncate">
                       {room.room_type?.name || "Standard"}
                     </span>
