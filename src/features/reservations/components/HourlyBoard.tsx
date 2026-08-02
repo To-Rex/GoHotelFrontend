@@ -54,6 +54,25 @@ export interface HourlyBoardProps {
   getRoomPrice: (room: any) => number
   getGuestName: (res: any) => string
   statusColors: Record<string, string>
+  /** Xonaga biriktirilgan faol xo'jalik vazifasi turi (room_id -> task_type) */
+  activeTaskTypeByRoom?: Record<string, string>
+}
+
+// Faol vazifa turlari yorlig'i va ranglari (BookingPage bilan bir xil)
+const TASK_TYPE_LABELS: Record<string, string> = {
+  CLEANING: "Tozalash",
+  DEEP_CLEANING: "Chuqur tozalash",
+  MAINTENANCE: "Ta'mirlash",
+  INSPECTION: "Tekshiruv",
+  TURN_DOWN: "Kechki tayyorlash",
+}
+
+const taskTypeBadge: Record<string, string> = {
+  CLEANING: "bg-amber-100 text-amber-700",
+  DEEP_CLEANING: "bg-amber-100 text-amber-800",
+  MAINTENANCE: "bg-orange-100 text-orange-700",
+  INSPECTION: "bg-purple-100 text-purple-700",
+  TURN_DOWN: "bg-sky-100 text-sky-700",
 }
 
 function minToTime(min: number): string {
@@ -105,6 +124,7 @@ export function HourlyBoard({
   getRoomPrice,
   getGuestName,
   statusColors,
+  activeTaskTypeByRoom = {},
 }: HourlyBoardProps) {
   // Joriy vaqt — har 30 soniyada yangilanadi
   const [now, setNow] = useState(() => new Date())
@@ -589,6 +609,20 @@ export function HourlyBoard({
                                 {ROOM_STATUS_LABELS[room.current_status]}
                               </span>
                             )}
+                            {/* Faol xo'jalik vazifasi (holat belgisi bo'lmasa) */}
+                            {!ROOM_STATUS_LABELS[room.current_status] &&
+                              activeTaskTypeByRoom[room.id] && (
+                                <span
+                                  title="Xonaga xo'jalik vazifasi biriktirilgan"
+                                  className={cn(
+                                    "text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap",
+                                    taskTypeBadge[activeTaskTypeByRoom[room.id]]
+                                  )}
+                                >
+                                  {TASK_TYPE_LABELS[activeTaskTypeByRoom[room.id]] ||
+                                    activeTaskTypeByRoom[room.id]}
+                                </span>
+                              )}
                           </div>
 
                           {/* Tez bron: hozirgi vaqtdan boshlab */}
