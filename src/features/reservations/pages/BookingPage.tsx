@@ -422,6 +422,11 @@ export function BookingPage() {
   // shu ro'yxatda saqlanadi
   const [extraPayments, setExtraPayments] = useState<Array<{ amount: string; method: string }>>([])
 
+  // Chegirma: so'mda yoki foizda. Backend foizni ustuvor oladi va jami
+  // summani o'zi qayta hisoblaydi — bu yerda faqat ko'rsatish uchun
+  const [discountType, setDiscountType] = useState<"AMOUNT" | "PERCENT">("AMOUNT")
+  const [discountValue, setDiscountValue] = useState("")
+
   // Xato xabarini brauzer alert() o'rniga dialog sifatida ko'rsatish
   const [errorDialog, setErrorDialog] = useState<string | null>(null)
 
@@ -791,6 +796,8 @@ export function BookingPage() {
     )
     setValue("payment_method", "CASH")
     setExtraPayments([])
+    setDiscountType("AMOUNT")
+    setDiscountValue("")
     setSelectedGuestId("")
     setGuestSearch("")
     setModalOpen(true)
@@ -828,6 +835,8 @@ export function BookingPage() {
     )
     setValue("payment_method", "CASH")
     setExtraPayments([])
+    setDiscountType("AMOUNT")
+    setDiscountValue("")
     setSelectedGuestId("")
     setGuestSearch("")
     setModalOpen(true)
@@ -856,9 +865,9 @@ export function BookingPage() {
       return
     }
     const paymentsTotal = paymentRows.reduce((s, p) => s + p.amount, 0)
-    if (effectiveTotal > 0 && paymentsTotal > effectiveTotal) {
+    if (finalTotal > 0 && paymentsTotal > finalTotal) {
       setErrorDialog(
-        `To'lovlar yig'indisi (${paymentsTotal.toLocaleString()} So'm) umumiy narxdan (${effectiveTotal.toLocaleString()} So'm) oshib ketdi. Iltimos, summalarni to'g'rilang.`
+        `To'lovlar yig'indisi (${paymentsTotal.toLocaleString()} So'm) chegirma bilan hisoblangan jami narxdan (${finalTotal.toLocaleString()} So'm) oshib ketdi. Iltimos, summalarni to'g'rilang.`
       )
       return
     }
@@ -928,6 +937,11 @@ export function BookingPage() {
         payment_amount: paymentsTotal,
         payment_method: (paymentRows[0]?.payment_method as any) || null,
         payments: paymentRows,
+        // Chegirma: foiz ustuvor — backend foizdan summani o'zi hisoblaydi
+        discount_percent:
+          discountType === "PERCENT" ? Math.min(Math.max(rawDiscount, 0), 100) : 0,
+        discount_amount:
+          discountType === "AMOUNT" ? discountAmount : 0,
       }
 
       let payload: any
@@ -998,6 +1012,8 @@ export function BookingPage() {
       clearGuestPhoto()
       setNationalityOther("")
       setExtraPayments([])
+      setDiscountValue("")
+      setDiscountType("AMOUNT")
       reset()
 
       if (photoUploadFailed) {
@@ -1313,17 +1329,27 @@ export function BookingPage() {
 
   const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : dialogDailyTotal
 
-  // Sana/vaqt/xona o'zgarganda to'lov summasi yangi jamiga moslanadi —
+  // Chegirma hisobi — backend bilan bir xil mantiq: foizda bo'lsa butun
+  // so'mga yaxlitlanadi, summada bo'lsa jami narxdan oshmaydi
+  const rawDiscount = Number(discountValue) || 0
+  const discountAmount =
+    discountType === "PERCENT"
+      ? Math.round((effectiveTotal * Math.min(Math.max(rawDiscount, 0), 100)) / 100)
+      : Math.min(Math.max(rawDiscount, 0), effectiveTotal)
+  // Mijoz to'laydigan yakuniy summa (chegirma bilan)
+  const finalTotal = Math.max(effectiveTotal - discountAmount, 0)
+
+  // Sana/vaqt/xona/chegirma o'zgarganda to'lov summasi yangi jamiga moslanadi —
   // kunlikda ham, soatlikda ham (chiqish vaqti QO'LDA o'zgartirilganda ham).
   // Vaqtni real-vaqtga surish davomiylikni saqlagani uchun bunda summa
   // o'zgarmaydi; foydalanuvchi kiritgan qisman summa ham jami o'zgarmaguncha
   // saqlanadi.
   useEffect(() => {
     if (!modalOpen) return
-    setValue("payment_amount", effectiveTotal)
+    setValue("payment_amount", finalTotal)
     setExtraPayments([])
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalOpen, bookingType, effectiveTotal])
+  }, [modalOpen, bookingType, finalTotal])
 
   // --- Qisman (bo'lib) to'lov hisob-kitobi ---
   // Barcha qatorlar (birinchi + qo'shimchalar) yig'indisi va qolgan summa
@@ -1331,7 +1357,7 @@ export function BookingPage() {
   const paidTotal =
     (Number(watchPaymentAmount) || 0) +
     extraPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0)
-  const remainingAmount = Math.max(effectiveTotal - paidTotal, 0)
+  const remainingAmount = Math.max(finalTotal - paidTotal, 0)
 
   // Yangi qator qolgan summa bilan ochiladi — usulni foydalanuvchi tanlaydi
   const addExtraPayment = () => {
@@ -2313,6 +2339,49 @@ export function BookingPage() {
                 </span>
                 <span className="text-sm font-semibold text-gray-900">{effectiveTotal.toLocaleString()} So'm</span>
               </div>
+
+              {/* Chegirma: so'mda yoki foizda */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-gray-600">Chegirma</span>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={discountType === "PERCENT" ? 100 : effectiveTotal}
+                    className="h-8 w-28 text-right"
+                    placeholder="0"
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(e.target.value)}
+                  />
+                  <select
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                    value={discountType}
+                    onChange={(e) => {
+                      setDiscountType(e.target.value as "AMOUNT" | "PERCENT")
+                      setDiscountValue("")
+                    }}
+                  >
+                    <option value="AMOUNT">So'm</option>
+                    <option value="PERCENT">%</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Chegirma qo'llangan bo'lsa — yakuniy jami */}
+              {discountAmount > 0 && (
+                <div className="flex justify-between items-center border-t border-gray-200 pt-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Jami to'lov{" "}
+                    <span className="text-xs font-normal text-red-500">
+                      (−{discountAmount.toLocaleString()} So'm chegirma)
+                    </span>
+                  </span>
+                  <span className="text-sm font-bold text-primary-700">
+                    {finalTotal.toLocaleString()} So'm
+                  </span>
+                </div>
+              )}
+
               <div className="border-t border-gray-200 pt-3">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   To'lov summasi
@@ -2322,7 +2391,7 @@ export function BookingPage() {
                     id="payment_amount"
                     type="number"
                     min={0}
-                    max={effectiveTotal}
+                    max={finalTotal}
                     placeholder="0"
                     {...register("payment_amount", { valueAsNumber: true })}
                   />
@@ -2388,16 +2457,16 @@ export function BookingPage() {
                     <span
                       className={cn(
                         "text-xs text-right",
-                        effectiveTotal > 0 && paidTotal > effectiveTotal
+                        finalTotal > 0 && paidTotal > finalTotal
                           ? "text-red-500 font-medium"
                           : "text-gray-500"
                       )}
                     >
                       Jami to'lov: {paidTotal.toLocaleString()} So'm
-                      {effectiveTotal > 0 && paidTotal <= effectiveTotal && remainingAmount > 0 && (
+                      {finalTotal > 0 && paidTotal <= finalTotal && remainingAmount > 0 && (
                         <> · Qolgan: {remainingAmount.toLocaleString()} So'm</>
                       )}
-                      {effectiveTotal > 0 && paidTotal > effectiveTotal && " (narxdan oshiq!)"}
+                      {finalTotal > 0 && paidTotal > finalTotal && " (narxdan oshiq!)"}
                     </span>
                   )}
                 </div>
