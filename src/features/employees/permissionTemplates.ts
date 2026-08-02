@@ -63,7 +63,11 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
     icon: BellRing,
     accent: "bg-indigo-50 text-indigo-600",
     codes: [
-      "reservation.*",
+      // reservation.cancel ATAYLAB kiritilmagan — resepshn bronni bekor qila
+      // olmaydi; bu huquq faqat menejer va administratorda qoladi
+      "reservation.create",
+      "reservation.update",
+      "reservation.view",
       "guest.*",
       "room.view",
       "room.status.update",
