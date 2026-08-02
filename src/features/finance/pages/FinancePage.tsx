@@ -10,7 +10,6 @@ import {
 } from "lucide-react"
 import { useInvoices, usePayments } from "../api/finance"
 import { useExpenses } from "@/features/expenses/api/expenses"
-import { usePermissions } from "@/lib/permissions"
 import {
   Table,
   TableBody,
@@ -73,10 +72,10 @@ export const FinancePage = () => {
     dateTo
   )
 
-  // Xarajatlar hisobotga qo'shiladi (sof natija uchun) — ruxsati bo'lganlarga
-  const { can } = usePermissions()
-  const canExpenses = can("expense.view", "expense.create", "expense.delete")
-  const { data: expenses = [] } = useExpenses(dateFrom, dateTo, canExpenses)
+  // Xarajatlar hisobotga qo'shiladi (sof natija uchun) — endpoint barcha
+  // tizimga kirgan foydalanuvchilar uchun ochiq
+  const canExpenses = true
+  const { data: expenses = [] } = useExpenses(dateFrom, dateTo)
 
   // Tez tanlovlar: bugungi/kechagi kun, 7 kun, shu oy, barcha davr
   const presets = [

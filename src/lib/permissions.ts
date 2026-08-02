@@ -19,8 +19,9 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   "/floors": ["floor.create", "floor.update", "floor.delete"],
   "/guests": ["guest.view"],
   "/finance": ["finance.view"],
-  // Xarajatlar — admin (bypass) va expense ruxsatiga ega xodimlar (menejer)
-  "/expenses": ["expense.view", "expense.create", "expense.delete"],
+  // Xarajatlar — BARCHA rollar uchun ochiq (bo'sh massiv = hammaga ruxsat);
+  // kiritish ham hammaga ochiq, o'chirish esa expense.delete bilan cheklanadi
+  "/expenses": [],
   // --- Boshqaruv bo'limlari (admin/menejer) ---
   // ADMIN/SUPER_ADMIN isAdmin bypass orqali doim ko'radi; xodim (menejer)
   // esa quyidagi ruxsatlardan kamida bittasiga ega bo'lsa ko'radi.

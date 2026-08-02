@@ -62,7 +62,9 @@ const initials = (name?: string | null) => {
 
 export const ExpensesPage = () => {
   const { can } = usePermissions()
-  const canCreate = can("expense.create")
+  // Xarajat kiritish barcha rollar uchun ochiq (backend ham shunday);
+  // o'chirish esa expense.delete ruxsati bilan (admin avtomatik)
+  const canCreate = true
   const canDelete = can("expense.delete")
   const user = useAuthStore((s) => s.user)
 
