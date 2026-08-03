@@ -127,9 +127,8 @@ const DURATION_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
 // bo'lishi kerak (masalan, 10:00-11:00 bron bo'lsa keyingisi 11:15 dan).
 const HOURLY_TURNOVER_MIN = 15
 
-// Soatlik tarif: kunlik narx shu songa bo'linadi. Backenddagi
-// HOURLY_RATE_DIVISOR bilan bir xil bo'lishi shart.
-export const HOURLY_RATE_DIVISOR = 12
+// Soatlik bron narxi davomiylikka BOG'LIQ EMAS — kunlik narx to'liq olinadi
+// (1 soat ham, 24 soat ham bir xil narx). Backend ham xuddi shunday hisoblaydi.
 
 // Qisman (bo'lib) to'lovdagi qo'shimcha qatorlar uchun to'lov usullari
 const PAYMENT_METHOD_OPTIONS = [
@@ -795,10 +794,7 @@ export function BookingPage() {
     setValue(
       "payment_amount",
       initialType === "HOURLY"
-        ? Math.round(
-            (getRoomPrice(selectedRoom || {}) / HOURLY_RATE_DIVISOR) *
-              hourlyDuration(inT, outT)
-          )
+        ? getRoomPrice(selectedRoom || {})
         : totalPrice
     )
     setValue("payment_method", "CASH")
@@ -838,7 +834,7 @@ export function BookingPage() {
     setValue("new_guest_nationality", DEFAULT_NATIONALITY)
     setValue(
       "payment_amount",
-      Math.round((getRoomPrice(room) / HOURLY_RATE_DIVISOR) * hourlyDuration(inT, outT))
+      getRoomPrice(room)
     )
     setValue("payment_method", "CASH")
     setExtraPayments([])
@@ -1332,7 +1328,7 @@ export function BookingPage() {
       : nightCount
   const dialogDailyTotal = dialogNightCount * dialogRoomPrice
   // Soatlik jami ham dialogdagi xona narxidan jonli hisoblanadi
-  const hourlyTotal = Math.round((dialogRoomPrice / HOURLY_RATE_DIVISOR) * hourCount)
+  const hourlyTotal = dialogRoomPrice
 
   const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : dialogDailyTotal
 
@@ -1394,7 +1390,7 @@ export function BookingPage() {
     const outT = minToTime(outMin)
     setValue("check_in_time", inT)
     setValue("check_out_time", outT)
-    setValue("payment_amount", Math.round((roomPrice / HOURLY_RATE_DIVISOR) * hours))
+    setValue("payment_amount", roomPrice)
     // Summa qayta hisoblandi — qo'shimcha to'lov qatorlari eskirdi
     setExtraPayments([])
   }
@@ -1917,9 +1913,7 @@ export function BookingPage() {
                       setValue("check_out_time", outT)
                       setValue(
                         "payment_amount",
-                        Math.round(
-                          (roomPrice / HOURLY_RATE_DIVISOR) * hourlyDuration(inT, outT)
-                        )
+                        roomPrice
                       )
                     } else {
                       setValue("payment_amount", totalPrice)
