@@ -112,7 +112,12 @@ export const FloorsPage = () => {
   }
 
   const onDelete = async (f: Floor) => {
-    if (!confirm(`${f.floor_number}-qavatni o'chirasizmi?`)) return
+    const roomCount = roomCountByFloor[f.id] || 0
+    const warning =
+      roomCount > 0
+        ? `${f.floor_number}-qavatni o'chirasizmi? DIQQAT: unga biriktirilgan ${roomCount} ta xona ham birga o'chiriladi!`
+        : `${f.floor_number}-qavatni o'chirasizmi?`
+    if (!confirm(warning)) return
     try {
       await deleteMutation.mutateAsync(f.id)
     } catch (e) {

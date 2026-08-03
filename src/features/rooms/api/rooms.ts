@@ -75,7 +75,11 @@ export const useDeleteFloor = () => {
     mutationFn: async (id: string) => {
       await api.delete(`/floors/${id}`);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['floors'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['floors'] });
+      // Qavat bilan birga unga biriktirilgan xonalar ham o'chadi
+      qc.invalidateQueries({ queryKey: ['rooms'] });
+    },
   });
 };
 
