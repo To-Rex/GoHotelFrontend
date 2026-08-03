@@ -32,6 +32,8 @@ const roomStatusBadge: Record<string, string> = {
 // Soatlik bronlar orasidagi majburiy tanaffus (daqiqa) — mijoz chiqib ketgach
 // xonani tayyorlash uchun. BookingPage va backenddagi qiymat bilan bir xil.
 const TURNOVER_MIN = 15
+// Soatlik tarif: kunlik narx shu songa bo'linadi (BookingPage/backend bilan mos)
+const HOURLY_RATE_DIVISOR = 12
 
 export interface HourlyBoardProps {
   /** Ko'rsatilayotgan kun — "yyyy-MM-dd" */
@@ -658,7 +660,7 @@ export function HourlyBoard({
                             <span className="text-[11px] text-gray-400 truncate">
                               {room.room_type?.name || "Standard"}
                               {getRoomPrice(room) > 0 &&
-                                ` · ${Math.round(getRoomPrice(room) / 24).toLocaleString()} So'm/soat`}
+                                ` · ${Math.round(getRoomPrice(room) / HOURLY_RATE_DIVISOR).toLocaleString()} So'm/soat`}
                             </span>
                           )}
                         </div>
