@@ -208,8 +208,10 @@ export const FloorsPage = () => {
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                         <Layers className="h-5 w-5" />
                       </span>
+                      {/* Tahrirlash/o'chirish — doim ko'rinadi (hover shart emas,
+                          sensorli ekranlarda ham ishlashi uchun) */}
                       {(canEdit || canDelete) && (
-                        <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="flex gap-0.5">
                           {canEdit && (
                             <button
                               type="button"
