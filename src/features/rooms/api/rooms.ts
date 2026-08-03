@@ -86,7 +86,10 @@ export const useRooms = (status?: string) => {
       const { data } = await api.get<{ items: Room[] }>('/rooms/', {
         params: { status, limit: 500, page_size: 500 }
       });
-      return Array.isArray(data) ? data : (data.items || []);
+      const list = Array.isArray(data) ? data : (data.items || []);
+      // O'chirilgan (soft-delete) xonalar hech qayerda ko'rinmasligi kerak —
+      // backend ham filtrlaydi, bu esa qo'shimcha himoya
+      return list.filter((r) => !r.is_deleted);
     },
   });
 };
