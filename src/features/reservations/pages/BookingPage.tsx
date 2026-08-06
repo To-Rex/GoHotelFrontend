@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ArrowLeft,
   Camera,
+  ScanLine,
 } from "lucide-react"
 import {
   startOfMonth,
@@ -51,6 +52,7 @@ import {
 } from "@/features/guests/api/guests"
 import { NATIONALITIES, DEFAULT_NATIONALITY } from "@/features/guests/constants"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
+import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { useAuthStore } from "@/store/auth"
 import { usePermissions } from "@/lib/permissions"
 
@@ -300,6 +302,9 @@ export function BookingPage() {
   // Fuqarolik ro'yxatda bo'lmasa ("Boshqa") — qo'lda kiritiladigan davlat nomi
   const [nationalityOther, setNationalityOther] = useState("")
 
+  // Hujjat skaneri (passport/ID karta — MRZ orqali avtomatik to'ldirish)
+  const [scanOpen, setScanOpen] = useState(false)
+
   // Yangi mehmon surati (passport rasmi / mehmon fotosi)
   const [guestPhoto, setGuestPhoto] = useState<File | null>(null)
   const [guestPhotoPreview, setGuestPhotoPreview] = useState<string | null>(null)
@@ -403,6 +408,55 @@ export function BookingPage() {
 
   // "Yangi mehmon" formasidan mavjud mehmonlar ro'yxatiga qaytish
   // (kiritilgan ma'lumotlar va tanlangan surat tozalanadi)
+  // MRZ'dagi 3 harfli davlat kodini fuqarolik ro'yxatidagi nomga o'girish
+  const MRZ_COUNTRY: Record<string, string> = {
+    UZB: "O'zbekiston",
+    KAZ: "Qozog'iston",
+    KGZ: "Qirg'iziston",
+    TJK: "Tojikiston",
+    TKM: "Turkmaniston",
+    RUS: "Rossiya",
+    AFG: "Afg'oniston",
+    AZE: "Ozarbayjon",
+    ARM: "Armaniston",
+    BLR: "Belarus",
+    GEO: "Gruziya",
+    TUR: "Turkiya",
+    CHN: "Xitoy",
+    IND: "Hindiston",
+    PAK: "Pokiston",
+    IRN: "Eron",
+    KOR: "Janubiy Koreya",
+    JPN: "Yaponiya",
+    USA: "AQSH",
+    GBR: "Buyuk Britaniya",
+    DEU: "Germaniya",
+    FRA: "Fransiya",
+    UKR: "Ukraina",
+  }
+
+  // Skaner natijasini yangi mehmon formasiga qo'llash — faqat o'qilgan
+  // maydonlar to'ldiriladi, qolganlari foydalanuvchi kiritganicha qoladi
+  const applyScannedDoc = (doc: ScannedDoc) => {
+    if (doc.firstName) setValue("new_guest_first_name", doc.firstName, { shouldDirty: true })
+    if (doc.lastName) setValue("new_guest_last_name", doc.lastName, { shouldDirty: true })
+    if (doc.birthDate) setValue("new_guest_birth_date", doc.birthDate, { shouldDirty: true })
+    if (doc.documentNumber)
+      setValue("new_guest_passport_number", sanitizePassport(doc.documentNumber))
+    if (doc.personalNumber)
+      setValue("new_guest_id_document_number", doc.personalNumber)
+    if (doc.documentType) setValue("new_guest_id_document_type", doc.documentType)
+    if (doc.nationality) {
+      const mapped = MRZ_COUNTRY[doc.nationality]
+      if (mapped && NATIONALITIES.includes(mapped)) {
+        setValue("new_guest_nationality", mapped)
+      } else {
+        setValue("new_guest_nationality", "Boshqa")
+        setNationalityOther(doc.nationality)
+      }
+    }
+  }
+
   const backToGuestList = () => {
     setShowNewGuest(false)
     setValue("new_guest_first_name", "")
@@ -2131,15 +2185,33 @@ export function BookingPage() {
                       uchun qaytish tugmasi tepada ham, pastda ham mavjud) */}
                   <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-200">
                     <span className="text-sm font-semibold text-gray-900">Yangi mehmon</span>
-                    <button
-                      type="button"
-                      onClick={backToGuestList}
-                      className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
-                    >
-                      <ArrowLeft className="h-3.5 w-3.5" />
-                      Ro'yxatga qaytish
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setScanOpen(true)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                        title="Passport yoki ID kartani kamera bilan skanerlash"
+                      >
+                        <ScanLine className="h-3.5 w-3.5" />
+                        Skanerlash
+                      </button>
+                      <button
+                        type="button"
+                        onClick={backToGuestList}
+                        className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
+                      >
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                        Ro'yxatga qaytish
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Hujjat skaneri — MRZ o'qib formani avtomatik to'ldiradi */}
+                  <DocumentScanner
+                    open={scanOpen}
+                    onOpenChange={setScanOpen}
+                    onResult={applyScannedDoc}
+                  />
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs font-medium">Ism *</label>
