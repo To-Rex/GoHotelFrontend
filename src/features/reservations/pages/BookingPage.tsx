@@ -1325,6 +1325,34 @@ export function BookingPage() {
   const watchFormRoom = watch("room_id")
   const watchNationality = watch("new_guest_nationality")
   const watchBirthDate = watch("new_guest_birth_date")
+
+  // Yangi mehmon formasida passport/telefon terilishi bilan mavjud mehmonni
+  // jonli aniqlash — dublikat yaratmaslik va ishni tezlashtirish uchun.
+  // (Backend ham yaratishda xuddi shu tekshiruvni qiladi — xatosiz mavjudini
+  // qaytaradi; bu banner esa bir klikda tanlab yuborish imkonini beradi.)
+  const watchNewPassport = watch("new_guest_passport_number")
+  const watchNewPhone = watch("new_guest_phone")
+  const existingGuestMatch = useMemo(() => {
+    const passNorm = (s?: string | null) =>
+      (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
+    const digitsOf = (s?: string | null) => (s || "").replace(/\D/g, "")
+    const pass = passNorm(watchNewPassport)
+    if (pass.length >= 5) {
+      const g = (guests as any[]).find(
+        (x) => passNorm(x.passport_number) && passNorm(x.passport_number) === pass
+      )
+      if (g) return g
+    }
+    const digits = digitsOf(watchNewPhone)
+    if (digits.length >= 9) {
+      const tail = digits.slice(-9)
+      const g = (guests as any[]).find(
+        (x) => digitsOf(x.phone).length >= 9 && digitsOf(x.phone).slice(-9) === tail
+      )
+      if (g) return g
+    }
+    return null
+  }, [watchNewPassport, watchNewPhone, guests])
   const dialogBusyTimes = useMemo(() => {
     if (!modalOpen || bookingType !== "HOURLY") return []
     const roomId = selectedRoom?.id || watchFormRoom
@@ -2223,6 +2251,34 @@ export function BookingPage() {
                     <label className="text-xs font-medium">Telefon</label>
                     <Input placeholder="Telefon" {...register("new_guest_phone")} />
                   </div>
+
+                  {/* Mavjud mehmon topildi — qayta yaratmasdan bir klikda tanlash */}
+                  {existingGuestMatch && (
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+                      <div className="min-w-0 text-sm text-amber-800">
+                        <p className="truncate font-semibold">
+                          Bu mijoz bazada mavjud: {existingGuestMatch.first_name}{" "}
+                          {existingGuestMatch.last_name}
+                        </p>
+                        <p className="truncate text-xs">
+                          {[existingGuestMatch.phone, existingGuestMatch.passport_number]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          backToGuestList()
+                          setValue("guest_id", existingGuestMatch.id)
+                          setSelectedGuestId(existingGuestMatch.id)
+                        }}
+                        className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
+                      >
+                        Tanlash
+                      </button>
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     <label className="text-xs font-medium">Tug'ilgan sana</label>
