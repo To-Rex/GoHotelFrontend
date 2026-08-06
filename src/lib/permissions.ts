@@ -26,6 +26,9 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   // shop.* ruxsat kodlari yo'q, shuning uchun /booking bilan bir xil doira:
   // bron ruxsatiga ega xodimlar (farroshda bu yo'q) va admin (bypass) ko'radi
   "/shop": ["reservation.create", "reservation.view"],
+  // Shaxsiy hisobot — xodim o'zi yaratgan bronlar va xarajatlarini ko'radi.
+  // Bron yarata oladigan har bir xodimga (qabulxona, menejer) ochiq
+  "/my-reports": ["reservation.create", "reservation.view"],
   // --- Boshqaruv bo'limlari (admin/menejer) ---
   // ADMIN/SUPER_ADMIN isAdmin bypass orqali doim ko'radi; xodim (menejer)
   // esa quyidagi ruxsatlardan kamida bittasiga ega bo'lsa ko'radi.

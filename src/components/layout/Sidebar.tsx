@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   TrendingDown,
   Store,
+  FileBarChart,
   BedDouble,
   Sparkles,
   ConciergeBell,
@@ -41,6 +42,7 @@ export const Sidebar = () => {
     { name: "Moliya", href: "/finance", icon: Wallet },
     { name: "Xarajatlar", href: "/expenses", icon: TrendingDown },
     { name: "Do'kon", href: "/shop", icon: Store },
+    { name: "Mening hisobotim", href: "/my-reports", icon: FileBarChart },
     { name: "Sozlamalar", href: "/settings", icon: Settings },
   ];
 
