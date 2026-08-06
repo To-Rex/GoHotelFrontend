@@ -6,9 +6,11 @@ import {
   Wallet,
   TrendingDown,
   Banknote,
+  Store,
 } from "lucide-react"
 import { useReservations } from "@/features/reservations/api/reservations"
 import { useExpenses } from "@/features/expenses/api/expenses"
+import { useShopSales, type ShopSale } from "@/features/shop/api/shop"
 import { useGuests } from "@/features/guests/api/guests"
 import { useRooms } from "@/features/rooms/api/rooms"
 import { useAuthStore } from "@/store/auth"
@@ -75,6 +77,7 @@ export const MyReportsPage = () => {
 
   const { data: reservations = [], isLoading: resLoading } = useReservations()
   const { data: expenses = [], isLoading: expLoading } = useExpenses(dateFrom, dateTo)
+  const { data: shopSales = [] } = useShopSales(dateFrom, dateTo)
   const { data: guests = [] } = useGuests()
   const { data: rooms = [] } = useRooms()
 
@@ -105,12 +108,22 @@ export const MyReportsPage = () => {
     return (expenses as Expense[]).filter((e) => e.created_by === user.id)
   }, [expenses, user?.id])
 
+  // O'zim qilgan do'kon sotuvlari (sotuv vaqti bo'yicha, server filtrlagan)
+  const myShopSales = useMemo(() => {
+    if (!user?.id) return [] as ShopSale[]
+    return (shopSales as ShopSale[]).filter((s) => s.created_by === user.id)
+  }, [shopSales, user?.id])
+
   // Bekor qilinganlar pulga hisoblanmaydi
   const activeRes = myReservations.filter((r) => r.status !== "CANCELLED")
   const resTotal = activeRes.reduce((s, r) => s + Number(r.total_amount || 0), 0)
   const resPaid = activeRes.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
   const cancelledCount = myReservations.length - activeRes.length
   const expTotal = myExpenses.reduce((s, e) => s + Number(e.amount || 0), 0)
+  const shopTotal = myShopSales.reduce((s, x) => s + Number(x.total_amount || 0), 0)
+  const shopPendingTotal = myShopSales
+    .filter((x) => x.status === "PENDING")
+    .reduce((s, x) => s + Number(x.total_amount || 0), 0)
 
   const isLoading = resLoading || expLoading
 
@@ -169,7 +182,7 @@ export const MyReportsPage = () => {
       </div>
 
       {/* Ko'rsatkichlar */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarCheck size={15} /> Yaratgan bronlarim
@@ -193,6 +206,16 @@ export const MyReportsPage = () => {
             <Banknote size={15} /> Qabul qilingan to'lovlar
           </div>
           <p className="mt-1 text-2xl font-bold text-emerald-600">{fmt(resPaid)} So'm</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Store size={15} /> Do'kon sotuvlarim
+          </div>
+          <p className="mt-1 text-2xl font-bold text-violet-600">{fmt(shopTotal)} So'm</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {myShopSales.length} ta sotuv
+            {shopPendingTotal > 0 && ` · bronda: ${fmt(shopPendingTotal)}`}
+          </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -267,6 +290,64 @@ export const MyReportsPage = () => {
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right text-sm">
                           {fmt(r.paid_amount)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+
+          {/* Mening do'kon sotuvlarim */}
+          <div className="rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold">Mening do'kon sotuvlarim</h2>
+              <span className="text-xs text-muted-foreground">{myShopSales.length} ta</span>
+            </div>
+            {myShopSales.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Tanlangan davrda siz qilgan do'kon sotuvi yo'q
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vaqt</TableHead>
+                      <TableHead>Mahsulotlar</TableHead>
+                      <TableHead>To'lov</TableHead>
+                      <TableHead className="text-right">Summa</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {myShopSales.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {s.created_at ? format(new Date(s.created_at), "dd.MM HH:mm") : "—"}
+                        </TableCell>
+                        <TableCell className="max-w-[320px] truncate text-sm">
+                          {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
+                        </TableCell>
+                        <TableCell>
+                          {s.status === "PAID" ? (
+                            <Badge variant="secondary" className="text-[11px]">
+                              {s.payment_method === "CASH"
+                                ? "Naqd"
+                                : s.payment_method === "CARD"
+                                  ? "Karta"
+                                  : s.payment_method === "TRANSFER"
+                                    ? "O'tkazma"
+                                    : s.payment_method || "To'langan"}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-amber-100 text-[11px] text-amber-700 hover:bg-amber-100">
+                              Bron: {s.reservation_number || "—"}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right text-sm font-semibold">
+                          {fmt(s.total_amount)} So'm
                         </TableCell>
                       </TableRow>
                     ))}
