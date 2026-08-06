@@ -2228,8 +2228,8 @@ export function BookingPage() {
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-medium">Hujjat raqami</label>
-                        <Input placeholder="Hujjat raqami" {...register("new_guest_id_document_number")} />
+                        <label className="text-xs font-medium">Shaxsiy raqam/JSHSHIR</label>
+                        <Input placeholder="Shaxsiy raqam/JSHSHIR" {...register("new_guest_id_document_number")} />
                       </div>
                     </div>
                     <div className="space-y-1">
