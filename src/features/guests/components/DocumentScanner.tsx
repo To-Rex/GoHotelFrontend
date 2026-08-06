@@ -162,7 +162,8 @@ function preprocessCrop(
   src: HTMLCanvasElement | HTMLVideoElement,
   crop: { sx: number; sy: number; sw: number; sh: number }
 ): HTMLCanvasElement {
-  const targetW = 1600
+  // Passportning 44 belgili qatorlari uchun ham yetarli aniqlik bo'lsin
+  const targetW = 1800
   const scale = Math.min(Math.max(targetW / crop.sw, 1), 4)
   const out = document.createElement("canvas")
   out.width = Math.round(crop.sw * scale)
@@ -270,10 +271,12 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
   const tryParseMrz = async (text: string): Promise<ScannedDoc | null> => {
     const { parse } = await import("mrz")
+    // Diqqat: qatorda "<" bo'lishini talab qilib bo'lmaydi — passportning
+    // 2-qatori (JSHSHIR to'liq 14 raqam bo'lsa) butunlay "<"siz keladi
     const lines = text
       .split(/\r?\n/)
       .map((l) => l.replace(/[^A-Z0-9<]/g, ""))
-      .filter((l) => l.length >= 24 && l.includes("<"))
+      .filter((l) => l.length >= 24)
     if (!lines.length) return null
 
     const norm = (l: string, len: number) =>
@@ -281,13 +284,23 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
     const candidates: string[][] = []
     for (let i = 0; i < lines.length; i++) {
-      // TD1 — ID karta: 3 qator × 30 belgi
-      if (i + 2 < lines.length && /^[IAC]/.test(lines[i])) {
-        candidates.push([norm(lines[i], 30), norm(lines[i + 1], 30), norm(lines[i + 2], 30)])
+      // TD1 — ID karta: 3 qator × 30 belgi. Birinchi belgi noto'g'ri
+      // o'qilgan bo'lishi mumkin — uzunliklar mos kelsa ham sinab ko'ramiz
+      if (i + 2 < lines.length) {
+        const triple = [lines[i], lines[i + 1], lines[i + 2]]
+        const td1ish = triple.every((l) => l.length >= 26 && l.length <= 34)
+        if (td1ish || /^[IAC]/.test(lines[i])) {
+          candidates.push(triple.map((l) => norm(l, 30)))
+        }
       }
       // TD3 — passport: 2 qator × 44 belgi
-      if (i + 1 < lines.length && /^P/.test(lines[i])) {
-        candidates.push([norm(lines[i], 44), norm(lines[i + 1], 44)])
+      if (i + 1 < lines.length) {
+        const a = lines[i]
+        const b = lines[i + 1]
+        const td3ish = a.length >= 38 && b.length >= 38
+        if (td3ish || /^P/.test(a)) {
+          candidates.push([norm(a, 44), norm(b, 44)])
+        }
       }
     }
 
