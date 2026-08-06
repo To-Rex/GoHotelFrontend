@@ -20,6 +20,8 @@ import {
   ArrowLeft,
   Camera,
   ScanLine,
+  LogOut,
+  Sparkles,
 } from "lucide-react"
 import {
   startOfMonth,
@@ -40,6 +42,7 @@ import {
   useCreateReservation,
   useUpdateReservation,
   useCancelReservation,
+  useRequestCheckout,
 } from "../api/reservations"
 import { useRooms, useRoomTypes, useFloors } from "@/features/rooms/api/rooms"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
@@ -582,6 +585,7 @@ export function BookingPage() {
   const createGuestMutation = useCreateGuest()
   const updateReservationMutation = useUpdateReservation()
   const cancelReservationMutation = useCancelReservation()
+  const requestCheckoutMutation = useRequestCheckout()
 
   // Ro'yxat dialogidagi bronlar — reservations o'zgarsa (tahrir/bekor) yangilanadi
   const dayListItems = useMemo(() => {
@@ -1153,6 +1157,31 @@ export function BookingPage() {
       }
       await updateReservationMutation.mutateAsync(payload)
       closeManageModal()
+    } catch (error: any) {
+      console.error(error)
+      setErrorDialog(apiErrorMessage(error))
+    }
+  }
+
+  // "Mehmon chiqmoqda": farroshga vazifa yuboriladi, tozalash yakunlangach
+  // bron avtomatik CHECKED_OUT bo'ladi. Dialog ochiq qoladi va jarayon
+  // boshlangani ko'rsatiladi.
+  const handleRequestCheckout = async () => {
+    if (!selectedReservation) return
+    try {
+      const updated = await requestCheckoutMutation.mutateAsync({
+        id: selectedReservation.id,
+        hotelId: selectedReservation.hotel_id || undefined,
+      })
+      setSelectedReservation((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              checkout_requested_at:
+                updated?.checkout_requested_at || new Date().toISOString(),
+            }
+          : prev
+      )
     } catch (error: any) {
       console.error(error)
       setErrorDialog(apiErrorMessage(error))
@@ -2673,6 +2702,40 @@ export function BookingPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* MEHMON CHIQMOQDA — resepsiya uchun chiqish jarayoni.
+                      Bron darhol yopilmaydi: farroshga vazifa boradi, tozalash
+                      yakunlangach bron avtomatik CHECKED_OUT bo'ladi */}
+                  {res.status === "CHECKED_IN" && !editMode && !cancelMode && (
+                    res.checkout_requested_at ? (
+                      <div className="flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+                        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                        <div className="text-sm text-amber-800">
+                          <p className="font-semibold">Chiqish jarayonida</p>
+                          <p className="text-xs">
+                            Farroshga tozalash vazifasi yuborilgan — vazifa
+                            yakunlangach bron avtomatik "Chiqilgan" holatiga o'tadi.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      canUpdate && (
+                        <button
+                          type="button"
+                          onClick={handleRequestCheckout}
+                          disabled={requestCheckoutMutation.isPending}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-60"
+                        >
+                          {requestCheckoutMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <LogOut className="h-4 w-4" />
+                          )}
+                          Mehmon chiqmoqda — chiqishni boshlash
+                        </button>
+                      )
+                    )
+                  )}
 
                   {/* TAHRIRLASH rejimi */}
                   {editMode && !locked && (

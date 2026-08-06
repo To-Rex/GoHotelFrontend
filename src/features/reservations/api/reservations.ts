@@ -53,6 +53,28 @@ export const useUpdateReservation = () => {
   });
 };
 
+// "Mehmon chiqmoqda": farroshga tozalash vazifasi boradi, farrosh yakunlagach
+// bron avtomatik CHECKED_OUT bo'ladi
+export const useRequestCheckout = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, hotelId }: { id: string; hotelId?: string }) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${id}/request-checkout`,
+        null,
+        { params: hotelId ? { hotel_id: hotelId } : {} }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['housekeepingTasks'] });
+    },
+  });
+};
+
 export const useCancelReservation = () => {
   const queryClient = useQueryClient();
 

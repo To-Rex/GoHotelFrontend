@@ -85,6 +85,8 @@ export interface Reservation {
   notes?: string;
   cancelled_reason?: string;
   cancelled_at?: string;
+  /** Resepsiya "mehmon chiqmoqda" deb belgilagan vaqt (chiqish jarayonida) */
+  checkout_requested_at?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
