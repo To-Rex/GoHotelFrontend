@@ -338,6 +338,15 @@ export const ShopPage = () => {
     }
   }
 
+  // ---- Sotuv tafsilotlari ----
+  const [detailSale, setDetailSale] = useState<ShopSale | null>(null)
+  const [detailModal, setDetailModal] = useState(false)
+
+  const openDetail = (s: ShopSale) => {
+    setDetailSale(s)
+    setDetailModal(true)
+  }
+
   // ---- PENDING sotuvni to'lash ----
   const [payModal, setPayModal] = useState(false)
   const [payTarget, setPayTarget] = useState<ShopSale | null>(null)
@@ -636,7 +645,12 @@ export const ShopPage = () => {
                   </TableHeader>
                   <TableBody>
                     {(sales as ShopSale[]).map((s) => (
-                      <TableRow key={s.id}>
+                      <TableRow
+                        key={s.id}
+                        onClick={() => openDetail(s)}
+                        className="cursor-pointer"
+                        title="Batafsil ko'rish"
+                      >
                         <TableCell className="whitespace-nowrap text-sm">
                           {s.created_at ? format(new Date(s.created_at), "dd.MM HH:mm") : "—"}
                         </TableCell>
@@ -667,14 +681,20 @@ export const ShopPage = () => {
                                 size="sm"
                                 variant="outline"
                                 className="h-7 gap-1 px-2 text-xs"
-                                onClick={() => openPay(s)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openPay(s)
+                                }}
                               >
                                 <Banknote size={13} /> To'lash
                               </Button>
                             )}
                             {canManage && (
                               <button
-                                onClick={() => onCancelSale(s)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onCancelSale(s)
+                                }}
                                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                 title="Bekor qilish (ombor qaytadi)"
                               >
@@ -1000,6 +1020,112 @@ export const ShopPage = () => {
               Kirim qilish
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---------- Sotuv tafsilotlari dialogi ---------- */}
+      <Dialog open={detailModal} onOpenChange={setDetailModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt size={18} /> Sotuv tafsilotlari
+            </DialogTitle>
+          </DialogHeader>
+          {detailSale && (
+            <div className="space-y-4">
+              {/* Umumiy ma'lumot */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-muted/60 p-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Holat</p>
+                  {detailSale.status === "PAID" ? (
+                    <Badge className="mt-0.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                      To'langan
+                    </Badge>
+                  ) : (
+                    <Badge className="mt-0.5 bg-amber-100 text-amber-700 hover:bg-amber-100">
+                      Bronda (kutilmoqda)
+                    </Badge>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">To'lov usuli</p>
+                  <p className="mt-0.5 font-medium">
+                    {detailSale.payment_method
+                      ? METHOD_LABELS[detailSale.payment_method] || detailSale.payment_method
+                      : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Sotuv vaqti</p>
+                  <p className="mt-0.5 font-medium">
+                    {detailSale.created_at
+                      ? format(new Date(detailSale.created_at), "dd.MM.yyyy HH:mm")
+                      : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">To'langan vaqt</p>
+                  <p className="mt-0.5 font-medium">
+                    {detailSale.paid_at
+                      ? format(new Date(detailSale.paid_at), "dd.MM.yyyy HH:mm")
+                      : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Sotuvchi</p>
+                  <p className="mt-0.5 font-medium">{detailSale.created_by_name || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Bron</p>
+                  <p className="mt-0.5 font-medium">{detailSale.reservation_number || "—"}</p>
+                </div>
+              </div>
+
+              {/* Mahsulot qatorlari — FIFO bo'yicha har partiya alohida narxda */}
+              <div className="rounded-lg border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mahsulot</TableHead>
+                      <TableHead className="text-right">Narx</TableHead>
+                      <TableHead className="text-right">Soni</TableHead>
+                      <TableHead className="text-right">Jami</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailSale.items.map((i, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-sm font-medium">{i.product_name}</TableCell>
+                        <TableCell className="whitespace-nowrap text-right text-sm">
+                          {fmt(i.unit_price)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">×{i.quantity}</TableCell>
+                        <TableCell className="whitespace-nowrap text-right text-sm font-semibold">
+                          {fmt(i.total_price)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+                  <span className="text-sm text-muted-foreground">Jami:</span>
+                  <span className="text-lg font-bold">{fmt(detailSale.total_amount)} So'm</span>
+                </div>
+              </div>
+
+              {detailSale.status === "PENDING" && (
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => {
+                    setDetailModal(false)
+                    openPay(detailSale)
+                  }}
+                >
+                  <Banknote size={16} /> To'lovni qabul qilish
+                </Button>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
