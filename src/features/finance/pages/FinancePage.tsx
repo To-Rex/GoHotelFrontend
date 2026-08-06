@@ -7,9 +7,12 @@ import {
   AlertCircle,
   TrendingDown,
   Scale,
+  Store,
+  BedDouble,
 } from "lucide-react"
 import { useInvoices, usePayments } from "../api/finance"
 import { useExpenses } from "@/features/expenses/api/expenses"
+import { useShopSales } from "@/features/shop/api/shop"
 import {
   Table,
   TableBody,
@@ -50,6 +53,9 @@ const METHOD_LABELS: Record<string, string> = {
   BANK_TRANSFER: "Bank o'tkazmasi",
   MOBILE_PAYMENT: "Mobil to'lov",
   ONLINE: "Onlayn",
+  // Do'kon sotuvlari usullari
+  CARD: "Karta",
+  TRANSFER: "O'tkazma",
 }
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
@@ -76,6 +82,19 @@ export const FinancePage = () => {
   // tizimga kirgan foydalanuvchilar uchun ochiq
   const canExpenses = true
   const { data: expenses = [] } = useExpenses(dateFrom, dateTo)
+
+  // Do'kon sotuvlari: to'langanlari TUSHUM sifatida (to'lov sanasi bo'yicha —
+  // bronga yozilib keyin to'langan sotuv aynan to'langan kun tushumiga tushadi);
+  // bronga yozilgan to'lanmaganlari esa QARZ sifatida (joriy qoldiq, davrga
+  // bog'liq emas) ko'rsatiladi
+  const { data: shopPaidRaw = [] } = useShopSales(
+    dateFrom || undefined,
+    dateTo || undefined,
+    { dateBy: "paid", status: "PAID" }
+  )
+  const { data: shopDebts = [] } = useShopSales(undefined, undefined, {
+    status: "PENDING",
+  })
 
   // Tez tanlovlar: bugungi/kechagi kun, 7 kun, shu oy, barcha davr
   const presets = [
@@ -128,6 +147,15 @@ export const FinancePage = () => {
     [expenses, dateFrom, dateTo]
   )
   const expensesTotal = filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0)
+
+  // Do'kon tushumi — to'lov sanasi bo'yicha (mijoz tomonda qayta tekshiruv)
+  const shopPaid = useMemo(
+    () => shopPaidRaw.filter((s) => inRange(s.paid_at)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shopPaidRaw, dateFrom, dateTo]
+  )
+  const shopRevenue = shopPaid.reduce((s, x) => s + Number(x.total_amount || 0), 0)
+  const shopDebtTotal = shopDebts.reduce((s, x) => s + Number(x.total_amount || 0), 0)
 
   // --- Hisobot ko'rsatkichlari (tanlangan davr bo'yicha) ---
   const summary = useMemo(() => {
@@ -211,6 +239,20 @@ export const FinancePage = () => {
       icon: AlertCircle,
       accent: "bg-amber-50 text-amber-600",
     },
+    {
+      label: "Do'kon tushumi",
+      value: `${fmt(shopRevenue)} So'm`,
+      sub: `${shopPaid.length} ta to'langan sotuv`,
+      icon: Store,
+      accent: "bg-violet-50 text-violet-600",
+    },
+    {
+      label: "Do'kon qarzi (bronda)",
+      value: `${fmt(shopDebtTotal)} So'm`,
+      sub: `${shopDebts.length} ta to'lanmagan sotuv`,
+      icon: BedDouble,
+      accent: "bg-orange-50 text-orange-600",
+    },
     // Xarajatlar va sof natija — expense ruxsati bo'lganlarga ko'rsatiladi
     ...(canExpenses
       ? [
@@ -223,11 +265,11 @@ export const FinancePage = () => {
           },
           {
             label: "Sof natija",
-            value: `${fmt(summary.income - expensesTotal)} So'm`,
-            sub: "tushum − xarajat",
+            value: `${fmt(summary.income + shopRevenue - expensesTotal)} So'm`,
+            sub: "tushum + do'kon − xarajat",
             icon: Scale,
             accent:
-              summary.income - expensesTotal >= 0
+              summary.income + shopRevenue - expensesTotal >= 0
                 ? "bg-emerald-50 text-emerald-600"
                 : "bg-red-50 text-red-600",
           },
@@ -374,6 +416,94 @@ export const FinancePage = () => {
           </Table>
         </div>
       </div>
+
+      {/* Do'kon qarzlari — bronga yozilgan, hali to'lanmagan sotuvlar */}
+      {shopDebts.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-lg font-bold tracking-tight">
+            Do'kon qarzlari (bronga yozilgan)
+          </h2>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Bron</TableHead>
+                  <TableHead>Vaqt</TableHead>
+                  <TableHead>Mahsulotlar</TableHead>
+                  <TableHead className="text-right">Summa</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {shopDebts.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="font-medium">
+                      {s.reservation_number || "—"}
+                    </TableCell>
+                    <TableCell>
+                      {s.created_at
+                        ? format(new Date(s.created_at), "dd.MM.yyyy HH:mm")
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-gray-500 max-w-[320px] truncate">
+                      {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-amber-600">
+                      {fmt(s.total_amount)} So'm
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-[11px] text-gray-400">
+            To'lov Do'kon sahifasidagi "To'lash" tugmasi orqali qabul qilinadi —
+            shundan so'ng summa tanlangan kun tushumiga qo'shiladi.
+          </p>
+        </div>
+      )}
+
+      {/* Do'kon sotuvlari (to'langan) — davr bo'yicha */}
+      {shopPaid.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-lg font-bold tracking-tight">Do'kon sotuvlari</h2>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>To'langan vaqt</TableHead>
+                  <TableHead>Mahsulotlar</TableHead>
+                  <TableHead>To'lov turi</TableHead>
+                  <TableHead>Bron</TableHead>
+                  <TableHead className="text-right">Summa</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {shopPaid.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell>
+                      {s.paid_at ? format(new Date(s.paid_at), "dd.MM.yyyy HH:mm") : "—"}
+                    </TableCell>
+                    <TableCell className="text-gray-500 max-w-[320px] truncate">
+                      {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                        {METHOD_LABELS[s.payment_method || ""] || s.payment_method || "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-gray-500">
+                      {s.reservation_number || "—"}
+                    </TableCell>
+                    <TableCell className="text-right text-green-600 font-semibold">
+                      {fmt(s.total_amount)} So'm
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
 
       {/* Hisob-fakturalar jadvali */}
       <div className="space-y-2">

@@ -39,10 +39,17 @@ export interface ShopSale {
   total_amount: number;
   payment_method: string | null;
   status: 'PAID' | 'PENDING';
+  paid_at: string | null;
   created_by: string;
   created_by_name: string | null;
   created_at: string | null;
   items: ShopSaleItem[];
+}
+
+export interface ShopSalesOptions {
+  /** Sana filtri qaysi maydonga qo'llanadi: sotuv vaqti yoki to'lov vaqti */
+  dateBy?: 'created' | 'paid';
+  status?: 'PAID' | 'PENDING';
 }
 
 export const useShopProducts = (includeInactive = false) => {
@@ -57,14 +64,20 @@ export const useShopProducts = (includeInactive = false) => {
   });
 };
 
-export const useShopSales = (dateFrom?: string, dateTo?: string) => {
+export const useShopSales = (
+  dateFrom?: string,
+  dateTo?: string,
+  opts: ShopSalesOptions = {}
+) => {
   return useQuery({
-    queryKey: ['shopSales', dateFrom, dateTo],
+    queryKey: ['shopSales', dateFrom, dateTo, opts.dateBy, opts.status],
     queryFn: async () => {
       const { data } = await api.get<ShopSale[]>('/shop/sales', {
         params: {
           date_from: dateFrom || undefined,
           date_to: dateTo || undefined,
+          date_by: opts.dateBy || undefined,
+          status: opts.status || undefined,
         },
       });
       return Array.isArray(data) ? data : [];
