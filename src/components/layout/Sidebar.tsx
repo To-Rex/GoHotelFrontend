@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   TrendingDown,
+  Store,
   BedDouble,
   Sparkles,
   ConciergeBell,
@@ -39,6 +40,7 @@ export const Sidebar = () => {
     { name: "Mehmonlar", href: "/guests", icon: Users },
     { name: "Moliya", href: "/finance", icon: Wallet },
     { name: "Xarajatlar", href: "/expenses", icon: TrendingDown },
+    { name: "Do'kon", href: "/shop", icon: Store },
     { name: "Sozlamalar", href: "/settings", icon: Settings },
   ];
 
