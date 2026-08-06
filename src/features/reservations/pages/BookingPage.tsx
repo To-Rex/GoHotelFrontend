@@ -615,12 +615,9 @@ export function BookingPage() {
   )
 
   const filteredGuests = useMemo(() => {
-    let list = guests
-    // Mehmonlarni tanlangan xonaning mehmonxonasi bo'yicha filtrlaymiz — aks holda
-    // boshqa hoteldagi mehmonni tanlab qo'yish 404 (Guest not found) beradi.
-    if (selectedRoom?.hotel_id) {
-      list = list.filter((g) => g.hotel_id === selectedRoom.hotel_id)
-    }
+    // Mehmonlar bazasi endi GLOBAL — barcha mehmonxonalarning mehmonlari
+    // bitta umumiy ro'yxatda, mehmonxona bo'yicha filtrlash yo'q
+    const list = guests
     if (!guestSearch.trim()) return list.slice(0, 20)
     const q = guestSearch.toLowerCase()
     return list
