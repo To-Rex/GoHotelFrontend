@@ -36,6 +36,7 @@ export interface ShopSale {
   id: string;
   reservation_id: string | null;
   reservation_number: string | null;
+  guest_name?: string | null;
   total_amount: number;
   payment_method: string | null;
   status: 'PAID' | 'PENDING';

@@ -347,6 +347,19 @@ export const ShopPage = () => {
     setDetailModal(true)
   }
 
+  // Mijoz ismi: serverdan keladi; kelmasa bron ro'yxatidan lokal topamiz
+  const detailGuestName = useMemo(() => {
+    if (!detailSale) return null
+    if (detailSale.guest_name) return detailSale.guest_name
+    if (!detailSale.reservation_id) return null
+    const res = (reservations as Reservation[]).find(
+      (r) => r.id === detailSale.reservation_id
+    )
+    if (!res) return null
+    const g = (guests as any[]).find((x) => x.id === res.guest_id)
+    return g ? `${g.first_name ?? ""} ${g.last_name ?? ""}`.trim() || null : null
+  }, [detailSale, reservations, guests])
+
   // ---- PENDING sotuvni to'lash ----
   const [payModal, setPayModal] = useState(false)
   const [payTarget, setPayTarget] = useState<ShopSale | null>(null)
@@ -1079,6 +1092,12 @@ export const ShopPage = () => {
                   <p className="text-xs text-muted-foreground">Bron</p>
                   <p className="mt-0.5 font-medium">{detailSale.reservation_number || "—"}</p>
                 </div>
+                {detailSale.reservation_id && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Mijoz</p>
+                    <p className="mt-0.5 font-medium">{detailGuestName || "—"}</p>
+                  </div>
+                )}
               </div>
 
               {/* Mahsulot qatorlari — FIFO bo'yicha har partiya alohida narxda */}
