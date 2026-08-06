@@ -2260,11 +2260,10 @@ export function BookingPage() {
                           Bu mijoz bazada mavjud: {existingGuestMatch.first_name}{" "}
                           {existingGuestMatch.last_name}
                         </p>
-                        <p className="truncate text-xs">
-                          {[existingGuestMatch.phone, existingGuestMatch.passport_number]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </p>
+                        {/* Maxfiylik: passport raqami ko'rsatilmaydi, faqat telefon */}
+                        {existingGuestMatch.phone && (
+                          <p className="truncate text-xs">{existingGuestMatch.phone}</p>
+                        )}
                       </div>
                       <button
                         type="button"
