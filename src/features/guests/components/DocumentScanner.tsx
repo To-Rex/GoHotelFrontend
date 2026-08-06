@@ -1,5 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Camera, ImageUp, Loader2, RefreshCw, ScanLine, CheckCircle2, AlertCircle } from "lucide-react"
+import {
+  Camera,
+  ImageUp,
+  Loader2,
+  RefreshCw,
+  ScanLine,
+  CheckCircle2,
+  AlertCircle,
+  CreditCard,
+  BookUser,
+  ArrowLeft,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,12 +22,13 @@ import {
 /**
  * Passport / ID karta skaneri.
  *
- * Hujjat pastidagi MRZ (mashina o'qiy oladigan zona) qatorlari kameradan
- * JONLI rejimda o'qiladi: har ~sekundda kadr olinib, brauzerning o'zida OCR
- * qilinadi (tesseract.js — dinamik import) va `mrz` kutubxonasi bilan tahlil
- * qilinadi; ism-familiya, seriya-raqam, tug'ilgan sana, JSHSHIR ajratib
- * olinadi. Telefonda orqa kamera, kompyuterda web-kamera; kamera bo'lmasa
- * rasm yuklash ham mumkin. Ma'lumot qurilmadan chiqmaydi.
+ * Avval hujjat turi tanlanadi, so'ng kamerada aynan shu hujjat shaklidagi
+ * ramka ko'rsatiladi. Ramkadagi tasvir JONLI rejimda o'qiladi: kadr olinib,
+ * brauzerning o'zida OCR qilinadi (tesseract.js — dinamik import) va hujjat
+ * pastidagi MRZ qatorlari `mrz` kutubxonasi bilan tahlil qilinadi — ism,
+ * familiya, seriya-raqam, tug'ilgan sana, JSHSHIR ajratib olinadi.
+ * Telefonda orqa kamera, kompyuterda web-kamera; rasm yuklash ham mumkin.
+ * Ma'lumotlar qurilmadan chiqmaydi.
  */
 
 export interface ScannedDoc {
@@ -35,11 +47,87 @@ interface DocumentScannerProps {
   onResult: (doc: ScannedDoc) => void
 }
 
-type Phase = "camera" | "processing" | "result" | "error"
+type DocType = "PASSPORT" | "ID_CARD"
+type Phase = "select" | "camera" | "processing" | "result" | "error"
 
-// Yo'naltiruvchi ramka — kadrning qaysi qismi MRZ deb olinadi (foizlarda).
-// Overlay ham, kesish ham aynan shu qiymatlardan foydalanadi (WYSIWYG).
-const GUIDE = { left: 0.04, right: 0.96, top: 0.58, bottom: 0.95 }
+// Kamera oynasi 4:3 — ramka geometriyasi shu nisbatga nisbatan hisoblanadi
+const CONTAINER_ASPECT = 4 / 3
+
+// Har bir hujjat turi uchun ramka o'lchamlari va MRZ zonasi
+const DOC_SPECS: Record<
+  DocType,
+  { aspect: number; widthFrac: number; mrzFrac: number; hint: string }
+> = {
+  // ID-1 karta: 85.6×54mm (orqa tomonda 3 qatorli MRZ)
+  ID_CARD: {
+    aspect: 85.6 / 54,
+    widthFrac: 0.88,
+    mrzFrac: 0.34,
+    hint: "ID kartaning ORQA tomonini ramkaga joylang",
+  },
+  // Passport ma'lumotlar sahifasi: 125×88mm (pastda 2 qatorli MRZ)
+  PASSPORT: {
+    aspect: 125 / 88,
+    widthFrac: 0.86,
+    mrzFrac: 0.26,
+    hint: "Passportning ma'lumotlar sahifasini ramkaga joylang",
+  },
+}
+
+interface Region {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
+// Tanlangan hujjat uchun ramka (konteyner ulushlarida, markazda)
+function frameRegion(t: DocType): Region {
+  const spec = DOC_SPECS[t]
+  const w = spec.widthFrac
+  const h = (spec.widthFrac * CONTAINER_ASPECT) / spec.aspect
+  const left = (1 - w) / 2
+  const top = (1 - Math.min(h, 0.94)) / 2
+  return { left, right: left + w, top, bottom: top + Math.min(h, 0.94) }
+}
+
+// Ramka ichidagi MRZ zonasi (hujjatning pastki qismi)
+function mrzRegion(t: DocType): Region {
+  const f = frameRegion(t)
+  const fh = f.bottom - f.top
+  return {
+    left: f.left + 0.01,
+    right: f.right - 0.01,
+    top: f.bottom - fh * DOC_SPECS[t].mrzFrac,
+    bottom: f.bottom,
+  }
+}
+
+/* object-cover bilan ko'rsatilgan videoda konteyner ulushlarini manba kadr
+   piksellariga o'girish: konteynerda ko'ringan qism — manbaning markaziy
+   CONTAINER_ASPECT nisbatli bo'lagi */
+function containerToSource(
+  videoW: number,
+  videoH: number,
+  r: Region
+): { sx: number; sy: number; sw: number; sh: number } {
+  const rv = videoW / videoH
+  let visW = videoW
+  let visH = videoH
+  if (rv > CONTAINER_ASPECT) {
+    visW = videoH * CONTAINER_ASPECT
+  } else if (rv < CONTAINER_ASPECT) {
+    visH = videoW / CONTAINER_ASPECT
+  }
+  const x0 = (videoW - visW) / 2
+  const y0 = (videoH - visH) / 2
+  return {
+    sx: Math.floor(x0 + r.left * visW),
+    sy: Math.floor(y0 + r.top * visH),
+    sw: Math.floor((r.right - r.left) * visW),
+    sh: Math.floor((r.bottom - r.top) * visH),
+  }
+}
 
 const titleCase = (s: string) =>
   s
@@ -68,30 +156,22 @@ function cleanField(s?: string | null): string | undefined {
   return v || undefined
 }
 
-/* Kesilgan zonani OCR uchun tayyorlash: kattalashtirish, oq-qora
-   binarizatsiya (MRZ — oq fonda qora monospace matn, shunda eng aniq o'qiladi) */
-function preprocessRegion(
+/* Kesilgan zonani OCR uchun tayyorlash: kattalashtirish va oq-qora
+   binarizatsiya (MRZ — oq fonda qora monospace matn, shunda aniq o'qiladi) */
+function preprocessCrop(
   src: HTMLCanvasElement | HTMLVideoElement,
-  srcW: number,
-  srcH: number,
-  region: { left: number; right: number; top: number; bottom: number }
+  crop: { sx: number; sy: number; sw: number; sh: number }
 ): HTMLCanvasElement {
-  const sx = Math.floor(srcW * region.left)
-  const sw = Math.floor(srcW * (region.right - region.left))
-  const sy = Math.floor(srcH * region.top)
-  const sh = Math.floor(srcH * (region.bottom - region.top))
-
   const targetW = 1600
-  const scale = Math.min(Math.max(targetW / sw, 1), 4)
+  const scale = Math.min(Math.max(targetW / crop.sw, 1), 4)
   const out = document.createElement("canvas")
-  out.width = Math.round(sw * scale)
-  out.height = Math.round(sh * scale)
+  out.width = Math.round(crop.sw * scale)
+  out.height = Math.round(crop.sh * scale)
   const ctx = out.getContext("2d", { willReadFrequently: true })!
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = "high"
-  ctx.drawImage(src as any, sx, sy, sw, sh, 0, 0, out.width, out.height)
+  ctx.drawImage(src as any, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, out.width, out.height)
 
-  // Grayscale + o'rtacha yorqinlikka nisbatan binarizatsiya
   const img = ctx.getImageData(0, 0, out.width, out.height)
   const d = img.data
   let sum = 0
@@ -112,7 +192,8 @@ function preprocessRegion(
 }
 
 export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScannerProps) {
-  const [phase, setPhase] = useState<Phase>("camera")
+  const [phase, setPhase] = useState<Phase>("select")
+  const [docType, setDocType] = useState<DocType>("ID_CARD")
   const [progress, setProgress] = useState(0)
   const [attempts, setAttempts] = useState(0)
   const [ocrReady, setOcrReady] = useState(false)
@@ -124,9 +205,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const streamRef = useRef<MediaStream | null>(null)
   const workerRef = useRef<any>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  // Jonli skan sikli uchun: faolmi va hozir band emasmi
   const liveActiveRef = useRef(false)
   const busyRef = useRef(false)
+  const docTypeRef = useRef<DocType>("ID_CARD")
 
   const stopCamera = useCallback(() => {
     liveActiveRef.current = false
@@ -234,16 +315,31 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     return null
   }
 
-  // Bitta kadrda MRZ'ni izlash: avval ramka zonasi, keyin kengroq pastki qism
-  const scanFrameOnce = async (
-    src: HTMLCanvasElement | HTMLVideoElement,
-    w: number,
-    h: number,
-    regions: Array<{ left: number; right: number; top: number; bottom: number }>
-  ): Promise<ScannedDoc | null> => {
+  // Video kadrida MRZ'ni izlash: avval MRZ zonasi, keyin butun ramka
+  const scanVideoFrame = async (video: HTMLVideoElement): Promise<ScannedDoc | null> => {
     const worker = await getWorker()
+    const t = docTypeRef.current
+    const regions = [mrzRegion(t), frameRegion(t)]
     for (const region of regions) {
-      const prepared = preprocessRegion(src, w, h, region)
+      const crop = containerToSource(video.videoWidth, video.videoHeight, region)
+      if (crop.sw < 50 || crop.sh < 20) continue
+      const prepared = preprocessCrop(video, crop)
+      const { data } = await worker.recognize(prepared)
+      const doc = await tryParseMrz(data.text || "")
+      if (doc) return doc
+    }
+    return null
+  }
+
+  // Yuklangan rasmda izlash: pastki qism, so'ng to'liq rasm
+  const scanImageCanvas = async (canvas: HTMLCanvasElement): Promise<ScannedDoc | null> => {
+    const worker = await getWorker()
+    const crops = [
+      { sx: 0, sy: Math.floor(canvas.height * 0.5), sw: canvas.width, sh: Math.ceil(canvas.height * 0.5) },
+      { sx: 0, sy: 0, sw: canvas.width, sh: canvas.height },
+    ]
+    for (const crop of crops) {
+      const prepared = preprocessCrop(canvas, crop)
       const { data } = await worker.recognize(prepared)
       const doc = await tryParseMrz(data.text || "")
       if (doc) return doc
@@ -262,7 +358,6 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const runLiveLoop = useCallback(async () => {
     if (liveActiveRef.current) return
     liveActiveRef.current = true
-    // OCR modulini oldindan yuklab olamiz (birinchi kadr tez bo'lsin)
     try {
       await getWorker()
     } catch {
@@ -274,10 +369,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       if (video && video.videoWidth > 0 && !busyRef.current) {
         busyRef.current = true
         try {
-          const doc = await scanFrameOnce(video, video.videoWidth, video.videoHeight, [
-            GUIDE,
-            { left: 0.02, right: 0.98, top: 0.45, bottom: 1 },
-          ])
+          const doc = await scanVideoFrame(video)
           if (doc && liveActiveRef.current) {
             busyRef.current = false
             onFound(doc)
@@ -294,14 +386,13 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Dialog ochilganda kamera + jonli sikl; yopilganda hammasi tozalanadi
+  // Dialog ochilganda tur tanlashdan boshlaymiz; yopilganda hammasi tozalanadi
   useEffect(() => {
     if (open) {
-      setPhase("camera")
+      setPhase("select")
       setResult(null)
       setErrorMsg(null)
       setAttempts(0)
-      startCamera().then(() => runLiveLoop())
     } else {
       stopCamera()
       if (workerRef.current) {
@@ -320,16 +411,25 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  // "Qayta skanerlash" — kamera fazasiga qaytilganda siklni qayta boshlaymiz
+  // Kamera fazasiga o'tilganda oqim + jonli sikl ishga tushadi
   useEffect(() => {
-    if (open && phase === "camera" && !liveActiveRef.current) {
+    if (open && phase === "camera") {
       setAttempts(0)
       startCamera().then(() => runLiveLoop())
     }
+    if (phase !== "camera") {
+      liveActiveRef.current = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase])
+  }, [phase, open])
 
-  // Qo'lda suratga olish — to'liq kadr bo'yicha ham sinab ko'radi
+  const chooseType = (t: DocType) => {
+    setDocType(t)
+    docTypeRef.current = t
+    setPhase("camera")
+  }
+
+  // Qo'lda suratga olish — jonli sikl topolmagan holatlar uchun
   const capture = async () => {
     const video = videoRef.current
     if (!video || !video.videoWidth) return
@@ -342,14 +442,12 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setPhase("processing")
     setProgress(0)
     try {
-      const doc = await scanFrameOnce(canvas, canvas.width, canvas.height, [
-        GUIDE,
-        { left: 0.02, right: 0.98, top: 0.45, bottom: 1 },
-        { left: 0, right: 1, top: 0, bottom: 1 },
-      ])
+      const doc = await scanImageCanvas(canvas)
       if (doc) return onFound(doc)
       setErrorMsg(
-        "MRZ qatorlari o'qilmadi. Hujjat pastidagi 2-3 qatorli zona ramkada ravshan ko'rinsin, yorug'lik yetarli bo'lsin."
+        docType === "ID_CARD"
+          ? "MRZ o'qilmadi. ID kartaning ORQA tomonidagi 3 qatorli zona ramkada ravshan ko'rinsin."
+          : "MRZ o'qilmadi. Passport pastidagi 2 qatorli zona ramkada ravshan ko'rinsin."
       )
       setPhase("error")
     } catch {
@@ -370,13 +468,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       canvas.height = bitmap.height
       canvas.getContext("2d")!.drawImage(bitmap, 0, 0)
       stopCamera()
-      const doc = await scanFrameOnce(canvas, canvas.width, canvas.height, [
-        { left: 0.02, right: 0.98, top: 0.45, bottom: 1 },
-        { left: 0, right: 1, top: 0, bottom: 1 },
-      ])
+      const doc = await scanImageCanvas(canvas)
       if (doc) return onFound(doc)
       setErrorMsg(
-        "Rasmda MRZ qatorlari topilmadi — hujjatning pastki zonasi to'liq va ravshan tushgan rasmni tanlang."
+        "Rasmda MRZ qatorlari topilmadi — hujjatning MRZ zonasi to'liq va ravshan tushgan rasmni tanlang."
       )
       setPhase("error")
     } catch {
@@ -389,6 +484,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     if (result) onResult(result)
     onOpenChange(false)
   }
+
+  const frame = frameRegion(docType)
+  const mrz = mrzRegion(docType)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -412,6 +510,40 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           }}
         />
 
+        {phase === "select" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Qaysi hujjat skanerlanadi?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => chooseType("ID_CARD")}
+                className="flex flex-col items-center gap-2.5 rounded-xl border-2 border-border p-5 transition-all hover:border-primary hover:bg-primary/5"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <CreditCard size={24} />
+                </span>
+                <span className="text-sm font-semibold">ID karta</span>
+                <span className="text-center text-[11px] leading-snug text-muted-foreground">
+                  Orqa tomoni skanerlaniladi (3 qatorli MRZ)
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => chooseType("PASSPORT")}
+                className="flex flex-col items-center gap-2.5 rounded-xl border-2 border-border p-5 transition-all hover:border-primary hover:bg-primary/5"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <BookUser size={24} />
+                </span>
+                <span className="text-sm font-semibold">Passport</span>
+                <span className="text-center text-[11px] leading-snug text-muted-foreground">
+                  Ma'lumotlar sahifasi skanerlaniladi (2 qatorli MRZ)
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {phase === "camera" && (
           <div className="space-y-3">
             <div className="relative overflow-hidden rounded-xl bg-black">
@@ -422,14 +554,24 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 muted
                 className="aspect-[4/3] w-full object-cover"
               />
-              {/* MRZ zonasi ramkasi — kesish aynan shu chegaralarda bo'ladi */}
+              {/* Hujjat shaklidagi ramka — kesish aynan shu chegaralarda */}
               <div
-                className="pointer-events-none absolute rounded-lg border-2 border-emerald-400/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
+                className="pointer-events-none absolute rounded-xl border-2 border-emerald-400/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]"
                 style={{
-                  left: `${GUIDE.left * 100}%`,
-                  right: `${(1 - GUIDE.right) * 100}%`,
-                  top: `${GUIDE.top * 100}%`,
-                  bottom: `${(1 - GUIDE.bottom) * 100}%`,
+                  left: `${frame.left * 100}%`,
+                  right: `${(1 - frame.right) * 100}%`,
+                  top: `${frame.top * 100}%`,
+                  bottom: `${(1 - frame.bottom) * 100}%`,
+                }}
+              />
+              {/* MRZ zonasi — hujjat pastidagi o'qiladigan qatorlar */}
+              <div
+                className="pointer-events-none absolute rounded-md border-2 border-dashed border-amber-300/90"
+                style={{
+                  left: `${mrz.left * 100}%`,
+                  right: `${(1 - mrz.right) * 100}%`,
+                  top: `${mrz.top * 100}%`,
+                  bottom: `${(1 - mrz.bottom) * 100}%`,
                 }}
               />
               {/* Jonli holat indikatori */}
@@ -446,8 +588,17 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                   </>
                 )}
               </div>
+              {/* Hujjat turi ko'rsatkichi + almashtirish */}
+              <button
+                type="button"
+                onClick={() => setPhase("select")}
+                className="absolute right-2 top-2 flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-black/80"
+              >
+                {docType === "ID_CARD" ? <CreditCard size={12} /> : <BookUser size={12} />}
+                {docType === "ID_CARD" ? "ID karta" : "Passport"}
+              </button>
               <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-[11px] font-medium text-white/90">
-                Hujjat pastidagi MRZ qatorlarini ramkaga joylang
+                {DOC_SPECS[docType].hint}
               </p>
             </div>
             {cameraError && (
@@ -468,9 +619,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
               </Button>
             </div>
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Ramkadagi zona avtomatik o'qiladi — hujjatni yaqin tutib, bir necha soniya
-              qimirlatmay turing. Passportda pastki 2 qator, ID kartaning orqa tomonida 3
-              qator (MRZ) bo'ladi. Ma'lumotlar faqat shu qurilmada qayta ishlanadi.
+              Hujjatni ramkaga to'liq joylab, bir necha soniya qimirlatmay turing —
+              sariq punktir zonadagi MRZ qatorlari avtomatik o'qiladi. Ma'lumotlar
+              faqat shu qurilmada qayta ishlanadi, hech qayerga yuborilmaydi.
             </p>
           </div>
         )}
@@ -547,6 +698,13 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 <ImageUp size={16} /> Rasm yuklash
               </Button>
             </div>
+            <button
+              type="button"
+              onClick={() => setPhase("select")}
+              className="flex w-full items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft size={13} /> Hujjat turini almashtirish
+            </button>
           </div>
         )}
       </DialogContent>
