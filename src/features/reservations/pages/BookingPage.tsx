@@ -575,7 +575,10 @@ export function BookingPage() {
   const { user } = useAuthStore()
 
   // Ruxsatlar: tugma va amallar shularga qarab ko'rsatiladi
-  const { can } = usePermissions()
+  const { can, isAdmin, permissions } = usePermissions()
+  // Haqiqiy farrosh (housekeeping ruxsati bor xodim) — "Xonani tozalash"
+  // tugmasini bossa vazifa AYNAN O'ZIGA biriktiriladi. Admin bunga kirmaydi
+  const isCleaner = !isAdmin && permissions.includes("housekeeping.task.update")
   const canCreate = can("reservation.create")
   const canUpdate = can("reservation.update")
   const canCancel = can("reservation.cancel")
@@ -1166,12 +1169,13 @@ export function BookingPage() {
   // "Mehmon chiqmoqda": farroshga vazifa yuboriladi, tozalash yakunlangach
   // bron avtomatik CHECKED_OUT bo'ladi. Dialog ochiq qoladi va jarayon
   // boshlangani ko'rsatiladi.
-  const handleRequestCheckout = async () => {
+  const handleRequestCheckout = async (selfAssign = false) => {
     if (!selectedReservation) return
     try {
       const updated = await requestCheckoutMutation.mutateAsync({
         id: selectedReservation.id,
         hotelId: selectedReservation.hotel_id || undefined,
+        selfAssign,
       })
       setSelectedReservation((prev: any) =>
         prev
@@ -2703,10 +2707,13 @@ export function BookingPage() {
                     </div>
                   </div>
 
-                  {/* MEHMON CHIQMOQDA — resepsiya uchun chiqish jarayoni.
-                      Bron darhol yopilmaydi: farroshga vazifa boradi, tozalash
-                      yakunlangach bron avtomatik CHECKED_OUT bo'ladi */}
-                  {res.status === "CHECKED_IN" && !editMode && !cancelMode && (
+                  {/* CHIQISH JARAYONI. Bron darhol yopilmaydi: farroshga vazifa
+                      boradi, tozalash yakunlangach bron avtomatik CHECKED_OUT
+                      bo'ladi. Resepsiya "Mehmon chiqmoqda"ni, farrosh esa
+                      "Xonani tozalash"ni bosadi (vazifa o'ziga biriktiriladi) */}
+                  {(res.status === "CHECKED_IN" || res.status === "CONFIRMED") &&
+                    !editMode &&
+                    !cancelMode && (
                     res.checkout_requested_at ? (
                       <div className="flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
                         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
@@ -2718,23 +2725,36 @@ export function BookingPage() {
                           </p>
                         </div>
                       </div>
-                    ) : (
-                      canUpdate && (
-                        <button
-                          type="button"
-                          onClick={handleRequestCheckout}
-                          disabled={requestCheckoutMutation.isPending}
-                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-60"
-                        >
-                          {requestCheckoutMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <LogOut className="h-4 w-4" />
-                          )}
-                          Mehmon chiqmoqda — chiqishni boshlash
-                        </button>
-                      )
-                    )
+                    ) : res.status === "CHECKED_IN" && canUpdate && !isCleaner ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRequestCheckout(false)}
+                        disabled={requestCheckoutMutation.isPending}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-60"
+                      >
+                        {requestCheckoutMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <LogOut className="h-4 w-4" />
+                        )}
+                        Mehmon chiqmoqda — chiqishni boshlash
+                      </button>
+                    ) : (isCleaner || canUpdate) ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRequestCheckout(isCleaner)}
+                        disabled={requestCheckoutMutation.isPending}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-2.5 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100 disabled:opacity-60"
+                      >
+                        {requestCheckoutMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
+                        Xonani tozalash
+                        {isCleaner ? " — vazifa menga biriktiriladi" : ""}
+                      </button>
+                    ) : null
                   )}
 
                   {/* TAHRIRLASH rejimi */}

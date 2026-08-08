@@ -59,11 +59,25 @@ export const useRequestCheckout = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, hotelId }: { id: string; hotelId?: string }) => {
+    mutationFn: async ({
+      id,
+      hotelId,
+      selfAssign,
+    }: {
+      id: string;
+      hotelId?: string;
+      selfAssign?: boolean;
+    }) => {
       const { data } = await api.post<Reservation>(
         `/reservations/${id}/request-checkout`,
         null,
-        { params: hotelId ? { hotel_id: hotelId } : {} }
+        {
+          params: {
+            ...(hotelId ? { hotel_id: hotelId } : {}),
+            // Farrosh o'zi bosganda vazifa o'ziga biriktiriladi
+            ...(selfAssign ? { self_assign: true } : {}),
+          },
+        }
       );
       return data;
     },
