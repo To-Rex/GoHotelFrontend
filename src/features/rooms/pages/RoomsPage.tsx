@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List, Clock } from "lucide-react"
+import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List, Clock, ChevronDown } from "lucide-react"
 import { useReservations } from "@/features/reservations/api/reservations"
 import {
   useRooms,
@@ -171,6 +171,36 @@ export const RoomsPage = () => {
         ),
     [rooms, search, statusFilter]
   )
+
+  // Qavat bo'limlarini yopish/ochish (tile). Tanlov brauzerda saqlanadi
+  const [collapsedFloors, setCollapsedFloors] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("rooms_collapsed_floors")
+      return raw ? new Set(JSON.parse(raw) as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+  const toggleFloor = (key: string) => {
+    setCollapsedFloors((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      try {
+        localStorage.setItem("rooms_collapsed_floors", JSON.stringify([...next]))
+      } catch {}
+      return next
+    })
+  }
+
+  // Qavat sarlavhasida ko'rsatiladigan qisqa statistika
+  const floorStats = (list: Room[]) => {
+    const available = list.filter((r) => r.current_status === "AVAILABLE").length
+    const busy = list.filter(
+      (r) => r.current_status === "OCCUPIED" || r.current_status === "RESERVED"
+    ).length
+    return { available, busy, other: list.length - available - busy }
+  }
 
   // Har bir band xona uchun "qachon bo'shaydi" — hozir davom etayotgan
   // brondan (CHECKED_IN ustuvor, so'ng boshlanib bo'lgan CONFIRMED) olinadi.
@@ -605,14 +635,25 @@ export const RoomsPage = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              groupedRooms.flatMap(([floorId, floorRooms]) => [
-                /* Qavat sarlavhasi — shu qavatdagi xonalar soni bilan */
+              groupedRooms.flatMap(([floorId, floorRooms]) => {
+                const key = floorId || "none"
+                const collapsed = collapsedFloors.has(key)
+                const stats = floorStats(floorRooms)
+                return [
+                /* Qavat sarlavhasi — bosilsa yopiladi/ochiladi */
                 <TableRow
-                  key={`floor-${floorId || "none"}`}
-                  className="bg-primary-50/60 hover:bg-primary-50/60 border-y border-primary-100"
+                  key={`floor-${key}`}
+                  onClick={() => toggleFloor(key)}
+                  className="cursor-pointer select-none bg-primary-50/60 hover:bg-primary-100/60 border-y border-primary-100"
                 >
-                  <TableCell colSpan={(canEdit || canDelete) ? 6 : 5} className="py-2">
+                  <TableCell colSpan={(canEdit || canDelete) ? 6 : 5} className="py-2.5">
                     <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary-700">
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 text-primary-400 transition-transform",
+                          collapsed && "-rotate-90"
+                        )}
+                      />
                       <Layers className="h-3.5 w-3.5" />
                       {floorId
                         ? floorMap[floorId] || "Noma'lum qavat"
@@ -620,10 +661,15 @@ export const RoomsPage = () => {
                       <span className="font-medium normal-case tracking-normal text-primary-400">
                         · {floorRooms.length} ta xona
                       </span>
+                      <span className="ml-auto flex items-center gap-2.5 font-medium normal-case tracking-normal">
+                        <span className="text-emerald-600">{stats.available} bo'sh</span>
+                        {stats.busy > 0 && <span className="text-red-500">{stats.busy} band</span>}
+                        {stats.other > 0 && <span className="text-gray-400">{stats.other} boshqa</span>}
+                      </span>
                     </span>
                   </TableCell>
                 </TableRow>,
-                ...floorRooms.map((room) => (
+                ...(collapsed ? [] : floorRooms).map((room) => (
                 <TableRow
                   key={room.id}
                   className={cn(
@@ -716,7 +762,8 @@ export const RoomsPage = () => {
                   )}
                 </TableRow>
                 )),
-              ])
+              ]
+              })
             )}
           </TableBody>
         </Table>
@@ -735,19 +782,62 @@ export const RoomsPage = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {groupedRooms.map(([floorId, floorRooms]) => (
-              <div key={floorId || "none"}>
-                <div className="mb-2.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary-700">
-                  <Layers className="h-3.5 w-3.5" />
-                  {floorId
-                    ? floorMap[floorId] || "Noma'lum qavat"
-                    : "Qavat belgilanmagan"}
-                  <span className="font-medium normal-case tracking-normal text-primary-400">
-                    · {floorRooms.length} ta xona
+          <div className="space-y-4">
+            {groupedRooms.map(([floorId, floorRooms]) => {
+              const key = floorId || "none"
+              const collapsed = collapsedFloors.has(key)
+              const stats = floorStats(floorRooms)
+              return (
+              <div key={key}>
+                {/* Qavat tile'i — bosilsa yopiladi/ochiladi */}
+                <button
+                  type="button"
+                  onClick={() => toggleFloor(key)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl border bg-gradient-to-r from-primary-50/80 to-white px-4 py-3 text-left transition-all hover:shadow-sm",
+                    collapsed ? "border-gray-200" : "border-primary-100"
+                  )}
+                >
+                  <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+                    <Layers className="h-5 w-5" />
                   </span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-gray-900">
+                      {floorId
+                        ? floorMap[floorId] || "Noma'lum qavat"
+                        : "Qavat belgilanmagan"}
+                    </span>
+                    <span className="block text-[11px] text-gray-500">
+                      {floorRooms.length} ta xona
+                    </span>
+                  </span>
+                  <span className="hidden items-center gap-3 text-[11px] font-medium sm:flex">
+                    <span className="inline-flex items-center gap-1 text-emerald-600">
+                      <span className="h-2 w-2 rounded-full border border-emerald-300 bg-white" />
+                      {stats.available} bo'sh
+                    </span>
+                    {stats.busy > 0 && (
+                      <span className="inline-flex items-center gap-1 text-red-500">
+                        <span className="h-2 w-2 rounded-full bg-red-500" />
+                        {stats.busy} band
+                      </span>
+                    )}
+                    {stats.other > 0 && (
+                      <span className="inline-flex items-center gap-1 text-gray-400">
+                        <span className="h-2 w-2 rounded-full bg-gray-400" />
+                        {stats.other} boshqa
+                      </span>
+                    )}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 flex-shrink-0 text-gray-400 transition-transform",
+                      collapsed && "-rotate-90"
+                    )}
+                  />
+                </button>
+                {!collapsed && (
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {floorRooms.map((room) => (
                     <div
                       key={room.id}
@@ -829,8 +919,10 @@ export const RoomsPage = () => {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
-            ))}
+              )
+            })}
           </div>
         ))}
 
