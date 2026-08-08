@@ -243,6 +243,23 @@ export function HourlyBoard({
     intervalsByRoom[roomId].push(iv)
   }
 
+  // Muddatidan oldin chiqilgan bronning HAQIQIY chiqish momenti (mutlaq minut).
+  // Blok shu vaqtgacha qisqartiriladi — asl rejadagi vaqtgacha cho'zilib,
+  // boshqa soatlarga xalaqit berib turmaydi. checkout_requested_at — mehmon
+  // chiqqan payt; bo'lmasa updated_at (chiqish rasmiylashtirilgan payt).
+  const actualEndAbs = (r: any): number | null => {
+    if (r.status !== "CHECKED_OUT") return null
+    const iso = r.checkout_requested_at || r.updated_at
+    if (!iso) return null
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return null
+    const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    if (ds < date) return -1 // oynadan oldinroq chiqib ketgan
+    const off = dayOffset(ds)
+    if (off === null) return null // oynadan keyin chiqqan — kesish shart emas
+    return off + d.getHours() * 60 + d.getMinutes()
+  }
+
   for (const r of reservations) {
     if (r.status === "CANCELLED") continue
     const blocking = r.status !== "CHECKED_OUT" && r.status !== "NO_SHOW"
@@ -255,10 +272,13 @@ export function HourlyBoard({
       // Oynadan oldin boshlangan / keyin tugaydigan bronlar chegarada kesiladi
       const start =
         ciOff !== null ? ciOff + timeToMin(r.check_in_datetime.slice(11, 16)) : 0
-      const end =
+      let end =
         coOff !== null
           ? coOff + timeToMin(r.check_out_datetime.slice(11, 16))
           : 2 * DAY_MINUTES
+      // Erta chiqilgan bron faqat haqiqiy chiqish vaqtigacha joy egallaydi
+      const actual = actualEndAbs(r)
+      if (actual !== null && actual < end) end = Math.max(actual, start)
       pushInterval(r.room_id, { start, end, res: r, daily: false, blocking })
     } else {
       if (!r.check_in_date || !r.check_out_date) continue
@@ -266,9 +286,18 @@ export function HourlyBoard({
       // to'liq band hisoblanadi
       ;[date, nextDate].forEach((d, idx) => {
         if (r.check_in_date <= d && d <= r.check_out_date) {
+          const segStart = idx * DAY_MINUTES
+          let segEnd = (idx + 1) * DAY_MINUTES
+          // Erta chiqilgan kunlik bron: chiqish kunida blok haqiqiy vaqtgacha
+          // qisqaradi, keyingi kunlarda esa umuman ko'rsatilmaydi
+          const actual = actualEndAbs(r)
+          if (actual !== null) {
+            if (actual <= segStart) return
+            segEnd = Math.min(segEnd, actual)
+          }
           pushInterval(r.room_id, {
-            start: idx * DAY_MINUTES,
-            end: (idx + 1) * DAY_MINUTES,
+            start: segStart,
+            end: segEnd,
             res: r,
             daily: true,
             blocking,
