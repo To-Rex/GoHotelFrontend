@@ -236,10 +236,14 @@ function minToTime(min: number): string {
 // saralangan). Tunab qoluvchi soatlik bronlar kun chegarasida kesiladi.
 // Har bir bron tugagach HOURLY_TURNOVER_MIN daqiqa tanaffus ham "band" deb
 // qo'shiladi — keyingi mijoz shu vaqtdan keyin kirishi mumkin.
+// Tugagan bronlar (chiqilgan/kelmagan/bekor) yangi bronga to'siq emas —
+// mehmon erta chiqib ketgan bo'lsa xona darhol yana band qilinadi
+const NON_BLOCKING_STATUSES = ["CANCELLED", "CHECKED_OUT", "NO_SHOW"]
+
 function busyIntervalsFor(list: any[], roomId: string, dateStr: string): Array<[number, number]> {
   const res: Array<[number, number]> = []
   for (const r of list) {
-    if (r.room_id !== roomId || r.status === "CANCELLED" || r.booking_type !== "HOURLY") continue
+    if (r.room_id !== roomId || NON_BLOCKING_STATUSES.includes(r.status) || r.booking_type !== "HOURLY") continue
     if (!r.check_in_datetime || !r.check_out_datetime) continue
     const ciDate = r.check_in_datetime.slice(0, 10)
     const coDate = r.check_out_datetime.slice(0, 10)
@@ -705,9 +709,11 @@ export function BookingPage() {
   })
 
   const roomReservations = useMemo(() => {
+    // Faqat kun bandligini tekshirish uchun ishlatiladi — tugagan bronlar
+    // (chiqilgan/kelmagan/bekor) kunni band qilmaydi
     const map: Record<string, any[]> = {}
     for (const r of reservations) {
-      if (r.status === "CANCELLED") continue
+      if (NON_BLOCKING_STATUSES.includes(r.status)) continue
       if (!map[r.room_id]) map[r.room_id] = []
       map[r.room_id].push(r)
     }

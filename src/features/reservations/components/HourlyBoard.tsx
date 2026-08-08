@@ -98,6 +98,10 @@ interface Interval {
   end: number
   res: any
   daily: boolean
+  // Yangi bronga TO'SIQ bo'ladimi: chiqilgan (CHECKED_OUT) va kelmagan
+  // (NO_SHOW) bronlar taxtada ko'rinadi, lekin xonani band qilmaydi —
+  // mehmon erta chiqib ketgan bo'lsa xona darhol yana bron qilinadi
+  blocking: boolean
 }
 
 /**
@@ -241,6 +245,7 @@ export function HourlyBoard({
 
   for (const r of reservations) {
     if (r.status === "CANCELLED") continue
+    const blocking = r.status !== "CHECKED_OUT" && r.status !== "NO_SHOW"
 
     if (r.booking_type === "HOURLY") {
       if (!r.check_in_datetime || !r.check_out_datetime) continue
@@ -254,7 +259,7 @@ export function HourlyBoard({
         coOff !== null
           ? coOff + timeToMin(r.check_out_datetime.slice(11, 16))
           : 2 * DAY_MINUTES
-      pushInterval(r.room_id, { start, end, res: r, daily: false })
+      pushInterval(r.room_id, { start, end, res: r, daily: false, blocking })
     } else {
       if (!r.check_in_date || !r.check_out_date) continue
       // Kunlik bron ko'rinadigan ikkala kunning qaysi birini qamrasa — o'sha kun
@@ -266,6 +271,7 @@ export function HourlyBoard({
             end: (idx + 1) * DAY_MINUTES,
             res: r,
             daily: true,
+            blocking,
           })
         }
       })
@@ -275,6 +281,10 @@ export function HourlyBoard({
   const busyOf = (roomId: string): Interval[] =>
     (intervalsByRoom[roomId] || []).slice().sort((a, b) => a.start - b.start)
 
+  // Faqat haqiqatan to'sadigan bronlar — bo'sh vaqt hisob-kitoblari uchun
+  const blockingOf = (roomId: string): Interval[] =>
+    busyOf(roomId).filter((b) => b.blocking)
+
   // Soatlik bron tugagach xona yana TURNOVER_MIN daqiqa band hisoblanadi
   // (tozalash tanaffusi). Kunlik bronlarga tanaffus qo'shilmaydi.
   const availEnd = (b: Interval) => (b.daily ? b.end : b.end + TURNOVER_MIN)
@@ -283,7 +293,7 @@ export function HourlyBoard({
   // Keyingi bron oldidan ham tanaffus qoldiriladi — bizning mijoz chiqib
   // ketishi uchun.
   const freeMinutesFrom = (roomId: string, startMin: number): number => {
-    const busy = busyOf(roomId)
+    const busy = blockingOf(roomId)
     if (busy.some((b) => b.start <= startMin && startMin < availEnd(b))) return 0
     const nextBusy = busy
       .filter((b) => b.start > startMin)
@@ -332,9 +342,9 @@ export function HourlyBoard({
     let start = isToday ? Math.max(hourStart, Math.floor(nowMin / 15) * 15) : hourStart
     // Bosilgan nuqta band bo'lsa — boshlanishni bron tugashi + tanaffusga
     // surib qo'yamiz: 10:00-11:40 bron bo'lsa, 11 soati bosilganda 11:55
-    // taklif qilinadi. busyOf saralangan, shuning uchun ketma-ket bronlar
+    // taklif qilinadi. Ro'yxat saralangan, shuning uchun ketma-ket bronlar
     // zanjiri ham bitta o'tishda hisobga olinadi.
-    for (const b of busyOf(roomId)) {
+    for (const b of blockingOf(roomId)) {
       if (b.start <= start && start < availEnd(b)) start = availEnd(b)
     }
     // Surilgan boshlanish bosilgan soat katagidan chiqib ketsa — katak to'liq band
