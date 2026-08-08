@@ -312,6 +312,12 @@ export function BookingPage() {
   // Hujjat skaneri (passport/ID karta — MRZ orqali avtomatik to'ldirish)
   const [scanOpen, setScanOpen] = useState(false)
 
+  // Skaner orqali mijoz QIDIRISH (ro'yxat rejimida): hujjat o'qiladi, bazadan
+  // passport/JSHSHIR bo'yicha topilsa avtomatik tanlanadi; topilmasa yangi
+  // qo'shish taklif qilinadi
+  const [guestScanOpen, setGuestScanOpen] = useState(false)
+  const [guestScanNotFound, setGuestScanNotFound] = useState<ScannedDoc | null>(null)
+
   // Yangi mehmon surati (passport rasmi / mehmon fotosi)
   const [guestPhoto, setGuestPhoto] = useState<File | null>(null)
   const [guestPhotoPreview, setGuestPhotoPreview] = useState<string | null>(null)
@@ -462,6 +468,34 @@ export function BookingPage() {
         setNationalityOther(doc.nationality)
       }
     }
+  }
+
+  const handleGuestSearchScan = (doc: ScannedDoc) => {
+    const norm = (s?: string | null) =>
+      (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
+    const pass = norm(doc.documentNumber)
+    const personal = norm(doc.personalNumber)
+    const found = (guests as any[]).find(
+      (g) =>
+        (pass.length >= 5 && norm(g.passport_number) === pass) ||
+        (personal.length >= 8 && norm(g.id_document_number) === personal)
+    )
+    if (found) {
+      setValue("guest_id", found.id)
+      setSelectedGuestId(found.id)
+      setGuestSearch("")
+      setGuestScanNotFound(null)
+    } else {
+      setGuestScanNotFound(doc)
+    }
+  }
+
+  // Topilmagan hujjat ma'lumotlari bilan yangi mijoz formasini ochish
+  const startNewGuestFromScan = (doc: ScannedDoc) => {
+    setValue("new_guest_nationality", DEFAULT_NATIONALITY)
+    setShowNewGuest(true)
+    applyScannedDoc(doc)
+    setGuestScanNotFound(null)
   }
 
   const backToGuestList = () => {
@@ -2189,16 +2223,69 @@ export function BookingPage() {
 
               {!showNewGuest ? (
                 <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm"
-                      placeholder="Mijozni qidirish..."
-                      value={guestSearch}
-                      onChange={(e) => setGuestSearch(e.target.value)}
-                    />
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm"
+                        placeholder="Mijozni qidirish..."
+                        value={guestSearch}
+                        onChange={(e) => setGuestSearch(e.target.value)}
+                      />
+                    </div>
+                    {/* Hujjatni skanerlab mijozni topish */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGuestScanNotFound(null)
+                        setGuestScanOpen(true)
+                      }}
+                      className="flex shrink-0 items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+                      title="Passport yoki ID kartani skanerlab mijozni topish"
+                    >
+                      <ScanLine className="h-4 w-4" />
+                      Skaner
+                    </button>
                   </div>
+
+                  {/* Skanerlangan hujjat bo'yicha mijoz topilmadi */}
+                  {guestScanNotFound && (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+                      <p className="min-w-0 text-sm font-medium text-amber-800">
+                        Mijoz topilmadi
+                        {guestScanNotFound.firstName
+                          ? ` (${guestScanNotFound.firstName} ${guestScanNotFound.lastName || ""})`
+                          : ""}{" "}
+                        — yangi qo'shilsinmi?
+                      </p>
+                      <div className="flex shrink-0 gap-1.5">
+                        {canCreateGuest && (
+                          <button
+                            type="button"
+                            onClick={() => startNewGuestFromScan(guestScanNotFound)}
+                            className="rounded-md bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+                          >
+                            + Qo'shish
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setGuestScanNotFound(null)}
+                          className="rounded-md px-2 py-1.5 text-xs text-amber-700 hover:bg-amber-100"
+                        >
+                          Yopish
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Qidiruv uchun skaner (yangi mijoz formasidagidan alohida) */}
+                  <DocumentScanner
+                    open={guestScanOpen}
+                    onOpenChange={setGuestScanOpen}
+                    onResult={handleGuestSearchScan}
+                  />
                   <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md divide-y divide-gray-100">
                     {filteredGuests.map((g) => (
                       <button

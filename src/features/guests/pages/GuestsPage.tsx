@@ -121,6 +121,45 @@ export const GuestsPage = () => {
     });
   };
 
+  // --- Skaner orqali mijoz QIDIRISH: hujjat o'qiladi, bazadan passport yoki
+  // JSHSHIR bo'yicha izlanadi; topilmasa yangi qo'shish taklif qilinadi ---
+  const [searchScanOpen, setSearchScanOpen] = useState(false);
+  const [scanBanner, setScanBanner] = useState<
+    | { type: "found"; guest: Guest }
+    | { type: "notfound"; doc: ScannedDoc }
+    | null
+  >(null);
+
+  const findGuestByDoc = (doc: ScannedDoc): Guest | null => {
+    const norm = (s?: string | null) =>
+      (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const pass = norm(doc.documentNumber);
+    const personal = norm(doc.personalNumber);
+    for (const g of guests || []) {
+      if (pass.length >= 5 && norm(g.passport_number) === pass) return g;
+      if (personal.length >= 8 && norm(g.id_document_number) === personal) return g;
+    }
+    return null;
+  };
+
+  const handleSearchScan = (doc: ScannedDoc) => {
+    const found = findGuestByDoc(doc);
+    if (found) {
+      // Jadval filtri shu mehmonni ko'rsatadigan qiymatga qo'yiladi
+      setSearch(found.passport_number || `${found.first_name} ${found.last_name}`.trim());
+      setScanBanner({ type: "found", guest: found });
+    } else {
+      setScanBanner({ type: "notfound", doc });
+    }
+  };
+
+  // Topilmagan hujjat ma'lumotlari bilan "Yangi mehmon" dialogini ochish
+  const openModalFromScan = (doc: ScannedDoc) => {
+    openModal();
+    applyScannedDoc(doc);
+    setScanBanner(null);
+  };
+
   const handlePhoto = (file: File | null) => {
     if (photoPreview) URL.revokeObjectURL(photoPreview);
     if (!file) {
@@ -299,15 +338,100 @@ export const GuestsPage = () => {
         )}
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <Input
-          className="pl-9"
-          placeholder="Ism, telefon yoki hujjat bo'yicha qidirish..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-sm flex-1 min-w-[240px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            className="pl-9"
+            placeholder="Ism, telefon yoki hujjat bo'yicha qidirish..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setScanBanner(null);
+            }}
+          />
+        </div>
+        {/* Hujjatni skanerlab mijozni topish */}
+        <Button
+          variant="outline"
+          onClick={() => {
+            setScanBanner(null);
+            setSearchScanOpen(true);
+          }}
+          className="gap-2"
+          title="Passport yoki ID kartani skanerlab mijozni topish"
+        >
+          <ScanLine className="h-4 w-4" />
+          Skaner bilan qidirish
+        </Button>
       </div>
+
+      {/* Skaner qidiruvi natijasi */}
+      {scanBanner?.type === "found" && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5">
+          <p className="text-sm font-medium text-emerald-800">
+            Mijoz topildi: {scanBanner.guest.first_name} {scanBanner.guest.last_name}
+            {scanBanner.guest.phone ? ` · ${scanBanner.guest.phone}` : ""}
+          </p>
+          <div className="flex shrink-0 gap-2">
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  openEdit(scanBanner.guest);
+                  setScanBanner(null);
+                }}
+                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+              >
+                Ochish
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setScanBanner(null)}
+              className="rounded-md px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100"
+            >
+              Yopish
+            </button>
+          </div>
+        </div>
+      )}
+      {scanBanner?.type === "notfound" && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5">
+          <p className="text-sm font-medium text-amber-800">
+            Bu hujjat bo'yicha mijoz topilmadi
+            {scanBanner.doc.firstName
+              ? ` (${scanBanner.doc.firstName} ${scanBanner.doc.lastName || ""})`
+              : ""}{" "}
+            — yangi mehmon sifatida qo'shilsinmi?
+          </p>
+          <div className="flex shrink-0 gap-2">
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => openModalFromScan(scanBanner.doc)}
+                className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+              >
+                + Yangi mehmon qo'shish
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setScanBanner(null)}
+              className="rounded-md px-2 py-1.5 text-xs text-amber-700 hover:bg-amber-100"
+            >
+              Yopish
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Qidiruv uchun skaner (dialog ichidagidan alohida) */}
+      <DocumentScanner
+        open={searchScanOpen}
+        onOpenChange={setSearchScanOpen}
+        onResult={handleSearchScan}
+      />
 
       <div className="rounded-lg border bg-white overflow-hidden">
         <Table>
