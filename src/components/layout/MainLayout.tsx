@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
@@ -20,6 +20,12 @@ export const MainLayout = () => {
   const { isAuthenticated, setUser, user } = useAuthStore();
   const { pathname } = useLocation();
   const { canRoute, firstAllowedRoute } = usePermissions();
+
+  // Mobil (tor ekran) uchun sidebar drawer holati — sahifa almashganda yopiladi
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   // Brauzer tab sarlavhasi — foydalanuvchi mehmonxonasining nomi.
   // SUPER_ADMIN da (yoki nom hali yuklanmagan bo'lsa) "GoHotel" qoladi.
@@ -61,10 +67,32 @@ export const MainLayout = () => {
     /* h-dvh: haqiqiy ko'rinadigan balandlik — 100vh brauzer paneli/zoom
        hisobga olinmay pastki qismni kesib qo'yishi mumkin edi */
     <div className="flex h-dvh overflow-hidden bg-background">
-      <Sidebar />
+      {/* Desktop: doimiy sidebar; mobil: yashirin (drawer orqali ochiladi) */}
+      <div className="hidden h-full md:block">
+        <Sidebar />
+      </div>
+
+      {/* Mobil drawer — qoraytirilgan fon ustida chiqadigan sidebar */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/45"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full shadow-2xl">
+            <Sidebar />
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Navbar />
-        <main className={cn("flex-1 min-h-0", fullBleed ? "overflow-hidden" : "overflow-y-auto p-6")}>
+        <Navbar onMenuClick={() => setMobileNavOpen(true)} />
+        <main
+          className={cn(
+            "flex-1 min-h-0",
+            fullBleed ? "overflow-hidden" : "overflow-y-auto p-3 sm:p-4 md:p-6"
+          )}
+        >
           {fullBleed ? (
             <Outlet />
           ) : (

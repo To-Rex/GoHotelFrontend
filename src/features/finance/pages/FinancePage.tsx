@@ -279,7 +279,7 @@ export const FinancePage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Moliya</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -507,7 +507,7 @@ export const FinancePage = () => {
 
       {/* Hisob-fakturalar jadvali */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-bold tracking-tight">Hisob-fakturalar</h2>
           <select
             className={cn(selectClass, "w-auto min-w-[170px]")}

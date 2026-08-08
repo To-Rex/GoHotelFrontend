@@ -111,7 +111,7 @@ export const Sidebar = () => {
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col border-r border-border bg-card/60 backdrop-blur-xl transition-[width] duration-300 ease-in-out",
+        "flex h-full flex-col border-r border-border bg-card backdrop-blur-xl transition-[width] duration-300 ease-in-out",
         isOpen ? "w-64" : "w-[76px]"
       )}
     >

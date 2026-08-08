@@ -1564,7 +1564,7 @@ export function BookingPage() {
     // shuning uchun bu yerda h-full bilan mavjud balandlikni to'liq egallaymiz.
     <div className="flex flex-col h-full w-full min-w-0">
       {/* Tablar: Soatlik bron / Kalendar — ixcham segment (pill) ko'rinishida */}
-      <div className="flex-shrink-0 flex items-center px-6 py-2.5 bg-white border-b border-gray-200">
+      <div className="flex-shrink-0 flex items-center px-3 sm:px-6 py-2.5 bg-white border-b border-gray-200">
         <div className="flex rounded-lg bg-gray-100 p-1">
           {([
             { key: "hourly", label: "Soatlik bron", icon: Clock },

@@ -868,7 +868,7 @@ export const ShopPage = () => {
                 <p className="text-sm font-medium text-destructive">{sellError}</p>
               )}
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm text-muted-foreground">Jami:</span>
                 <span className="text-xl font-bold">{fmt(cartTotal)} So'm</span>
               </div>
