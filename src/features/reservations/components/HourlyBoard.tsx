@@ -367,7 +367,10 @@ export function HourlyBoard({
   const crossesMidnight = renderEndHour > 24
 
   return (
-    <div className="flex flex-col h-full">
+    /* flex-1 min-h-0: ota flex ustunida QOLGAN joyni egallaydi. h-full bo'lsa
+       otaning 100% balandligini olib, tepadagi tab paneli hisobiga pastdan
+       tashqariga chiqib ketardi — oxirgi xona ko'rinmay qolardi */
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Kun tanlash va tezkor holat paneli */}
       <div className="flex-shrink-0 flex items-center justify-between gap-4 px-6 py-2.5 bg-white border-b border-gray-200">
         <div className="flex items-center gap-2">
