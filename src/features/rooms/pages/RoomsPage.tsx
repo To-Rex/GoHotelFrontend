@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
-import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List } from "lucide-react"
+import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List, Clock } from "lucide-react"
+import { useReservations } from "@/features/reservations/api/reservations"
 import {
   useRooms,
   useBranches,
@@ -80,6 +81,8 @@ export const RoomsPage = () => {
   const { data: branches = [] } = useBranches()
   const { data: floors = [] } = useFloors()
   const { data: roomTypes = [] } = useRoomTypes()
+  // Band xonaning qachon bo'shashini ko'rsatish uchun faol bronlar kerak
+  const { data: reservations = [] } = useReservations()
 
   const createMutation = useCreateRoom()
   const updateMutation = useUpdateRoom()
@@ -134,6 +137,57 @@ export const RoomsPage = () => {
         ),
     [rooms, search, statusFilter]
   )
+
+  // Har bir band xona uchun "qachon bo'shaydi" — hozir davom etayotgan
+  // brondan (CHECKED_IN ustuvor, so'ng boshlanib bo'lgan CONFIRMED) olinadi.
+  // Soatlik bronda aniq chiqish vaqti, kunlikda chiqish kuni soat 12:00.
+  // Datetime'lar mahalliy devor soati sifatida talqin qilinadi.
+  const freeAtByRoom = useMemo(() => {
+    const now = new Date()
+    const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+    const result: Record<string, { rank: number; at: Date; label: string }> = {}
+    for (const res of reservations as any[]) {
+      if (res.status !== "CHECKED_IN" && res.status !== "CONFIRMED") continue
+
+      let at: Date
+      let dayPart = ""
+      let timePart = ""
+      if (res.booking_type === "HOURLY" && res.check_out_datetime) {
+        const raw = String(res.check_out_datetime).slice(0, 16) // YYYY-MM-DDTHH:mm
+        at = new Date(raw)
+        dayPart = raw.slice(0, 10)
+        timePart = raw.slice(11, 16)
+      } else if (res.check_out_date) {
+        dayPart = String(res.check_out_date).slice(0, 10)
+        timePart = "12:00"
+        at = new Date(`${dayPart}T12:00:00`)
+      } else {
+        continue
+      }
+      if (isNaN(at.getTime()) || at <= now) continue
+
+      // CONFIRMED bron faqat boshlanib bo'lgan bo'lsa xonani "band" qiladi
+      if (res.status === "CONFIRMED") {
+        const startRaw =
+          res.booking_type === "HOURLY" && res.check_in_datetime
+            ? String(res.check_in_datetime).slice(0, 16)
+            : `${String(res.check_in_date).slice(0, 10)}T00:00`
+        const start = new Date(startRaw)
+        if (isNaN(start.getTime()) || start > now) continue
+      }
+
+      const label =
+        dayPart === todayIso
+          ? `bugun ${timePart}`
+          : `${dayPart.slice(8, 10)}.${dayPart.slice(5, 7)} ${timePart}`
+      const rank = res.status === "CHECKED_IN" ? 0 : 1
+      const prev = result[res.room_id]
+      if (!prev || rank < prev.rank || (rank === prev.rank && at < prev.at)) {
+        result[res.room_id] = { rank, at, label }
+      }
+    }
+    return result
+  }, [reservations])
 
   // Xonalar qavatlar bo'yicha guruhlanadi: qavat raqami o'sish tartibida,
   // qavati belgilanmaganlar ro'yxat oxirida alohida guruhda
@@ -497,6 +551,14 @@ export const RoomsPage = () => {
                     >
                       {STATUS_LABELS[room.current_status] || room.current_status}
                     </button>
+                    {(room.current_status === "OCCUPIED" ||
+                      room.current_status === "RESERVED") &&
+                      freeAtByRoom[room.id] && (
+                        <p className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] text-amber-600">
+                          <Clock className="h-3 w-3" />
+                          Bo'shaydi: {freeAtByRoom[room.id].label}
+                        </p>
+                      )}
                   </TableCell>
                   {(canEdit || canDelete) && (
                     <TableCell className="text-right">
@@ -589,6 +651,14 @@ export const RoomsPage = () => {
                         {typeMap[room.room_type_id] || "Turi belgilanmagan"}
                         {room.capacity ? ` · ${room.capacity} kishi` : ""}
                       </p>
+                      {(room.current_status === "OCCUPIED" ||
+                        room.current_status === "RESERVED") &&
+                        freeAtByRoom[room.id] && (
+                          <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                            <Clock className="h-3 w-3" />
+                            Bo'shaydi: {freeAtByRoom[room.id].label}
+                          </p>
+                        )}
                       <div className="mt-2 flex items-end justify-between">
                         <p className="text-sm font-semibold text-gray-900">
                           {Number(room.base_price || 0).toLocaleString()}{" "}
