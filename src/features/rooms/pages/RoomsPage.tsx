@@ -501,6 +501,25 @@ export const RoomsPage = () => {
         </div>
       </div>
 
+      {/* Rang ko'rsatkichi — qaysi rang qaysi holatni bildirishi */}
+      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 rounded-lg border border-gray-100 bg-gray-50/70 px-3 py-2 text-[11px] text-gray-600">
+        <span className="font-semibold text-gray-400">Ranglar:</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm border border-gray-300 bg-white" />
+          Bo'sh
+        </span>
+        {Object.entries(STATUS_LABELS)
+          .filter(([value]) => value !== "AVAILABLE")
+          .map(([value, label]) => (
+            <span key={value} className="inline-flex items-center gap-1.5">
+              <span
+                className={cn("h-2.5 w-2.5 rounded-sm", statusDot[value] || "bg-gray-400")}
+              />
+              {label}
+            </span>
+          ))}
+      </div>
+
       {viewMode === "table" && (
       <div className="rounded-lg border bg-white overflow-hidden">
         <Table>
