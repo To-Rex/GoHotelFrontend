@@ -837,7 +837,9 @@ export const RoomsPage = () => {
                   />
                 </button>
                 {!collapsed && (
-                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                /* auto-fill: ustunlar soni displayga qarab o'zi moslashadi —
+                   har karta kamida 170px, keng ekranda qancha sig'sa shuncha */
+                <div className="mt-3 grid gap-3 grid-cols-[repeat(auto-fill,minmax(170px,1fr))]">
                   {floorRooms.map((room) => (
                     <div
                       key={room.id}
