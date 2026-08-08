@@ -58,6 +58,39 @@ const statusBadge: Record<string, string> = {
   OUT_OF_SERVICE: "bg-gray-200 text-gray-600",
 }
 
+// Holati bir qarashda ko'rinishi uchun: jadval qatorining chap chekkasi
+const statusRowAccent: Record<string, string> = {
+  AVAILABLE: "border-l-emerald-400",
+  RESERVED: "border-l-blue-400",
+  OCCUPIED: "border-l-red-400",
+  CLEANING: "border-l-amber-400",
+  MAINTENANCE: "border-l-orange-400",
+  INSPECTION: "border-l-purple-400",
+  OUT_OF_SERVICE: "border-l-gray-300",
+}
+
+// Grid kartasining fon/ramka rangi — bo'sh yashil, band qizil va h.k.
+const statusCardAccent: Record<string, string> = {
+  AVAILABLE: "border-emerald-200 bg-emerald-50/60",
+  RESERVED: "border-blue-200 bg-blue-50/60",
+  OCCUPIED: "border-red-200 bg-red-50/60",
+  CLEANING: "border-amber-200 bg-amber-50/60",
+  MAINTENANCE: "border-orange-200 bg-orange-50/60",
+  INSPECTION: "border-purple-200 bg-purple-50/60",
+  OUT_OF_SERVICE: "border-gray-200 bg-gray-50",
+}
+
+// Xona ikonkasi ham holat rangida
+const statusIconAccent: Record<string, string> = {
+  AVAILABLE: "bg-emerald-100 text-emerald-600",
+  RESERVED: "bg-blue-100 text-blue-600",
+  OCCUPIED: "bg-red-100 text-red-600",
+  CLEANING: "bg-amber-100 text-amber-600",
+  MAINTENANCE: "bg-orange-100 text-orange-600",
+  INSPECTION: "bg-purple-100 text-purple-600",
+  OUT_OF_SERVICE: "bg-gray-100 text-gray-500",
+}
+
 // Filtr chiplaridagi rang nuqtasi uchun
 const statusDot: Record<string, string> = {
   AVAILABLE: "bg-emerald-500",
@@ -516,10 +549,22 @@ export const RoomsPage = () => {
                   </TableCell>
                 </TableRow>,
                 ...floorRooms.map((room) => (
-                <TableRow key={room.id}>
+                <TableRow
+                  key={room.id}
+                  className={cn(
+                    "border-l-4",
+                    statusRowAccent[room.current_status] || "border-l-gray-200"
+                  )}
+                >
                   <TableCell>
                     <span className="inline-flex items-center gap-2.5">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                      <span
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-lg",
+                          statusIconAccent[room.current_status] ||
+                            "bg-primary-50 text-primary-600"
+                        )}
+                      >
                         <DoorOpen className="h-4 w-4" />
                       </span>
                       <span className="font-semibold text-gray-900">{room.room_number}</span>
@@ -631,10 +676,19 @@ export const RoomsPage = () => {
                   {floorRooms.map((room) => (
                     <div
                       key={room.id}
-                      className="group relative rounded-xl border bg-white p-3.5 transition-all hover:border-primary-200 hover:shadow-md"
+                      className={cn(
+                        "group relative rounded-xl border p-3.5 transition-all hover:shadow-md",
+                        statusCardAccent[room.current_status] || "border-gray-200 bg-white"
+                      )}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                        <span
+                          className={cn(
+                            "flex h-9 w-9 items-center justify-center rounded-lg",
+                            statusIconAccent[room.current_status] ||
+                              "bg-primary-50 text-primary-600"
+                          )}
+                        >
                           <DoorOpen className="h-4 w-4" />
                         </span>
                         <button
