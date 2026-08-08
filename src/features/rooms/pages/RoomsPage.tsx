@@ -139,12 +139,12 @@ export const RoomsPage = () => {
   // Holat bo'yicha filtr ("" — barcha holatlar)
   const [statusFilter, setStatusFilter] = useState("")
 
-  // Ko'rinish: jadval yoki grid (kartalar). Tanlov brauzerda eslab qolinadi
+  // Ko'rinish: grid (standart) yoki jadval. Tanlov brauzerda eslab qolinadi
   const [viewMode, setViewModeState] = useState<"table" | "grid">(() => {
     try {
-      return localStorage.getItem("rooms_view_mode") === "grid" ? "grid" : "table"
+      return localStorage.getItem("rooms_view_mode") === "table" ? "table" : "grid"
     } catch {
-      return "table"
+      return "grid"
     }
   })
   const setViewMode = (m: "table" | "grid") => {
