@@ -166,6 +166,15 @@ export const RoomsPage = () => {
       }
       if (isNaN(at.getTime()) || at <= now) continue
 
+      // Yarim tunda tugaydigan bron: "09.08 00:00" chalg'itadi — inson uchun
+      // bu "08.08 kuni 24:00". Hisob-kitob o'zgarmaydi, faqat yozuv shunday
+      // ko'rsatiladi (bugungi tun bo'lsa — "bugun 24:00")
+      if (timePart === "00:00") {
+        const prevDay = new Date(at.getTime() - 86400000)
+        dayPart = `${prevDay.getFullYear()}-${String(prevDay.getMonth() + 1).padStart(2, "0")}-${String(prevDay.getDate()).padStart(2, "0")}`
+        timePart = "24:00"
+      }
+
       // CONFIRMED bron faqat boshlanib bo'lgan bo'lsa xonani "band" qiladi
       if (res.status === "CONFIRMED") {
         const startRaw =
