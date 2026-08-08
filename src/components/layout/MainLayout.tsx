@@ -52,7 +52,9 @@ export const MainLayout = () => {
   const fullBleed = FULL_BLEED_ROUTES.includes(pathname);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    /* h-dvh: haqiqiy ko'rinadigan balandlik — 100vh brauzer paneli/zoom
+       hisobga olinmay pastki qismni kesib qo'yishi mumkin edi */
+    <div className="flex h-dvh overflow-hidden bg-background">
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Navbar />
@@ -60,7 +62,8 @@ export const MainLayout = () => {
           {fullBleed ? (
             <Outlet />
           ) : (
-            <div className="mx-auto max-w-7xl">
+            /* min-h-full: sahifa kontenti kam bo'lsa ham butun bo'sh joyni egallaydi */
+            <div className="mx-auto max-w-7xl min-h-full">
               <Outlet />
             </div>
           )}
