@@ -279,12 +279,67 @@ export const RoomsPage = () => {
 
   const openCreate = () => {
     setEditing(null)
-    setRoomNumber("")
-    setBranchId(user?.branch_id || branches[0]?.id || "")
-    setFloorId("")
-    setRoomTypeId("")
-    setBasePrice("")
-    setCapacity("")
+    const defaultBranch = user?.branch_id || branches[0]?.id || ""
+    setBranchId(defaultBranch)
+
+    // Hamma maydonlar aqlli standart qiymatlar bilan to'ldiriladi —
+    // xohlasa istalganini o'zgartiradi, xohlamasa darrov "Qo'shish" bosadi.
+    const pool = rooms.filter((r) => !defaultBranch || r.branch_id === defaultBranch)
+    const source = pool.length ? pool : rooms
+
+    // Xona raqami: eng katta raqamli xonadan +1 (band raqamlar o'tkazib yuboriladi)
+    let maxNum = 0
+    let maxRoom: (typeof rooms)[number] | null = null
+    const taken = new Set<string>()
+    for (const r of source) {
+      taken.add(String(r.room_number))
+      const n = parseInt(String(r.room_number), 10)
+      if (!isNaN(n) && n >= maxNum) {
+        maxNum = n
+        maxRoom = r
+      }
+    }
+    let nextNum = maxNum > 0 ? maxNum + 1 : 101
+    while (taken.has(String(nextNum))) nextNum += 1
+    setRoomNumber(String(nextNum))
+
+    // Qavat: eng katta raqamli xonaning qavati (odatda yangi xona shu yerda
+    // davom etadi), bo'lmasa filialning birinchi qavati
+    const branchFloorsList = floors.filter(
+      (f) => !defaultBranch || f.branch_id === defaultBranch
+    )
+    setFloorId(maxRoom?.floor_id || branchFloorsList[0]?.id || "")
+
+    // Xona turi: mehmonxonada eng ko'p ishlatilgan tur, bo'lmasa birinchisi
+    const typeCounts = new Map<string, number>()
+    for (const r of source) {
+      if (r.room_type_id) {
+        typeCounts.set(r.room_type_id, (typeCounts.get(r.room_type_id) || 0) + 1)
+      }
+    }
+    let commonType = ""
+    let bestCount = 0
+    for (const [t, c] of typeCounts) {
+      if (c > bestCount) {
+        bestCount = c
+        commonType = t
+      }
+    }
+    const typeId = commonType || (roomTypes[0] as any)?.id || ""
+    setRoomTypeId(typeId)
+
+    // Narx va sig'im: tanlangan tur qiymatlaridan (zaxira: oxirgi xonadan)
+    const rt: any = roomTypes.find((x: any) => x.id === typeId)
+    setBasePrice(
+      rt?.base_price
+        ? String(rt.base_price)
+        : maxRoom?.base_price
+          ? String(maxRoom.base_price)
+          : ""
+    )
+    setCapacity(
+      rt?.capacity ? String(rt.capacity) : maxRoom?.capacity ? String(maxRoom.capacity) : ""
+    )
     setNotes("")
     setErrorMsg(null)
     setModalOpen(true)
@@ -840,9 +895,17 @@ export const RoomsPage = () => {
                   value={roomTypeId}
                   onChange={(e) => {
                     setRoomTypeId(e.target.value)
-                    // Tur tanlanganda narxni avtomatik to'ldiramiz (bo'sh bo'lsa)
-                    const rt = roomTypes.find((x: any) => x.id === e.target.value)
-                    if (rt && !basePrice) setBasePrice(String(rt.base_price ?? ""))
+                    // Yangi xona yaratishda tur almashtirilsa narx va sig'im
+                    // o'sha turnikiga yangilanadi (tahrirlashda faqat bo'sh bo'lsa)
+                    const rt: any = roomTypes.find((x: any) => x.id === e.target.value)
+                    if (rt) {
+                      if (!editing || !basePrice) {
+                        setBasePrice(rt.base_price ? String(rt.base_price) : "")
+                      }
+                      if (!editing || !capacity) {
+                        setCapacity(rt.capacity ? String(rt.capacity) : "")
+                      }
+                    }
                   }}
                 >
                   <option value="">Turni tanlang</option>
