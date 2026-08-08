@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone } from "lucide-react";
+import { Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone, ScanLine } from "lucide-react";
 import {
   useGuests,
   useCreateGuest,
@@ -10,6 +10,7 @@ import {
 } from "../api/guests";
 import { NATIONALITIES, DEFAULT_NATIONALITY } from "../constants";
 import { BirthDateSelect } from "../components/BirthDateSelect";
+import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
 import type { Guest } from "@/types/api";
 import { usePermissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth";
@@ -74,6 +75,51 @@ export const GuestsPage = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const set = (k: keyof typeof emptyForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Hujjat skaneri (passport/ID karta) — /booking dagi bilan bir xil komponent.
+  // MRZ'dan o'qilgan maydonlargina to'ldiriladi, qolganlari o'z holicha qoladi
+  const [scanOpen, setScanOpen] = useState(false);
+  const MRZ_COUNTRY: Record<string, string> = {
+    UZB: "O'zbekiston",
+    KAZ: "Qozog'iston",
+    KGZ: "Qirg'iziston",
+    TJK: "Tojikiston",
+    TKM: "Turkmaniston",
+    RUS: "Rossiya",
+    AFG: "Afg'oniston",
+    AZE: "Ozarbayjon",
+    ARM: "Armaniston",
+    BLR: "Belarus",
+    GEO: "Gruziya",
+    TUR: "Turkiya",
+    CHN: "Xitoy",
+    IND: "Hindiston",
+    PAK: "Pokiston",
+    IRN: "Eron",
+    KOR: "Janubiy Koreya",
+    JPN: "Yaponiya",
+    USA: "AQSH",
+    GBR: "Buyuk Britaniya",
+    DEU: "Germaniya",
+    FRA: "Fransiya",
+    UKR: "Ukraina",
+  };
+  const applyScannedDoc = (doc: ScannedDoc) => {
+    setForm((f) => {
+      const next = { ...f };
+      if (doc.firstName) next.first_name = doc.firstName;
+      if (doc.lastName) next.last_name = doc.lastName;
+      if (doc.birthDate) next.birth_date = doc.birthDate;
+      if (doc.documentNumber) next.passport_number = sanitizePassport(doc.documentNumber);
+      if (doc.personalNumber) next.id_document_number = doc.personalNumber;
+      if (doc.documentType) next.id_document_type = doc.documentType;
+      if (doc.nationality) {
+        const mapped = MRZ_COUNTRY[doc.nationality];
+        if (mapped && NATIONALITIES.includes(mapped)) next.nationality = mapped;
+      }
+      return next;
+    });
+  };
 
   const handlePhoto = (file: File | null) => {
     if (photoPreview) URL.revokeObjectURL(photoPreview);
@@ -359,8 +405,22 @@ export const GuestsPage = () => {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? "Mehmonni tahrirlash" : "Yangi mehmon"}</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-2 pr-6">
+              {editing ? "Mehmonni tahrirlash" : "Yangi mehmon"}
+              <button
+                type="button"
+                onClick={() => setScanOpen(true)}
+                className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+                title="Passport yoki ID kartani kamera bilan skanerlash"
+              >
+                <ScanLine className="h-3.5 w-3.5" />
+                Skanerlash
+              </button>
+            </DialogTitle>
           </DialogHeader>
+
+          {/* Hujjat skaneri — MRZ o'qib formani avtomatik to'ldiradi */}
+          <DocumentScanner open={scanOpen} onOpenChange={setScanOpen} onResult={applyScannedDoc} />
 
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
