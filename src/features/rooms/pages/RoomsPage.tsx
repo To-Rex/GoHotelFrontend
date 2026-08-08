@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users } from "lucide-react"
+import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers } from "lucide-react"
 import {
   useRooms,
   useBranches,
@@ -119,6 +119,29 @@ export const RoomsPage = () => {
         ),
     [rooms, search, statusFilter]
   )
+
+  // Xonalar qavatlar bo'yicha guruhlanadi: qavat raqami o'sish tartibida,
+  // qavati belgilanmaganlar ro'yxat oxirida alohida guruhda
+  const groupedRooms = useMemo(() => {
+    const groups = new Map<string, typeof sortedRooms>()
+    for (const r of sortedRooms) {
+      const key = r.floor_id || ""
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(r)
+    }
+    const floorOrder = new Map<string, number>()
+    for (const f of floors) floorOrder.set(f.id, Number(f.floor_number ?? 0))
+    return [...groups.entries()].sort((a, b) => {
+      if (!a[0]) return 1
+      if (!b[0]) return -1
+      const fa = floorOrder.get(a[0])
+      const fb = floorOrder.get(b[0])
+      if (fa === undefined && fb === undefined) return 0
+      if (fa === undefined) return 1
+      if (fb === undefined) return -1
+      return fa - fb
+    })
+  }, [sortedRooms, floors])
 
   // Holatlar bo'yicha sonlar (filtr chiplarida ko'rsatiladi)
   const statusCounts = useMemo(() => {
@@ -341,7 +364,6 @@ export const RoomsPage = () => {
             <TableRow className="bg-gray-50/80">
               <TableHead>Xona</TableHead>
               <TableHead>Turi</TableHead>
-              <TableHead>Qavat</TableHead>
               <TableHead>Narxi</TableHead>
               <TableHead>Sig'imi</TableHead>
               <TableHead>Holati</TableHead>
@@ -353,7 +375,7 @@ export const RoomsPage = () => {
           <TableBody>
             {sortedRooms.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12">
+                <TableCell colSpan={(canEdit || canDelete) ? 6 : 5} className="py-12">
                   <div className="flex flex-col items-center gap-2 text-gray-400">
                     <DoorOpen className="h-8 w-8" />
                     <p className="text-sm">
@@ -365,7 +387,25 @@ export const RoomsPage = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              sortedRooms.map((room) => (
+              groupedRooms.flatMap(([floorId, floorRooms]) => [
+                /* Qavat sarlavhasi — shu qavatdagi xonalar soni bilan */
+                <TableRow
+                  key={`floor-${floorId || "none"}`}
+                  className="bg-primary-50/60 hover:bg-primary-50/60 border-y border-primary-100"
+                >
+                  <TableCell colSpan={(canEdit || canDelete) ? 6 : 5} className="py-2">
+                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary-700">
+                      <Layers className="h-3.5 w-3.5" />
+                      {floorId
+                        ? floorMap[floorId] || "Noma'lum qavat"
+                        : "Qavat belgilanmagan"}
+                      <span className="font-medium normal-case tracking-normal text-primary-400">
+                        · {floorRooms.length} ta xona
+                      </span>
+                    </span>
+                  </TableCell>
+                </TableRow>,
+                ...floorRooms.map((room) => (
                 <TableRow key={room.id}>
                   <TableCell>
                     <span className="inline-flex items-center gap-2.5">
@@ -377,9 +417,6 @@ export const RoomsPage = () => {
                   </TableCell>
                   <TableCell className="text-gray-600">
                     {typeMap[room.room_type_id] || <span className="text-gray-300">—</span>}
-                  </TableCell>
-                  <TableCell className="text-gray-600">
-                    {floorMap[room.floor_id] || <span className="text-gray-300">—</span>}
                   </TableCell>
                   <TableCell className="font-medium text-gray-900">
                     {Number(room.base_price || 0).toLocaleString()}{" "}
@@ -440,7 +477,8 @@ export const RoomsPage = () => {
                     </TableCell>
                   )}
                 </TableRow>
-              ))
+                )),
+              ])
             )}
           </TableBody>
         </Table>
