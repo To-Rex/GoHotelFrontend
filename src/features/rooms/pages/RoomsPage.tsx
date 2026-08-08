@@ -58,9 +58,10 @@ const statusBadge: Record<string, string> = {
   OUT_OF_SERVICE: "bg-gray-200 text-gray-600",
 }
 
-// Holati bir qarashda ko'rinishi uchun: jadval qatorining chap chekkasi
+// Holati bir qarashda ko'rinishi uchun: jadval qatorining chap chekkasi.
+// Bo'sh xona ODDIY (rangsiz) — faqat band/boshqa holatlar ajralib turadi
 const statusRowAccent: Record<string, string> = {
-  AVAILABLE: "border-l-emerald-400",
+  AVAILABLE: "border-l-transparent",
   RESERVED: "border-l-blue-400",
   OCCUPIED: "border-l-red-400",
   CLEANING: "border-l-amber-400",
@@ -71,7 +72,7 @@ const statusRowAccent: Record<string, string> = {
 
 // Grid kartasining fon/ramka rangi — bo'sh yashil, band qizil va h.k.
 const statusCardAccent: Record<string, string> = {
-  AVAILABLE: "border-emerald-200 bg-emerald-50/60",
+  AVAILABLE: "border-gray-200 bg-white",
   RESERVED: "border-blue-200 bg-blue-50/60",
   OCCUPIED: "border-red-200 bg-red-50/60",
   CLEANING: "border-amber-200 bg-amber-50/60",
@@ -82,7 +83,7 @@ const statusCardAccent: Record<string, string> = {
 
 // Xona ikonkasi ham holat rangida
 const statusIconAccent: Record<string, string> = {
-  AVAILABLE: "bg-emerald-100 text-emerald-600",
+  AVAILABLE: "bg-primary-50 text-primary-600",
   RESERVED: "bg-blue-100 text-blue-600",
   OCCUPIED: "bg-red-100 text-red-600",
   CLEANING: "bg-amber-100 text-amber-600",
