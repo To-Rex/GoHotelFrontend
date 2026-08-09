@@ -425,34 +425,33 @@ export const EmployeesPage = () => {
             <p className="text-sm">Xodimlar topilmadi</p>
           </div>
         ) : (
-          <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
+          /* auto-fill: ustunlar soni displayga qarab o'zi moslashadi */
+          <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
             {filtered.map((e) => (
               <div
                 key={e.id}
-                className="group relative rounded-2xl border bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                className="group relative rounded-2xl border bg-white p-5 text-center transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
-                <div className="flex items-center gap-3">
-                  {photosMap[e.id] ? (
-                    <img
-                      src={photosMap[e.id]}
-                      alt=""
-                      className="h-12 w-12 flex-shrink-0 rounded-full border border-gray-200 object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">
-                      {`${e.first_name?.[0] ?? ""}${e.last_name?.[0] ?? ""}`.toUpperCase() ||
-                        "?"}
-                    </span>
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate font-bold text-gray-900 leading-tight">
-                      {e.first_name} {e.last_name}
-                    </p>
-                    <p className="truncate text-xs text-gray-400">@{e.username}</p>
-                  </div>
-                </div>
+                {/* Katta surat — kartaning markaziy elementi */}
+                {photosMap[e.id] ? (
+                  <img
+                    src={photosMap[e.id]}
+                    alt=""
+                    className="mx-auto h-24 w-24 rounded-full border-2 border-primary-100 object-cover shadow-sm"
+                  />
+                ) : (
+                  <span className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary-100 text-2xl font-bold text-primary-700">
+                    {`${e.first_name?.[0] ?? ""}${e.last_name?.[0] ?? ""}`.toUpperCase() ||
+                      "?"}
+                  </span>
+                )}
 
-                <div className="mt-3 flex flex-wrap gap-1.5">
+                <p className="mt-3 truncate font-bold text-gray-900">
+                  {e.first_name} {e.last_name}
+                </p>
+                <p className="truncate text-xs text-gray-400">@{e.username}</p>
+
+                <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
                   <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
                     {ROLE_LABELS[e.user_type] || e.user_type}
                   </span>
@@ -466,18 +465,20 @@ export const EmployeesPage = () => {
                   </span>
                 </div>
 
-                <div className="mt-3 space-y-1 text-xs text-gray-500">
-                  <p className="flex items-center gap-1.5">
-                    <Phone className="h-3 w-3 text-gray-400" />
-                    {e.phone || "—"}
+                <div className="mt-3.5 space-y-1.5 border-t border-gray-100 pt-3 text-left text-xs text-gray-500">
+                  <p className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                    <span className="truncate">{e.phone || "—"}</span>
                   </p>
-                  <p className="flex items-center gap-1.5">
-                    <Building2 className="h-3 w-3 text-gray-400" />
-                    {(e.branch_id && branchMap[e.branch_id]) || "—"}
+                  <p className="flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                    <span className="truncate">
+                      {(e.branch_id && branchMap[e.branch_id]) || "—"}
+                    </span>
                   </p>
-                  <p className="flex items-center gap-1.5">
-                    <CalendarDays className="h-3 w-3 text-gray-400" />
-                    {e.hire_date || "—"}
+                  <p className="flex items-center gap-2">
+                    <CalendarDays className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                    <span className="truncate">{e.hire_date || "—"}</span>
                   </p>
                 </div>
 
