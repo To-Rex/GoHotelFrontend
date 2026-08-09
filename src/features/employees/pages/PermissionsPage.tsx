@@ -43,6 +43,127 @@ const MODULE_LABELS: Record<string, string> = {
 // doirasidagi ruxsatlarni bera oladi — backend ham xuddi shuni tekshiradi
 const HOUSEKEEPER_TEMPLATE = PERMISSION_TEMPLATES.find((t) => t.id === "housekeeper")
 
+// --- Ruxsat kodlarining O'ZBEKCHA nomlari ---
+// Ma'lum kodlar uchun tabiiy ibora; ro'yxatda yo'qlari uchun kod bo'laklaridan
+// avtomatik yasaladi (pastdagi uzPermissionLabel)
+const UZ_PERMISSION_LABELS: Record<string, string> = {
+  "reservation.create": "Bron yaratish",
+  "reservation.update": "Bronni tahrirlash",
+  "reservation.view": "Bronlarni ko'rish",
+  "reservation.cancel": "Bronni bekor qilish",
+  "reservation.delete": "Bronni o'chirish",
+  "guest.create": "Mehmon qo'shish",
+  "guest.update": "Mehmonni tahrirlash",
+  "guest.view": "Mehmonlarni ko'rish",
+  "guest.delete": "Mehmonni o'chirish",
+  "guest.checkin": "Mehmonni kirish qilish",
+  "guest.checkout": "Mehmonni chiqarish",
+  "room.view": "Xonalarni ko'rish",
+  "room.create": "Xona qo'shish",
+  "room.update": "Xonani tahrirlash",
+  "room.delete": "Xonani o'chirish",
+  "room.manage": "Xonalarni to'liq boshqarish",
+  "room.status.update": "Xona holatini o'zgartirish",
+  "room_type.create": "Xona turi qo'shish",
+  "room_type.update": "Xona turini tahrirlash",
+  "room_type.delete": "Xona turini o'chirish",
+  "floor.create": "Qavat qo'shish",
+  "floor.update": "Qavatni tahrirlash",
+  "floor.delete": "Qavatni o'chirish",
+  "housekeeping.task.create": "Vazifa yaratish",
+  "housekeeping.task.update": "Vazifani yangilash",
+  "housekeeping.task.assign": "Vazifaga mas'ul biriktirish",
+  "housekeeping.task.view": "Vazifalarni ko'rish",
+  "housekeeping.cleaning.start": "Tozalashni boshlash",
+  "housekeeping.cleaning.complete": "Tozalashni yakunlash",
+  "finance.view": "Moliyani ko'rish",
+  "finance.invoice.create": "Hisob-faktura yaratish",
+  "finance.invoice.view": "Hisob-fakturalarni ko'rish",
+  "finance.payment.create": "To'lov qabul qilish",
+  "finance.payment.view": "To'lovlarni ko'rish",
+  "report.view": "Hisobotlarni ko'rish",
+  "report.generate": "Hisobot shakllantirish",
+  "employee.view": "Xodimlarni ko'rish",
+  "employee.create": "Xodim qo'shish",
+  "employee.update": "Xodimni tahrirlash",
+  "employee.delete": "Xodimni o'chirish",
+  "employee.manage": "Xodimlarni to'liq boshqarish",
+  "permission.view": "Ruxsatlarni ko'rish",
+  "permission.assign": "Ruxsat biriktirish",
+  "service.view": "Xizmatlarni ko'rish",
+  "service.create": "Xizmat qo'shish",
+  "service.update": "Xizmatni tahrirlash",
+  "service.delete": "Xizmatni o'chirish",
+  "service.manage": "Xizmatlarni to'liq boshqarish",
+  "hotel_service.manage": "Mehmonxona xizmatlarini boshqarish",
+  "expense.view": "Xarajatlarni ko'rish",
+  "expense.create": "Xarajat kiritish",
+  "expense.delete": "Xarajatni o'chirish",
+  "file.upload": "Fayl yuklash",
+  "file.delete": "Faylni o'chirish",
+  "file.view": "Fayllarni ko'rish",
+  "audit.view": "Audit loglarini ko'rish",
+  "hotel.view": "Mehmonxonani ko'rish",
+  "hotel.update": "Mehmonxonani tahrirlash",
+  "branch.view": "Filiallarni ko'rish",
+  "branch.update": "Filialni tahrirlash",
+}
+
+// Lug'atda bo'lmagan kodlar uchun avtomatik o'zbekcha nom yasash
+const UZ_ACTIONS: Record<string, string> = {
+  view: "ko'rish",
+  create: "yaratish",
+  update: "tahrirlash",
+  delete: "o'chirish",
+  manage: "boshqarish",
+  assign: "biriktirish",
+  cancel: "bekor qilish",
+  upload: "yuklash",
+  download: "yuklab olish",
+  start: "boshlash",
+  complete: "yakunlash",
+  generate: "shakllantirish",
+  export: "eksport qilish",
+}
+const UZ_SUBJECTS: Record<string, string> = {
+  reservation: "Bron",
+  guest: "Mehmon",
+  room: "Xona",
+  room_type: "Xona turi",
+  floor: "Qavat",
+  housekeeping: "Xo'jalik",
+  task: "vazifa",
+  cleaning: "tozalash",
+  finance: "Moliya",
+  invoice: "hisob-faktura",
+  payment: "to'lov",
+  report: "Hisobot",
+  employee: "Xodim",
+  permission: "Ruxsat",
+  service: "Xizmat",
+  hotel: "Mehmonxona",
+  hotel_service: "Mehmonxona xizmati",
+  branch: "Filial",
+  audit: "Audit",
+  file: "Fayl",
+  expense: "Xarajat",
+  status: "holat",
+  amenity: "Qulaylik",
+}
+
+function uzPermissionLabel(code: string, fallback: string): string {
+  if (UZ_PERMISSION_LABELS[code]) return UZ_PERMISSION_LABELS[code]
+  const parts = code.split(".")
+  if (parts.length < 2) return fallback
+  const action = UZ_ACTIONS[parts[parts.length - 1]]
+  if (!action) return fallback
+  const subject = parts
+    .slice(0, -1)
+    .map((s) => UZ_SUBJECTS[s] || s)
+    .join(" ")
+  return `${subject} — ${action}`
+}
+
 export const PermissionsPage = () => {
   const { can, isAdmin } = usePermissions()
   const canAssign = can("permission.assign")
@@ -212,11 +333,16 @@ export const PermissionsPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Ruxsatnomalar</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Xodimlarga tizim bo'limlari bo'yicha ruxsatlar berish
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
+            <ShieldCheck className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Ruxsatnomalar</h1>
+            <p className="text-sm text-gray-500">
+              Xodimlarga tizim bo'limlari bo'yicha ruxsatlar berish
+            </p>
+          </div>
         </div>
         {canAssign && selectedEmployee && (
           <Button onClick={onSave} disabled={!hasChanges || setPermsMutation.isPending}>
@@ -289,7 +415,7 @@ export const PermissionsPage = () => {
           {/* Rol shablonlari — bir bosishda tayyor ruxsatlar to'plami */}
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-700">Rol shablonlari</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
               {visibleTemplates.map(({ template, ids }) => {
                 const Icon = template.icon
                 const isActive = activeTemplate?.id === template.id
@@ -353,7 +479,7 @@ export const PermissionsPage = () => {
               <Skeleton className="h-24 w-full" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
               {grouped.map(([module, perms]) => {
                 const selectedCount = perms.filter((p) =>
                   selected.includes(p.id)
@@ -363,8 +489,8 @@ export const PermissionsPage = () => {
                   (p) => isAdmin || allowedIdSet.has(p.id)
                 )
                 return (
-                  <div key={module} className="rounded-md border">
-                    <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-2.5 rounded-t-md">
+                  <div key={module} className="rounded-2xl border bg-white overflow-hidden">
+                    <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4 text-primary-600" />
                         <span className="text-sm font-semibold">
@@ -413,7 +539,10 @@ export const PermissionsPage = () => {
                               disabled={!editable}
                             />
                             <span className="min-w-0">
-                              <span className="block leading-tight">{p.name}</span>
+                              {/* Ruxsat nomi — o'zbekcha (inglizchasi title'da) */}
+                              <span className="block leading-tight" title={p.name}>
+                                {uzPermissionLabel(p.code, p.name)}
+                              </span>
                               <span className="block text-[11px] text-gray-400 font-mono leading-tight">
                                 {p.code}
                               </span>
