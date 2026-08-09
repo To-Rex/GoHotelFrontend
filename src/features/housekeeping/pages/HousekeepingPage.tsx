@@ -433,13 +433,24 @@ export const HousekeepingPage = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={cn(
-                          "text-xs font-medium px-2 py-0.5 rounded-full",
-                          statusBadge[t.status] || statusBadge.OPEN
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "text-xs font-medium px-2 py-0.5 rounded-full",
+                            statusBadge[t.status] || statusBadge.OPEN
+                          )}
+                        >
+                          {STATUSES[t.status] || t.status}
+                        </span>
+                        {/* Scheduler avtomatik yopgan vazifa alohida belgilanadi */}
+                        {t.auto_completed && (
+                          <span
+                            title="Belgilangan vaqt ichida qo'lda yakunlanmagani uchun tizim avtomatik yopdi"
+                            className="rounded-full border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
+                          >
+                            avto
+                          </span>
                         )}
-                      >
-                        {STATUSES[t.status] || t.status}
                       </span>
                     </TableCell>
                     <TableCell>

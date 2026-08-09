@@ -15,6 +15,38 @@ export const useHousekeepingTasks = (status?: string) => {
   });
 };
 
+/* Avto-yakunlash vaqtlari (vazifa turi -> daqiqa, 0 = o'chirilgan) */
+export interface HkAutoSettings {
+  durations: Record<string, number>;
+  defaults: Record<string, number>;
+}
+
+export const useHkAutoSettings = () => {
+  return useQuery({
+    queryKey: ['hkAutoSettings'],
+    queryFn: async () => {
+      const { data } = await api.get<HkAutoSettings>(
+        '/housekeeping/auto-complete-settings'
+      );
+      return data;
+    },
+  });
+};
+
+export const useSaveHkAutoSettings = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (durations: Record<string, number>) => {
+      const { data } = await api.put<HkAutoSettings>(
+        '/housekeeping/auto-complete-settings',
+        { durations }
+      );
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hkAutoSettings'] }),
+  });
+};
+
 interface TaskCreatePayload {
   branch_id: string;
   room_id: string;

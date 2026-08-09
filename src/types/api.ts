@@ -153,6 +153,8 @@ export interface HousekeepingTask {
   scheduled_date?: string | null;
   started_at?: string | null;
   completed_at?: string | null;
+  /** Scheduler tomonidan avtomatik yakunlangan (qo'lda emas) */
+  auto_completed?: boolean;
   created_by: string;
   created_at: string;
   photo_count: number;

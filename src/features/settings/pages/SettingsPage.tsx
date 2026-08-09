@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Settings,
   AlertTriangle,
@@ -7,8 +7,13 @@ import {
   CheckCircle2,
   Database,
   Users,
+  Timer,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
+import {
+  useHkAutoSettings,
+  useSaveHkAutoSettings,
+} from "@/features/housekeeping/api/housekeeping"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -48,10 +53,53 @@ const TABLE_LABELS: Record<string, string> = {
   users: "Xodimlar",
 }
 
+// Avto-yakunlash sozlamasidagi vazifa turlari nomlari
+const HK_TYPE_LABELS: Record<string, string> = {
+  CLEANING: "Tozalash",
+  DEEP_CLEANING: "Chuqur tozalash",
+  MAINTENANCE: "Ta'mirlash",
+  INSPECTION: "Tekshiruv",
+  TURN_DOWN: "Kechki tayyorlash",
+}
+
 export const SettingsPage = () => {
   const { isAdmin } = usePermissions()
   const user = useAuthStore((s) => s.user)
   const resetMutation = useResetData()
+
+  // --- Vazifalarni avtomatik yakunlash vaqtlari ---
+  const { data: hkSettings } = useHkAutoSettings()
+  const saveHkMutation = useSaveHkAutoSettings()
+  const [durations, setDurations] = useState<Record<string, string>>({})
+  const [hkSaved, setHkSaved] = useState(false)
+  const [hkError, setHkError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (hkSettings?.durations) {
+      setDurations(
+        Object.fromEntries(
+          Object.entries(hkSettings.durations).map(([k, v]) => [k, String(v)])
+        )
+      )
+    }
+  }, [hkSettings])
+
+  const onSaveHk = async () => {
+    setHkError(null)
+    setHkSaved(false)
+    try {
+      const payload: Record<string, number> = {}
+      for (const [k, v] of Object.entries(durations)) {
+        const n = parseInt(v, 10)
+        payload[k] = isNaN(n) || n < 0 ? 0 : Math.min(n, 1440)
+      }
+      await saveHkMutation.mutateAsync(payload)
+      setHkSaved(true)
+      window.setTimeout(() => setHkSaved(false), 3000)
+    } catch (e) {
+      setHkError(apiErrorMessage(e))
+    }
+  }
 
   const [scope, setScope] = useState<"operational" | "full">("operational")
   const [confirmText, setConfirmText] = useState("")
@@ -116,6 +164,60 @@ export const SettingsPage = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Sozlamalar</h1>
           <p className="text-sm text-gray-500">Tizim boshqaruvi</p>
+        </div>
+      </div>
+
+      {/* Vazifalarni avtomatik yakunlash vaqtlari */}
+      <div className="rounded-2xl border bg-white p-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+            <Timer className="h-4.5 w-4.5" />
+          </span>
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">
+              Vazifalarni avtomatik yakunlash
+            </h2>
+            <p className="text-xs text-gray-500">
+              Belgilangan vaqt ichida qo'lda yakunlanmagan xo'jalik vazifasini
+              tizim o'zi yopadi (jadvalda "avto" belgisi bilan ko'rinadi).
+              0 — avtomatik yakunlash o'chirilgan.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
+          {Object.entries(HK_TYPE_LABELS).map(([type, label]) => (
+            <div key={type} className="space-y-1">
+              <label className="text-xs font-medium text-gray-500">
+                {label} (daqiqa)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={1440}
+                value={durations[type] ?? ""}
+                onChange={(e) =>
+                  setDurations((d) => ({ ...d, [type]: e.target.value }))
+                }
+                placeholder={String(hkSettings?.defaults?.[type] ?? "")}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Button onClick={onSaveHk} disabled={saveHkMutation.isPending}>
+            {saveHkMutation.isPending && (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            )}
+            Saqlash
+          </Button>
+          {hkSaved && (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+              <CheckCircle2 className="h-4 w-4" /> Saqlandi
+            </span>
+          )}
+          {hkError && <span className="text-sm text-red-500">{hkError}</span>}
         </div>
       </div>
 
