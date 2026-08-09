@@ -1,5 +1,15 @@
 import { useState, useEffect, useMemo } from "react"
-import { ClipboardList, Plus, Loader2, UserPlus, Image as ImageIcon } from "lucide-react"
+import {
+  ClipboardList,
+  Plus,
+  Loader2,
+  UserPlus,
+  Image as ImageIcon,
+  Search,
+  Play,
+  CheckCircle2,
+  X,
+} from "lucide-react"
 import {
   useHousekeepingTasks,
   useCreateHousekeepingTask,
@@ -71,6 +81,28 @@ const priorityBadge: Record<string, string> = {
   MEDIUM: "bg-sky-100 text-sky-700",
   HIGH: "bg-orange-100 text-orange-700",
   URGENT: "bg-red-100 text-red-700",
+}
+
+// Qator chap chekkasi holat rangida — ro'yxatni ko'z yugurtirib o'qish oson
+const statusRowAccent: Record<string, string> = {
+  OPEN: "border-l-amber-400",
+  IN_PROGRESS: "border-l-blue-400",
+  COMPLETED: "border-l-emerald-400",
+  CANCELLED: "border-l-gray-300",
+}
+
+// Holat filtri chiplari uchun nuqta ranglari
+const statusDot: Record<string, string> = {
+  OPEN: "bg-amber-500",
+  IN_PROGRESS: "bg-blue-500",
+  COMPLETED: "bg-emerald-500",
+  CANCELLED: "bg-gray-400",
+}
+
+// Mas'ul avatari uchun bosh harflar
+const initials = (name?: string) => {
+  const parts = (name || "").trim().split(/\s+/)
+  return `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase() || "?"
 }
 
 // Fotohisobot suratini avtorizatsiya bilan yuklab ko'rsatish. Endpoint bearer
@@ -275,11 +307,19 @@ export const HousekeepingPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Xo'jalik ishlari</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Tozalash, ta'mirlash va boshqa vazifalarni boshqarish
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
+            <ClipboardList className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+              Xo'jalik ishlari
+            </h1>
+            <p className="text-sm text-gray-500">
+              Tozalash, ta'mirlash va boshqa vazifalar · ko'rsatilmoqda:{" "}
+              {filtered.length} ta
+            </p>
+          </div>
         </div>
         {canCreate && (
           <Button onClick={openCreate}>
@@ -289,29 +329,50 @@ export const HousekeepingPage = () => {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="max-w-xs flex-1 min-w-[180px]">
+      {/* Qidiruv + holat chiplari */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="relative max-w-xs flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
+            className="pl-9"
             placeholder="Xona, tur yoki mas'ul bo'yicha qidirish..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className={cn(selectClass, "w-auto min-w-[160px]")}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="">Barcha holatlar</option>
-          {Object.entries(STATUSES).map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("")}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+              !statusFilter
+                ? "border-primary-600 bg-primary-600 text-white"
+                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+            )}
+          >
+            Barchasi
+          </button>
+          {Object.entries(STATUSES).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setStatusFilter(statusFilter === value ? "" : value)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                statusFilter === value
+                  ? "border-primary-600 bg-primary-50 text-primary-700"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
+              )}
+            >
+              <span className={cn("h-2 w-2 rounded-full", statusDot[value] || "bg-gray-400")} />
+              {label}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-2xl border bg-white overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -341,17 +402,25 @@ export const HousekeepingPage = () => {
                     : ""
                 const active = t.status === "OPEN" || t.status === "IN_PROGRESS"
                 return (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-medium">
-                      <span className="inline-flex items-center gap-2">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-600">
-                          <ClipboardList className="h-4 w-4" />
-                        </span>
+                  <TableRow
+                    key={t.id}
+                    className={cn(
+                      "border-l-4 transition-colors",
+                      statusRowAccent[t.status] || "border-l-transparent"
+                    )}
+                  >
+                    <TableCell>
+                      <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gray-100 px-2 text-xs font-bold text-gray-700">
                         {roomNumber}
                       </span>
                     </TableCell>
-                    <TableCell className="text-gray-600">
+                    <TableCell className="font-medium text-gray-700">
                       {TASK_TYPES[t.task_type] || t.task_type}
+                      {t.notes && (
+                        <p className="mt-0.5 max-w-[220px] truncate text-xs font-normal text-gray-400">
+                          {t.notes}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell>
                       <span
@@ -373,7 +442,18 @@ export const HousekeepingPage = () => {
                         {STATUSES[t.status] || t.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-gray-600">{assignee || "—"}</TableCell>
+                    <TableCell>
+                      {assignee ? (
+                        <span className="flex items-center gap-2">
+                          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-bold text-primary-700">
+                            {initials(assignee)}
+                          </span>
+                          <span className="truncate text-gray-700">{assignee}</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs italic text-gray-400">Biriktirilmagan</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-gray-600">
                       {t.scheduled_date || "—"}
                     </TableCell>
@@ -398,21 +478,34 @@ export const HousekeepingPage = () => {
                             </span>
                           )}
                         </button>
-                        {canUpdate && active && (
-                          <select
-                            className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-                            value=""
-                            onChange={(e) => onStatusChange(t, e.target.value)}
+                        {/* Holat amallari — tushunarli alohida tugmalar */}
+                        {canUpdate && t.status === "OPEN" && (
+                          <button
+                            type="button"
+                            onClick={() => onStatusChange(t, "IN_PROGRESS")}
+                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100"
                           >
-                            <option value="">Holat...</option>
-                            {t.status === "OPEN" && (
-                              <option value="IN_PROGRESS">Boshlash</option>
-                            )}
-                            {t.status === "IN_PROGRESS" && (
-                              <option value="COMPLETED">Yakunlash</option>
-                            )}
-                            <option value="CANCELLED">Bekor qilish</option>
-                          </select>
+                            <Play className="h-3 w-3" /> Boshlash
+                          </button>
+                        )}
+                        {canUpdate && t.status === "IN_PROGRESS" && (
+                          <button
+                            type="button"
+                            onClick={() => onStatusChange(t, "COMPLETED")}
+                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                          >
+                            <CheckCircle2 className="h-3 w-3" /> Yakunlash
+                          </button>
+                        )}
+                        {canUpdate && active && (
+                          <button
+                            type="button"
+                            title="Bekor qilish"
+                            onClick={() => onStatusChange(t, "CANCELLED")}
+                            className="rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         )}
                         {canAssign && active && (
                           <Button variant="ghost" size="sm" onClick={() => openAssign(t)}>

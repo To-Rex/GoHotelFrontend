@@ -14,7 +14,7 @@ const FULL_BLEED_ROUTES = ["/booking"];
 // To'liq KENGLIKDA ochiladigan sahifalar: scroll va p-6 padding odatdagidek
 // qoladi, faqat max-w-7xl markazlash cheklovi olib tashlanadi — kontent
 // butun bo'sh joyni egallaydi.
-const FULL_WIDTH_ROUTES = ["/", "/rooms", "/reservations"];
+const FULL_WIDTH_ROUTES = ["/", "/rooms", "/reservations", "/housekeeping"];
 
 export const MainLayout = () => {
   const { isAuthenticated, setUser, user } = useAuthStore();
