@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
+import { format } from "date-fns"
 import {
   ClipboardList,
   Plus,
@@ -466,7 +467,13 @@ export const HousekeepingPage = () => {
                       )}
                     </TableCell>
                     <TableCell className="text-gray-600">
-                      {t.scheduled_date || "—"}
+                      <p className="leading-tight">{t.scheduled_date || "—"}</p>
+                      {/* Vazifa qachon (soati bilan) yaratilgani */}
+                      {t.created_at && (
+                        <p className="mt-0.5 text-xs text-gray-400 leading-tight">
+                          Yaratilgan: {format(new Date(t.created_at), "dd.MM HH:mm")}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end items-center gap-2">
