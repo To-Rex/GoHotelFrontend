@@ -90,24 +90,24 @@
   /* Tun palitrasi: ko'kimtir emas — sof qora/qoramtir neytral tuslar.
      Faqat primary (brend ko'ki) urg'u sifatida saqlanadi. */
   .dark {
-    --background: 0 0% 6%;
+    --background: 0 0% 2.5%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 9%;
+    --card: 0 0% 5.5%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 9%;
+    --popover: 0 0% 5.5%;
     --popover-foreground: 0 0% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 14%;
+    --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 64%;
-    --accent: 0 0% 14%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 62%;
+    --accent: 0 0% 10%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 40%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 17%;
-    --input: 0 0% 17%;
+    --border: 0 0% 13.5%;
+    --input: 0 0% 13.5%;
     --ring: 217.2 91.2% 59.8%;
   }
 }
@@ -254,7 +254,44 @@
 
 /* --- Osmon (sky) --- */
 .dark .bg-sky-50 { background-color: rgb(14 165 233 / 0.15); }
+.dark .bg-sky-100 { background-color: rgb(14 165 233 / 0.22); }
 .dark .hover\:bg-sky-100:hover { background-color: rgb(14 165 233 / 0.25); }
 .dark .text-sky-600,
 .dark .text-sky-700 { color: #38bdf8; }
 .dark .border-sky-300 { border-color: rgb(14 165 233 / 0.4); }
+
+/* --- Indigo (booking kalendar urg'ulari) --- */
+.dark .bg-indigo-50,
+.dark .bg-indigo-50\/30,
+.dark .bg-indigo-50\/60 { background-color: rgb(99 102 241 / 0.15); }
+.dark .text-indigo-400,
+.dark .text-indigo-500,
+.dark .text-indigo-600 { color: #a5b4fc; }
+.dark .border-indigo-100 { border-color: rgb(99 102 241 / 0.4); }
+
+/* --- Booking sahifasidagi qoldiq neytral tuslar --- */
+.dark .bg-gray-50\/60 { background-color: hsl(var(--muted)); }
+.dark .hover\:bg-gray-50\/50:hover { background-color: hsl(var(--muted)); }
+.dark .hover\:bg-gray-200:hover,
+.dark .hover\:bg-gray-200\/70:hover { background-color: hsl(var(--border)); }
+.dark .hover\:bg-white:hover { background-color: hsl(var(--card)); }
+.dark .border-gray-50 { border-color: hsl(var(--border) / 0.5); }
+
+/* --- Primary qo'shimcha tuslari (booking) --- */
+.dark .bg-primary-50\/30 { background-color: hsl(var(--primary) / 0.1); }
+.dark .bg-primary-100\/70 { background-color: hsl(var(--primary) / 0.2); }
+.dark .bg-primary-200,
+.dark .bg-primary-200\/80 { background-color: hsl(var(--primary) / 0.3); }
+.dark .border-primary-300 { border-color: hsl(var(--primary) / 0.45); }
+.dark .hover\:border-primary-400:hover { border-color: hsl(var(--primary) / 0.6); }
+.dark .text-primary-300 { color: #93c5fd; }
+.dark .text-primary-800,
+.dark .text-primary-900 { color: #bfdbfe; }
+.dark .hover\:text-primary-700:hover,
+.dark .hover\:text-primary-800:hover { color: #bfdbfe; }
+
+/* --- Qizil qo'shimchalari --- */
+.dark .text-red-300,
+.dark .text-red-400 { color: #fca5a5; }
+.dark .hover\:text-red-700:hover { color: #f87171; }
+.dark .hover\:border-red-200:hover { border-color: rgb(239 68 68 / 0.4); }
