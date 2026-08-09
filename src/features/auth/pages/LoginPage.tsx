@@ -5,6 +5,7 @@ import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -26,6 +27,8 @@ export const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  // Caps Lock yoqiqligida ogohlantirish (parol maydonida)
+  const [capsOn, setCapsOn] = useState(false);
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
 
@@ -92,7 +95,23 @@ export const LoginPage = () => {
       navigate("/");
     } catch (err: any) {
       console.error("Login error", err);
-      setError(err.response?.data?.detail || "Tizimga kirishda xatolik yuz berdi");
+      // 401 — noto'g'ri login/parol; boshqa xatolarda umumiy matn
+      if (err?.response?.status === 401) {
+        setError("Login yoki parol noto'g'ri. Tekshirib, qayta urinib ko'ring.");
+      } else if (err?.response?.status === 403) {
+        setError(apiErrorMessage(err));
+      } else if (!err?.response) {
+        setError("Server bilan aloqa yo'q. Internet aloqasini tekshiring.");
+      } else {
+        setError(apiErrorMessage(err));
+      }
+      // Xato ko'ringach parol maydoni tozalanib, fokus qaytadi — qayta
+      // urinish qulay bo'lishi uchun
+      form.setValue("password", "");
+      window.setTimeout(
+        () => document.getElementById("login-password")?.focus(),
+        50
+      );
     } finally {
       setIsLoading(false);
     }
@@ -155,6 +174,13 @@ export const LoginPage = () => {
                           autoComplete="username"
                           className="h-11 pl-9 transition-shadow focus-visible:shadow-md focus-visible:shadow-primary-500/10"
                           {...field}
+                          onKeyDown={(e) => {
+                            // Enter — formani yubormasdan parol maydoniga o'tadi
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              document.getElementById("login-password")?.focus();
+                            }
+                          }}
                         />
                       </div>
                     </FormControl>
@@ -175,11 +201,18 @@ export const LoginPage = () => {
                           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                         />
                         <Input
+                          id="login-password"
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           autoComplete="current-password"
                           className="h-11 pl-9 pr-10 transition-shadow focus-visible:shadow-md focus-visible:shadow-primary-500/10"
                           {...field}
+                          onKeyDown={(e) =>
+                            setCapsOn(e.getModifierState?.("CapsLock") ?? false)
+                          }
+                          onKeyUp={(e) =>
+                            setCapsOn(e.getModifierState?.("CapsLock") ?? false)
+                          }
                         />
                         <button
                           type="button"
@@ -192,6 +225,12 @@ export const LoginPage = () => {
                         </button>
                       </div>
                     </FormControl>
+                    {capsOn && (
+                      <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                        <AlertCircle size={13} />
+                        Caps Lock yoqiq — parol katta harflarda yozilmoqda
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

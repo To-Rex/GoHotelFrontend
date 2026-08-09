@@ -26,25 +26,35 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Bu yo'llardagi 401 "sessiya tugadi" emas — noto'g'ri parol/yuz kabi ODDIY
+// xato: refresh urinilmaydi va sahifa qayta yuklanmaydi (xato formada ko'rinadi)
+const AUTH_PATHS = ["/auth/login", "/auth/refresh", "/auth/face/"];
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const url = String(originalRequest?.url || "");
+    const isAuthPath = AUTH_PATHS.some((p) => url.includes(p));
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthPath) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) throw new Error("No refresh token");
-        
+
         const { data } = await axios.post(`${API_URL}/auth/refresh`, { refresh_token: refreshToken });
         localStorage.setItem("accessToken", data.access_token);
-        
+
         originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
         return api(originalRequest);
       } catch (err) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
+        // Login sahifasida turgan bo'lsak qayta yuklash shart emas
+        if (!window.location.pathname.startsWith("/login")) {
+          window.location.href = "/login";
+        }
         return Promise.reject(err);
       }
     }
