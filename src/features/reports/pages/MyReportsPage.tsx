@@ -15,6 +15,7 @@ import { useGuests } from "@/features/guests/api/guests"
 import { useRooms } from "@/features/rooms/api/rooms"
 import { useAuthStore } from "@/store/auth"
 import { ShiftPanel } from "@/features/shifts/components/ShiftPanel"
+import { AcceptedShiftReport } from "@/features/shifts/components/AcceptedShiftReport"
 import type { Reservation, Expense } from "@/types/api"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -132,6 +133,10 @@ export const MyReportsPage = () => {
     <div className="space-y-5">
       {/* Smena va kassa paneli (faqat kassali rejimda ko'rinadi) */}
       <ShiftPanel />
+
+      {/* Qabul qilingan smena hisoboti — ALOHIDA bo'lim (avvalgi xodim
+          hisobida, joriy xodim summalariga qo'shilmaydi) */}
+      <AcceptedShiftReport />
 
       {/* Sarlavha */}
       <div className="flex flex-wrap items-center justify-between gap-3">
