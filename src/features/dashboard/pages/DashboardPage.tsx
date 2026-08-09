@@ -286,7 +286,7 @@ export const DashboardPage = () => {
       value: `${fmt(todayExpenses)} So'm`,
       sub: `${expenses.length} ta chiqim`,
       icon: TrendingDown,
-      accent: "from-red-500 to-rose-600",
+      accent: "bg-red-50 text-red-600",
     },
     {
       label: "Do'kon (bugun)",
@@ -296,42 +296,42 @@ export const DashboardPage = () => {
           ? `Bronlarda qarz: ${fmt(shopDebtTotal)} So'm`
           : `${shopPaidToday.length} ta sotuv`,
       icon: Store,
-      accent: "from-violet-500 to-purple-600",
+      accent: "bg-violet-50 text-violet-600",
     },
     {
       label: "Faol bandlovlar",
       value: String(activeReservations),
       sub: `Bugun kirish: ${arrivals.length} · chiqish: ${departures.length}`,
       icon: CalendarCheck,
-      accent: "from-sky-500 to-blue-600",
+      accent: "bg-sky-50 text-sky-600",
     },
     {
       label: "Bugungi yangi bronlar",
       value: String(createdToday.length),
       sub: `Soatlik: ${createdTodayHourly} · Kunlik: ${createdToday.length - createdTodayHourly}`,
       icon: CalendarPlus,
-      accent: "from-indigo-500 to-blue-700",
+      accent: "bg-indigo-50 text-indigo-600",
     },
     {
       label: "Mehmonlar",
       value: String(guests.length),
       sub: `Oxirgi 7 kunda: +${newGuestsWeek}`,
       icon: Users,
-      accent: "from-amber-500 to-orange-600",
+      accent: "bg-amber-50 text-amber-600",
     },
     {
       label: "Xo'jalik vazifalari",
       value: String(openTasks.length),
       sub: `Bugun bajarildi: ${doneToday}`,
       icon: ClipboardList,
-      accent: "from-orange-500 to-red-500",
+      accent: "bg-orange-50 text-orange-600",
     },
   ]
 
   return (
     <div className="space-y-5">
       {/* HERO — salomlashuv + kunning asosiy 3 ko'rsatkichi */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-800 p-5 text-white shadow-lg shadow-primary-600/20 sm:p-6">
+      <div className="relative overflow-hidden rounded-2xl bg-primary-700 p-5 text-white shadow-lg shadow-primary-600/20 sm:p-6">
         {/* Bezak doiralari */}
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute -bottom-20 right-24 h-40 w-40 rounded-full bg-white/5" />
@@ -386,7 +386,7 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* KPI kartalar — wrap uslubida, gradient ikonkali */}
+      {/* KPI kartalar — wrap uslubida */}
       <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(235px,1fr))]">
         {tiles.map((t) => (
           <div
@@ -396,7 +396,7 @@ export const DashboardPage = () => {
             <div className="flex items-start gap-3">
               <span
                 className={cn(
-                  "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm",
+                  "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl",
                   t.accent
                 )}
               >
@@ -417,7 +417,7 @@ export const DashboardPage = () => {
         <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md lg:col-span-2 sm:p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                 <TrendingUp className="h-4 w-4" />
               </span>
               <h2 className="text-sm font-bold text-gray-900">Oxirgi 7 kun tushumi</h2>
@@ -429,12 +429,6 @@ export const DashboardPage = () => {
           <div className="h-56 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0.75} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" />
                 <XAxis
                   dataKey="label"
@@ -452,7 +446,7 @@ export const DashboardPage = () => {
                   }
                 />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(59,130,246,0.06)" }} />
-                <Bar dataKey="amount" fill="url(#revGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="amount" fill="#2563eb" radius={[6, 6, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -461,7 +455,7 @@ export const DashboardPage = () => {
         {/* Xonalar holati taqsimoti */}
         <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md sm:p-5">
           <div className="mb-3 flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
               <BedDouble className="h-4 w-4" />
             </span>
             <h2 className="text-sm font-bold text-gray-900">Xonalar holati</h2>
@@ -508,7 +502,7 @@ export const DashboardPage = () => {
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
         <Panel
           icon={LogIn}
-          iconClass="bg-gradient-to-br from-emerald-500 to-teal-600 text-white"
+          iconClass="bg-emerald-50 text-emerald-600"
           title="Bugungi kirishlar"
           count={arrivals.length}
         >
@@ -542,7 +536,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={LogOut}
-          iconClass="bg-gradient-to-br from-amber-500 to-orange-600 text-white"
+          iconClass="bg-amber-50 text-amber-600"
           title="Bugungi chiqishlar"
           count={departures.length}
         >
@@ -576,7 +570,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={CalendarCheck}
-          iconClass="bg-gradient-to-br from-primary-500 to-indigo-600 text-white"
+          iconClass="bg-primary-50 text-primary-600"
           title="So'nggi bandlovlar"
         >
           {recentReservations.length === 0 ? (
@@ -610,7 +604,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={ClipboardList}
-          iconClass="bg-gradient-to-br from-orange-500 to-red-500 text-white"
+          iconClass="bg-orange-50 text-orange-600"
           title="Xo'jalik vazifalari"
           count={openTasks.length}
         >
