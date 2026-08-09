@@ -8,7 +8,14 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { AlertCircle, Building2, Eye, EyeOff, Loader2, Lock, User } from "lucide-react";
+import { AlertCircle, Building2, Eye, EyeOff, Loader2, Lock, User, ScanFace } from "lucide-react";
+import {
+  getFaceAvailability,
+  hasCamera,
+  faceLogin,
+  faceErrorMessage,
+} from "@/features/auth/api/face";
+import { FaceCameraDialog } from "@/features/auth/components/FaceCameraDialog";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Foydalanuvchi nomi kiritilishi shart"),
@@ -26,6 +33,37 @@ export const LoginPage = () => {
   useEffect(() => {
     document.title = "GoHotel";
   }, []);
+
+  // "Yuz bilan kirish" tugmasi FAQAT: (a) serverda yuz-kirish yoqilgan va
+  // kamida bitta xodim yuz biriktirgan, (b) qurilmada kamera bor bo'lsa
+  // ko'rinadi — aks holda umuman so'ralmaydi
+  const [faceEnabled, setFaceEnabled] = useState(false);
+  const [faceOpen, setFaceOpen] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getFaceAvailability(), hasCamera()]).then(([avail, cam]) => {
+      if (!cancelled) setFaceEnabled(avail && cam);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleFaceCapture = async (photo: Blob): Promise<string | null> => {
+    try {
+      const data = await faceLogin(photo);
+      localStorage.setItem("accessToken", data.access_token);
+      localStorage.setItem("refreshToken", data.refresh_token);
+      const profileRes = await api.get("/auth/me", {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      setAuth(profileRes.data, data.access_token, data.refresh_token);
+      navigate("/");
+      return null;
+    } catch (err) {
+      return faceErrorMessage(err);
+    }
+  };
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -183,9 +221,31 @@ export const LoginPage = () => {
                   "Kirish"
                 )}
               </Button>
+
+              {/* Yuz bilan kirish — faqat qo'llab-quvvatlanadigan holatda */}
+              {faceEnabled && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setFaceOpen(true)}
+                  className="h-11 w-full gap-2 font-semibold"
+                >
+                  <ScanFace size={18} />
+                  Yuz bilan kirish
+                </Button>
+              )}
             </form>
           </Form>
         </div>
+
+        <FaceCameraDialog
+          open={faceOpen}
+          onOpenChange={setFaceOpen}
+          title="Yuz bilan kirish"
+          actionLabel="Kirish"
+          hint="Yuzingizni oval ramkaga joylab, yorug' joyda tugmani bosing"
+          onCapture={handleFaceCapture}
+        />
 
         <p className="mt-6 text-center text-xs text-slate-400/70">
           © {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi
