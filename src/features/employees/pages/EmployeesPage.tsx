@@ -1,6 +1,20 @@
 import { useState, useMemo } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { UserCog, Plus, Pencil, Trash2, Loader2, Upload, X } from "lucide-react"
+import {
+  UserCog,
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
+  Upload,
+  X,
+  Search,
+  LayoutGrid,
+  List,
+  Phone,
+  Building2,
+  CalendarDays,
+} from "lucide-react"
 import {
   useEmployees,
   useCreateEmployee,
@@ -94,6 +108,22 @@ export const EmployeesPage = () => {
   }, [branches])
 
   const [search, setSearch] = useState("")
+
+  // Ko'rinish: grid (standart) yoki jadval — tanlov brauzerda saqlanadi
+  const [viewMode, setViewModeState] = useState<"table" | "grid">(() => {
+    try {
+      return localStorage.getItem("employees_view_mode") === "table" ? "table" : "grid"
+    } catch {
+      return "grid"
+    }
+  })
+  const setViewMode = (m: "table" | "grid") => {
+    setViewModeState(m)
+    try {
+      localStorage.setItem("employees_view_mode", m)
+    } catch {}
+  }
+
   const filtered = employees.filter((e) => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
@@ -313,14 +343,28 @@ export const EmployeesPage = () => {
     )
   }
 
+  const activeCount = employees.filter((e) => e.status === "ACTIVE").length
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Xodimlar</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Mehmonxona xodimlarini boshqarish
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
+            <UserCog className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Xodimlar</h1>
+            <p className="text-sm text-gray-500">
+              Jami {employees.length} ta xodim ·{" "}
+              <span className="font-medium text-emerald-600">{activeCount} faol</span>
+              {filtered.length !== employees.length && (
+                <span className="font-medium text-primary-700">
+                  {" "}
+                  · natija: {filtered.length} ta
+                </span>
+              )}
+            </p>
+          </div>
         </div>
         {canCreate && (
           <Button onClick={openCreate}>
@@ -330,15 +374,144 @@ export const EmployeesPage = () => {
         )}
       </div>
 
-      <div className="max-w-xs">
-        <Input
-          placeholder="Qidirish..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {/* Qidiruv + ko'rinish almashtirgich */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="relative max-w-xs flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            className="pl-9"
+            placeholder="Ism, login, telefon bo'yicha qidirish..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="ml-auto flex rounded-lg border border-gray-200 bg-white p-0.5">
+          <button
+            type="button"
+            onClick={() => setViewMode("table")}
+            title="Jadval ko'rinishi"
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+              viewMode === "table"
+                ? "bg-primary-50 text-primary-700"
+                : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <List className="h-4 w-4" />
+            Jadval
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            title="Grid ko'rinishi"
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+              viewMode === "grid"
+                ? "bg-primary-50 text-primary-700"
+                : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Grid
+          </button>
+        </div>
       </div>
 
-      <div className="rounded-md border">
+      {/* GRID ko'rinishi — xodim kartalari */}
+      {viewMode === "grid" &&
+        (filtered.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed py-14 text-gray-400">
+            <UserCog className="h-8 w-8" />
+            <p className="text-sm">Xodimlar topilmadi</p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
+            {filtered.map((e) => (
+              <div
+                key={e.id}
+                className="group relative rounded-2xl border bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  {photosMap[e.id] ? (
+                    <img
+                      src={photosMap[e.id]}
+                      alt=""
+                      className="h-12 w-12 flex-shrink-0 rounded-full border border-gray-200 object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">
+                      {`${e.first_name?.[0] ?? ""}${e.last_name?.[0] ?? ""}`.toUpperCase() ||
+                        "?"}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-gray-900 leading-tight">
+                      {e.first_name} {e.last_name}
+                    </p>
+                    <p className="truncate text-xs text-gray-400">@{e.username}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                    {ROLE_LABELS[e.user_type] || e.user_type}
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                      statusBadge[e.status] || statusBadge.ACTIVE
+                    )}
+                  >
+                    {STATUS_LABELS[e.status] || e.status}
+                  </span>
+                </div>
+
+                <div className="mt-3 space-y-1 text-xs text-gray-500">
+                  <p className="flex items-center gap-1.5">
+                    <Phone className="h-3 w-3 text-gray-400" />
+                    {e.phone || "—"}
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <Building2 className="h-3 w-3 text-gray-400" />
+                    {(e.branch_id && branchMap[e.branch_id]) || "—"}
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <CalendarDays className="h-3 w-3 text-gray-400" />
+                    {e.hire_date || "—"}
+                  </p>
+                </div>
+
+                {(canEdit || canDelete) && (
+                  <div className="absolute right-2.5 top-2.5 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                    {canEdit && (
+                      <button
+                        type="button"
+                        title="Tahrirlash"
+                        onClick={() => openEdit(e)}
+                        className="rounded-md bg-white/90 p-1.5 text-gray-400 shadow-sm ring-1 ring-gray-200 hover:text-gray-600"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {canDelete && e.id !== user?.id && (
+                      <button
+                        type="button"
+                        title="O'chirish"
+                        onClick={() => onDelete(e)}
+                        className="rounded-md bg-white/90 p-1.5 text-red-400 shadow-sm ring-1 ring-gray-200 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+
+      {viewMode === "table" && (
+      <div className="rounded-2xl border bg-white overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -433,6 +606,7 @@ export const EmployeesPage = () => {
           </TableBody>
         </Table>
       </div>
+      )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[480px]">
