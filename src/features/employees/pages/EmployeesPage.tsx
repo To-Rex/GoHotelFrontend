@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, type ReactNode } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   UserCog,
@@ -6,7 +6,6 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  Upload,
   X,
   Search,
   LayoutGrid,
@@ -15,6 +14,10 @@ import {
   Building2,
   CalendarDays,
   Clock,
+  Camera,
+  KeyRound,
+  ShieldCheck,
+  UserRound,
 } from "lucide-react"
 import {
   useEmployees,
@@ -44,13 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -74,6 +71,25 @@ const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrator",
   EMPLOYEE: "Xodim",
 }
+
+// Dialog ichidagi forma bo'limi: kichik sarlavha (ikonka bilan) + maydonlar
+const FormSection = ({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof UserCog
+  title: string
+  children: ReactNode
+}) => (
+  <section className="space-y-2.5">
+    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+      <Icon className="h-3.5 w-3.5 text-primary-500" />
+      {title}
+    </p>
+    {children}
+  </section>
+)
 
 export const EmployeesPage = () => {
   const { can, isAdmin } = usePermissions()
@@ -667,148 +683,231 @@ export const EmployeesPage = () => {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Xodimni tahrirlash" : "Yangi xodim"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Ism *</label>
-                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Familiya *</label>
-                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
-              </div>
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[580px]">
+          {/* Sarlavha — ikonka kartochkasi bilan, scrollda tepada qoladi */}
+          <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-white px-5 py-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
+              {editing ? (
+                <Pencil className="h-4 w-4 text-white" />
+              ) : (
+                <Plus className="h-5 w-5 text-white" />
+              )}
             </div>
-            {!editing && (
+            <div>
+              <DialogTitle className="text-base font-bold">
+                {editing ? "Xodimni tahrirlash" : "Yangi xodim"}
+              </DialogTitle>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {editing
+                  ? `${editing.first_name} ${editing.last_name} · @${editing.username}`
+                  : "Ma'lumotlarni to'ldiring — surat va rol ixtiyoriy"}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-6 px-5 py-5">
+            {/* Surat — bosib tanlanadi, ustiga borganda kamera chiqadi */}
+            <div className="flex flex-col items-center gap-1.5">
+              <label className="group/photo relative block cursor-pointer" title="Surat tanlash">
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt="Surat"
+                    className="h-24 w-24 rounded-full border-2 border-primary-100 object-cover shadow-sm"
+                  />
+                ) : editing && photosMap[editing.id] ? (
+                  <img
+                    src={photosMap[editing.id]}
+                    alt="Joriy surat"
+                    className="h-24 w-24 rounded-full border-2 border-primary-100 object-cover shadow-sm"
+                  />
+                ) : (
+                  <span className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-gray-50 text-gray-300">
+                    <UserRound className="h-10 w-10" />
+                  </span>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover/photo:opacity-100">
+                  <Camera className="h-6 w-6 text-white" />
+                </span>
+                <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-white shadow ring-2 ring-white">
+                  <Camera className="h-3.5 w-3.5" />
+                </span>
+                <input
+                  type="file"
+                  accept={EMPLOYEE_PHOTO_ACCEPT}
+                  className="hidden"
+                  onChange={(ev) => {
+                    handlePhoto(ev.target.files?.[0] ?? null)
+                    ev.target.value = ""
+                  }}
+                />
+              </label>
+              {photoPreview ? (
+                <button
+                  type="button"
+                  onClick={() => handlePhoto(null)}
+                  className="flex items-center gap-1 text-xs text-gray-400 transition-colors hover:text-red-500"
+                >
+                  <X className="h-3 w-3" />
+                  Suratni olib tashlash
+                </button>
+              ) : (
+                <p className="text-xs text-gray-400">
+                  Surat qo'shish uchun bosing (ixtiyoriy)
+                </p>
+              )}
+            </div>
+
+            <FormSection icon={UserRound} title="Shaxsiy ma'lumotlar">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Login *</label>
+                  <label className="text-xs font-medium text-gray-600">Ism *</label>
+                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Familiya *</label>
+                  <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Telefon</label>
                   <Input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Kamida 3 belgi"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+998..."
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Parol *</label>
+                  <label className="text-xs font-medium text-gray-600">Email</label>
                   <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Kamida 6 belgi"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
               </div>
+            </FormSection>
+
+            {!editing && (
+              <FormSection icon={KeyRound} title="Kirish hisobi">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Login *</label>
+                    <Input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Kamida 3 belgi"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Parol *</label>
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Kamida 6 belgi"
+                    />
+                  </div>
+                </div>
+              </FormSection>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Telefon</label>
-                <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+998..."
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Email</label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Filial *</label>
-                <select
-                  className={selectClass}
-                  value={branchId}
-                  onChange={(e) => setBranchId(e.target.value)}
-                >
-                  <option value="">Filialni tanlang</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {editing ? (
+
+            <FormSection icon={Building2} title="Ish joyi">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Holat</label>
+                  <label className="text-xs font-medium text-gray-600">Filial *</label>
                   <select
                     className={selectClass}
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    value={branchId}
+                    onChange={(e) => setBranchId(e.target.value)}
                   >
-                    {Object.entries(STATUS_LABELS).map(([v, l]) => (
-                      <option key={v} value={v}>
-                        {l}
+                    <option value="">Filialni tanlang</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
                       </option>
                     ))}
                   </select>
                 </div>
-              ) : (
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">Ishga olish sanasi</label>
-                  <Input
-                    type="date"
-                    value={hireDate}
-                    onChange={(e) => setHireDate(e.target.value)}
-                  />
-                </div>
-              )}
-            </div>
-            {/* Ish jadvali: boshlanish vaqti + kunlik soat (default 8) kiritiladi,
-                tugash vaqti avtomatik hisoblanadi */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Ish vaqti</label>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-400">Boshlanishi</p>
-                  <Input
-                    type="time"
-                    value={workStart}
-                    onChange={(e) => applyWorkStart(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-400">Kuniga (soat)</p>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={24}
-                    value={workHours}
-                    onChange={(e) => applyWorkHours(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-400">Tugashi (avto)</p>
-                  <Input
-                    type="time"
-                    value={workEnd}
-                    readOnly
-                    tabIndex={-1}
-                    className="pointer-events-none bg-gray-50 text-gray-500"
-                  />
-                </div>
+                {editing ? (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Holat</label>
+                    <select
+                      className={selectClass}
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                    >
+                      {Object.entries(STATUS_LABELS).map(([v, l]) => (
+                        <option key={v} value={v}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      Ishga olish sanasi
+                    </label>
+                    <Input
+                      type="date"
+                      value={hireDate}
+                      onChange={(e) => setHireDate(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-gray-400">
-                Boshlanish vaqti va kunlik soatni kiriting — tugash vaqti
-                avtomatik hisoblanadi.
-              </p>
-            </div>
+            </FormSection>
+            {/* Boshlanish vaqti + kunlik soat kiritiladi, tugashi avto hisoblanadi */}
+            <FormSection icon={Clock} title="Ish vaqti">
+              <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      Boshlanishi
+                    </label>
+                    <Input
+                      type="time"
+                      className="bg-white"
+                      value={workStart}
+                      onChange={(e) => applyWorkStart(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      Kuniga (soat)
+                    </label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={24}
+                      className="bg-white"
+                      value={workHours}
+                      onChange={(e) => applyWorkHours(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      Tugashi (avto)
+                    </label>
+                    <Input
+                      type="time"
+                      value={workEnd}
+                      readOnly
+                      tabIndex={-1}
+                      className="pointer-events-none bg-gray-100 text-gray-500"
+                    />
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-gray-400">
+                  Boshlanish vaqti va kunlik soatni kiriting — tugash vaqti
+                  avtomatik hisoblanadi.
+                </p>
+              </div>
+            </FormSection>
             {/* Rol — faqat yangi xodim qo'shishda; menejer faqat Farroshni
                 tanlay oladi, admin barcha rollarni */}
             {!editing && (
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Rol {!isAdmin && "*"}</label>
+              <FormSection icon={ShieldCheck} title={`Rol${!isAdmin ? " *" : ""}`}>
                 <select
                   className={selectClass}
                   value={roleTemplateId}
@@ -824,70 +923,26 @@ export const EmployeesPage = () => {
                 <p className="text-xs text-gray-400">
                   Tanlangan rolga mos ruxsatlar xodimga avtomatik biriktiriladi.
                 </p>
-              </div>
+              </FormSection>
             )}
-            {/* Xodim surati (ixtiyoriy) */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Xodim surati (ixtiyoriy)</label>
-              <div className="flex items-center gap-3">
-                {photoPreview ? (
-                  <img
-                    src={photoPreview}
-                    alt="Surat"
-                    className="h-14 w-14 rounded-full border border-gray-200 object-cover"
-                  />
-                ) : editing && photosMap[editing.id] ? (
-                  <img
-                    src={photosMap[editing.id]}
-                    alt="Joriy surat"
-                    className="h-14 w-14 rounded-full border border-gray-200 object-cover"
-                  />
-                ) : (
-                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-500">
-                    <UserCog className="h-6 w-6" />
-                  </span>
-                )}
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50">
-                    <Upload className="h-3.5 w-3.5" />
-                    {photoPreview ? "Almashtirish" : "Surat tanlash"}
-                    <input
-                      type="file"
-                      accept={EMPLOYEE_PHOTO_ACCEPT}
-                      className="hidden"
-                      onChange={(ev) => {
-                        handlePhoto(ev.target.files?.[0] ?? null)
-                        ev.target.value = ""
-                      }}
-                    />
-                  </label>
-                  {photoPreview && (
-                    <button
-                      type="button"
-                      onClick={() => handlePhoto(null)}
-                      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-gray-400 hover:text-red-500"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                      Olib tashlash
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
 
             {errorMsg && (
-              <p className="text-sm text-red-500 whitespace-pre-line">{errorMsg}</p>
+              <div className="whitespace-pre-line rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-600">
+                {errorMsg}
+              </div>
             )}
           </div>
-          <DialogFooter>
+
+          {/* Futer — scrollda pastda qoladi */}
+          <div className="sticky bottom-0 z-10 flex justify-end gap-2 border-t bg-white px-5 py-3.5">
             <Button variant="outline" onClick={() => setModalOpen(false)}>
               Bekor qilish
             </Button>
-            <Button onClick={onSubmit} disabled={saving}>
+            <Button onClick={onSubmit} disabled={saving} className="min-w-[120px]">
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {editing ? "Saqlash" : "Qo'shish"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
