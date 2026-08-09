@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { format, subDays } from "date-fns"
 import {
@@ -12,7 +12,6 @@ import {
   Store,
   ClipboardList,
   CalendarPlus,
-  Sparkles,
   History,
   Wallet,
   Trophy,
@@ -28,6 +27,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  LineChart,
+  Line,
 } from "recharts"
 import { useRooms } from "@/features/rooms/api/rooms"
 import { useReservations } from "@/features/reservations/api/reservations"
@@ -43,6 +44,45 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
+
+// Raqamlarning "sanab chiqish" animatsiyasi (ease-out, ~0.9s).
+// Qiymat yangilanganda 0 dan emas, ko'rinib turgan qiymatdan davom etadi.
+const useCountUp = (target: number, duration = 900): number => {
+  const [val, setVal] = useState(0)
+  const fromRef = useRef(0)
+  useEffect(() => {
+    // Harakat kamaytirilgan rejimda darhol yakuniy qiymat ko'rsatiladi
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      fromRef.current = target
+      setVal(target)
+      return
+    }
+    let raf = 0
+    const start = performance.now()
+    const from = fromRef.current
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / duration)
+      const eased = 1 - Math.pow(1 - p, 3)
+      const v = Math.round(from + (target - from) * eased)
+      setVal(v)
+      fromRef.current = v
+      if (p < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [target, duration])
+  return val
+}
+
+// Kun vaqtiga qarab salomlashuv
+const greetingByHour = (h: number): string =>
+  h >= 5 && h < 11
+    ? "Xayrli tong"
+    : h >= 11 && h < 17
+      ? "Xayrli kun"
+      : h >= 17 && h < 22
+        ? "Xayrli oqshom"
+        : "Xayrli tun"
 
 // "Necha vaqtdan beri" yorlig'i — smenalar paneli uchun
 const sinceLabel = (iso: string | null | undefined): string => {
@@ -134,22 +174,17 @@ function Panel({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md">
-      <div className="mb-3 flex items-center gap-2.5">
-        <span
-          className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-lg",
-            iconClass
-          )}
-        >
-          <Icon className="h-4 w-4" />
-        </span>
-        <h2 className="text-sm font-bold text-gray-900">
-          {title}
-          {count !== undefined && (
-            <span className="ml-1.5 font-semibold text-gray-400">({count})</span>
-          )}
+    <div className="animate-dash-rise rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold text-gray-900">
+          <Icon className={cn("h-4 w-4 flex-shrink-0", iconClass)} />
+          <span className="truncate">{title}</span>
         </h2>
+        {count !== undefined && (
+          <span className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+            {count}
+          </span>
+        )}
       </div>
       {children}
     </div>
@@ -197,6 +232,14 @@ export const DashboardPage = () => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000)
     return () => clearInterval(id)
   }, [cashMode])
+
+  // Sarlavhadagi jonli soat (HH:mm) — bir xil qiymatda React qayta render
+  // qilmaydi, shuning uchun soniyalik tekshiruv arzon
+  const [clock, setClock] = useState(() => format(new Date(), "HH:mm"))
+  useEffect(() => {
+    const id = setInterval(() => setClock(format(new Date(), "HH:mm")), 1_000)
+    return () => clearInterval(id)
+  }, [])
 
   const isLoading = roomsLoading || resLoading || guestsLoading || paymentsLoading
 
@@ -369,6 +412,11 @@ export const DashboardPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservations, employeesList, todayStr])
 
+  // Asosiy raqamlar "sanab chiqish" animatsiyasi bilan ko'rsatiladi
+  const incomeAnim = useCountUp(todayIncome)
+  const netAnim = useCountUp(todayNet)
+  const occupancyAnim = useCountUp(occupancyRate, 700)
+
   if (isLoading) {
     return (
       <div className="space-y-5">
@@ -385,6 +433,7 @@ export const DashboardPage = () => {
 
   const now = new Date()
   const dateLine = `${now.getDate()}-${UZ_MONTHS[now.getMonth()]}, ${UZ_DAYS[now.getDay()]}`
+  const greeting = greetingByHour(now.getHours())
 
   const tiles = [
     {
@@ -392,7 +441,8 @@ export const DashboardPage = () => {
       value: `${fmt(todayExpenses)} So'm`,
       sub: `${expenses.length} ta chiqim`,
       icon: TrendingDown,
-      accent: "bg-red-50 text-red-600",
+      iconClass: "text-red-500",
+      bar: "bg-red-500",
     },
     {
       label: "Do'kon (bugun)",
@@ -402,132 +452,178 @@ export const DashboardPage = () => {
           ? `Bronlarda qarz: ${fmt(shopDebtTotal)} So'm`
           : `${shopPaidToday.length} ta sotuv`,
       icon: Store,
-      accent: "bg-violet-50 text-violet-600",
+      iconClass: "text-violet-600",
+      bar: "bg-violet-500",
     },
     {
       label: "Faol bandlovlar",
       value: String(activeReservations),
       sub: `Bugun kirish: ${arrivals.length} · chiqish: ${departures.length}`,
       icon: CalendarCheck,
-      accent: "bg-sky-50 text-sky-600",
+      iconClass: "text-sky-600",
+      bar: "bg-sky-500",
     },
     {
       label: "Bugungi yangi bronlar",
       value: String(createdToday.length),
       sub: `Soatlik: ${createdTodayHourly} · Kunlik: ${createdToday.length - createdTodayHourly}`,
       icon: CalendarPlus,
-      accent: "bg-indigo-50 text-indigo-600",
+      iconClass: "text-indigo-600",
+      bar: "bg-indigo-500",
     },
     {
       label: "Mehmonlar",
       value: String(guests.length),
       sub: `Oxirgi 7 kunda: +${newGuestsWeek}`,
       icon: Users,
-      accent: "bg-amber-50 text-amber-600",
+      iconClass: "text-amber-600",
+      bar: "bg-amber-500",
     },
     {
       label: "Xo'jalik vazifalari",
       value: String(openTasks.length),
       sub: `Bugun bajarildi: ${doneToday}`,
       icon: ClipboardList,
-      accent: "bg-orange-50 text-orange-600",
+      iconClass: "text-orange-600",
+      bar: "bg-orange-500",
     },
   ]
 
   return (
     <div className="space-y-5">
-      {/* HERO — salomlashuv + kunning asosiy 3 ko'rsatkichi */}
-      <div className="relative overflow-hidden rounded-2xl bg-primary-700 p-5 text-white shadow-lg shadow-primary-600/20 sm:p-6">
-        {/* Bezak doiralari */}
-        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-20 right-24 h-40 w-40 rounded-full bg-white/5" />
-
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="flex items-center gap-1.5 text-sm text-white/70">
-              <Sparkles className="h-3.5 w-3.5" />
-              {dateLine}
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-              Xush kelibsiz{user?.first_name ? `, ${user.first_name}` : ""}!
-            </h1>
-            <p className="mt-1 text-sm text-white/70">
-              {user?.hotel_name || "Mehmonxona"} bo'yicha bugungi umumiy holat
-            </p>
-          </div>
-
-          {/* Kunning asosiy raqamlari — shisha chiplar */}
-          <div className="flex flex-wrap gap-2.5">
-            <div className="rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">
-                Bugungi tushum
-              </p>
-              <p className="text-lg font-bold leading-tight">{fmt(todayIncome)} So'm</p>
-              <p className="text-[10px] text-white/50">jami: {fmt(totalRevenue)}</p>
-            </div>
-            <div className="rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">
-                Sof natija
-              </p>
-              <p
-                className={cn(
-                  "text-lg font-bold leading-tight",
-                  todayNet < 0 && "text-red-200"
-                )}
-              >
-                {fmt(todayNet)} So'm
-              </p>
-              <p className="text-[10px] text-white/50">tushum + do'kon − xarajat</p>
-            </div>
-            <div className="rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">
-                Bandlik
-              </p>
-              <p className="text-lg font-bold leading-tight">{occupancyRate}%</p>
-              <p className="text-[10px] text-white/50">
-                band {occupiedRooms} · bo'sh {availableRooms} / {totalRooms}
-              </p>
-            </div>
-          </div>
+      {/* SARLAVHA — tipografik: salomlashuv, sana va jonli soat */}
+      <div className="animate-dash-rise flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">
+            {dateLine}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            {greeting}
+            {user?.first_name ? `, ${user.first_name}` : ""}!
+          </h1>
+          <p className="mt-0.5 text-sm text-gray-500">
+            {user?.hotel_name || "Mehmonxona"} — bugungi holat bir qarashda
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-4xl">
+            {clock}
+          </p>
+          <p className="text-[11px] text-gray-400">mahalliy vaqt</p>
         </div>
       </div>
 
-      {/* KPI kartalar — wrap uslubida */}
+      {/* ASOSIY RAQAMLAR REYKASI — sanab chiquvchi animatsiya bilan */}
+      <div
+        className="animate-dash-rise grid divide-y divide-gray-100 rounded-2xl border bg-white lg:grid-cols-3 lg:divide-x lg:divide-y-0"
+        style={{ animationDelay: "60ms" }}
+      >
+        <div className="flex items-center justify-between gap-3 p-4 sm:p-5">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              Bugungi tushum
+            </p>
+            <p className="mt-1 truncate text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+              {fmt(incomeAnim)}
+              <span className="ml-1 text-sm font-medium text-gray-400">So'm</span>
+            </p>
+            <p className="mt-0.5 text-[11px] text-gray-400">
+              jami tushum: {fmt(totalRevenue)} So'm
+            </p>
+          </div>
+          {/* 7 kunlik mini-trend — faqat keng ekranlarda (raqam qirqilmasligi uchun) */}
+          <div className="hidden h-10 w-24 flex-shrink-0 xl:block">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+            Sof natija
+          </p>
+          <p
+            className={cn(
+              "mt-1 truncate text-2xl font-bold tabular-nums tracking-tight",
+              todayNet < 0 ? "text-red-600" : "text-emerald-600"
+            )}
+          >
+            {fmt(netAnim)}
+            <span className="ml-1 text-sm font-medium text-gray-400">So'm</span>
+          </p>
+          <p className="mt-0.5 text-[11px] text-gray-400">
+            tushum + do'kon − xarajat
+          </p>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+            Bandlik
+          </p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+            {occupancyAnim}
+            <span className="text-sm font-medium text-gray-400">%</span>
+          </p>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-primary-600 transition-all duration-700"
+              style={{ width: `${occupancyRate}%` }}
+            />
+          </div>
+          <p className="mt-1 text-[11px] text-gray-400">
+            band {occupiedRooms} · bo'sh {availableRooms} / {totalRooms} xona
+          </p>
+        </div>
+      </div>
+
+      {/* KPI kartalar — chiziqli aksent uslubi, bosqichma-bosqich chiqadi */}
       <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(235px,1fr))]">
-        {tiles.map((t) => (
+        {tiles.map((t, i) => (
           <div
             key={t.label}
-            className="group rounded-2xl border bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
+            className="group animate-dash-rise rounded-2xl border bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
+            style={{ animationDelay: `${120 + i * 55}ms` }}
           >
-            <div className="flex items-start gap-3">
-              <span
-                className={cn(
-                  "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl",
-                  t.accent
-                )}
-              >
-                <t.icon className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-gray-500">{t.label}</p>
-                <p className="truncate text-xl font-bold text-gray-900">{t.value}</p>
-                <p className="truncate text-[11px] text-gray-400">{t.sub}</p>
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-xs font-medium text-gray-500">{t.label}</p>
+              <t.icon className={cn("h-4 w-4 flex-shrink-0", t.iconClass)} />
             </div>
+            <p className="mt-1.5 truncate text-2xl font-bold tracking-tight text-gray-900">
+              {t.value}
+            </p>
+            {/* Rang aksenti — hover'da cho'ziladigan chiziq */}
+            <div
+              className={cn(
+                "mt-2 h-1 w-8 rounded-full transition-all duration-300 group-hover:w-16",
+                t.bar
+              )}
+            />
+            <p className="mt-1.5 truncate text-[11px] text-gray-400">{t.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Tushum grafigi + xonalar holati */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div
+        className="animate-dash-rise grid gap-4 lg:grid-cols-3"
+        style={{ animationDelay: "220ms" }}
+      >
         <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md lg:col-span-2 sm:p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                <TrendingUp className="h-4 w-4" />
-              </span>
-              <h2 className="text-sm font-bold text-gray-900">Oxirgi 7 kun tushumi</h2>
-            </div>
+            <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900">
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              Oxirgi 7 kun tushumi
+            </h2>
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
               Jami: {fmt(weekTotal)} So'm
             </span>
@@ -560,11 +656,11 @@ export const DashboardPage = () => {
 
         {/* Xonalar holati taqsimoti */}
         <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md sm:p-5">
-          <div className="mb-3 flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <BedDouble className="h-4 w-4" />
-            </span>
-            <h2 className="text-sm font-bold text-gray-900">Xonalar holati</h2>
+          <div className="mb-3">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900">
+              <BedDouble className="h-4 w-4 text-blue-600" />
+              Xonalar holati
+            </h2>
           </div>
           {totalRooms === 0 ? (
             <p className="text-sm text-gray-400">Xonalar yo'q</p>
@@ -606,13 +702,16 @@ export const DashboardPage = () => {
 
       {/* SMENALAR — jonli holat (faqat kassali rejimda; so'rov xatosida yashirinadi) */}
       {cashMode && !shiftsError && (
-        <div className="overflow-hidden rounded-2xl border bg-white">
+        <div
+          className="animate-dash-rise overflow-hidden rounded-2xl border bg-white"
+          style={{ animationDelay: "280ms" }}
+        >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-gray-50/70 px-4 py-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
-                <History className="h-4 w-4" />
-              </span>
-              <h2 className="text-sm font-bold text-gray-900">Smenalar</h2>
+              <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                <History className="h-4 w-4 text-violet-600" />
+                Smenalar
+              </h2>
               {activeShifts.length > 0 && (
                 <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
                   <span className="relative flex h-2 w-2">
@@ -750,7 +849,7 @@ export const DashboardPage = () => {
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
         <Panel
           icon={LogIn}
-          iconClass="bg-emerald-50 text-emerald-600"
+          iconClass="text-emerald-600"
           title="Bugungi kirishlar"
           count={arrivals.length}
         >
@@ -784,7 +883,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={LogOut}
-          iconClass="bg-amber-50 text-amber-600"
+          iconClass="text-amber-600"
           title="Bugungi chiqishlar"
           count={departures.length}
         >
@@ -818,7 +917,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={CalendarCheck}
-          iconClass="bg-primary-50 text-primary-600"
+          iconClass="text-primary-600"
           title="So'nggi bandlovlar"
         >
           {recentReservations.length === 0 ? (
@@ -853,7 +952,7 @@ export const DashboardPage = () => {
         {/* Bugungi to'lov usullari taqsimoti */}
         <Panel
           icon={Wallet}
-          iconClass="bg-emerald-50 text-emerald-600"
+          iconClass="text-emerald-600"
           title="To'lov usullari (bugun)"
         >
           {methodSplit.length === 0 ? (
@@ -904,7 +1003,7 @@ export const DashboardPage = () => {
         {employeesList.length > 0 && (
         <Panel
           icon={Trophy}
-          iconClass="bg-amber-50 text-amber-600"
+          iconClass="text-amber-600"
           title="Eng faol xodimlar (bugun)"
         >
           {topStaff.length === 0 ? (
@@ -951,7 +1050,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={ClipboardList}
-          iconClass="bg-orange-50 text-orange-600"
+          iconClass="text-orange-600"
           title="Xo'jalik vazifalari"
           count={openTasks.length}
         >
