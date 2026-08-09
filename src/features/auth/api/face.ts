@@ -1,4 +1,5 @@
-import { api } from '@/lib/api';
+import axios from 'axios';
+import { api, API_URL } from '@/lib/api';
 
 /* Yuz bilan kirish API qatlami. Rasm serverga yuboriladi, u yerda embedding
    hisoblanib xodimlar profillari bilan solishtiriladi — brauzerga model
@@ -29,9 +30,10 @@ export const hasCamera = async (): Promise<boolean> => {
 export const faceLogin = async (photo: Blob) => {
   const form = new FormData();
   form.append('file', photo, 'face.jpg');
-  const { data } = await api.post('/auth/face/login', form, {
-    headers: { 'Content-Type': undefined as any },
-  });
+  // DIQQAT: global `api` emas, toza axios ishlatiladi. Yuz tanilmaganda
+  // backend 401 qaytaradi — global interceptor esa har 401 da sahifani
+  // /login'ga qayta yuklab, "begona shaxs" xabarini ko'rsatishga ulgurmasdi
+  const { data } = await axios.post(`${API_URL}/auth/face/login`, form);
   return data as {
     access_token: string;
     refresh_token: string;
