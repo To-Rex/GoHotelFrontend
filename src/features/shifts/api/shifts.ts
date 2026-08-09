@@ -182,7 +182,7 @@ export const useExpectedCash = (enabled: boolean) =>
 
 // --- Smenalar tarixi (admin/menejer sahifasi) ---
 
-export const useShiftHistory = (limit = 100) =>
+export const useShiftHistory = (limit = 100, enabled = true, refetchInterval?: number) =>
   useQuery({
     queryKey: ["shiftHistory", limit],
     queryFn: async () => {
@@ -191,6 +191,8 @@ export const useShiftHistory = (limit = 100) =>
       });
       return data;
     },
+    enabled,
+    refetchInterval,
   });
 
 // --- Yordamchi hisob-kitoblar (guard va panel uchun) ---

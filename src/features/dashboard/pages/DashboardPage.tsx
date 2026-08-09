@@ -1,4 +1,5 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { Link } from "react-router-dom"
 import { format, subDays } from "date-fns"
 import {
   BedDouble,
@@ -12,6 +13,12 @@ import {
   ClipboardList,
   CalendarPlus,
   Sparkles,
+  History,
+  Wallet,
+  Trophy,
+  ArrowRight,
+  ArrowRightLeft,
+  Clock,
 } from "lucide-react"
 import {
   ResponsiveContainer,
@@ -29,11 +36,38 @@ import { useInvoices, usePayments } from "@/features/finance/api/finance"
 import { useExpenses } from "@/features/expenses/api/expenses"
 import { useShopSales } from "@/features/shop/api/shop"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
+import { useShiftSettings, useShiftHistory } from "@/features/shifts/api/shifts"
+import { useEmployees } from "@/features/employees/api/employees"
 import { useAuthStore } from "@/store/auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
+
+// "Necha vaqtdan beri" yorlig'i — smenalar paneli uchun
+const sinceLabel = (iso: string | null | undefined): string => {
+  if (!iso) return "—"
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000))
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return h > 0 ? `${h} s ${m} d` : `${m} d`
+}
+
+// Bugungi to'lov usullari guruhlash (naqd/karta/o'tkazma/boshqa)
+const METHOD_GROUPS = [
+  { key: "CASH", label: "Naqd", color: "#10b981", dot: "bg-emerald-500" },
+  { key: "CARD", label: "Karta", color: "#3b82f6", dot: "bg-blue-500" },
+  { key: "TRANSFER", label: "O'tkazma", color: "#8b5cf6", dot: "bg-violet-500" },
+  { key: "OTHER", label: "Boshqa", color: "#f59e0b", dot: "bg-amber-500" },
+]
+const methodGroupKey = (m: string): string =>
+  m === "CASH"
+    ? "CASH"
+    : m === "CREDIT_CARD" || m === "DEBIT_CARD"
+      ? "CARD"
+      : m === "BANK_TRANSFER"
+        ? "TRANSFER"
+        : "OTHER"
 
 // Sana sarlavhasi uchun o'zbekcha oy/hafta kunlari
 const UZ_MONTHS = [
@@ -145,6 +179,24 @@ export const DashboardPage = () => {
     status: "PENDING",
   })
   const { data: hkTasks = [] } = useHousekeepingTasks()
+
+  // Smenalar (faqat kassali rejimda, har daqiqada yangilanadi) va xodimlar
+  const { data: shiftSettings } = useShiftSettings()
+  const cashMode = shiftSettings?.mode === "cash"
+  const { data: shiftSessions = [], isError: shiftsError } = useShiftHistory(
+    100,
+    cashMode,
+    60_000
+  )
+  const { data: employeesList = [] } = useEmployees()
+
+  // "jonli" davomiylik yorliqlari har daqiqada qayta hisoblanishi uchun tick
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (!cashMode) return
+    const id = setInterval(() => setTick((t) => t + 1), 60_000)
+    return () => clearInterval(id)
+  }, [cashMode])
 
   const isLoading = roomsLoading || resLoading || guestsLoading || paymentsLoading
 
@@ -262,6 +314,60 @@ export const DashboardPage = () => {
       t.status === "COMPLETED" &&
       String(t.completed_at || "").slice(0, 10) === todayStr
   ).length
+
+  // --- Smenalar (kassali rejim): hozir ishlayotganlar, topshirilmoqda, bugungi yopilganlar ---
+  const activeShifts = shiftSessions.filter((s) => s.status === "ACTIVE")
+  const pendingShifts = shiftSessions.filter((s) => s.status === "PENDING_HANDOVER")
+  // MAHALLIY sana bo'yicha (UTC slice emas — tungi smenalar tushib qolmasligi uchun)
+  const closedTodayShifts = shiftSessions.filter(
+    (s) =>
+      s.status === "CLOSED" &&
+      s.ended_at &&
+      format(new Date(s.ended_at), "yyyy-MM-dd") === todayStr
+  )
+  const closedTodayCounted = closedTodayShifts.reduce(
+    (sum, s) => sum + Number(s.counted_cash || 0),
+    0
+  )
+  const diffTodayShifts = closedTodayShifts.filter(
+    (s) => Number(s.cash_diff || 0) !== 0
+  )
+
+  // --- Bugungi to'lov usullari taqsimoti ---
+  const methodSplit = useMemo(() => {
+    const sums: Record<string, { count: number; total: number }> = {}
+    for (const p of weekPayments) {
+      if (String(p.payment_date || "").slice(0, 10) !== todayStr) continue
+      const key = methodGroupKey(String(p.payment_method || ""))
+      sums[key] = sums[key] || { count: 0, total: 0 }
+      sums[key].count += 1
+      sums[key].total += Number(p.amount || 0)
+    }
+    return METHOD_GROUPS.map((g) => ({
+      ...g,
+      ...(sums[g.key] || { count: 0, total: 0 }),
+    })).filter((g) => g.count > 0)
+  }, [weekPayments, todayStr])
+  const methodTotal = methodSplit.reduce((s, g) => s + g.total, 0)
+
+  // --- Eng faol xodimlar (bugun yaratilgan bronlar bo'yicha) ---
+  const topStaff = useMemo(() => {
+    if (createdToday.length === 0) return []
+    const names: Record<string, string> = {}
+    for (const e of employeesList) names[e.id] = `${e.first_name} ${e.last_name}`
+    const agg: Record<string, { count: number; total: number }> = {}
+    for (const r of createdToday) {
+      if (r.status === "CANCELLED" || !r.created_by) continue
+      agg[r.created_by] = agg[r.created_by] || { count: 0, total: 0 }
+      agg[r.created_by].count += 1
+      agg[r.created_by].total += Number(r.total_amount || 0)
+    }
+    return Object.entries(agg)
+      .map(([id, v]) => ({ id, name: names[id] || "Xodim", ...v }))
+      .sort((a, b) => b.count - a.count || b.total - a.total)
+      .slice(0, 4)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reservations, employeesList, todayStr])
 
   if (isLoading) {
     return (
@@ -498,6 +604,148 @@ export const DashboardPage = () => {
         </div>
       </div>
 
+      {/* SMENALAR — jonli holat (faqat kassali rejimda; so'rov xatosida yashirinadi) */}
+      {cashMode && !shiftsError && (
+        <div className="overflow-hidden rounded-2xl border bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-gray-50/70 px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                <History className="h-4 w-4" />
+              </span>
+              <h2 className="text-sm font-bold text-gray-900">Smenalar</h2>
+              {activeShifts.length > 0 && (
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  </span>
+                  jonli
+                </span>
+              )}
+            </div>
+            <Link
+              to="/shifts"
+              className="flex items-center gap-1 text-xs font-medium text-primary-600 transition-colors hover:text-primary-700"
+            >
+              Barchasi
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid divide-y divide-gray-100 md:grid-cols-3 md:divide-x md:divide-y-0">
+            {/* Hozir ishlamoqda */}
+            <div className="p-4">
+              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Hozir ishlamoqda · {activeShifts.length}
+              </p>
+              {activeShifts.length === 0 ? (
+                <p className="text-sm text-gray-400">Ochiq smena yo'q</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {activeShifts.slice(0, 4).map((s) => (
+                    <div key={s.id} className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-bold text-emerald-700">
+                        {(s.user_name || "?")
+                          .split(" ")
+                          .map((w) => w[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold leading-tight text-gray-900">
+                          {s.user_name}
+                          {s.continue_after_end && (
+                            <span className="ml-1.5 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-700">
+                              qo'shimcha vaqt
+                            </span>
+                          )}
+                        </p>
+                        <p className="flex items-center gap-1 text-[11px] leading-tight text-gray-400">
+                          <Clock className="h-3 w-3" />
+                          {s.started_at
+                            ? format(new Date(s.started_at), "HH:mm")
+                            : "—"}{" "}
+                          dan beri · {sinceLabel(s.started_at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Topshirilmoqda */}
+            <div className="p-4">
+              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Topshirilmoqda · {pendingShifts.length}
+              </p>
+              {pendingShifts.length === 0 ? (
+                <p className="text-sm text-gray-400">Topshirilayotgan smena yo'q</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {pendingShifts.slice(0, 4).map((s) => (
+                    <div key={s.id} className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                        <ArrowRightLeft className="h-3.5 w-3.5" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold leading-tight text-gray-900">
+                          {s.user_name}
+                        </p>
+                        <p className="text-[11px] leading-tight text-amber-600">
+                          Keyingi xodim qabul qilishi kutilmoqda
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Bugun yopilgan */}
+            <div className="p-4">
+              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Bugun yopilgan · {closedTodayShifts.length}
+              </p>
+              {closedTodayShifts.length === 0 ? (
+                <p className="text-sm text-gray-400">Bugun yopilgan smena yo'q</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    Jami sanalgan:{" "}
+                    <span className="font-bold text-gray-900">
+                      {fmt(closedTodayCounted)} So'm
+                    </span>
+                  </p>
+                  {diffTodayShifts.length === 0 ? (
+                    <p className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                      Barcha kassalar farqsiz topshirildi
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {diffTodayShifts.slice(0, 3).map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex items-center justify-between gap-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs"
+                        >
+                          <span className="truncate font-medium text-red-700">
+                            {s.user_name}
+                          </span>
+                          <span className="flex-shrink-0 font-bold tabular-nums text-red-600">
+                            {fmt(Number(s.cash_diff || 0))} So'm
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bugungi kirish/chiqishlar, so'nggi bandlovlar va xo'jalik — wrap uslubida */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
         <Panel
@@ -601,6 +849,105 @@ export const DashboardPage = () => {
             </div>
           )}
         </Panel>
+
+        {/* Bugungi to'lov usullari taqsimoti */}
+        <Panel
+          icon={Wallet}
+          iconClass="bg-emerald-50 text-emerald-600"
+          title="To'lov usullari (bugun)"
+        >
+          {methodSplit.length === 0 ? (
+            <p className="text-sm text-gray-400">Bugun to'lovlar yo'q</p>
+          ) : (
+            <>
+              {/* Segmentli ulush chizig'i */}
+              <div className="flex h-3.5 w-full gap-0.5 overflow-hidden rounded-full">
+                {methodSplit.map((g) => (
+                  <div
+                    key={g.key}
+                    title={`${g.label}: ${fmt(g.total)} So'm`}
+                    style={{
+                      width: `${(g.total / (methodTotal || 1)) * 100}%`,
+                      backgroundColor: g.color,
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="mt-4 space-y-2.5">
+                {methodSplit.map((g) => (
+                  <div
+                    key={g.key}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="flex items-center gap-2 text-gray-600">
+                      <span className={cn("h-2.5 w-2.5 rounded-full", g.dot)} />
+                      {g.label}
+                      <span className="text-[11px] text-gray-400">
+                        {g.count} ta
+                      </span>
+                    </span>
+                    <span className="font-bold tabular-nums text-gray-900">
+                      {fmt(g.total)}
+                      <span className="ml-1 text-[11px] font-normal text-gray-400">
+                        ({Math.round((g.total / (methodTotal || 1)) * 100)}%)
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </Panel>
+
+        {/* Eng faol xodimlar — xodimlar ro'yxati ochiq bo'lgandagina (aks
+            holda ismlar noma'lum bo'lib qolardi) */}
+        {employeesList.length > 0 && (
+        <Panel
+          icon={Trophy}
+          iconClass="bg-amber-50 text-amber-600"
+          title="Eng faol xodimlar (bugun)"
+        >
+          {topStaff.length === 0 ? (
+            <p className="text-sm text-gray-400">Bugun bronlar yaratilmagan</p>
+          ) : (
+            <div className="space-y-2.5">
+              {topStaff.map((st, i) => (
+                <div
+                  key={st.id}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold",
+                        i === 0
+                          ? "bg-amber-100 text-amber-700"
+                          : i === 1
+                            ? "bg-gray-200 text-gray-600"
+                            : i === 2
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-gray-100 text-gray-500"
+                      )}
+                    >
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate leading-tight text-gray-900">{st.name}</p>
+                      <p className="text-[11px] leading-tight text-gray-400">
+                        {st.count} ta bron
+                      </p>
+                    </div>
+                  </div>
+                  <span className="flex-shrink-0 text-xs font-bold tabular-nums text-gray-900">
+                    {fmt(st.total)}{" "}
+                    <span className="font-normal text-gray-400">So'm</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+        )}
 
         <Panel
           icon={ClipboardList}

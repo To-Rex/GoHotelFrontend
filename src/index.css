@@ -163,7 +163,8 @@
 .dark .border-gray-100,
 .dark .border-gray-200,
 .dark .border-gray-300 { border-color: hsl(var(--border)); }
-.dark .divide-gray-100 > * + * { border-color: hsl(var(--border)); }
+/* Tailwind v4 divide utilitasi :not(:last-child) selektorida — hammasini qoplaymiz */
+.dark .divide-gray-100 > * { border-color: hsl(var(--border)); }
 
 /* --- Primary (ko'k) urg'ulari --- */
 .dark .bg-primary-50,
