@@ -14,6 +14,7 @@ import { useShopSales, type ShopSale } from "@/features/shop/api/shop"
 import { useGuests } from "@/features/guests/api/guests"
 import { useRooms } from "@/features/rooms/api/rooms"
 import { useAuthStore } from "@/store/auth"
+import { ShiftPanel } from "@/features/shifts/components/ShiftPanel"
 import type { Reservation, Expense } from "@/types/api"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -129,6 +130,9 @@ export const MyReportsPage = () => {
 
   return (
     <div className="space-y-5">
+      {/* Smena va kassa paneli (faqat kassali rejimda ko'rinadi) */}
+      <ShiftPanel />
+
       {/* Sarlavha */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">

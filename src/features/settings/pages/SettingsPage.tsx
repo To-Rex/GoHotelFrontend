@@ -8,12 +8,14 @@ import {
   Database,
   Users,
   Timer,
+  Wallet,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import {
   useHkAutoSettings,
   useSaveHkAutoSettings,
 } from "@/features/housekeeping/api/housekeeping"
+import { useShiftSettings, useSaveShiftSettings } from "@/features/shifts/api/shifts"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -101,6 +103,33 @@ export const SettingsPage = () => {
     }
   }
 
+  // --- Smena va kassa rejimi ---
+  const { data: shiftSettings } = useShiftSettings()
+  const saveShiftMutation = useSaveShiftSettings()
+  const [shiftMode, setShiftMode] = useState<"simple" | "cash">("simple")
+  const [dayClose, setDayClose] = useState("00:00")
+  const [shiftSaved, setShiftSaved] = useState(false)
+  const [shiftError, setShiftError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (shiftSettings) {
+      setShiftMode(shiftSettings.mode)
+      setDayClose(shiftSettings.day_close)
+    }
+  }, [shiftSettings])
+
+  const onSaveShift = async () => {
+    setShiftError(null)
+    setShiftSaved(false)
+    try {
+      await saveShiftMutation.mutateAsync({ mode: shiftMode, day_close: dayClose })
+      setShiftSaved(true)
+      window.setTimeout(() => setShiftSaved(false), 3000)
+    } catch (e) {
+      setShiftError(apiErrorMessage(e))
+    }
+  }
+
   const [scope, setScope] = useState<"operational" | "full">("operational")
   const [confirmText, setConfirmText] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -164,6 +193,94 @@ export const SettingsPage = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Sozlamalar</h1>
           <p className="text-sm text-gray-500">Tizim boshqaruvi</p>
+        </div>
+      </div>
+
+      {/* Smena va kassa rejimi */}
+      <div className="rounded-2xl border bg-white p-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+            <Wallet className="h-4.5 w-4.5" />
+          </span>
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">Smena va kassa</h2>
+            <p className="text-xs text-gray-500">
+              Kassali rejimda xodimlar smenani ochadi/topshiradi, kassa "ko'r
+              sanash" bilan yopiladi va har kuni belgilangan vaqtda kesiladi.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setShiftMode("simple")}
+            className={cn(
+              "rounded-xl border p-4 text-left transition-all",
+              shiftMode === "simple"
+                ? "border-primary-400 ring-2 ring-primary-400/30 bg-primary-50/40"
+                : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+            )}
+          >
+            <p className="text-sm font-semibold text-gray-900">Oddiy rejim</p>
+            <p className="mt-1 text-xs text-gray-600 leading-snug">
+              Smena va kassa nazorati yo'q — hamma hozirgidek ishlaydi. Kichik
+              jamoalar uchun qulay.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShiftMode("cash")}
+            className={cn(
+              "rounded-xl border p-4 text-left transition-all",
+              shiftMode === "cash"
+                ? "border-primary-400 ring-2 ring-primary-400/30 bg-primary-50/40"
+                : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+            )}
+          >
+            <p className="text-sm font-semibold text-gray-900">Kassali rejim</p>
+            <p className="mt-1 text-xs text-gray-600 leading-snug">
+              Smena topshirish (keyingi xodim parol bilan qabul qiladi), kassa
+              "ko'r sanash" bilan yopiladi, farqlar xodim hisobiga yoziladi.
+              Yopilmagan smena boshqa xodimni bloklaydi — menejer/admin majburiy
+              yopa oladi.
+            </p>
+          </button>
+        </div>
+
+        {shiftMode === "cash" && (
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-600">
+                Kunlik kassa kesimi vaqti
+              </label>
+              <Input
+                type="time"
+                className="w-36"
+                value={dayClose}
+                onChange={(e) => setDayClose(e.target.value)}
+              />
+            </div>
+            <p className="pb-2 text-xs text-gray-400">
+              Shu vaqtda ochiq kassalar topshirilishi shart bo'ladi (tungi smena
+              kesilmasligi uchun ertalabki soatni tanlash mumkin, masalan 06:00).
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Button onClick={onSaveShift} disabled={saveShiftMutation.isPending}>
+            {saveShiftMutation.isPending && (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            )}
+            Saqlash
+          </Button>
+          {shiftSaved && (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+              <CheckCircle2 className="h-4 w-4" /> Saqlandi
+            </span>
+          )}
+          {shiftError && <span className="text-sm text-red-500">{shiftError}</span>}
         </div>
       </div>
 

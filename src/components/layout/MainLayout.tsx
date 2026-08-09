@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { useAuthStore } from "@/store/auth";
 import { usePermissions } from "@/lib/permissions";
+import { useShiftState, shiftRestriction, isCashStaff } from "@/features/shifts/api/shifts";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -14,10 +15,18 @@ const FULL_BLEED_ROUTES = ["/booking"];
 // Barcha sahifalar to'liq KENGLIKDA ochiladi: scroll va padding odatdagidek,
 // markazlash (max-w) cheklovi yo'q — kontent butun bo'sh joyni egallaydi.
 
+// Smena cheklovi paytida ochiq qoladigan sahifalar
+const SHIFT_ALLOWED_ROUTES = ["/my-reports", "/expenses"];
+
 export const MainLayout = () => {
   const { isAuthenticated, setUser, user } = useAuthStore();
   const { pathname } = useLocation();
   const { canRoute, firstAllowedRoute } = usePermissions();
+
+  // Smena holati — faqat kassa bilan ishlaydigan xodimlar uchun so'raladi.
+  // Ish vaqti tugagan / kassa kesimi kelgan / blok bo'lgan xodim faqat
+  // "Mening hisobotim" va "Xarajatlar" sahifalarini ko'radi.
+  const { data: shiftState } = useShiftState(isAuthenticated && isCashStaff(user));
 
   // Mobil (tor ekran) uchun sidebar drawer holati — sahifa almashganda yopiladi
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -56,6 +65,13 @@ export const MainLayout = () => {
   // birinchi sahifaga qaytaramiz.
   if (!canRoute(pathname)) {
     return <Navigate to={firstAllowedRoute()} replace />;
+  }
+
+  // Smena cheklovi: ish vaqti tugagan (davom etilmagan), kunlik kassa kesimi
+  // kelgan yoki oldingi smena topshirilmagan — faqat hisobot va xarajatlar.
+  const restriction = shiftRestriction(user, shiftState);
+  if (restriction && !SHIFT_ALLOWED_ROUTES.includes(pathname)) {
+    return <Navigate to="/my-reports" replace />;
   }
 
   const fullBleed = FULL_BLEED_ROUTES.includes(pathname);

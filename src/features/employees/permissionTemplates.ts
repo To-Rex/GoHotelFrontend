@@ -96,6 +96,8 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
       "employee.view",
       "employee.create",
       "employee.update",
+      // Smena/kassani majburiy yopish — menejer huquqi
+      "shift.*",
     ],
   },
   {
