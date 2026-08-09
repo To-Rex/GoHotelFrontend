@@ -11,17 +11,8 @@ import { cn } from "@/lib/utils";
 // p-6 padding qo'llanmaydi, sahifaning o'zi butun bo'sh joyni boshqaradi.
 const FULL_BLEED_ROUTES = ["/booking"];
 
-// To'liq KENGLIKDA ochiladigan sahifalar: scroll va p-6 padding odatdagidek
-// qoladi, faqat max-w-7xl markazlash cheklovi olib tashlanadi — kontent
-// butun bo'sh joyni egallaydi.
-const FULL_WIDTH_ROUTES = [
-  "/",
-  "/rooms",
-  "/reservations",
-  "/housekeeping",
-  "/permissions",
-  "/employees",
-];
+// Barcha sahifalar to'liq KENGLIKDA ochiladi: scroll va padding odatdagidek,
+// markazlash (max-w) cheklovi yo'q — kontent butun bo'sh joyni egallaydi.
 
 export const MainLayout = () => {
   const { isAuthenticated, setUser, user } = useAuthStore();
@@ -68,7 +59,6 @@ export const MainLayout = () => {
   }
 
   const fullBleed = FULL_BLEED_ROUTES.includes(pathname);
-  const fullWidth = FULL_WIDTH_ROUTES.includes(pathname);
 
   return (
     /* h-dvh: haqiqiy ko'rinadigan balandlik — 100vh brauzer paneli/zoom
@@ -104,7 +94,7 @@ export const MainLayout = () => {
             <Outlet />
           ) : (
             /* min-h-full: sahifa kontenti kam bo'lsa ham butun bo'sh joyni egallaydi */
-            <div className={cn("min-h-full", !fullWidth && "mx-auto max-w-7xl")}>
+            <div className="min-h-full">
               <Outlet />
             </div>
           )}
