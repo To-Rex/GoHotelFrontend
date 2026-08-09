@@ -207,9 +207,15 @@ export const LoginPage = () => {
                           autoComplete="current-password"
                           className="h-11 pl-9 pr-10 transition-shadow focus-visible:shadow-md focus-visible:shadow-primary-500/10"
                           {...field}
-                          onKeyDown={(e) =>
-                            setCapsOn(e.getModifierState?.("CapsLock") ?? false)
-                          }
+                          onKeyDown={(e) => {
+                            setCapsOn(e.getModifierState?.("CapsLock") ?? false);
+                            // Enter — to'g'ridan-to'g'ri Kirish (brauzerning
+                            // "implicit submit" xatti-harakatiga tayanmaymiz)
+                            if (e.key === "Enter" && !isLoading) {
+                              e.preventDefault();
+                              form.handleSubmit(onSubmit)();
+                            }
+                          }}
                           onKeyUp={(e) =>
                             setCapsOn(e.getModifierState?.("CapsLock") ?? false)
                           }
