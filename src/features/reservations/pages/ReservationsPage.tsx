@@ -4,11 +4,12 @@ import {
   Search,
   Clock,
   CalendarDays,
-  BedDouble,
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
   FilterX,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react"
 import { useReservations } from "../api/reservations"
 import { useGuests } from "@/features/guests/api/guests"
@@ -68,7 +69,23 @@ const payBadge: Record<string, string> = {
   PAID: "bg-emerald-100 text-emerald-700",
 }
 
+// Qator chap chekkasi holat rangida — ro'yxatni tez ko'zdan kechirish oson
+const statusRowAccent: Record<string, string> = {
+  PENDING: "border-l-amber-400",
+  CONFIRMED: "border-l-blue-400",
+  CHECKED_IN: "border-l-emerald-400",
+  CHECKED_OUT: "border-l-gray-300",
+  NO_SHOW: "border-l-gray-300",
+  CANCELLED: "border-l-red-400",
+}
+
 const fmt = (n: number) => Number(n || 0).toLocaleString()
+
+// Mehmon avatari uchun bosh harflar
+const initials = (name?: string) => {
+  const parts = (name || "").trim().split(/\s+/)
+  return `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase() || "?"
+}
 
 // Kunlik bron uchun kechalar soni
 function nights(checkIn?: string, checkOut?: string): number {
@@ -98,6 +115,8 @@ export const ReservationsPage = () => {
   const [dateTo, setDateTo] = useState("")
   // Saralash: null bo'lsa API tartibi (eng yangi bronlar birinchi)
   const [sort, setSort] = useState<SortState>(null)
+  // Kengaytirilgan filtrlar paneli (yig'iladigan — sahifa ozoda turadi)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const guestMap = useMemo(() => {
     const m: Record<string, { name: string; phone?: string }> = {}
@@ -307,22 +326,36 @@ export const ReservationsPage = () => {
     return <div>Xatolik yuz berdi. Iltimos qayta urining.</div>
   }
 
+  const advancedCount = [floorFilter, roomFilter, typeFilter, payFilter, dateFrom, dateTo].filter(
+    Boolean
+  ).length
+  const showAdvanced = filtersOpen || advancedCount > 0
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Sarlavha */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Bandlovlar</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Barcha bronlar tarixi · jami {reservations.length} ta
-            {hasActiveFilters && (
-              <span className="text-primary-700"> · natija: {sorted.length} ta</span>
-            )}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
+            <CalendarCheck className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Bandlovlar</h1>
+            <p className="text-sm text-gray-500">
+              Barcha bronlar tarixi · jami {reservations.length} ta
+              {hasActiveFilters && (
+                <span className="font-medium text-primary-700">
+                  {" "}
+                  · natija: {sorted.length} ta
+                </span>
+              )}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Qidiruv + holat bo'yicha filtr chiplari */}
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Qidiruv + holat chiplari + filtr tugmasi */}
+      <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative max-w-xs flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
@@ -339,7 +372,7 @@ export const ReservationsPage = () => {
             className={cn(
               "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
               !statusFilter
-                ? "border-primary-600 bg-primary-50 text-primary-700"
+                ? "border-primary-600 bg-primary-600 text-white"
                 : "border-gray-200 text-gray-600 hover:bg-gray-50"
             )}
           >
@@ -364,10 +397,34 @@ export const ReservationsPage = () => {
               </button>
             ))}
         </div>
+
+        {/* Kengaytirilgan filtrlar tugmasi */}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          className={cn(
+            "ml-auto inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+            showAdvanced
+              ? "border-primary-200 bg-primary-50 text-primary-700"
+              : "border-gray-200 text-gray-600 hover:bg-gray-50"
+          )}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filtrlar
+          {advancedCount > 0 && (
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white">
+              {advancedCount}
+            </span>
+          )}
+          <ChevronDown
+            className={cn("h-3.5 w-3.5 transition-transform", showAdvanced && "rotate-180")}
+          />
+        </button>
       </div>
 
       {/* Qo'shimcha filtrlar: qavat, xona, tur, to'lov, sana oralig'i */}
-      <div className="flex flex-wrap items-end gap-3">
+      {showAdvanced && (
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-gray-100 bg-gray-50/70 p-3.5">
         <div className="space-y-1">
           <label className="text-xs font-medium text-gray-500">Qavat</label>
           <select
@@ -456,8 +513,9 @@ export const ReservationsPage = () => {
           </Button>
         )}
       </div>
+      )}
 
-      <div className="rounded-lg border bg-white overflow-hidden">
+      <div className="rounded-2xl border bg-white overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
@@ -499,7 +557,13 @@ export const ReservationsPage = () => {
                     : ""
                 const nightCount = isHourly ? 0 : nights(res.check_in_date, res.check_out_date)
                 return (
-                  <TableRow key={res.id}>
+                  <TableRow
+                    key={res.id}
+                    className={cn(
+                      "border-l-4 transition-colors",
+                      statusRowAccent[res.status] || "border-l-transparent"
+                    )}
+                  >
                     <TableCell>
                       <p className="font-semibold text-gray-900 leading-tight">
                         {res.reservation_number || res.id.slice(0, 8)}
@@ -518,23 +582,25 @@ export const ReservationsPage = () => {
                     </TableCell>
                     <TableCell>
                       {guest ? (
-                        <>
-                          <p className="text-gray-900 leading-tight">{guest.name}</p>
-                          {guest.phone && (
-                            <p className="text-xs text-gray-400 leading-tight mt-0.5">
-                              {guest.phone}
-                            </p>
-                          )}
-                        </>
+                        <span className="flex items-center gap-2.5">
+                          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-[11px] font-bold text-primary-700">
+                            {initials(guest.name)}
+                          </span>
+                          <span className="min-w-0">
+                            <p className="truncate text-gray-900 leading-tight">{guest.name}</p>
+                            {guest.phone && (
+                              <p className="text-xs text-gray-400 leading-tight mt-0.5">
+                                {guest.phone}
+                              </p>
+                            )}
+                          </span>
+                        </span>
                       ) : (
                         <span className="text-gray-300">—</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center gap-1.5 font-medium text-gray-700">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-600">
-                          <BedDouble className="h-3.5 w-3.5" />
-                        </span>
+                      <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-gray-100 px-2 text-xs font-bold text-gray-700">
                         {roomMap[res.room_id] || "—"}
                       </span>
                     </TableCell>
