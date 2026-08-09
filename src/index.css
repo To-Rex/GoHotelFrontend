@@ -200,9 +200,12 @@
 
 /* --- Qizil (red) --- */
 .dark .bg-red-50,
+.dark .bg-red-50\/40,
 .dark .bg-red-50\/60,
+.dark .bg-red-50\/70,
 .dark .bg-red-100 { background-color: rgb(239 68 68 / 0.15); }
 .dark .hover\:bg-red-50:hover,
+.dark .hover\:bg-red-50\/70:hover,
 .dark .hover\:bg-red-100:hover { background-color: rgb(239 68 68 / 0.25); }
 .dark .text-red-500,
 .dark .text-red-600,
@@ -236,6 +239,7 @@
 .dark .bg-orange-50,
 .dark .bg-orange-50\/60,
 .dark .bg-orange-100 { background-color: rgb(249 115 22 / 0.15); }
+.dark .hover\:bg-orange-100:hover { background-color: rgb(249 115 22 / 0.25); }
 .dark .text-orange-600,
 .dark .text-orange-700 { color: #fb923c; }
 .dark .border-orange-100,
@@ -245,10 +249,12 @@
 .dark .bg-purple-50,
 .dark .bg-purple-50\/60,
 .dark .bg-purple-100,
-.dark .bg-violet-50 { background-color: rgb(168 85 247 / 0.15); }
+.dark .bg-violet-50,
+.dark .bg-violet-100 { background-color: rgb(168 85 247 / 0.15); }
 .dark .text-purple-600,
 .dark .text-purple-700,
-.dark .text-violet-600 { color: #c084fc; }
+.dark .text-violet-600,
+.dark .text-violet-700 { color: #c084fc; }
 .dark .border-purple-100,
 .dark .border-purple-200 { border-color: rgb(168 85 247 / 0.4); }
 
@@ -293,5 +299,9 @@
 /* --- Qizil qo'shimchalari --- */
 .dark .text-red-300,
 .dark .text-red-400 { color: #fca5a5; }
+.dark .hover\:text-red-500:hover,
+.dark .hover\:text-red-600:hover,
 .dark .hover\:text-red-700:hover { color: #f87171; }
+/* Saralash sarlavhalari hover'da ko'rinib turishi uchun */
+.dark .hover\:text-gray-900:hover { color: hsl(var(--foreground)); }
 .dark .hover\:border-red-200:hover { border-color: rgb(239 68 68 / 0.4); }

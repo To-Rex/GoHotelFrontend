@@ -91,6 +91,11 @@ export const ShiftPanel = () => {
   const cashStaff = isCashStaff(user)
 
   const submitCount = async () => {
+    // Bo'sh maydon Number("")=0 bo'lib jimgina o'tib ketmasligi kerak
+    if (counted.trim() === "") {
+      setCountError("Kassadagi haqiqiy summani kiriting")
+      return
+    }
     const n = Number(counted.replace(/\s/g, ""))
     if (Number.isNaN(n) || n < 0) {
       setCountError("Kassadagi haqiqiy summani kiriting")

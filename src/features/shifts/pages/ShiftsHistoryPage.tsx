@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { format, subDays } from "date-fns"
 import {
   History,
@@ -16,6 +16,8 @@ import {
   Clock,
   Users,
   ShieldAlert,
+  Filter,
+  X,
 } from "lucide-react"
 import {
   useShiftHistory,
@@ -85,6 +87,9 @@ type SortKey =
 
 type StatusFilter = "ALL" | "ACTIVE" | "PENDING_HANDOVER" | "CLOSED"
 
+const selectClass =
+  "flex h-9 items-center rounded-lg border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-400"
+
 /* Smenalar tarixi — admin va menejer (shift.force_close) uchun: saralash,
    filtrlash, statistika, xodimlar kesimi va sanalgan summani tuzatish (audit
    bilan). Oddiy xodim ochsa backend faqat o'z sessiyalarini qaytaradi. */
@@ -103,6 +108,54 @@ export const ShiftsHistoryPage = () => {
   const [onlyDiff, setOnlyDiff] = useState(false)
   const [onlyForced, setOnlyForced] = useState(false)
   const [onlyCorrected, setOnlyCorrected] = useState(false)
+  // Bitta xodimni tanlab faqat uning kassa ma'lumotlarini ko'rish
+  const [employeeFilter, setEmployeeFilter] = useState<string>("ALL")
+
+  // Tarixda uchraydigan xodimlar ro'yxati (tanlash uchun)
+  const employees = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const s of sessions) {
+      if (!m.has(s.user_id)) m.set(s.user_id, s.user_name || "—")
+    }
+    return [...m.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [sessions])
+
+  const selectedEmployee = employees.find((e) => e.id === employeeFilter) || null
+
+  // Tanlangan xodim ro'yxatdan yo'qolsa (ma'lumot yangilanganda) filtr
+  // "osilib" qolmasligi uchun avtomatik tozalanadi
+  useEffect(() => {
+    if (
+      employeeFilter !== "ALL" &&
+      employees.length > 0 &&
+      !employees.some((e) => e.id === employeeFilter)
+    ) {
+      setEmployeeFilter("ALL")
+    }
+  }, [employees, employeeFilter])
+
+  const hasFilters =
+    employeeFilter !== "ALL" ||
+    !!dateFrom ||
+    !!dateTo ||
+    statusFilter !== "ALL" ||
+    onlyDiff ||
+    onlyForced ||
+    onlyCorrected ||
+    !!search.trim()
+
+  const clearFilters = () => {
+    setSearch("")
+    setDateFrom("")
+    setDateTo("")
+    setStatusFilter("ALL")
+    setOnlyDiff(false)
+    setOnlyForced(false)
+    setOnlyCorrected(false)
+    setEmployeeFilter("ALL")
+  }
 
   const todayStr = format(new Date(), "yyyy-MM-dd")
   const presets = [
@@ -134,17 +187,21 @@ export const ShiftsHistoryPage = () => {
     }
   }
 
-  const filtered = useMemo(() => {
+  // Xodim tanlovidan TASHQARI barcha filtrlar — "Xodimlar kesimi" jadvali
+  // shu to'plamdan quriladi (tanlangan xodim belgilanadi, qolganlar yo'qolmaydi)
+  const filteredBase = useMemo(() => {
     return sessions.filter((s) => {
       if (search.trim()) {
-        const q = search.toLowerCase()
+        const q = search.trim().toLowerCase()
         const hit =
           (s.user_name || "").toLowerCase().includes(q) ||
           (s.accepted_by_name || "").toLowerCase().includes(q) ||
           (s.closed_by_name || "").toLowerCase().includes(q)
         if (!hit) return false
       }
-      if (s.started_at) {
+      // Sana oralig'i faol bo'lsa, boshlanish vaqti yo'q sessiya ham chiqmaydi
+      if (dateFrom || dateTo) {
+        if (!s.started_at) return false
         const day = format(new Date(s.started_at), "yyyy-MM-dd")
         if (dateFrom && day < dateFrom) return false
         if (dateTo && day > dateTo) return false
@@ -157,6 +214,15 @@ export const ShiftsHistoryPage = () => {
       return true
     })
   }, [sessions, search, dateFrom, dateTo, statusFilter, onlyDiff, onlyForced, onlyCorrected])
+
+  // Yakuniy to'plam: tanlangan xodim ham qo'llanadi (statistika va jadval uchun)
+  const filtered = useMemo(
+    () =>
+      employeeFilter === "ALL"
+        ? filteredBase
+        : filteredBase.filter((s) => s.user_id === employeeFilter),
+    [filteredBase, employeeFilter]
+  )
 
   const sorted = useMemo(() => {
     const val = (s: ShiftSession): number | string => {
@@ -207,15 +273,24 @@ export const ShiftsHistoryPage = () => {
       ? Math.round(closedF.reduce((sum, s) => sum + durationMins(s), 0) / closedF.length)
       : 0
 
-  // Xodimlar kesimi: har xodim bo'yicha jami sessiya, sanalgan, kamomad/ortiqcha
+  // Xodimlar kesimi: har xodim bo'yicha jami sessiya, sanalgan, kamomad/ortiqcha.
+  // filteredBase'dan quriladi — bitta xodim tanlanganda ham hammasi ko'rinib,
+  // tanlangani belgilangan holda qoladi (qatorni bosib tanlash/bekor qilish).
   const byEmployee = useMemo(() => {
     const map = new Map<
       string,
-      { name: string; count: number; counted: number; shortage: number; surplus: number }
+      {
+        id: string
+        name: string
+        count: number
+        counted: number
+        shortage: number
+        surplus: number
+      }
     >()
-    for (const s of filtered) {
-      const key = s.user_id
-      const row = map.get(key) || {
+    for (const s of filteredBase) {
+      const row = map.get(s.user_id) || {
+        id: s.user_id,
         name: s.user_name || "—",
         count: 0,
         counted: 0,
@@ -229,11 +304,14 @@ export const ShiftsHistoryPage = () => {
         if (d < 0) row.shortage += d
         if (d > 0) row.surplus += d
       }
-      map.set(key, row)
+      map.set(s.user_id, row)
     }
     // Eng katta kamomad birinchi ko'rinadi
     return [...map.values()].sort((a, b) => a.shortage - b.shortage)
-  }, [filtered])
+  }, [filteredBase])
+
+  // --- To'liq ma'lumot dialogi (qatorga bosilganda) ---
+  const [detailTarget, setDetailTarget] = useState<ShiftSession | null>(null)
 
   // --- Tuzatish dialogi ---
   const [editTarget, setEditTarget] = useState<ShiftSession | null>(null)
@@ -250,6 +328,11 @@ export const ShiftsHistoryPage = () => {
 
   const submitEdit = async () => {
     if (!editTarget) return
+    // Bo'sh maydon Number("")=0 bo'lib jimgina o'tib ketmasligi kerak
+    if (newCounted.trim() === "") {
+      setEditError("Yangi summani kiriting")
+      return
+    }
     const n = Number(newCounted.replace(/\s/g, ""))
     if (Number.isNaN(n) || n < 0) {
       setEditError("Yangi summani to'g'ri kiriting")
@@ -404,6 +487,38 @@ export const ShiftsHistoryPage = () => {
         </div>
       </div>
 
+      {/* Tanlangan xodim banneri — faqat shu xodim kassasi ko'rinmoqda */}
+      {selectedEmployee && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-primary-200 bg-primary-50/60 px-4 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">
+              {selectedEmployee.name
+                .split(" ")
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </span>
+            <div>
+              <p className="text-sm font-bold text-primary-900">
+                {selectedEmployee.name}
+              </p>
+              <p className="text-xs text-primary-700">
+                Faqat shu xodimning kassa ma'lumotlari ko'rsatilmoqda
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEmployeeFilter("ALL")}
+            className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-gray-600 ring-1 ring-primary-200 transition-colors hover:text-red-600"
+          >
+            <X className="h-3.5 w-3.5" />
+            Barcha xodimlar
+          </button>
+        </div>
+      )}
+
       {/* Statistika kartalari (filtrga mos yangilanadi) */}
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
         {stats.map((s) => (
@@ -430,8 +545,48 @@ export const ShiftsHistoryPage = () => {
       </div>
 
       {/* Filtrlar paneli */}
-      <div className="space-y-3 rounded-2xl border bg-white p-3.5">
+      <div className="rounded-2xl border bg-white overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-gray-50/70 px-4 py-2.5">
+          <p className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+            <Filter className="h-3.5 w-3.5" />
+            Filtrlar
+            {hasFilters && (
+              <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
+                natija: {filtered.length} ta
+              </span>
+            )}
+          </p>
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="flex items-center gap-1 text-xs font-medium text-gray-400 transition-colors hover:text-red-500"
+            >
+              <X className="h-3.5 w-3.5" />
+              Tozalash
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-3 p-3.5">
         <div className="flex flex-wrap items-center gap-2">
+          {/* Xodim tanlash — faqat bitta xodim kassasini ko'rish */}
+          <select
+            className={cn(selectClass, employeeFilter !== "ALL" && "border-primary-400 ring-1 ring-primary-200")}
+            value={employeeFilter}
+            onChange={(e) => setEmployeeFilter(e.target.value)}
+            title="Xodimni tanlang"
+          >
+            <option value="ALL">Barcha xodimlar</option>
+            {employees.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+
+          <span className="mx-1 hidden h-4 w-px bg-gray-200 sm:block" />
+
           {/* Sana presetlari */}
           {presets.map((p) => {
             const active = dateFrom === p.from && dateTo === p.to
@@ -486,7 +641,7 @@ export const ShiftsHistoryPage = () => {
               className={cn(
                 "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                 statusFilter === v
-                  ? "bg-gray-900 text-white"
+                  ? "bg-primary-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               )}
             >
@@ -546,14 +701,18 @@ export const ShiftsHistoryPage = () => {
             />
           </div>
         </div>
+        </div>
       </div>
 
-      {/* Xodimlar kesimi */}
-      {byEmployee.length > 1 && (
+      {/* Xodimlar kesimi — qatorni bosib bitta xodimga fokus qilinadi */}
+      {(byEmployee.length > 1 || employeeFilter !== "ALL") && (
         <div className="rounded-2xl border bg-white overflow-hidden">
           <p className="flex items-center gap-2 border-b bg-gray-50/70 px-4 py-2.5 text-xs font-semibold text-gray-600">
             <Users className="h-3.5 w-3.5" />
-            Xodimlar kesimi (filtrga mos)
+            Xodimlar kesimi
+            <span className="font-normal text-gray-400">
+              — qatorni bosib faqat shu xodimni ko'ring
+            </span>
           </p>
           <div className="overflow-x-auto">
             <Table>
@@ -568,8 +727,43 @@ export const ShiftsHistoryPage = () => {
               </TableHeader>
               <TableBody>
                 {byEmployee.map((e) => (
-                  <TableRow key={e.name}>
-                    <TableCell className="font-medium text-gray-900">{e.name}</TableCell>
+                  <TableRow
+                    key={e.id}
+                    onClick={() =>
+                      setEmployeeFilter(employeeFilter === e.id ? "ALL" : e.id)
+                    }
+                    className={cn(
+                      "cursor-pointer transition-colors",
+                      employeeFilter === e.id
+                        ? "bg-primary-50/60 hover:bg-primary-50"
+                        : "hover:bg-gray-50"
+                    )}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                            employeeFilter === e.id
+                              ? "bg-primary-600 text-white"
+                              : "bg-primary-100 text-primary-700"
+                          )}
+                        >
+                          {e.name
+                            .split(" ")
+                            .map((w) => w[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </span>
+                        <span className="font-medium text-gray-900">{e.name}</span>
+                        {employeeFilter === e.id && (
+                          <span className="rounded-full bg-primary-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                            tanlangan
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right tabular-nums text-gray-600">
                       {e.count} ta
                     </TableCell>
@@ -635,8 +829,12 @@ export const ShiftsHistoryPage = () => {
                   return (
                     <TableRow
                       key={s.id}
+                      onClick={() => setDetailTarget(s)}
                       className={cn(
-                        s.status === "CLOSED" && diff !== 0 && "bg-red-50/40"
+                        "cursor-pointer",
+                        s.status === "CLOSED" && diff !== 0
+                          ? "bg-red-50/40 hover:bg-red-50/70"
+                          : "hover:bg-gray-50"
                       )}
                     >
                       <TableCell>
@@ -759,7 +957,10 @@ export const ShiftsHistoryPage = () => {
                             <button
                               type="button"
                               title="Sanalgan summani tuzatish"
-                              onClick={() => openEdit(s)}
+                              onClick={(ev) => {
+                                ev.stopPropagation()
+                                openEdit(s)
+                              }}
                               className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -775,6 +976,219 @@ export const ShiftsHistoryPage = () => {
           </Table>
         </div>
       </div>
+
+      {/* Sessiya to'liq ma'lumotlari (qatorga bosilganda) */}
+      <Dialog open={!!detailTarget} onOpenChange={(o) => !o && setDetailTarget(null)}>
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[520px]">
+          {detailTarget && (
+            <>
+              {/* Sarlavha: xodim + holat belgilar */}
+              <div className="flex items-center gap-3 border-b bg-gray-50/70 px-5 py-4">
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
+                  {(detailTarget.user_name || "?")
+                    .split(" ")
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <DialogTitle className="truncate text-base font-bold">
+                    {detailTarget.user_name || "—"}
+                  </DialogTitle>
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                        STATUS_STYLES[detailTarget.status] || STATUS_STYLES.CLOSED
+                      )}
+                    >
+                      {STATUS_LABELS[detailTarget.status] || detailTarget.status}
+                    </span>
+                    {detailTarget.force_closed && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                        majburiy yopilgan
+                      </span>
+                    )}
+                    {detailTarget.continue_after_end && (
+                      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                        davom etgan
+                      </span>
+                    )}
+                    {detailTarget.corrections &&
+                      detailTarget.corrections.length > 0 && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                          tahrirlangan
+                        </span>
+                      )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 px-5 py-4">
+                {/* Vaqtlar */}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    [
+                      "Boshlangan",
+                      detailTarget.started_at
+                        ? format(new Date(detailTarget.started_at), "dd.MM HH:mm")
+                        : "—",
+                    ],
+                    [
+                      "Tugagan",
+                      detailTarget.ended_at
+                        ? format(new Date(detailTarget.ended_at), "dd.MM HH:mm")
+                        : "—",
+                    ],
+                    ["Davomiylik", durationLabel(durationMins(detailTarget))],
+                    [
+                      "Qabul qilingan",
+                      detailTarget.accepted_at
+                        ? format(new Date(detailTarget.accepted_at), "dd.MM HH:mm")
+                        : "—",
+                    ],
+                  ].map(([l, v]) => (
+                    <div key={l} className="rounded-xl bg-gray-50 px-3 py-2">
+                      <p className="text-[11px] text-gray-400">{l}</p>
+                      <p className="text-sm font-semibold text-gray-800">{v}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Kassa */}
+                <div>
+                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    Kassa
+                  </p>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
+                      <span className="text-gray-500">Boshlang'ich</span>
+                      <span className="font-bold tabular-nums">
+                        {fmt(detailTarget.opening_cash)} so'm
+                      </span>
+                    </div>
+                    <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
+                      <span className="text-gray-500">Kutilgan</span>
+                      <span className="font-bold tabular-nums">
+                        {detailTarget.expected_cash !== null &&
+                        detailTarget.expected_cash !== undefined
+                          ? `${fmt(detailTarget.expected_cash)} so'm`
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
+                      <span className="text-gray-500">Sanalgan</span>
+                      <span className="font-bold tabular-nums">
+                        {detailTarget.counted_cash !== null &&
+                        detailTarget.counted_cash !== undefined
+                          ? `${fmt(detailTarget.counted_cash)} so'm`
+                          : "—"}
+                      </span>
+                    </div>
+                    <div
+                      className={cn(
+                        "flex justify-between rounded-lg px-3 py-2",
+                        detailTarget.status !== "CLOSED"
+                          ? "bg-gray-50 text-gray-400"
+                          : Number(detailTarget.cash_diff || 0) === 0
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-red-50 text-red-600"
+                      )}
+                    >
+                      <span>Farq</span>
+                      <span className="font-bold tabular-nums">
+                        {detailTarget.status === "CLOSED"
+                          ? `${fmt(detailTarget.cash_diff)} so'm${
+                              Number(detailTarget.cash_diff || 0) === 0
+                                ? " — mos keldi"
+                                : ""
+                            }`
+                          : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Topshirilgan / yopgan */}
+                {(detailTarget.accepted_by_name || detailTarget.closed_by_name) && (
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {detailTarget.accepted_by_name && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-700 ring-1 ring-sky-200">
+                        <ArrowRightLeft className="h-3 w-3" />
+                        Qabul qilgan: {detailTarget.accepted_by_name}
+                      </span>
+                    )}
+                    {detailTarget.force_closed && detailTarget.closed_by_name && (
+                      <span className="rounded-full bg-red-50 px-2.5 py-1 font-medium text-red-600 ring-1 ring-red-200">
+                        Majburiy yopgan: {detailTarget.closed_by_name}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Izoh */}
+                {detailTarget.notes && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2 text-sm text-gray-600">
+                    <p className="text-[11px] font-medium text-gray-400">Izoh</p>
+                    <p className="whitespace-pre-line">{detailTarget.notes}</p>
+                  </div>
+                )}
+
+                {/* Tuzatishlar tarixi — to'liq ro'yxat */}
+                {detailTarget.corrections && detailTarget.corrections.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                      Tuzatishlar tarixi
+                    </p>
+                    <div className="space-y-1.5">
+                      {detailTarget.corrections.map((c, i) => (
+                        <div
+                          key={i}
+                          className="rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-2 text-xs"
+                        >
+                          <p className="font-semibold text-amber-800">
+                            <span className="mr-1 text-gray-400 line-through">
+                              {fmt(c.old_counted_cash)}
+                            </span>
+                            → {fmt(c.new_counted_cash)} so'm
+                            <span className="ml-2 font-normal text-amber-700/70">
+                              (farq: {fmt(c.old_diff)} → {fmt(c.new_diff)})
+                            </span>
+                          </p>
+                          <p className="mt-0.5 text-amber-700/80">
+                            {c.corrected_by_name || "—"} ·{" "}
+                            {format(new Date(c.corrected_at), "dd.MM.yyyy HH:mm")} —{" "}
+                            {c.note}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Futer amallari */}
+              <div className="flex justify-end gap-2 border-t bg-gray-50/70 px-5 py-3">
+                {canEdit && detailTarget.status === "CLOSED" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const t = detailTarget
+                      setDetailTarget(null)
+                      openEdit(t)
+                    }}
+                  >
+                    <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                    Summani tuzatish
+                  </Button>
+                )}
+                <Button onClick={() => setDetailTarget(null)}>Yopish</Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Sanalgan summani tuzatish dialogi (admin/menejer, izoh majburiy) */}
       <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
