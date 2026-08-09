@@ -334,6 +334,71 @@ export const ShiftPanel = () => {
         </div>
       )}
 
+      {/* Qabul qilingan avvalgi smena hisoboti — summalar avvalgi xodim
+          hisobida, faqat kontekst uchun ko'rsatiladi */}
+      {my && my.status === "ACTIVE" && state.accepted_session && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                <ArrowRightLeft className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="font-bold text-emerald-800">
+                  Qabul qilingan smena — {state.accepted_session.user_name}
+                </p>
+                <p className="text-sm text-emerald-700/80">
+                  {state.accepted_session.started_at &&
+                    format(new Date(state.accepted_session.started_at), "dd.MM HH:mm")}
+                  {" – "}
+                  {state.accepted_session.ended_at &&
+                    format(new Date(state.accepted_session.ended_at), "dd.MM HH:mm")}
+                  {state.accepted_session.accepted_at &&
+                    ` · qabul qilingan: ${format(
+                      new Date(state.accepted_session.accepted_at),
+                      "HH:mm"
+                    )}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-white px-2.5 py-1 font-medium text-gray-600 ring-1 ring-emerald-200">
+                Kutilgan:{" "}
+                <b className="tabular-nums">
+                  {fmtMoney(state.accepted_session.expected_cash)}
+                </b>{" "}
+                so'm
+              </span>
+              <span className="rounded-full bg-white px-2.5 py-1 font-medium text-gray-600 ring-1 ring-emerald-200">
+                Sanalgan:{" "}
+                <b className="tabular-nums">
+                  {fmtMoney(state.accepted_session.counted_cash)}
+                </b>{" "}
+                so'm
+              </span>
+              <span
+                className={cn(
+                  "rounded-full px-2.5 py-1 font-semibold",
+                  state.accepted_session.cash_diff
+                    ? "bg-red-100 text-red-600"
+                    : "bg-emerald-100 text-emerald-700"
+                )}
+              >
+                Farq:{" "}
+                <span className="tabular-nums">
+                  {fmtMoney(state.accepted_session.cash_diff)}
+                </span>{" "}
+                so'm
+              </span>
+            </div>
+          </div>
+          <p className="mt-2.5 text-xs text-emerald-700/70">
+            Bu summalar avvalgi xodim hisobida qoladi — sizning kassangiz 0
+            so'mdan boshlangan, faqat o'zingiz bajargan amallar sizga yoziladi.
+          </p>
+        </div>
+      )}
+
       {/* Topshirilgan — qabul kutilmoqda */}
       {my && my.status === "PENDING_HANDOVER" && (
         <div className="flex items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50/60 p-4">

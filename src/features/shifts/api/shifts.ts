@@ -24,12 +24,16 @@ export interface ShiftSession {
   expected_cash?: number | null;
   counted_cash?: number | null;
   cash_diff?: number | null;
+  accepted_at?: string | null;
   new_session?: ShiftSession;
 }
 
 export interface ShiftState extends ShiftSettings {
   my_session: ShiftSession | null;
   blocking_session: ShiftSession | null;
+  // Men qabul qilib olgan avvalgi smena (hisoboti ko'rsatiladi,
+  // lekin summalari avvalgi xodim hisobida qoladi)
+  accepted_session: ShiftSession | null;
 }
 
 // --- Sozlamalar (Sozlamalar sahifasi uchun) ---
