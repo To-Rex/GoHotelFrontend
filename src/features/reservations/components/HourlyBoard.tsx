@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { format, addDays, parseISO } from "date-fns"
-import { ChevronLeft, ChevronRight, ChevronDown, Clock, Plus, Layers, Zap } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, Clock, Plus, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const DAY_MINUTES = 24 * 60
@@ -12,7 +12,6 @@ const HOUR_WIDTH_COMPACT = 44
 // Chap tomondagi xona ustunining kengligi (w-56 = 224px)
 const ROOM_COL_WIDTH = 224
 // Tez bron uchun tayyor davomiyliklar (soatlarda)
-const QUICK_DURATIONS = [1, 2, 3]
 
 // Xonaning MAXSUS holatlari — bronlardan ko'rinmaydigan holatlar belgi bilan
 // ko'rsatiladi (Bo'sh/Band bronlardan hisoblanadi, bular esa alohida)
@@ -625,7 +624,25 @@ export function HourlyBoard({
                         className="flex border-b border-gray-100 bg-white hover:bg-gray-50/40 transition-colors"
                         style={{ height: 64 }}
                       >
-                        <div className="sticky left-0 z-10 flex-shrink-0 w-56 flex flex-col justify-center px-4 bg-white border-r border-gray-200 gap-1">
+                        {/* Xona katagi bosilsa — hozirgi vaqtdan 1 soatlik
+                            yangi bandlov ochiladi (avvalgi "1 soat" tugmasi kabi) */}
+                        <div
+                          className={cn(
+                            "sticky left-0 z-10 flex-shrink-0 w-56 flex flex-col justify-center px-4 bg-white border-r border-gray-200 gap-1",
+                            isToday && freeNow && canCreate && freeMin > 0 &&
+                              "cursor-pointer hover:bg-primary-50/60 transition-colors"
+                          )}
+                          onClick={
+                            isToday && freeNow && canCreate && freeMin > 0
+                              ? () => quickBook(room, 1)
+                              : undefined
+                          }
+                          title={
+                            isToday && freeNow && canCreate && freeMin > 0
+                              ? `${minToTime(quickStartFor(room.id))} dan 1 soatlik bron qilish`
+                              : undefined
+                          }
+                        >
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-sm font-bold text-gray-900">
                               {room.room_number}
@@ -667,42 +684,11 @@ export function HourlyBoard({
                               )}
                           </div>
 
-                          {/* Tez bron: hozirgi vaqtdan boshlab */}
-                          {isToday && freeNow && canCreate ? (
-                            <div className="flex items-center gap-1">
-                              <Zap className="h-3 w-3 text-primary-500 flex-shrink-0" />
-                              {QUICK_DURATIONS.map((h) => {
-                                const fits = freeMin >= h * 60
-                                return (
-                                  <button
-                                    key={h}
-                                    type="button"
-                                    disabled={!fits}
-                                    onClick={() => quickBook(room, h)}
-                                    className={cn(
-                                      "px-1.5 py-0.5 rounded text-[11px] font-semibold border transition-colors",
-                                      fits
-                                        ? "border-primary-200 text-primary-700 bg-primary-50 hover:bg-primary-100"
-                                        : "border-gray-100 text-gray-300 cursor-not-allowed"
-                                    )}
-                                    title={
-                                      fits
-                                        ? `${minToTime(quickStartFor(room.id))} dan ${h} soat`
-                                        : "Bu davomiylik uchun bo'sh vaqt yetarli emas"
-                                    }
-                                  >
-                                    {h} soat
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-gray-400 truncate">
-                              {room.room_type?.name || "Standard"}
-                              {getRoomPrice(room) > 0 &&
-                                ` · ${getRoomPrice(room).toLocaleString()} So'm`}
-                            </span>
-                          )}
+                          <span className="text-[11px] text-gray-400 truncate">
+                            {room.room_type?.name || "Standard"}
+                            {getRoomPrice(room) > 0 &&
+                              ` · ${getRoomPrice(room).toLocaleString()} So'm`}
+                          </span>
                         </div>
 
                         <div className="relative flex-shrink-0" style={{ width: timelineWidth }}>
