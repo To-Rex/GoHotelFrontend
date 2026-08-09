@@ -14,6 +14,7 @@ import {
   Phone,
   Building2,
   CalendarDays,
+  Clock,
 } from "lucide-react"
 import {
   useEmployees,
@@ -148,6 +149,23 @@ export const EmployeesPage = () => {
   const [branchId, setBranchId] = useState("")
   const [hireDate, setHireDate] = useState("")
   const [status, setStatus] = useState("ACTIVE")
+  // Ish jadvali: soat nechadan nechagacha va kuniga necha soat (default 8)
+  const [workStart, setWorkStart] = useState("09:00")
+  const [workEnd, setWorkEnd] = useState("18:00")
+  const [workHours, setWorkHours] = useState("8")
+
+  // Vaqt oralig'i o'zgarsa kunlik soatni avtomatik hisoblaymiz (tungi smena —
+  // yarim tundan oshib ketishi ham mumkin); qo'lda ham tahrirlash mumkin.
+  const applyWorkTime = (start: string, end: string) => {
+    setWorkStart(start)
+    setWorkEnd(end)
+    const [sh, sm] = start.split(":").map(Number)
+    const [eh, em] = end.split(":").map(Number)
+    if ([sh, sm, eh, em].some(Number.isNaN)) return
+    let mins = eh * 60 + em - (sh * 60 + sm)
+    if (mins <= 0) mins += 24 * 60
+    setWorkHours(String(Math.round(mins / 60)))
+  }
   // Yangi xodimga biriktiriladigan rol shabloni (bo'sh — rolsiz)
   const [roleTemplateId, setRoleTemplateId] = useState("")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -203,6 +221,9 @@ export const EmployeesPage = () => {
     setBranchId(user?.branch_id || branches[0]?.id || "")
     setHireDate(new Date().toISOString().slice(0, 10))
     setStatus("ACTIVE")
+    setWorkStart("09:00")
+    setWorkEnd("18:00")
+    setWorkHours("8")
     // Menejer uchun yagona variant — Farrosh; admin xohlasa keyin tanlaydi
     setRoleTemplateId(isAdmin ? "" : "housekeeper")
     handlePhoto(null)
@@ -221,6 +242,9 @@ export const EmployeesPage = () => {
     setBranchId(e.branch_id || "")
     setHireDate(e.hire_date || "")
     setStatus(e.status)
+    setWorkStart(e.work_start || "09:00")
+    setWorkEnd(e.work_end || "18:00")
+    setWorkHours(String(e.work_hours_per_day ?? 8))
     handlePhoto(null)
     setErrorMsg(null)
     setModalOpen(true)
@@ -229,6 +253,11 @@ export const EmployeesPage = () => {
   const onSubmit = async () => {
     if (!firstName.trim() || !lastName.trim()) {
       setErrorMsg("Ism va familiyani kiriting")
+      return
+    }
+    const hoursNum = parseInt(workHours, 10)
+    if (Number.isNaN(hoursNum) || hoursNum < 1 || hoursNum > 24) {
+      setErrorMsg("Kunlik ish soati 1 dan 24 gacha bo'lishi kerak")
       return
     }
     try {
@@ -241,6 +270,9 @@ export const EmployeesPage = () => {
           phone: phone.trim() || undefined,
           branch_id: branchId || undefined,
           status,
+          work_hours_per_day: hoursNum,
+          work_start: workStart,
+          work_end: workEnd,
         })
         // Yangi surat tanlangan bo'lsa — yuklaymiz (xato saqlashni buzmaydi)
         const photoErr = await uploadPhotoFor(editing.id)
@@ -278,6 +310,9 @@ export const EmployeesPage = () => {
           email: email.trim() || undefined,
           phone: phone.trim() || undefined,
           hire_date: hireDate || undefined,
+          work_hours_per_day: hoursNum,
+          work_start: workStart,
+          work_end: workEnd,
         })
 
         // Surat tanlangan bo'lsa — yuklaymiz. Xodim allaqachon yaratilgan,
@@ -480,6 +515,13 @@ export const EmployeesPage = () => {
                     <CalendarDays className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
                     <span className="truncate">{e.hire_date || "—"}</span>
                   </p>
+                  <p className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                    <span className="truncate">
+                      {e.work_start || "09:00"}–{e.work_end || "18:00"} ·{" "}
+                      {e.work_hours_per_day ?? 8} soat
+                    </span>
+                  </p>
                 </div>
 
                 {(canEdit || canDelete) && (
@@ -522,6 +564,7 @@ export const EmployeesPage = () => {
               <TableHead>Telefon</TableHead>
               <TableHead>Filial</TableHead>
               <TableHead>Ishga olingan</TableHead>
+              <TableHead>Ish vaqti</TableHead>
               {(canEdit || canDelete) && (
                 <TableHead className="text-right">Amallar</TableHead>
               )}
@@ -530,7 +573,7 @@ export const EmployeesPage = () => {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-gray-400">
+                <TableCell colSpan={8} className="text-center py-6 text-gray-400">
                   Xodimlar topilmadi
                 </TableCell>
               </TableRow>
@@ -578,6 +621,13 @@ export const EmployeesPage = () => {
                     {(e.branch_id && branchMap[e.branch_id]) || "—"}
                   </TableCell>
                   <TableCell className="text-gray-600">{e.hire_date || "—"}</TableCell>
+                  <TableCell className="text-gray-600 whitespace-nowrap">
+                    {e.work_start || "09:00"}–{e.work_end || "18:00"}
+                    <span className="text-xs text-gray-400">
+                      {" "}
+                      · {e.work_hours_per_day ?? 8} soat
+                    </span>
+                  </TableCell>
                   {(canEdit || canDelete) && (
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -707,6 +757,44 @@ export const EmployeesPage = () => {
                   />
                 </div>
               )}
+            </div>
+            {/* Ish jadvali: soat nechadan nechagacha + kunlik soat (default 8).
+                Vaqt o'zgarsa kunlik soat avtomatik hisoblanadi */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Ish vaqti</label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-400">Boshlanishi</p>
+                  <Input
+                    type="time"
+                    value={workStart}
+                    onChange={(e) => applyWorkTime(e.target.value, workEnd)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-400">Tugashi</p>
+                  <Input
+                    type="time"
+                    value={workEnd}
+                    onChange={(e) => applyWorkTime(workStart, e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-400">Kuniga (soat)</p>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={workHours}
+                    onChange={(e) => setWorkHours(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">
+                Vaqt oralig'i o'zgartirilsa kunlik soat avtomatik hisoblanadi,
+                kerak bo'lsa qo'lda tuzatish mumkin (masalan, tushlik hisobga
+                olinsa).
+              </p>
             </div>
             {/* Rol — faqat yangi xodim qo'shishda; menejer faqat Farroshni
                 tanlay oladi, admin barcha rollarni */}

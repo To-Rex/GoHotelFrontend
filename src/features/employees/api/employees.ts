@@ -69,6 +69,9 @@ interface EmployeeCreatePayload {
   email?: string;
   phone?: string;
   hire_date?: string;
+  work_hours_per_day?: number;
+  work_start?: string;
+  work_end?: string;
 }
 
 export const useCreateEmployee = () => {
@@ -90,6 +93,9 @@ interface EmployeeUpdatePayload {
   phone?: string;
   branch_id?: string;
   status?: string;
+  work_hours_per_day?: number;
+  work_start?: string;
+  work_end?: string;
 }
 
 export const useUpdateEmployee = () => {

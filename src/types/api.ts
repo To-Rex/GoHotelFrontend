@@ -187,6 +187,10 @@ export interface Employee {
   phone?: string | null;
   status: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
   hire_date?: string | null;
+  // Ish jadvali: kunlik soat va ish vaqti oralig'i ("HH:MM")
+  work_hours_per_day?: number;
+  work_start?: string;
+  work_end?: string;
   termination_date?: string | null;
   is_deleted: boolean;
   last_login_at?: string | null;
