@@ -79,21 +79,31 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
           </button>
         )}
 
-        {/* Xodim uchun ish vaqti hisoblagichi: tugashiga qancha qolgani */}
+        {/* Xodim uchun ish vaqti hisoblagichi: soat nechada tugashi (yaqqol)
+            va tugashiga qancha qolgani */}
         {work &&
           (work.state === "on" ? (
             <span
               title={`Ish vaqti: ${user?.work_start}–${user?.work_end}`}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-                work.remaining <= 30
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-emerald-100 text-emerald-700"
+                "flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-xs font-semibold text-white shadow-sm",
+                work.remaining <= 30 ? "bg-amber-500" : "bg-emerald-600"
               )}
             >
-              <Clock size={13} />
-              <span className="hidden sm:inline">Ish tugashiga:</span>
-              {formatMinutes(work.remaining)}
+              {/* Tugash soati — oq kartochkada, eng ko'zga tashlanadigan qism */}
+              <span
+                className={cn(
+                  "flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-sm font-bold tabular-nums",
+                  work.remaining <= 30 ? "text-amber-600" : "text-emerald-700"
+                )}
+              >
+                <Clock size={13} />
+                {user?.work_end}
+              </span>
+              <span>
+                <span className="hidden sm:inline">gacha · qoldi: </span>
+                {formatMinutes(work.remaining)}
+              </span>
             </span>
           ) : (
             <span
