@@ -154,17 +154,24 @@ export const EmployeesPage = () => {
   const [workEnd, setWorkEnd] = useState("18:00")
   const [workHours, setWorkHours] = useState("8")
 
-  // Vaqt oralig'i o'zgarsa kunlik soatni avtomatik hisoblaymiz (tungi smena —
-  // yarim tundan oshib ketishi ham mumkin); qo'lda ham tahrirlash mumkin.
-  const applyWorkTime = (start: string, end: string) => {
-    setWorkStart(start)
-    setWorkEnd(end)
+  // Boshlanish vaqti va kunlik soat kiritiladi — tugash vaqti avtomatik
+  // hisoblanadi (tungi smenada yarim tundan oshib ketishi ham mumkin).
+  const computeWorkEnd = (start: string, hours: string): string => {
     const [sh, sm] = start.split(":").map(Number)
-    const [eh, em] = end.split(":").map(Number)
-    if ([sh, sm, eh, em].some(Number.isNaN)) return
-    let mins = eh * 60 + em - (sh * 60 + sm)
-    if (mins <= 0) mins += 24 * 60
-    setWorkHours(String(Math.round(mins / 60)))
+    const h = parseInt(hours, 10)
+    if (Number.isNaN(sh) || Number.isNaN(sm) || Number.isNaN(h)) return workEnd
+    const total = (sh * 60 + sm + h * 60) % (24 * 60)
+    const eh = Math.floor(total / 60)
+    const em = total % 60
+    return `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`
+  }
+  const applyWorkStart = (start: string) => {
+    setWorkStart(start)
+    setWorkEnd(computeWorkEnd(start, workHours))
+  }
+  const applyWorkHours = (hours: string) => {
+    setWorkHours(hours)
+    setWorkEnd(computeWorkEnd(workStart, hours))
   }
   // Yangi xodimga biriktiriladigan rol shabloni (bo'sh — rolsiz)
   const [roleTemplateId, setRoleTemplateId] = useState("")
@@ -222,7 +229,7 @@ export const EmployeesPage = () => {
     setHireDate(new Date().toISOString().slice(0, 10))
     setStatus("ACTIVE")
     setWorkStart("09:00")
-    setWorkEnd("18:00")
+    setWorkEnd("17:00")
     setWorkHours("8")
     // Menejer uchun yagona variant — Farrosh; admin xohlasa keyin tanlaydi
     setRoleTemplateId(isAdmin ? "" : "housekeeper")
@@ -758,8 +765,8 @@ export const EmployeesPage = () => {
                 </div>
               )}
             </div>
-            {/* Ish jadvali: soat nechadan nechagacha + kunlik soat (default 8).
-                Vaqt o'zgarsa kunlik soat avtomatik hisoblanadi */}
+            {/* Ish jadvali: boshlanish vaqti + kunlik soat (default 8) kiritiladi,
+                tugash vaqti avtomatik hisoblanadi */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Ish vaqti</label>
               <div className="grid grid-cols-3 gap-3">
@@ -768,15 +775,7 @@ export const EmployeesPage = () => {
                   <Input
                     type="time"
                     value={workStart}
-                    onChange={(e) => applyWorkTime(e.target.value, workEnd)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-400">Tugashi</p>
-                  <Input
-                    type="time"
-                    value={workEnd}
-                    onChange={(e) => applyWorkTime(workStart, e.target.value)}
+                    onChange={(e) => applyWorkStart(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
@@ -786,14 +785,23 @@ export const EmployeesPage = () => {
                     min={1}
                     max={24}
                     value={workHours}
-                    onChange={(e) => setWorkHours(e.target.value)}
+                    onChange={(e) => applyWorkHours(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-400">Tugashi (avto)</p>
+                  <Input
+                    type="time"
+                    value={workEnd}
+                    readOnly
+                    tabIndex={-1}
+                    className="pointer-events-none bg-gray-50 text-gray-500"
                   />
                 </div>
               </div>
               <p className="text-xs text-gray-400">
-                Vaqt oralig'i o'zgartirilsa kunlik soat avtomatik hisoblanadi,
-                kerak bo'lsa qo'lda tuzatish mumkin (masalan, tushlik hisobga
-                olinsa).
+                Boshlanish vaqti va kunlik soatni kiriting — tugash vaqti
+                avtomatik hisoblanadi.
               </p>
             </div>
             {/* Rol — faqat yangi xodim qo'shishda; menejer faqat Farroshni
