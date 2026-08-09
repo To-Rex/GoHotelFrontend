@@ -794,8 +794,196 @@ export const ShiftsHistoryPage = () => {
         </div>
       )}
 
-      {/* Sessiyalar jadvali (saralanadigan ustunlar) */}
-      <div className="rounded-2xl border bg-white overflow-hidden">
+      {/* MOBIL: sessiyalar karta ko'rinishida (jadval faqat desktopda) */}
+      <div className="space-y-2.5 md:hidden">
+        {/* Mobil saralash boshqaruvi — jadval sarlavhalari o'rnini bosadi */}
+        <div className="flex items-center gap-2">
+          <select
+            className={cn(selectClass, "flex-1")}
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            title="Saralash"
+          >
+            <option value="started_at">Boshlangan vaqti bo'yicha</option>
+            <option value="ended_at">Tugagan vaqti bo'yicha</option>
+            <option value="duration">Davomiylik bo'yicha</option>
+            <option value="opening">Boshlang'ich kassa bo'yicha</option>
+            <option value="expected">Kutilgan summa bo'yicha</option>
+            <option value="counted">Sanalgan summa bo'yicha</option>
+            <option value="diff">Farq bo'yicha</option>
+            <option value="user">Xodim ismi bo'yicha</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+            className="flex h-9 items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-600"
+            title="Saralash yo'nalishi"
+          >
+            {sortDir === "asc" ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+            {sortDir === "asc" ? "O'sish" : "Kamayish"}
+          </button>
+        </div>
+
+        {sorted.length === 0 ? (
+          <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+            Sessiyalar topilmadi
+          </div>
+        ) : (
+          sorted.map((s) => {
+            const diff = Number(s.cash_diff || 0)
+            return (
+              <div
+                key={s.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailTarget(s)}
+                onKeyDown={(e) => e.key === "Enter" && setDetailTarget(s)}
+                className={cn(
+                  "w-full cursor-pointer rounded-2xl border bg-white p-3.5 text-left transition-transform active:scale-[0.99]",
+                  s.status === "CLOSED" && diff !== 0 && "border-red-200 bg-red-50/40"
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700">
+                    {(s.user_name || "?")
+                      .split(" ")
+                      .map((w) => w[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-bold leading-tight text-gray-900">
+                      {s.user_name || "—"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {s.started_at
+                        ? format(new Date(s.started_at), "dd.MM HH:mm")
+                        : "—"}
+                      {" – "}
+                      {s.ended_at
+                        ? format(new Date(s.ended_at), "dd.MM HH:mm")
+                        : "davom etmoqda"}
+                      {" · "}
+                      {durationLabel(durationMins(s))}
+                    </p>
+                  </div>
+                  {canEdit && s.status === "CLOSED" && (
+                    <button
+                      type="button"
+                      title="Sanalgan summani tuzatish"
+                      onClick={(ev) => {
+                        ev.stopPropagation()
+                        openEdit(s)
+                      }}
+                      className="rounded-md p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center gap-1">
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                      STATUS_STYLES[s.status] || STATUS_STYLES.CLOSED
+                    )}
+                  >
+                    {STATUS_LABELS[s.status] || s.status}
+                  </span>
+                  {s.force_closed && (
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                      majburiy
+                    </span>
+                  )}
+                  {s.continue_after_end && (
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                      davom etgan
+                    </span>
+                  )}
+                  {s.corrections && s.corrections.length > 0 && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                      tahrirlangan
+                    </span>
+                  )}
+                </div>
+
+                {/* Kassa qisqacha: kutilgan / sanalgan / farq */}
+                <div className="mt-2.5 grid grid-cols-3 gap-1.5 text-center">
+                  <div className="rounded-lg bg-gray-50 px-1 py-1.5">
+                    <p className="text-[10px] text-gray-400">Kutilgan</p>
+                    <p className="truncate text-xs font-bold tabular-nums text-gray-800">
+                      {s.expected_cash !== null && s.expected_cash !== undefined
+                        ? fmt(s.expected_cash)
+                        : "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 px-1 py-1.5">
+                    <p className="text-[10px] text-gray-400">Sanalgan</p>
+                    <p className="truncate text-xs font-bold tabular-nums text-gray-800">
+                      {s.counted_cash !== null && s.counted_cash !== undefined
+                        ? fmt(s.counted_cash)
+                        : "—"}
+                    </p>
+                  </div>
+                  <div
+                    className={cn(
+                      "rounded-lg px-1 py-1.5",
+                      s.status !== "CLOSED"
+                        ? "bg-gray-50"
+                        : diff === 0
+                          ? "bg-emerald-50"
+                          : "bg-red-100"
+                    )}
+                  >
+                    <p
+                      className={cn(
+                        "text-[10px]",
+                        s.status !== "CLOSED"
+                          ? "text-gray-400"
+                          : diff === 0
+                            ? "text-emerald-600"
+                            : "text-red-500"
+                      )}
+                    >
+                      Farq
+                    </p>
+                    <p
+                      className={cn(
+                        "truncate text-xs font-bold tabular-nums",
+                        s.status !== "CLOSED"
+                          ? "text-gray-400"
+                          : diff === 0
+                            ? "text-emerald-700"
+                            : "text-red-600"
+                      )}
+                    >
+                      {s.status === "CLOSED" ? fmt(diff) : "—"}
+                    </p>
+                  </div>
+                </div>
+
+                {(s.accepted_by_name || (s.force_closed && s.closed_by_name)) && (
+                  <p className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+                    <ArrowRightLeft className="h-3 w-3 text-gray-400" />
+                    {s.accepted_by_name
+                      ? `${s.accepted_by_name} qabul qilgan`
+                      : `${s.closed_by_name} majburiy yopgan`}
+                  </p>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* DESKTOP: sessiyalar jadvali (saralanadigan ustunlar) */}
+      <div className="hidden rounded-2xl border bg-white overflow-hidden md:block">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
