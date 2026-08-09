@@ -8,6 +8,11 @@ import {
   LogIn,
   LogOut,
   TrendingUp,
+  TrendingDown,
+  Store,
+  ClipboardList,
+  Scale,
+  CalendarPlus,
 } from "lucide-react"
 import {
   ResponsiveContainer,
@@ -22,6 +27,9 @@ import { useRooms } from "@/features/rooms/api/rooms"
 import { useReservations } from "@/features/reservations/api/reservations"
 import { useGuests } from "@/features/guests/api/guests"
 import { useInvoices, usePayments } from "@/features/finance/api/finance"
+import { useExpenses } from "@/features/expenses/api/expenses"
+import { useShopSales } from "@/features/shop/api/shop"
+import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -81,6 +89,16 @@ export const DashboardPage = () => {
     weekAgoStr,
     todayStr
   )
+  // Qo'shimcha statistika manbalari (ruxsat bo'lmasa jimgina 0 ko'rinadi)
+  const { data: expenses = [] } = useExpenses(todayStr, todayStr)
+  const { data: shopPaidToday = [] } = useShopSales(todayStr, todayStr, {
+    dateBy: "paid",
+    status: "PAID",
+  })
+  const { data: shopDebts = [] } = useShopSales(undefined, undefined, {
+    status: "PENDING",
+  })
+  const { data: hkTasks = [] } = useHousekeepingTasks()
 
   const isLoading = roomsLoading || resLoading || guestsLoading || paymentsLoading
 
@@ -166,6 +184,39 @@ export const DashboardPage = () => {
     [reservations]
   )
 
+  // --- Qo'shimcha KPI'lar ---
+  const todayExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0)
+  const shopTodayRevenue = shopPaidToday.reduce(
+    (s, x) => s + Number(x.total_amount || 0),
+    0
+  )
+  const shopDebtTotal = shopDebts.reduce((s, x) => s + Number(x.total_amount || 0), 0)
+  // Bugungi sof natija: bron to'lovlari + do'kon − xarajatlar
+  const todayNet = todayIncome + shopTodayRevenue - todayExpenses
+
+  // Bugun yaratilgan yangi bronlar (soatlik/kunlik kesimida)
+  const createdToday = reservations.filter(
+    (r) => String(r.created_at || "").slice(0, 10) === todayStr
+  )
+  const createdTodayHourly = createdToday.filter(
+    (r) => r.booking_type === "HOURLY"
+  ).length
+
+  // Oxirgi 7 kunda qo'shilgan mehmonlar
+  const newGuestsWeek = guests.filter(
+    (g: any) => String(g.created_at || "").slice(0, 10) >= weekAgoStr
+  ).length
+
+  // Xo'jalik vazifalari: ochiq/jarayonda va bugun yakunlanganlar
+  const openTasks = (hkTasks as any[]).filter((t) =>
+    ["OPEN", "IN_PROGRESS"].includes(t.status)
+  )
+  const doneToday = (hkTasks as any[]).filter(
+    (t) =>
+      t.status === "COMPLETED" &&
+      String(t.completed_at || "").slice(0, 10) === todayStr
+  ).length
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -190,6 +241,31 @@ export const DashboardPage = () => {
       accent: "bg-emerald-50 text-emerald-600",
     },
     {
+      label: "Bugungi xarajat",
+      value: `${fmt(todayExpenses)} So'm`,
+      sub: `${expenses.length} ta chiqim`,
+      icon: TrendingDown,
+      accent: "bg-red-50 text-red-600",
+    },
+    {
+      label: "Bugungi sof natija",
+      value: `${fmt(todayNet)} So'm`,
+      sub: "tushum + do'kon − xarajat",
+      icon: Scale,
+      accent:
+        todayNet >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600",
+    },
+    {
+      label: "Do'kon (bugun)",
+      value: `${fmt(shopTodayRevenue)} So'm`,
+      sub:
+        shopDebtTotal > 0
+          ? `Bronlarda qarz: ${fmt(shopDebtTotal)} So'm`
+          : `${shopPaidToday.length} ta sotuv`,
+      icon: Store,
+      accent: "bg-violet-50 text-violet-600",
+    },
+    {
       label: "Xonalar bandligi",
       value: `${occupancyRate}%`,
       sub: `Band: ${occupiedRooms} · Bo'sh: ${availableRooms} / ${totalRooms}`,
@@ -201,14 +277,28 @@ export const DashboardPage = () => {
       value: String(activeReservations),
       sub: `Bugun kirish: ${arrivals.length} · chiqish: ${departures.length}`,
       icon: CalendarCheck,
-      accent: "bg-violet-50 text-violet-600",
+      accent: "bg-sky-50 text-sky-600",
+    },
+    {
+      label: "Bugungi yangi bronlar",
+      value: String(createdToday.length),
+      sub: `Soatlik: ${createdTodayHourly} · Kunlik: ${createdToday.length - createdTodayHourly}`,
+      icon: CalendarPlus,
+      accent: "bg-indigo-50 text-indigo-600",
     },
     {
       label: "Mehmonlar",
       value: String(guests.length),
-      sub: "Bazada ro'yxatdan o'tgan",
+      sub: `Oxirgi 7 kunda: +${newGuestsWeek}`,
       icon: Users,
       accent: "bg-amber-50 text-amber-600",
+    },
+    {
+      label: "Xo'jalik vazifalari",
+      value: String(openTasks.length),
+      sub: `Bugun bajarildi: ${doneToday}`,
+      icon: ClipboardList,
+      accent: "bg-orange-50 text-orange-600",
     },
   ]
 
@@ -221,10 +311,13 @@ export const DashboardPage = () => {
         </p>
       </div>
 
-      {/* KPI kartalar */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* KPI kartalar — wrap uslubida: displayga qancha sig'sa shuncha yonma-yon */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
         {tiles.map((t) => (
-          <div key={t.label} className="rounded-lg border bg-white p-4 flex items-start gap-3">
+          <div
+            key={t.label}
+            className="rounded-xl border bg-white p-4 flex items-start gap-3 transition-shadow hover:shadow-md"
+          >
             <span
               className={cn(
                 "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg",
@@ -244,7 +337,7 @@ export const DashboardPage = () => {
 
       {/* Tushum grafigi + xonalar holati */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-lg border bg-white p-4">
+        <div className="lg:col-span-2 rounded-xl border bg-white p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary-600" />
@@ -283,7 +376,7 @@ export const DashboardPage = () => {
         </div>
 
         {/* Xonalar holati taqsimoti */}
-        <div className="rounded-lg border bg-white p-4">
+        <div className="rounded-xl border bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Xonalar holati</h2>
           {totalRooms === 0 ? (
             <p className="text-sm text-gray-400">Xonalar yo'q</p>
@@ -323,9 +416,9 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Bugungi kirish/chiqishlar va so'nggi bandlovlar */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-lg border bg-white p-4">
+      {/* Bugungi kirish/chiqishlar, so'nggi bandlovlar va xo'jalik — wrap uslubida */}
+      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
+        <div className="rounded-xl border bg-white p-4">
           <div className="flex items-center gap-2 mb-3">
             <LogIn className="h-4 w-4 text-emerald-600" />
             <h2 className="text-sm font-semibold text-gray-900">
@@ -360,7 +453,7 @@ export const DashboardPage = () => {
           )}
         </div>
 
-        <div className="rounded-lg border bg-white p-4">
+        <div className="rounded-xl border bg-white p-4">
           <div className="flex items-center gap-2 mb-3">
             <LogOut className="h-4 w-4 text-amber-600" />
             <h2 className="text-sm font-semibold text-gray-900">
@@ -395,7 +488,7 @@ export const DashboardPage = () => {
           )}
         </div>
 
-        <div className="rounded-lg border bg-white p-4">
+        <div className="rounded-xl border bg-white p-4">
           <div className="flex items-center gap-2 mb-3">
             <CalendarCheck className="h-4 w-4 text-primary-600" />
             <h2 className="text-sm font-semibold text-gray-900">So'nggi bandlovlar</h2>
@@ -417,6 +510,52 @@ export const DashboardPage = () => {
                   <span className="flex-shrink-0 text-xs font-semibold text-gray-900">
                     {fmt(r.total_amount)}{" "}
                     <span className="font-normal text-gray-400">So'm</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Ochiq xo'jalik vazifalari */}
+        <div className="rounded-xl border bg-white p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardList className="h-4 w-4 text-orange-600" />
+            <h2 className="text-sm font-semibold text-gray-900">
+              Xo'jalik vazifalari ({openTasks.length})
+            </h2>
+          </div>
+          {openTasks.length === 0 ? (
+            <p className="text-sm text-gray-400">Ochiq vazifalar yo'q</p>
+          ) : (
+            <div className="space-y-2.5">
+              {openTasks.slice(0, 6).map((t: any) => (
+                <div key={t.id} className="flex items-center justify-between gap-2 text-sm">
+                  <div className="min-w-0">
+                    <p className="text-gray-900 truncate leading-tight">
+                      Xona: {roomMap[t.room_id] || t.room?.room_number || "—"}
+                    </p>
+                    <p className="text-[11px] text-gray-400 leading-tight">
+                      {t.task_type === "CLEANING"
+                        ? "Tozalash"
+                        : t.task_type === "DEEP_CLEANING"
+                          ? "Chuqur tozalash"
+                          : t.task_type === "MAINTENANCE"
+                            ? "Ta'mir"
+                            : t.task_type === "INSPECTION"
+                              ? "Tekshiruv"
+                              : t.task_type || "Vazifa"}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full",
+                      t.status === "IN_PROGRESS"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-amber-100 text-amber-700"
+                    )}
+                  >
+                    {t.status === "IN_PROGRESS" ? "Jarayonda" : "Ochiq"}
                   </span>
                 </div>
               ))}
