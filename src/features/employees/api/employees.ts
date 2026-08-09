@@ -2,6 +2,49 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Employee, Permission } from '@/types/api';
 
+export const EMPLOYEE_PHOTO_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+export const EMPLOYEE_PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp';
+
+/** Xodim suratini /files/upload ga yuklaydi (entity_type="user"). */
+export const uploadEmployeePhoto = async (
+  userId: string,
+  file: File,
+  hotelId?: string
+) => {
+  const form = new FormData();
+  const ext = (file.name.split('.').pop() || 'jpg')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  form.append('file', file, `photo_${Date.now()}.${ext}`);
+  form.append('entity_type', 'user');
+  form.append('entity_id', userId);
+  form.append('category', 'photo');
+  const { data } = await api.post('/files/upload', form, {
+    params: hotelId ? { hotel_id: hotelId } : {},
+    // Content-Type ni brauzer o'zi (boundary bilan) qo'yadi
+    headers: { 'Content-Type': undefined as any },
+  });
+  return data;
+};
+
+/** Xodim suratlari: user id -> eng so'nggi surat URL xaritasi (bitta so'rov). */
+export const useEmployeePhotos = () => {
+  return useQuery({
+    queryKey: ['employeePhotos'],
+    queryFn: async () => {
+      const { data } = await api.get<any[]>('/files/by-entity', {
+        params: { entity_type: 'user', category: 'photo' },
+      });
+      const map: Record<string, string> = {};
+      // Ro'yxat yangi->eski tartibda: har xodim uchun birinchisi eng so'nggisi
+      for (const f of data || []) {
+        if (!map[f.entity_id] && f.download_url) map[f.entity_id] = f.download_url;
+      }
+      return map;
+    },
+  });
+};
+
 export const useEmployees = () => {
   return useQuery({
     queryKey: ['employees'],

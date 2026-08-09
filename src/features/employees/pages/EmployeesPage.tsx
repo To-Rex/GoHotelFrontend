@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
-import { UserCog, Plus, Pencil, Trash2, Loader2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { UserCog, Plus, Pencil, Trash2, Loader2, Upload, X } from "lucide-react"
 import {
   useEmployees,
   useCreateEmployee,
@@ -7,6 +8,10 @@ import {
   useDeleteEmployee,
   usePermissionsList,
   useSetUserPermissions,
+  uploadEmployeePhoto,
+  useEmployeePhotos,
+  EMPLOYEE_PHOTO_ACCEPT,
+  EMPLOYEE_PHOTO_MAX_BYTES,
 } from "../api/employees"
 import { PERMISSION_TEMPLATES, templatePermissionIds } from "../permissionTemplates"
 import { useBranches } from "@/features/rooms/api/rooms"
@@ -65,6 +70,9 @@ export const EmployeesPage = () => {
   const { data: employees = [], isLoading } = useEmployees()
   const { data: branches = [] } = useBranches()
   const { data: allPermissions = [] } = usePermissionsList()
+  // Xodim suratlari (user id -> URL) — jadval avatarlari uchun
+  const { data: photosMap = {} } = useEmployeePhotos()
+  const queryClient = useQueryClient()
 
   const createMutation = useCreateEmployee()
   const updateMutation = useUpdateEmployee()
@@ -114,6 +122,46 @@ export const EmployeesPage = () => {
   const [roleTemplateId, setRoleTemplateId] = useState("")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  // Xodim surati (yaratishda ham, tahrirlashda ham tanlash mumkin)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handlePhoto = (file: File | null) => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview)
+    if (!file) {
+      setPhoto(null)
+      setPhotoPreview(null)
+      return
+    }
+    if (!EMPLOYEE_PHOTO_ACCEPT.split(",").includes(file.type)) {
+      setErrorMsg("Faqat JPG, PNG yoki WEBP rasm yuklash mumkin.")
+      return
+    }
+    if (file.size > EMPLOYEE_PHOTO_MAX_BYTES) {
+      setErrorMsg("Rasm hajmi 5 MB dan oshmasligi kerak.")
+      return
+    }
+    setErrorMsg(null)
+    setPhoto(file)
+    setPhotoPreview(URL.createObjectURL(file))
+  }
+
+  // Suratni yuklash — xodim saqlangach; xato bersa jarayonni buzmaydi
+  const uploadPhotoFor = async (userId: string): Promise<string | null> => {
+    if (!photo) return null
+    try {
+      setUploading(true)
+      await uploadEmployeePhoto(userId, photo, user?.hotel_id)
+      queryClient.invalidateQueries({ queryKey: ["employeePhotos"] })
+      return null
+    } catch (err) {
+      return apiErrorMessage(err)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const openCreate = () => {
     setEditing(null)
     setFirstName("")
@@ -127,6 +175,7 @@ export const EmployeesPage = () => {
     setStatus("ACTIVE")
     // Menejer uchun yagona variant — Farrosh; admin xohlasa keyin tanlaydi
     setRoleTemplateId(isAdmin ? "" : "housekeeper")
+    handlePhoto(null)
     setErrorMsg(null)
     setModalOpen(true)
   }
@@ -142,6 +191,7 @@ export const EmployeesPage = () => {
     setBranchId(e.branch_id || "")
     setHireDate(e.hire_date || "")
     setStatus(e.status)
+    handlePhoto(null)
     setErrorMsg(null)
     setModalOpen(true)
   }
@@ -162,6 +212,13 @@ export const EmployeesPage = () => {
           branch_id: branchId || undefined,
           status,
         })
+        // Yangi surat tanlangan bo'lsa — yuklaymiz (xato saqlashni buzmaydi)
+        const photoErr = await uploadPhotoFor(editing.id)
+        if (photoErr) {
+          setModalOpen(false)
+          alert("Ma'lumotlar saqlandi, lekin surat yuklanmadi:\n" + photoErr)
+          return
+        }
       } else {
         if (username.trim().length < 3) {
           setErrorMsg("Login kamida 3 belgidan iborat bo'lishi kerak")
@@ -192,6 +249,13 @@ export const EmployeesPage = () => {
           phone: phone.trim() || undefined,
           hire_date: hireDate || undefined,
         })
+
+        // Surat tanlangan bo'lsa — yuklaymiz. Xodim allaqachon yaratilgan,
+        // shuning uchun surat xatosi yaratishni bekor qilmaydi
+        const photoErr = await uploadPhotoFor(created.id)
+        if (photoErr) {
+          alert("Xodim qo'shildi, lekin surat yuklanmadi:\n" + photoErr)
+        }
 
         // Rol tanlangan bo'lsa — shablon ruxsatlarini avtomatik biriktiramiz.
         // Xodim allaqachon yaratilgan, shuning uchun bu bosqich xato bersa ham
@@ -234,7 +298,10 @@ export const EmployeesPage = () => {
   }
 
   const saving =
-    createMutation.isPending || updateMutation.isPending || setPermsMutation.isPending
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    setPermsMutation.isPending ||
+    uploading
 
   if (isLoading) {
     return (
@@ -298,9 +365,17 @@ export const EmployeesPage = () => {
                 <TableRow key={e.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-600">
-                        <UserCog className="h-4 w-4" />
-                      </span>
+                      {photosMap[e.id] ? (
+                        <img
+                          src={photosMap[e.id]}
+                          alt=""
+                          className="h-8 w-8 flex-shrink-0 rounded-full border border-gray-200 object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+                          <UserCog className="h-4 w-4" />
+                        </span>
+                      )}
                       <div>
                         <p className="font-medium leading-tight">
                           {e.first_name} {e.last_name}
@@ -480,6 +555,55 @@ export const EmployeesPage = () => {
                 </p>
               </div>
             )}
+            {/* Xodim surati (ixtiyoriy) */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Xodim surati (ixtiyoriy)</label>
+              <div className="flex items-center gap-3">
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt="Surat"
+                    className="h-14 w-14 rounded-full border border-gray-200 object-cover"
+                  />
+                ) : editing && photosMap[editing.id] ? (
+                  <img
+                    src={photosMap[editing.id]}
+                    alt="Joriy surat"
+                    className="h-14 w-14 rounded-full border border-gray-200 object-cover"
+                  />
+                ) : (
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-500">
+                    <UserCog className="h-6 w-6" />
+                  </span>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50">
+                    <Upload className="h-3.5 w-3.5" />
+                    {photoPreview ? "Almashtirish" : "Surat tanlash"}
+                    <input
+                      type="file"
+                      accept={EMPLOYEE_PHOTO_ACCEPT}
+                      className="hidden"
+                      onChange={(ev) => {
+                        handlePhoto(ev.target.files?.[0] ?? null)
+                        ev.target.value = ""
+                      }}
+                    />
+                  </label>
+                  {photoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => handlePhoto(null)}
+                      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-gray-400 hover:text-red-500"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Olib tashlash
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {errorMsg && (
               <p className="text-sm text-red-500 whitespace-pre-line">{errorMsg}</p>
             )}
