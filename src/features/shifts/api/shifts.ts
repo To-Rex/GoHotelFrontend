@@ -123,6 +123,28 @@ export const useForceCloseShift = () =>
     }
   );
 
+// --- Kassada bo'lishi kerak bo'lgan summa (topshirish dialogi uchun) ---
+
+export interface CashBreakdown {
+  opening_cash: number;
+  payments_cash: number;
+  shop_cash: number;
+  expenses_cash: number;
+  expected_cash: number;
+}
+
+export const useExpectedCash = (enabled: boolean) =>
+  useQuery({
+    queryKey: ["shiftExpectedCash"],
+    queryFn: async () => {
+      const { data } = await api.get<CashBreakdown>("/shifts/expected-cash");
+      return data;
+    },
+    enabled,
+    // Dialog har ochilganda yangi hisob olinadi
+    staleTime: 0,
+  });
+
 // --- Smenalar tarixi (admin/menejer sahifasi) ---
 
 export const useShiftHistory = (limit = 100) =>

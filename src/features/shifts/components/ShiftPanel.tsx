@@ -19,6 +19,7 @@ import {
   useEndShift,
   useAcceptShift,
   useForceCloseShift,
+  useExpectedCash,
   isWorkEnded,
   isCutDue,
   isCashStaff,
@@ -57,8 +58,10 @@ export const ShiftPanel = () => {
   const acceptMutation = useAcceptShift()
   const forceMutation = useForceCloseShift()
 
-  // Ko'r sanash dialogi: "cash" — kassani topshirish, "end" — smenani tugallash
+  // Sanash dialogi: "cash" — kassani topshirish, "end" — smenani tugallash
   const [countDialog, setCountDialog] = useState<"cash" | "end" | null>(null)
+  // Dialog ochilganda kassada bo'lishi kerak bo'lgan summa (tarkibi bilan)
+  const { data: expectedData } = useExpectedCash(!!countDialog)
   const [counted, setCounted] = useState("")
   const [notes, setNotes] = useState("")
   const [countError, setCountError] = useState<string | null>(null)
@@ -404,10 +407,26 @@ export const ShiftPanel = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
+            {/* Kassada bo'lishi kerak bo'lgan summa — tarkibi bilan */}
+            {expectedData && (
+              <div className="rounded-xl border border-primary-100 bg-primary-50/60 px-3.5 py-2.5">
+                <p className="text-xs font-medium text-gray-500">
+                  Kassada bo'lishi kerak
+                </p>
+                <p className="text-xl font-bold tabular-nums text-primary-700">
+                  {fmtMoney(expectedData.expected_cash)} so'm
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
+                  Boshlang'ich {fmtMoney(expectedData.opening_cash)} + naqd
+                  to'lovlar {fmtMoney(expectedData.payments_cash)} + do'kon{" "}
+                  {fmtMoney(expectedData.shop_cash)} − naqd xarajatlar{" "}
+                  {fmtMoney(expectedData.expenses_cash)}
+                </p>
+              </div>
+            )}
             <p className="rounded-xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600">
-              Kassadagi <b>haqiqiy pulni sanab</b> kiriting. Kutilgan summa
-              siz kiritganingizdan KEYIN ko'rsatiladi (ko'r sanash qoidasi) —
-              farq bo'lsa sizning hisobingizga yoziladi.
+              Kassadagi <b>haqiqiy pulni sanab</b> kiriting — farq bo'lsa
+              sizning hisobingizga yoziladi.
             </p>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">
