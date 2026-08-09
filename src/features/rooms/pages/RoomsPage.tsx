@@ -487,14 +487,37 @@ export const RoomsPage = () => {
     return <div>Xatolik yuz berdi. Iltimos qayta urining.</div>
   }
 
+  const freeCount = rooms.filter((r) => r.current_status === "AVAILABLE").length
+  const busyCount = rooms.filter((r) =>
+    ["OCCUPIED", "RESERVED"].includes(r.current_status)
+  ).length
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Xonalar</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Mehmonxona xonalarini boshqarish · jami {rooms.length} ta xona
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
+            <DoorOpen className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Xonalar</h1>
+            <p className="text-sm text-gray-500">
+              Jami {rooms.length} ta xona ·{" "}
+              <span className="font-medium text-emerald-600">{freeCount} bo'sh</span>
+              {busyCount > 0 && (
+                <>
+                  {" "}
+                  · <span className="font-medium text-red-500">{busyCount} band</span>
+                </>
+              )}
+              {sortedRooms.length !== rooms.length && (
+                <span className="font-medium text-primary-700">
+                  {" "}
+                  · natija: {sortedRooms.length} ta
+                </span>
+              )}
+            </p>
+          </div>
         </div>
         {canCreate && (
           <Button onClick={openCreate}>
@@ -587,7 +610,7 @@ export const RoomsPage = () => {
       </div>
 
       {/* Rang ko'rsatkichi — qaysi rang qaysi holatni bildirishi */}
-      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 rounded-lg border border-gray-100 bg-gray-50/70 px-3 py-2 text-[11px] text-gray-600">
+      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 rounded-xl border border-gray-100 bg-gray-50/70 px-3.5 py-2 text-[11px] text-gray-600">
         <span className="font-semibold text-gray-400">Ranglar:</span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm border border-gray-300 bg-white" />
@@ -606,7 +629,7 @@ export const RoomsPage = () => {
       </div>
 
       {viewMode === "table" && (
-      <div className="rounded-lg border bg-white overflow-hidden">
+      <div className="rounded-2xl border bg-white overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
@@ -844,7 +867,7 @@ export const RoomsPage = () => {
                     <div
                       key={room.id}
                       className={cn(
-                        "group relative rounded-xl border p-3.5 transition-all hover:shadow-md",
+                        "group relative rounded-xl border p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md",
                         statusCardAccent[room.current_status] || "border-gray-200 bg-white"
                       )}
                     >
