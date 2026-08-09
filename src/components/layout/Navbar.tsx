@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuthStore } from "@/store/auth";
-import { LogOut, User, Menu, ScanFace, Sun, Moon } from "lucide-react";
+import { LogOut, User, Menu, ScanFace, Sun, Moon, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
+import { cn } from "@/lib/utils";
+
+// Qolgan daqiqalarni odam o'qiydigan ko'rinishga keltiradi: "2 soat 15 daq"
+const formatMinutes = (mins: number): string => {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h <= 0) return `${m} daq`;
+  if (m === 0) return `${h} soat`;
+  return `${h} soat ${m} daq`;
+};
 
 interface NavbarProps {
   /** Mobil ko'rinishda sidebar drawer'ni ochish */
@@ -27,6 +37,33 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
     } catch {}
   };
 
+  // Har 30 soniyada yangilanadigan "hozir" — ish vaqti hisoblagichi uchun
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Xodimning ish vaqti holati: smena ichida bo'lsa — tugashiga qancha qolgani,
+  // tashqarida bo'lsa — boshlanish vaqti. Tungi smena (masalan 22:00-06:00)
+  // ham to'g'ri hisoblanadi.
+  const work = useMemo(() => {
+    if (user?.user_type !== "EMPLOYEE" || !user.work_start || !user.work_end)
+      return null;
+    const parse = (t: string): number | null => {
+      const [h, m] = t.split(":").map(Number);
+      return Number.isNaN(h) || Number.isNaN(m) ? null : h * 60 + m;
+    };
+    const start = parse(user.work_start);
+    const end = parse(user.work_end);
+    if (start === null || end === null || start === end) return null;
+    const d = new Date(now);
+    const cur = d.getHours() * 60 + d.getMinutes();
+    const inShift = start < end ? cur >= start && cur < end : cur >= start || cur < end;
+    if (!inShift) return { state: "off" as const, startLabel: user.work_start };
+    return { state: "on" as const, remaining: (end - cur + 1440) % 1440 };
+  }, [user, now]);
+
   return (
     <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-3 sm:px-6 shadow-sm">
       <div className="flex items-center gap-2">
@@ -41,6 +78,34 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             <Menu size={20} />
           </button>
         )}
+
+        {/* Xodim uchun ish vaqti hisoblagichi: tugashiga qancha qolgani */}
+        {work &&
+          (work.state === "on" ? (
+            <span
+              title={`Ish vaqti: ${user?.work_start}–${user?.work_end}`}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+                work.remaining <= 30
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-emerald-100 text-emerald-700"
+              )}
+            >
+              <Clock size={13} />
+              <span className="hidden sm:inline">Ish tugashiga:</span>
+              {formatMinutes(work.remaining)}
+            </span>
+          ) : (
+            <span
+              title={`Ish vaqti: ${user?.work_start}–${user?.work_end}`}
+              className="flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500"
+            >
+              <Clock size={13} />
+              <span className="hidden sm:inline">Ish</span>
+              {work.startLabel}
+              <span className="hidden sm:inline">da boshlanadi</span>
+            </span>
+          ))}
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-sm font-medium">

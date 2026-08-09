@@ -17,6 +17,10 @@ export interface User {
   // Backend `/auth/me` da qaytaradigan ruxsat kodlari (faqat EMPLOYEE uchun to'ladi).
   // `undefined` — profil hali yuklanmagan (eski sessiya).
   permissions?: string[];
+  // Ish jadvali — navbarda ish tugashiga qancha qolganini ko'rsatish uchun
+  work_hours_per_day?: number;
+  work_start?: string;
+  work_end?: string;
 }
 
 interface AuthState {
