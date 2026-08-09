@@ -28,6 +28,19 @@ const roomStatusBadge: Record<string, string> = {
   INSPECTION: "bg-purple-100 text-purple-700",
   OUT_OF_SERVICE: "bg-gray-200 text-gray-600",
 }
+
+// Xona katagining o'zi holat rangida bo'yaladi — holat bir qarashda yaqqol
+// ko'rinadi (/rooms sahifasidagi rang sxemasi bilan bir xil). Bo'sh xona
+// ODDIY oq. Sticky ustun timeline ustidan o'tgani uchun ranglar TO'LIQ
+// qoplaydigan (shaffof emas) tanlangan.
+const roomCellAccent: Record<string, string> = {
+  RESERVED: "bg-blue-50 border-l-blue-400",
+  OCCUPIED: "bg-red-50 border-l-red-400",
+  CLEANING: "bg-amber-50 border-l-amber-400",
+  MAINTENANCE: "bg-orange-50 border-l-orange-400",
+  INSPECTION: "bg-purple-50 border-l-purple-400",
+  OUT_OF_SERVICE: "bg-gray-100 border-l-gray-400",
+}
 // Soatlik bronlar orasidagi majburiy tanaffus (daqiqa) — mijoz chiqib ketgach
 // xonani tayyorlash uchun. BookingPage va backenddagi qiymat bilan bir xil.
 const TURNOVER_MIN = 15
@@ -628,9 +641,11 @@ export function HourlyBoard({
                             yangi bandlov ochiladi (avvalgi "1 soat" tugmasi kabi) */}
                         <div
                           className={cn(
-                            "sticky left-0 z-10 flex-shrink-0 w-56 flex flex-col justify-center px-4 bg-white border-r border-gray-200 gap-1",
+                            "sticky left-0 z-10 flex-shrink-0 w-56 flex flex-col justify-center px-4 border-r border-gray-200 border-l-4 gap-1",
+                            roomCellAccent[room.current_status] ||
+                              "bg-white border-l-transparent",
                             isToday && freeNow && canCreate && freeMin > 0 &&
-                              "cursor-pointer hover:bg-primary-50/60 transition-colors"
+                              "cursor-pointer hover:bg-primary-50 transition-colors"
                           )}
                           onClick={
                             isToday && freeNow && canCreate && freeMin > 0
