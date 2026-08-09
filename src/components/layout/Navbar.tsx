@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "@/store/auth";
-import { LogOut, User, Menu, ScanFace } from "lucide-react";
+import { LogOut, User, Menu, ScanFace, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
 
@@ -13,6 +13,19 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
   const { user, logout } = useAuthStore();
   // Yuz bilan kirishni sozlash dialogi (har bir xodim o'z yuzini biriktiradi)
   const [faceDialogOpen, setFaceDialogOpen] = useState(false);
+
+  // Kun/tun mavzusi — tanlov brauzerda saqlanadi (standart: kun)
+  const [dark, setDark] = useState(() =>
+    document.documentElement.classList.contains("dark")
+  );
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    try {
+      localStorage.setItem("theme", next ? "dark" : "light");
+    } catch {}
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-3 sm:px-6 shadow-sm">
@@ -38,6 +51,18 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             {user?.first_name} {user?.last_name}
           </span>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          title={dark ? "Kun mavzusiga o'tish" : "Tun mavzusiga o'tish"}
+        >
+          {dark ? (
+            <Sun size={18} className="text-muted-foreground hover:text-foreground" />
+          ) : (
+            <Moon size={18} className="text-muted-foreground hover:text-foreground" />
+          )}
+        </Button>
         <Button
           variant="ghost"
           size="icon"
