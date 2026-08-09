@@ -714,7 +714,119 @@ export const ShiftsHistoryPage = () => {
               — qatorni bosib faqat shu xodimni ko'ring
             </span>
           </p>
-          <div className="overflow-x-auto">
+
+          {/* MOBIL: xodimlar karta ko'rinishida */}
+          <div className="space-y-2 p-2.5 md:hidden">
+            {byEmployee.map((e) => (
+              <div
+                key={e.id}
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  setEmployeeFilter(employeeFilter === e.id ? "ALL" : e.id)
+                }
+                onKeyDown={(ev) =>
+                  ev.key === "Enter" &&
+                  setEmployeeFilter(employeeFilter === e.id ? "ALL" : e.id)
+                }
+                className={cn(
+                  "cursor-pointer rounded-xl border p-3 transition-transform active:scale-[0.99]",
+                  employeeFilter === e.id
+                    ? "border-primary-300 bg-primary-50/60"
+                    : "bg-white"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                      employeeFilter === e.id
+                        ? "bg-primary-600 text-white"
+                        : "bg-primary-100 text-primary-700"
+                    )}
+                  >
+                    {e.name
+                      .split(" ")
+                      .map((w) => w[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </span>
+                  <p className="min-w-0 flex-1 truncate font-bold text-gray-900">
+                    {e.name}
+                  </p>
+                  {employeeFilter === e.id && (
+                    <span className="rounded-full bg-primary-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                      tanlangan
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-1.5 text-center">
+                  <div className="rounded-lg bg-gray-50 px-1 py-1.5">
+                    <p className="text-[10px] text-gray-400">Sessiyalar</p>
+                    <p className="text-xs font-bold tabular-nums text-gray-800">
+                      {e.count} ta
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 px-1 py-1.5">
+                    <p className="text-[10px] text-gray-400">Jami sanalgan</p>
+                    <p className="truncate text-xs font-bold tabular-nums text-gray-800">
+                      {fmt(e.counted)} so'm
+                    </p>
+                  </div>
+                  <div
+                    className={cn(
+                      "rounded-lg px-1 py-1.5",
+                      e.shortage < 0 ? "bg-red-100" : "bg-gray-50"
+                    )}
+                  >
+                    <p
+                      className={cn(
+                        "text-[10px]",
+                        e.shortage < 0 ? "text-red-500" : "text-gray-400"
+                      )}
+                    >
+                      Kamomad
+                    </p>
+                    <p
+                      className={cn(
+                        "truncate text-xs font-bold tabular-nums",
+                        e.shortage < 0 ? "text-red-600" : "text-gray-400"
+                      )}
+                    >
+                      {e.shortage < 0 ? `${fmt(e.shortage)} so'm` : "—"}
+                    </p>
+                  </div>
+                  <div
+                    className={cn(
+                      "rounded-lg px-1 py-1.5",
+                      e.surplus > 0 ? "bg-amber-100" : "bg-gray-50"
+                    )}
+                  >
+                    <p
+                      className={cn(
+                        "text-[10px]",
+                        e.surplus > 0 ? "text-amber-600" : "text-gray-400"
+                      )}
+                    >
+                      Ortiqcha
+                    </p>
+                    <p
+                      className={cn(
+                        "truncate text-xs font-bold tabular-nums",
+                        e.surplus > 0 ? "text-amber-700" : "text-gray-400"
+                      )}
+                    >
+                      {e.surplus > 0 ? `+${fmt(e.surplus)} so'm` : "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* DESKTOP: xodimlar jadvali */}
+          <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow>
