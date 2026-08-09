@@ -242,8 +242,9 @@ export const LoginPage = () => {
           open={faceOpen}
           onOpenChange={setFaceOpen}
           title="Yuz bilan kirish"
-          actionLabel="Kirish"
-          hint="Yuzingizni oval ramkaga joylab, yorug' joyda tugmani bosing"
+          actionLabel="Qo'lda kirish"
+          hint="Yuzingizni oval ramkaga joylang — tanilishi bilan avtomatik kirasiz"
+          auto
           onCapture={handleFaceCapture}
         />
 
