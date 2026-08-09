@@ -4,15 +4,14 @@ import {
   BedDouble,
   Users,
   CalendarCheck,
-  Wallet,
   LogIn,
   LogOut,
   TrendingUp,
   TrendingDown,
   Store,
   ClipboardList,
-  Scale,
   CalendarPlus,
+  Sparkles,
 } from "lucide-react"
 import {
   ResponsiveContainer,
@@ -30,10 +29,21 @@ import { useInvoices, usePayments } from "@/features/finance/api/finance"
 import { useExpenses } from "@/features/expenses/api/expenses"
 import { useShopSales } from "@/features/shop/api/shop"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
+import { useAuthStore } from "@/store/auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
+
+// Sana sarlavhasi uchun o'zbekcha oy/hafta kunlari
+const UZ_MONTHS = [
+  "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+  "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr",
+]
+const UZ_DAYS = [
+  "yakshanba", "dushanba", "seshanba", "chorshanba",
+  "payshanba", "juma", "shanba",
+]
 
 // Xona holatlari — semantik ranglar, yorliq va son bilan birga ko'rsatiladi
 const ROOM_STATUSES: Array<{ key: string; label: string; color: string; dot: string }> = [
@@ -64,20 +74,56 @@ const resStatusBadge: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-600",
 }
 
-// Grafik tooltip'i — minimal oq karta
+// Grafik tooltip'i — minimal karta
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-md border border-gray-200 bg-white px-3 py-2 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md">
       <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm font-semibold text-gray-900">
-        {fmt(payload[0].value)} So'm
-      </p>
+      <p className="text-sm font-bold text-gray-900">{fmt(payload[0].value)} So'm</p>
+    </div>
+  )
+}
+
+// Ro'yxat panellari uchun umumiy karta qobig'i
+function Panel({
+  icon: Icon,
+  iconClass,
+  title,
+  count,
+  children,
+}: {
+  icon: any
+  iconClass: string
+  title: string
+  count?: number
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md">
+      <div className="mb-3 flex items-center gap-2.5">
+        <span
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg",
+            iconClass
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <h2 className="text-sm font-bold text-gray-900">
+          {title}
+          {count !== undefined && (
+            <span className="ml-1.5 font-semibold text-gray-400">({count})</span>
+          )}
+        </h2>
+      </div>
+      {children}
     </div>
   )
 }
 
 export const DashboardPage = () => {
+  const user = useAuthStore((s) => s.user)
   const todayStr = format(new Date(), "yyyy-MM-dd")
   const weekAgoStr = format(subDays(new Date(), 6), "yyyy-MM-dd")
 
@@ -219,41 +265,28 @@ export const DashboardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">Boshqaruv paneli</h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Skeleton className="h-28 w-full rounded-lg" />
-          <Skeleton className="h-28 w-full rounded-lg" />
-          <Skeleton className="h-28 w-full rounded-lg" />
-          <Skeleton className="h-28 w-full rounded-lg" />
+      <div className="space-y-5">
+        <Skeleton className="h-36 w-full rounded-2xl" />
+        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+          ))}
         </div>
-        <Skeleton className="h-64 w-full rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     )
   }
 
+  const now = new Date()
+  const dateLine = `${now.getDate()}-${UZ_MONTHS[now.getMonth()]}, ${UZ_DAYS[now.getDay()]}`
+
   const tiles = [
-    {
-      label: "Bugungi tushum",
-      value: `${fmt(todayIncome)} So'm`,
-      sub: `Jami tushum: ${fmt(totalRevenue)} So'm`,
-      icon: Wallet,
-      accent: "bg-emerald-50 text-emerald-600",
-    },
     {
       label: "Bugungi xarajat",
       value: `${fmt(todayExpenses)} So'm`,
       sub: `${expenses.length} ta chiqim`,
       icon: TrendingDown,
-      accent: "bg-red-50 text-red-600",
-    },
-    {
-      label: "Bugungi sof natija",
-      value: `${fmt(todayNet)} So'm`,
-      sub: "tushum + do'kon − xarajat",
-      icon: Scale,
-      accent:
-        todayNet >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600",
+      accent: "from-red-500 to-rose-600",
     },
     {
       label: "Do'kon (bugun)",
@@ -263,73 +296,117 @@ export const DashboardPage = () => {
           ? `Bronlarda qarz: ${fmt(shopDebtTotal)} So'm`
           : `${shopPaidToday.length} ta sotuv`,
       icon: Store,
-      accent: "bg-violet-50 text-violet-600",
-    },
-    {
-      label: "Xonalar bandligi",
-      value: `${occupancyRate}%`,
-      sub: `Band: ${occupiedRooms} · Bo'sh: ${availableRooms} / ${totalRooms}`,
-      icon: BedDouble,
-      accent: "bg-blue-50 text-blue-600",
+      accent: "from-violet-500 to-purple-600",
     },
     {
       label: "Faol bandlovlar",
       value: String(activeReservations),
       sub: `Bugun kirish: ${arrivals.length} · chiqish: ${departures.length}`,
       icon: CalendarCheck,
-      accent: "bg-sky-50 text-sky-600",
+      accent: "from-sky-500 to-blue-600",
     },
     {
       label: "Bugungi yangi bronlar",
       value: String(createdToday.length),
       sub: `Soatlik: ${createdTodayHourly} · Kunlik: ${createdToday.length - createdTodayHourly}`,
       icon: CalendarPlus,
-      accent: "bg-indigo-50 text-indigo-600",
+      accent: "from-indigo-500 to-blue-700",
     },
     {
       label: "Mehmonlar",
       value: String(guests.length),
       sub: `Oxirgi 7 kunda: +${newGuestsWeek}`,
       icon: Users,
-      accent: "bg-amber-50 text-amber-600",
+      accent: "from-amber-500 to-orange-600",
     },
     {
       label: "Xo'jalik vazifalari",
       value: String(openTasks.length),
       sub: `Bugun bajarildi: ${doneToday}`,
       icon: ClipboardList,
-      accent: "bg-orange-50 text-orange-600",
+      accent: "from-orange-500 to-red-500",
     },
   ]
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Boshqaruv paneli</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {format(new Date(), "yyyy-MM-dd")} holatiga ko'ra umumiy ko'rsatkichlar
-        </p>
+    <div className="space-y-5">
+      {/* HERO — salomlashuv + kunning asosiy 3 ko'rsatkichi */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-800 p-5 text-white shadow-lg shadow-primary-600/20 sm:p-6">
+        {/* Bezak doiralari */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-20 right-24 h-40 w-40 rounded-full bg-white/5" />
+
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="flex items-center gap-1.5 text-sm text-white/70">
+              <Sparkles className="h-3.5 w-3.5" />
+              {dateLine}
+            </p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+              Xush kelibsiz{user?.first_name ? `, ${user.first_name}` : ""}!
+            </h1>
+            <p className="mt-1 text-sm text-white/70">
+              {user?.hotel_name || "Mehmonxona"} bo'yicha bugungi umumiy holat
+            </p>
+          </div>
+
+          {/* Kunning asosiy raqamlari — shisha chiplar */}
+          <div className="flex flex-wrap gap-2.5">
+            <div className="rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">
+                Bugungi tushum
+              </p>
+              <p className="text-lg font-bold leading-tight">{fmt(todayIncome)} So'm</p>
+              <p className="text-[10px] text-white/50">jami: {fmt(totalRevenue)}</p>
+            </div>
+            <div className="rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">
+                Sof natija
+              </p>
+              <p
+                className={cn(
+                  "text-lg font-bold leading-tight",
+                  todayNet < 0 && "text-red-200"
+                )}
+              >
+                {fmt(todayNet)} So'm
+              </p>
+              <p className="text-[10px] text-white/50">tushum + do'kon − xarajat</p>
+            </div>
+            <div className="rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">
+                Bandlik
+              </p>
+              <p className="text-lg font-bold leading-tight">{occupancyRate}%</p>
+              <p className="text-[10px] text-white/50">
+                band {occupiedRooms} · bo'sh {availableRooms} / {totalRooms}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* KPI kartalar — wrap uslubida: displayga qancha sig'sa shuncha yonma-yon */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
+      {/* KPI kartalar — wrap uslubida, gradient ikonkali */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(235px,1fr))]">
         {tiles.map((t) => (
           <div
             key={t.label}
-            className="rounded-xl border bg-white p-4 flex items-start gap-3 transition-shadow hover:shadow-md"
+            className="group rounded-2xl border bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
           >
-            <span
-              className={cn(
-                "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg",
-                t.accent
-              )}
-            >
-              <t.icon className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500">{t.label}</p>
-              <p className="text-xl font-bold text-gray-900 truncate">{t.value}</p>
-              <p className="text-[11px] text-gray-400 truncate">{t.sub}</p>
+            <div className="flex items-start gap-3">
+              <span
+                className={cn(
+                  "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm",
+                  t.accent
+                )}
+              >
+                <t.icon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-500">{t.label}</p>
+                <p className="truncate text-xl font-bold text-gray-900">{t.value}</p>
+                <p className="truncate text-[11px] text-gray-400">{t.sub}</p>
+              </div>
             </div>
           </div>
         ))}
@@ -337,21 +414,27 @@ export const DashboardPage = () => {
 
       {/* Tushum grafigi + xonalar holati */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-xl border bg-white p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary-600" />
-              <h2 className="text-sm font-semibold text-gray-900">
-                Oxirgi 7 kun tushumi
-              </h2>
+        <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md lg:col-span-2 sm:p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                <TrendingUp className="h-4 w-4" />
+              </span>
+              <h2 className="text-sm font-bold text-gray-900">Oxirgi 7 kun tushumi</h2>
             </div>
-            <span className="text-xs text-gray-500">
-              Jami: <span className="font-semibold text-gray-900">{fmt(weekTotal)} So'm</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              Jami: {fmt(weekTotal)} So'm
             </span>
           </div>
-          <div className="h-56">
+          <div className="h-56 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0.75} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" />
                 <XAxis
                   dataKey="label"
@@ -368,22 +451,27 @@ export const DashboardPage = () => {
                     v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)
                   }
                 />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: "#f9fafb" }} />
-                <Bar dataKey="amount" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(59,130,246,0.06)" }} />
+                <Bar dataKey="amount" fill="url(#revGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Xonalar holati taqsimoti */}
-        <div className="rounded-xl border bg-white p-4">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">Xonalar holati</h2>
+        <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md sm:p-5">
+          <div className="mb-3 flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+              <BedDouble className="h-4 w-4" />
+            </span>
+            <h2 className="text-sm font-bold text-gray-900">Xonalar holati</h2>
+          </div>
           {totalRooms === 0 ? (
             <p className="text-sm text-gray-400">Xonalar yo'q</p>
           ) : (
             <>
               {/* Segmentli gorizontal chiziq — ulushlar */}
-              <div className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full">
+              <div className="flex h-3.5 w-full gap-0.5 overflow-hidden rounded-full">
                 {presentStatuses.map((s) => (
                   <div
                     key={s.key}
@@ -402,7 +490,7 @@ export const DashboardPage = () => {
                       <span className={cn("h-2.5 w-2.5 rounded-full", s.dot)} />
                       {s.label}
                     </span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-bold text-gray-900">
                       {statusCounts[s.key]}
                       <span className="ml-1 text-[11px] font-normal text-gray-400">
                         ({Math.round((statusCounts[s.key] / totalRooms) * 100)}%)
@@ -418,30 +506,29 @@ export const DashboardPage = () => {
 
       {/* Bugungi kirish/chiqishlar, so'nggi bandlovlar va xo'jalik — wrap uslubida */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
-        <div className="rounded-xl border bg-white p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <LogIn className="h-4 w-4 text-emerald-600" />
-            <h2 className="text-sm font-semibold text-gray-900">
-              Bugungi kirishlar ({arrivals.length})
-            </h2>
-          </div>
+        <Panel
+          icon={LogIn}
+          iconClass="bg-gradient-to-br from-emerald-500 to-teal-600 text-white"
+          title="Bugungi kirishlar"
+          count={arrivals.length}
+        >
           {arrivals.length === 0 ? (
             <p className="text-sm text-gray-400">Bugun kirishlar yo'q</p>
           ) : (
             <div className="space-y-2.5">
               {arrivals.slice(0, 6).map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="text-gray-900 truncate leading-tight">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600">
+                      {roomMap[r.room_id] || "—"}
+                    </span>
+                    <p className="truncate leading-tight text-gray-900">
                       {guestMap[r.guest_id] || r.reservation_number}
-                    </p>
-                    <p className="text-[11px] text-gray-400 leading-tight">
-                      Xona: {roomMap[r.room_id] || "—"}
                     </p>
                   </div>
                   <span
                     className={cn(
-                      "flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full",
+                      "flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
                       resStatusBadge[r.status] || resStatusBadge.PENDING
                     )}
                   >
@@ -451,32 +538,31 @@ export const DashboardPage = () => {
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
-        <div className="rounded-xl border bg-white p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <LogOut className="h-4 w-4 text-amber-600" />
-            <h2 className="text-sm font-semibold text-gray-900">
-              Bugungi chiqishlar ({departures.length})
-            </h2>
-          </div>
+        <Panel
+          icon={LogOut}
+          iconClass="bg-gradient-to-br from-amber-500 to-orange-600 text-white"
+          title="Bugungi chiqishlar"
+          count={departures.length}
+        >
           {departures.length === 0 ? (
             <p className="text-sm text-gray-400">Bugun chiqishlar yo'q</p>
           ) : (
             <div className="space-y-2.5">
               {departures.slice(0, 6).map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="text-gray-900 truncate leading-tight">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600">
+                      {roomMap[r.room_id] || "—"}
+                    </span>
+                    <p className="truncate leading-tight text-gray-900">
                       {guestMap[r.guest_id] || r.reservation_number}
-                    </p>
-                    <p className="text-[11px] text-gray-400 leading-tight">
-                      Xona: {roomMap[r.room_id] || "—"}
                     </p>
                   </div>
                   <span
                     className={cn(
-                      "flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full",
+                      "flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
                       resStatusBadge[r.status] || resStatusBadge.PENDING
                     )}
                   >
@@ -486,28 +572,33 @@ export const DashboardPage = () => {
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
-        <div className="rounded-xl border bg-white p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <CalendarCheck className="h-4 w-4 text-primary-600" />
-            <h2 className="text-sm font-semibold text-gray-900">So'nggi bandlovlar</h2>
-          </div>
+        <Panel
+          icon={CalendarCheck}
+          iconClass="bg-gradient-to-br from-primary-500 to-indigo-600 text-white"
+          title="So'nggi bandlovlar"
+        >
           {recentReservations.length === 0 ? (
             <p className="text-sm text-gray-400">Bandlovlar yo'q</p>
           ) : (
             <div className="space-y-2.5">
               {recentReservations.map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="text-gray-900 truncate leading-tight">
-                      {guestMap[r.guest_id] || r.reservation_number}
-                    </p>
-                    <p className="text-[11px] text-gray-400 leading-tight">
-                      Xona: {roomMap[r.room_id] || "—"} · {r.check_in_date}
-                    </p>
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600">
+                      {roomMap[r.room_id] || "—"}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate leading-tight text-gray-900">
+                        {guestMap[r.guest_id] || r.reservation_number}
+                      </p>
+                      <p className="text-[11px] leading-tight text-gray-400">
+                        {r.check_in_date}
+                      </p>
+                    </div>
                   </div>
-                  <span className="flex-shrink-0 text-xs font-semibold text-gray-900">
+                  <span className="flex-shrink-0 text-xs font-bold text-gray-900">
                     {fmt(r.total_amount)}{" "}
                     <span className="font-normal text-gray-400">So'm</span>
                   </span>
@@ -515,27 +606,25 @@ export const DashboardPage = () => {
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
-        {/* Ochiq xo'jalik vazifalari */}
-        <div className="rounded-xl border bg-white p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ClipboardList className="h-4 w-4 text-orange-600" />
-            <h2 className="text-sm font-semibold text-gray-900">
-              Xo'jalik vazifalari ({openTasks.length})
-            </h2>
-          </div>
+        <Panel
+          icon={ClipboardList}
+          iconClass="bg-gradient-to-br from-orange-500 to-red-500 text-white"
+          title="Xo'jalik vazifalari"
+          count={openTasks.length}
+        >
           {openTasks.length === 0 ? (
             <p className="text-sm text-gray-400">Ochiq vazifalar yo'q</p>
           ) : (
             <div className="space-y-2.5">
               {openTasks.slice(0, 6).map((t: any) => (
                 <div key={t.id} className="flex items-center justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="text-gray-900 truncate leading-tight">
-                      Xona: {roomMap[t.room_id] || t.room?.room_number || "—"}
-                    </p>
-                    <p className="text-[11px] text-gray-400 leading-tight">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600">
+                      {roomMap[t.room_id] || t.room?.room_number || "—"}
+                    </span>
+                    <p className="truncate leading-tight text-gray-900">
                       {t.task_type === "CLEANING"
                         ? "Tozalash"
                         : t.task_type === "DEEP_CLEANING"
@@ -549,7 +638,7 @@ export const DashboardPage = () => {
                   </div>
                   <span
                     className={cn(
-                      "flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full",
+                      "flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
                       t.status === "IN_PROGRESS"
                         ? "bg-blue-100 text-blue-700"
                         : "bg-amber-100 text-amber-700"
@@ -561,7 +650,7 @@ export const DashboardPage = () => {
               ))}
             </div>
           )}
-        </div>
+        </Panel>
       </div>
     </div>
   )
