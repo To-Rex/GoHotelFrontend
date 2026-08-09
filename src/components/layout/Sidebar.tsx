@@ -20,6 +20,7 @@ import {
   ClipboardList,
   UserCog,
   ShieldCheck,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -54,6 +55,7 @@ export const Sidebar = () => {
     { name: "Xizmatlar", href: "/services", icon: ConciergeBell },
     { name: "Xo'jalik ishlari", href: "/housekeeping", icon: ClipboardList },
     { name: "Xodimlar", href: "/employees", icon: UserCog },
+    { name: "Smenalar", href: "/shifts", icon: History },
     { name: "Ruxsatnomalar", href: "/permissions", icon: ShieldCheck },
   ];
 

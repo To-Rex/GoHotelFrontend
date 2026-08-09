@@ -25,6 +25,8 @@ export interface ShiftSession {
   counted_cash?: number | null;
   cash_diff?: number | null;
   accepted_at?: string | null;
+  accepted_by_name?: string | null;
+  closed_by_name?: string | null;
   new_session?: ShiftSession;
 }
 
@@ -120,6 +122,19 @@ export const useForceCloseShift = () =>
       return data;
     }
   );
+
+// --- Smenalar tarixi (admin/menejer sahifasi) ---
+
+export const useShiftHistory = (limit = 100) =>
+  useQuery({
+    queryKey: ["shiftHistory", limit],
+    queryFn: async () => {
+      const { data } = await api.get<ShiftSession[]>("/shifts/history", {
+        params: { limit },
+      });
+      return data;
+    },
+  });
 
 // --- Yordamchi hisob-kitoblar (guard va panel uchun) ---
 
