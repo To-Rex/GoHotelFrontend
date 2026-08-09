@@ -6,9 +6,26 @@ import {
   Wallet,
   AlertTriangle,
   ArrowRightLeft,
+  Pencil,
+  Loader2,
 } from "lucide-react"
-import { useShiftHistory, useShiftSettings, type ShiftSession } from "../api/shifts"
+import {
+  useShiftHistory,
+  useShiftSettings,
+  useCorrectShift,
+  type ShiftSession,
+} from "../api/shifts"
+import { usePermissions } from "@/lib/permissions"
+import { apiErrorMessage } from "@/lib/apiError"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import {
   Table,
   TableBody,
@@ -50,7 +67,47 @@ const duration = (s: ShiftSession): string => {
 export const ShiftsHistoryPage = () => {
   const { data: sessions = [], isLoading } = useShiftHistory(200)
   const { data: settings } = useShiftSettings()
+  const { isAdmin, can } = usePermissions()
+  const canEdit = isAdmin || can("shift.force_close")
+  const correctMutation = useCorrectShift()
   const [search, setSearch] = useState("")
+
+  // Tuzatish dialogi
+  const [editTarget, setEditTarget] = useState<ShiftSession | null>(null)
+  const [newCounted, setNewCounted] = useState("")
+  const [editNote, setEditNote] = useState("")
+  const [editError, setEditError] = useState<string | null>(null)
+
+  const openEdit = (s: ShiftSession) => {
+    setEditTarget(s)
+    setNewCounted(String(s.counted_cash ?? ""))
+    setEditNote("")
+    setEditError(null)
+  }
+
+  const submitEdit = async () => {
+    if (!editTarget) return
+    const n = Number(newCounted.replace(/\s/g, ""))
+    if (Number.isNaN(n) || n < 0) {
+      setEditError("Yangi summani to'g'ri kiriting")
+      return
+    }
+    if (editNote.trim().length < 3) {
+      setEditError("Tuzatish sababini yozing (izoh majburiy)")
+      return
+    }
+    setEditError(null)
+    try {
+      await correctMutation.mutateAsync({
+        session_id: editTarget.id,
+        counted_cash: n,
+        note: editNote.trim(),
+      })
+      setEditTarget(null)
+    } catch (e) {
+      setEditError(apiErrorMessage(e))
+    }
+  }
 
   const filtered = useMemo(() => {
     if (!search.trim()) return sessions
@@ -160,12 +217,16 @@ export const ShiftsHistoryPage = () => {
                 <TableHead className="text-right">Farq</TableHead>
                 <TableHead>Holat</TableHead>
                 <TableHead>Topshirilgan</TableHead>
+                {canEdit && <TableHead className="text-right">Amallar</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="py-8 text-center text-gray-400">
+                  <TableCell
+                    colSpan={canEdit ? 11 : 10}
+                    className="py-8 text-center text-gray-400"
+                  >
                     Sessiyalar topilmadi
                   </TableCell>
                 </TableRow>
@@ -216,9 +277,35 @@ export const ShiftsHistoryPage = () => {
                           : "—"}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right tabular-nums text-gray-600">
-                        {s.counted_cash !== null && s.counted_cash !== undefined
-                          ? fmt(s.counted_cash)
-                          : "—"}
+                        {s.counted_cash !== null && s.counted_cash !== undefined ? (
+                          s.corrections && s.corrections.length > 0 ? (
+                            /* Tahrirlangan: asl qiymat o'chirilgan chiziq bilan */
+                            <span
+                              title={s.corrections
+                                .map(
+                                  (c) =>
+                                    `${c.corrected_by_name || "?"} (${format(
+                                      new Date(c.corrected_at),
+                                      "dd.MM HH:mm"
+                                    )}): ${fmt(c.old_counted_cash)} → ${fmt(
+                                      c.new_counted_cash
+                                    )} — ${c.note}`
+                                )
+                                .join("\n")}
+                            >
+                              <span className="mr-1.5 text-gray-400 line-through">
+                                {fmt(s.corrections[0].old_counted_cash)}
+                              </span>
+                              <span className="font-semibold text-gray-800">
+                                {fmt(s.counted_cash)}
+                              </span>
+                            </span>
+                          ) : (
+                            fmt(s.counted_cash)
+                          )
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell
                         className={cn(
@@ -255,6 +342,24 @@ export const ShiftsHistoryPage = () => {
                               davom etgan
                             </span>
                           )}
+                          {s.corrections && s.corrections.length > 0 && (
+                            <span
+                              className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
+                              title={s.corrections
+                                .map(
+                                  (c) =>
+                                    `${c.corrected_by_name || "?"} (${format(
+                                      new Date(c.corrected_at),
+                                      "dd.MM HH:mm"
+                                    )}): ${fmt(c.old_counted_cash)} → ${fmt(
+                                      c.new_counted_cash
+                                    )} — ${c.note}`
+                                )
+                                .join("\n")}
+                            >
+                              tahrirlangan
+                            </span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-gray-600">
@@ -271,6 +376,20 @@ export const ShiftsHistoryPage = () => {
                           "—"
                         )}
                       </TableCell>
+                      {canEdit && (
+                        <TableCell className="text-right">
+                          {s.status === "CLOSED" && (
+                            <button
+                              type="button"
+                              title="Sanalgan summani tuzatish"
+                              onClick={() => openEdit(s)}
+                              className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 })
@@ -279,6 +398,77 @@ export const ShiftsHistoryPage = () => {
           </Table>
         </div>
       </div>
+
+      {/* Sanalgan summani tuzatish dialogi (admin/menejer, izoh majburiy) */}
+      <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-amber-600" />
+              Sanalgan summani tuzatish
+            </DialogTitle>
+          </DialogHeader>
+          {editTarget && (
+            <div className="space-y-3 py-2">
+              <p className="text-sm text-gray-600">
+                <b>{editTarget.user_name}</b> sessiyasi (
+                {editTarget.started_at &&
+                  format(new Date(editTarget.started_at), "dd.MM HH:mm")}
+                ). Eski qiymat o'chirilmaydi — tuzatish tarixi bilan birga
+                saqlanadi va jadvalda "tahrirlangan" belgisi ko'rinadi.
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full bg-gray-50 px-2.5 py-1 font-medium text-gray-600 ring-1 ring-gray-200">
+                  Kutilgan:{" "}
+                  <b className="tabular-nums">{fmt(editTarget.expected_cash)}</b> so'm
+                </span>
+                <span className="rounded-full bg-gray-50 px-2.5 py-1 font-medium text-gray-600 ring-1 ring-gray-200">
+                  Hozirgi sanalgan:{" "}
+                  <b className="tabular-nums">{fmt(editTarget.counted_cash)}</b> so'm
+                </span>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">
+                  Yangi sanalgan summa (so'm) *
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={newCounted}
+                  onChange={(e) => setNewCounted(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">
+                  Tuzatish sababi (izoh) *
+                </label>
+                <Input
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  placeholder="Masalan: xodim bitta nol ortiqcha yozgan"
+                />
+              </div>
+              {editError && (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {editError}
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)}>
+              Bekor qilish
+            </Button>
+            <Button onClick={submitEdit} disabled={correctMutation.isPending}>
+              {correctMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Tuzatishni saqlash
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

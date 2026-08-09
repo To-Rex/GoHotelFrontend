@@ -9,6 +9,18 @@ export interface ShiftSettings {
   day_close: string; // "HH:MM"
 }
 
+// Sanalgan summa tuzatilishi (audit yozuvi) — eski qiymat saqlanadi
+export interface ShiftCorrection {
+  old_counted_cash: number | null;
+  new_counted_cash: number;
+  old_diff: number | null;
+  new_diff: number;
+  corrected_by: string;
+  corrected_by_name?: string | null;
+  corrected_at: string;
+  note: string;
+}
+
 export interface ShiftSession {
   id: string;
   user_id: string;
@@ -27,6 +39,7 @@ export interface ShiftSession {
   accepted_at?: string | null;
   accepted_by_name?: string | null;
   closed_by_name?: string | null;
+  corrections?: ShiftCorrection[];
   new_session?: ShiftSession;
 }
 
@@ -122,6 +135,28 @@ export const useForceCloseShift = () =>
       return data;
     }
   );
+
+// Yopilgan sessiya sanalgan summasini tuzatish (admin/menejer, izoh shart)
+export const useCorrectShift = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      session_id: string;
+      counted_cash: number;
+      note: string;
+    }) => {
+      const { data } = await api.put<ShiftSession>(
+        `/shifts/${payload.session_id}/correct`,
+        { counted_cash: payload.counted_cash, note: payload.note }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["shiftHistory"] });
+      qc.invalidateQueries({ queryKey: ["shiftState"] });
+    },
+  });
+};
 
 // --- Kassada bo'lishi kerak bo'lgan summa (topshirish dialogi uchun) ---
 
