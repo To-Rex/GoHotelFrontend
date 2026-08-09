@@ -684,10 +684,20 @@ export const RoomsPage = () => {
                       <span className="font-medium normal-case tracking-normal text-primary-400">
                         · {floorRooms.length} ta xona
                       </span>
-                      <span className="ml-auto flex items-center gap-2.5 font-medium normal-case tracking-normal">
-                        <span className="text-emerald-600">{stats.available} bo'sh</span>
-                        {stats.busy > 0 && <span className="text-red-500">{stats.busy} band</span>}
-                        {stats.other > 0 && <span className="text-gray-400">{stats.other} boshqa</span>}
+                      <span className="ml-auto flex items-center gap-1.5 normal-case tracking-normal">
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                          {stats.available} bo'sh
+                        </span>
+                        {stats.busy > 0 && (
+                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-600">
+                            {stats.busy} band
+                          </span>
+                        )}
+                        {stats.other > 0 && (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                            {stats.other} boshqa
+                          </span>
+                        )}
                       </span>
                     </span>
                   </TableCell>
@@ -834,20 +844,18 @@ export const RoomsPage = () => {
                       {floorRooms.length} ta xona
                     </span>
                   </span>
-                  <span className="hidden items-center gap-3 text-[11px] font-medium sm:flex">
-                    <span className="inline-flex items-center gap-1 text-emerald-600">
-                      <span className="h-2 w-2 rounded-full border border-emerald-300 bg-white" />
+                  {/* Bo'sh/band soni — yaqqol rangli badge'lar (mobilda ham) */}
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
                       {stats.available} bo'sh
                     </span>
                     {stats.busy > 0 && (
-                      <span className="inline-flex items-center gap-1 text-red-500">
-                        <span className="h-2 w-2 rounded-full bg-red-500" />
+                      <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-600">
                         {stats.busy} band
                       </span>
                     )}
                     {stats.other > 0 && (
-                      <span className="inline-flex items-center gap-1 text-gray-400">
-                        <span className="h-2 w-2 rounded-full bg-gray-400" />
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500">
                         {stats.other} boshqa
                       </span>
                     )}
