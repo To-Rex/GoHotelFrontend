@@ -155,6 +155,77 @@ export const useAddShopBatch = () => {
   });
 };
 
+// --- Ombor (warehouse) ---
+
+export interface WarehouseMovement {
+  type: 'KIRIM' | 'SOTUV' | 'SPISANIYE' | 'INVENTAR';
+  product_name: string;
+  /** Ishorali: musbat — omborga kirdi, manfiy — chiqdi */
+  quantity: number;
+  amount: number | null;
+  note: string | null;
+  user_name: string;
+  created_at: string | null;
+}
+
+export const useWarehouseMovements = (limit = 100) =>
+  useQuery({
+    queryKey: ['warehouseMovements', limit],
+    queryFn: async () => {
+      const { data } = await api.get<WarehouseMovement[]>(
+        '/shop/warehouse/movements',
+        { params: { limit } }
+      );
+      return Array.isArray(data) ? data : [];
+    },
+  });
+
+const invalidateWarehouse = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ['shopProducts'] });
+  qc.invalidateQueries({ queryKey: ['warehouseMovements'] });
+};
+
+// Spisaniye: singan/muddati o'tgan mahsulotni sabab bilan chiqarish
+export const useWriteoffProduct = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      productId: string;
+      quantity: number;
+      reason: string;
+    }) => {
+      const { data } = await api.post<ShopProduct>(
+        `/shop/products/${payload.productId}/writeoff`,
+        { quantity: payload.quantity, reason: payload.reason }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      const qc2 = qc;
+      invalidateWarehouse(qc2);
+    },
+  });
+};
+
+// Inventarizatsiya: sanalgan qoldiq kiritiladi, farq tizimda tuzatiladi
+export const useInventoryProduct = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      productId: string;
+      counted: number;
+      reason?: string;
+    }) => {
+      const { data } = await api.post<{ diff: number; product: ShopProduct }>(
+        `/shop/products/${payload.productId}/inventory`,
+        { counted: payload.counted, reason: payload.reason }
+      );
+      return data;
+    },
+    onSuccess: () => invalidateWarehouse(qc),
+  });
+};
+
 export const useCreateShopSale = () => {
   const qc = useQueryClient();
   return useMutation({

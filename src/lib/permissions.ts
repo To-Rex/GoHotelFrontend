@@ -58,6 +58,14 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   "/permissions": ["permission.view", "permission.assign", "employee.manage"],
   // Smenalar tarixi — admin (bypass) va menejer (shift.force_close) uchun
   "/shifts": ["shift.force_close"],
+  // Ombor — backend bilan bir xil boshqaruv doirasi (tannarxlar bor,
+  // kassirga ko'rinmaydi); admin bypass, menejer service.* orqali kiradi
+  "/warehouse": [
+    "service.manage",
+    "service.create",
+    "service.update",
+    "hotel_service.manage",
+  ],
 };
 
 // Faqat ADMIN/SUPER_ADMIN uchun ochiq marshrutlar (avvalgi xatti-harakat saqlangan).

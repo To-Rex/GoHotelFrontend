@@ -21,6 +21,7 @@ import {
   UserCog,
   ShieldCheck,
   History,
+  Warehouse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -53,6 +54,7 @@ export const Sidebar = () => {
     { name: "Xona turlari", href: "/room-types", icon: BedDouble },
     { name: "Qulayliklar", href: "/amenities", icon: Sparkles },
     { name: "Xizmatlar", href: "/services", icon: ConciergeBell },
+    { name: "Ombor", href: "/warehouse", icon: Warehouse },
     { name: "Xo'jalik ishlari", href: "/housekeeping", icon: ClipboardList },
     { name: "Xodimlar", href: "/employees", icon: UserCog },
     { name: "Smenalar", href: "/shifts", icon: History },
