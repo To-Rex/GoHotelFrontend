@@ -96,6 +96,9 @@ interface EmployeeUpdatePayload {
   work_hours_per_day?: number;
   work_start?: string;
   work_end?: string;
+  // Faqat admin: login/parol almashtirish
+  username?: string;
+  password?: string;
 }
 
 export const useUpdateEmployee = () => {

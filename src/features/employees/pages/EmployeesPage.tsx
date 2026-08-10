@@ -285,6 +285,20 @@ export const EmployeesPage = () => {
     }
     try {
       if (editing) {
+        // Admin login/parolni ham almashtira oladi (bo'sh parol — o'zgarmaydi)
+        const newUsername =
+          isAdmin && username.trim() && username.trim() !== editing.username
+            ? username.trim()
+            : undefined
+        const newPassword = isAdmin && password ? password : undefined
+        if (newUsername && newUsername.length < 3) {
+          setErrorMsg("Login kamida 3 belgidan iborat bo'lishi kerak")
+          return
+        }
+        if (newPassword && newPassword.length < 6) {
+          setErrorMsg("Yangi parol kamida 6 belgidan iborat bo'lishi kerak")
+          return
+        }
         await updateMutation.mutateAsync({
           id: editing.id,
           first_name: firstName.trim(),
@@ -296,6 +310,8 @@ export const EmployeesPage = () => {
           work_hours_per_day: hoursNum,
           work_start: workStart,
           work_end: workEnd,
+          username: newUsername,
+          password: newPassword,
         })
         // Yangi surat tanlangan bo'lsa — yuklaymiz (xato saqlashni buzmaydi)
         const photoErr = await uploadPhotoFor(editing.id)
@@ -787,11 +803,14 @@ export const EmployeesPage = () => {
               </div>
             </FormSection>
 
-            {!editing && (
+            {/* Kirish hisobi: yaratishda hammaga, tahrirlashda faqat adminga */}
+            {(!editing || isAdmin) && (
               <FormSection icon={KeyRound} title="Kirish hisobi">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-600">Login *</label>
+                    <label className="text-xs font-medium text-gray-600">
+                      Login {!editing && "*"}
+                    </label>
                     <Input
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
@@ -799,15 +818,25 @@ export const EmployeesPage = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-600">Parol *</label>
+                    <label className="text-xs font-medium text-gray-600">
+                      {editing ? "Yangi parol" : "Parol *"}
+                    </label>
                     <Input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Kamida 6 belgi"
+                      placeholder={
+                        editing ? "O'zgartirmaslik uchun bo'sh qoldiring" : "Kamida 6 belgi"
+                      }
                     />
                   </div>
                 </div>
+                {editing && (
+                  <p className="text-xs text-gray-400">
+                    Login yoki parol o'zgartirilsa, xodim keyingi kirishda yangi
+                    ma'lumotlardan foydalanadi.
+                  </p>
+                )}
               </FormSection>
             )}
 
