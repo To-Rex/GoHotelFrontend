@@ -156,11 +156,16 @@ function cleanField(s?: string | null): string | undefined {
   return v || undefined
 }
 
-/* Kesilgan zonani OCR uchun tayyorlash: kattalashtirish va oq-qora
-   binarizatsiya (MRZ — oq fonda qora monospace matn, shunda aniq o'qiladi) */
+/* Kesilgan zonani OCR uchun tayyorlash. Ikki rejim:
+   - "binary": kontrast cho'zish + Otsu binarizatsiyasi (tekis yorug'likda eng aniq)
+   - "gray": faqat kontrast cho'zilgan kulrang (yaltirash/soya bo'lganda yaxshiroq)
+   Jonli siklda rejimlar navbatlashadi — turli sharoitda tezroq natija chiqadi */
+type PrepMode = "binary" | "gray"
+
 function preprocessCrop(
   src: HTMLCanvasElement | HTMLVideoElement,
-  crop: { sx: number; sy: number; sw: number; sh: number }
+  crop: { sx: number; sy: number; sw: number; sh: number },
+  mode: PrepMode
 ): HTMLCanvasElement {
   // Passportning 44 belgili qatorlari uchun ham yetarli aniqlik bo'lsin
   const targetW = 1800
@@ -175,18 +180,79 @@ function preprocessCrop(
 
   const img = ctx.getImageData(0, 0, out.width, out.height)
   const d = img.data
-  let sum = 0
   const gray = new Uint8ClampedArray(d.length / 4)
+  const hist = new Uint32Array(256)
   for (let i = 0, j = 0; i < d.length; i += 4, j++) {
     const g = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000
     gray[j] = g
-    sum += g
+    hist[Math.round(g)]++
   }
-  const mean = sum / gray.length
-  const threshold = mean * 0.82
-  for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-    const v = gray[j] < threshold ? 0 : 255
-    d[i] = d[i + 1] = d[i + 2] = v
+
+  // Kontrast cho'zish: 2% va 98% percentillar orasini to'liq diapazonga yoyish
+  const total = gray.length
+  let lo = 0
+  let hi = 255
+  {
+    let acc = 0
+    for (let v = 0; v < 256; v++) {
+      acc += hist[v]
+      if (acc >= total * 0.02) {
+        lo = v
+        break
+      }
+    }
+    acc = 0
+    for (let v = 255; v >= 0; v--) {
+      acc += hist[v]
+      if (acc >= total * 0.02) {
+        hi = v
+        break
+      }
+    }
+    if (hi <= lo) {
+      lo = 0
+      hi = 255
+    }
+  }
+  const range = hi - lo || 1
+  const stretched = new Uint8ClampedArray(total)
+  const hist2 = new Uint32Array(256)
+  for (let j = 0; j < total; j++) {
+    const v = Math.max(0, Math.min(255, ((gray[j] - lo) * 255) / range))
+    stretched[j] = v
+    hist2[Math.round(v)]++
+  }
+
+  if (mode === "gray") {
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      d[i] = d[i + 1] = d[i + 2] = stretched[j]
+    }
+  } else {
+    // Otsu: sinflararo dispersiyani maksimallashtiruvchi chegara
+    let sumAll = 0
+    for (let v = 0; v < 256; v++) sumAll += v * hist2[v]
+    let sumB = 0
+    let wB = 0
+    let best = 0
+    let threshold = 127
+    for (let v = 0; v < 256; v++) {
+      wB += hist2[v]
+      if (wB === 0) continue
+      const wF = total - wB
+      if (wF === 0) break
+      sumB += v * hist2[v]
+      const mB = sumB / wB
+      const mF = (sumAll - sumB) / wF
+      const between = wB * wF * (mB - mF) * (mB - mF)
+      if (between > best) {
+        best = between
+        threshold = v
+      }
+    }
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      const v = stretched[j] < threshold ? 0 : 255
+      d[i] = d[i + 1] = d[i + 2] = v
+    }
   }
   ctx.putImageData(img, 0, 0)
   return out
@@ -221,11 +287,14 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     streamRef.current?.getTracks().forEach((t) => t.stop())
     try {
       // Telefonda orqa (environment) kamera, kompyuterda mavjud web-kamera
+      // Imkon qadar yuqori aniqlik — MRZ belgilari qanchalik katta piksellarda
+      // bo'lsa, OCR shunchalik tez va aniq o'qiydi (qurilma qo'llamasa
+      // brauzer o'zi mavjed eng yaqin o'lchamga tushiradi)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 2560 },
+          height: { ideal: 1440 },
         },
         audio: false,
       })
@@ -259,17 +328,30 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         }
       },
     })
-    // MRZ faqat shu belgilar to'plamidan iborat; PSM 6 — yaxlit matn bloki
+    // MRZ faqat shu belgilar to'plamidan iborat; PSM 6 — yaxlit matn bloki.
+    // Qo'shimcha: lug'atlar o'chiriladi (MRZ so'z emas — lug'at faqat
+    // chalg'itadi va sekinlashtiradi), invert-urinish ham o'chirilgan.
     await worker.setParameters({
       tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
       tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
-    })
+      tessedit_do_invert: "0",
+      load_system_dawg: "0",
+      load_freq_dawg: "0",
+      user_defined_dpi: "300",
+      preserve_interword_spaces: "1",
+    } as any)
     workerRef.current = worker
     setOcrReady(true)
     return worker
   }
 
-  const tryParseMrz = async (text: string): Promise<ScannedDoc | null> => {
+  /* MRZ tahlili — ENDI BAHOLI: har nomzod nazorat raqamlari (check digit)
+     bo'yicha baholanadi. "strong" (hujjat raqami + tug'ilgan sana nazorat
+     raqamlari to'g'ri) natija darhol qabul qilinadi — bu ham tezlik, ham
+     noto'g'ri o'qishdan himoya beradi. */
+  const tryParseMrz = async (
+    text: string
+  ): Promise<{ doc: ScannedDoc; score: number; strong: boolean } | null> => {
     const { parse } = await import("mrz")
     // Diqqat: qatorda "<" bo'lishini talab qilib bo'lmaydi — passportning
     // 2-qatori (JSHSHIR to'liq 14 raqam bo'lsa) butunlay "<"siz keladi
@@ -304,15 +386,32 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       }
     }
 
+    let best: { doc: ScannedDoc; score: number; strong: boolean } | null = null
     for (const cand of candidates) {
       try {
         // autocorrect — OCR'ning O↔0, I↔1 kabi tipik xatolarini tuzatadi
         const parsed = parse(cand, { autocorrect: true }) as any
         const f = parsed?.fields || {}
         if (!f.documentNumber || !f.lastName || !f.birthDate) continue
+
+        // Nazorat raqamlari bo'yicha ishonch bahosi
+        const details: any[] = parsed?.details || []
+        const ok = (field: string) =>
+          details.find((x) => x.field === field)?.valid === true
+        const dnOk = ok("documentNumberCheckDigit")
+        const bdOk = ok("birthDateCheckDigit")
+        const exOk = ok("expirationDateCheckDigit")
+        const cmpOk = ok("compositeCheckDigit")
+        const score =
+          (dnOk ? 4 : 0) +
+          (bdOk ? 3 : 0) +
+          (exOk ? 1 : 0) +
+          (cmpOk ? 2 : 0) +
+          (parsed?.valid ? 2 : 0)
+
         const personal =
           cleanField(f.personalNumber) || cleanField(f.optional1) || undefined
-        return {
+        const doc: ScannedDoc = {
           firstName: f.firstName ? titleCase(cleanField(f.firstName) || "") : undefined,
           lastName: f.lastName ? titleCase(cleanField(f.lastName) || "") : undefined,
           birthDate: mrzDateToIso(f.birthDate),
@@ -321,43 +420,63 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           documentType: parsed?.format === "TD3" ? "PASSPORT" : "ID_CARD",
           nationality: cleanField(f.nationality)?.toUpperCase(),
         }
+        const item = { doc, score, strong: dnOk && bdOk }
+        if (!best || item.score > best.score) best = item
       } catch {
         continue
       }
     }
-    return null
+    return best
   }
 
-  // Video kadrida MRZ'ni izlash: avval MRZ zonasi, keyin butun ramka
-  const scanVideoFrame = async (video: HTMLVideoElement): Promise<ScannedDoc | null> => {
+  // Video kadrida MRZ'ni izlash. Tezlik uchun odatda FAQAT MRZ zonasi
+  // skanerlaniladi (kichik — tez); har 3-urinishda butun ramka ham tekshiriladi
+  // (hujjat ramkaga noto'g'ri joylangan holatlar uchun). Preprocessing rejimi
+  // urinishlar orasida navbatlashadi — turli yorug'likda ishonchli.
+  const scanVideoFrame = async (
+    video: HTMLVideoElement,
+    attempt: number
+  ): Promise<{ doc: ScannedDoc; score: number; strong: boolean } | null> => {
     const worker = await getWorker()
     const t = docTypeRef.current
-    const regions = [mrzRegion(t), frameRegion(t)]
+    const mode: PrepMode = attempt % 2 === 0 ? "binary" : "gray"
+    const regions = attempt % 3 === 2 ? [mrzRegion(t), frameRegion(t)] : [mrzRegion(t)]
+    let best: { doc: ScannedDoc; score: number; strong: boolean } | null = null
     for (const region of regions) {
       const crop = containerToSource(video.videoWidth, video.videoHeight, region)
       if (crop.sw < 50 || crop.sh < 20) continue
-      const prepared = preprocessCrop(video, crop)
+      const prepared = preprocessCrop(video, crop, mode)
       const { data } = await worker.recognize(prepared)
-      const doc = await tryParseMrz(data.text || "")
-      if (doc) return doc
+      const item = await tryParseMrz(data.text || "")
+      if (item) {
+        if (item.strong) return item
+        if (!best || item.score > best.score) best = item
+      }
     }
-    return null
+    return best
   }
 
-  // Yuklangan rasmda izlash: pastki qism, so'ng to'liq rasm
+  // Yuklangan rasmda izlash: pastki qism va to'liq rasm, ikkala preprocessing
+  // rejimida — eng yuqori baholi natija olinadi (strong bo'lsa darhol)
   const scanImageCanvas = async (canvas: HTMLCanvasElement): Promise<ScannedDoc | null> => {
     const worker = await getWorker()
     const crops = [
       { sx: 0, sy: Math.floor(canvas.height * 0.5), sw: canvas.width, sh: Math.ceil(canvas.height * 0.5) },
       { sx: 0, sy: 0, sw: canvas.width, sh: canvas.height },
     ]
+    let best: { doc: ScannedDoc; score: number } | null = null
     for (const crop of crops) {
-      const prepared = preprocessCrop(canvas, crop)
-      const { data } = await worker.recognize(prepared)
-      const doc = await tryParseMrz(data.text || "")
-      if (doc) return doc
+      for (const mode of ["binary", "gray"] as PrepMode[]) {
+        const prepared = preprocessCrop(canvas, crop, mode)
+        const { data } = await worker.recognize(prepared)
+        const item = await tryParseMrz(data.text || "")
+        if (item) {
+          if (item.strong) return item.doc
+          if (!best || item.score > best.score) best = item
+        }
+      }
     }
-    return null
+    return best?.doc ?? null
   }
 
   const onFound = (doc: ScannedDoc) => {
@@ -367,10 +486,17 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setPhase("result")
   }
 
-  // JONLI skan sikli: kamera ochiq ekan, kadrlar ketma-ket tekshiriladi
+  // JONLI skan sikli: kadrlar UZLUKSIZ tekshiriladi (OCR tugashi bilan
+  // keyingisi boshlanadi). Qabul qilish qoidalari:
+  //   1. strong (hujjat raqami + tug'ilgan sana nazorat raqamlari to'g'ri) — darhol;
+  //   2. ikki kadrda bir xil raqam+sana o'qilsa (konsensus) — qabul;
+  //   3. 8+ urinishdan keyin yetarli baholi eng yaxshi natija — qabul.
   const runLiveLoop = useCallback(async () => {
     if (liveActiveRef.current) return
     liveActiveRef.current = true
+    let attempt = 0
+    let bestSeen: { doc: ScannedDoc; score: number } | null = null
+    let lastKey = ""
     try {
       await getWorker()
     } catch {
@@ -382,19 +508,29 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       if (video && video.videoWidth > 0 && !busyRef.current) {
         busyRef.current = true
         try {
-          const doc = await scanVideoFrame(video)
-          if (doc && liveActiveRef.current) {
-            busyRef.current = false
-            onFound(doc)
-            return
+          const item = await scanVideoFrame(video, attempt)
+          attempt++
+          setAttempts(attempt)
+          if (item && liveActiveRef.current) {
+            const key = `${item.doc.documentNumber}|${item.doc.birthDate}`
+            const consensus = key === lastKey && !!item.doc.documentNumber
+            lastKey = key
+            if (!bestSeen || item.score > bestSeen.score) {
+              bestSeen = { doc: item.doc, score: item.score }
+            }
+            if (item.strong || consensus || (attempt >= 8 && bestSeen.score >= 5)) {
+              busyRef.current = false
+              onFound(item.strong || consensus ? item.doc : bestSeen.doc)
+              return
+            }
           }
-          setAttempts((a) => a + 1)
         } catch {
           // bitta kadr xatosi siklni to'xtatmaydi
         }
         busyRef.current = false
       }
-      await new Promise((r) => setTimeout(r, 600))
+      // OCR o'zi vaqt oladi — oradagi pauza minimal (UI nafas olishi uchun)
+      await new Promise((r) => setTimeout(r, 120))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
