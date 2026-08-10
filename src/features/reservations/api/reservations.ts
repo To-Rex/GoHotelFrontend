@@ -89,6 +89,58 @@ export const useRequestCheckout = () => {
   });
 };
 
+// Bronni boshqa xonaga ko'chirish (vaqt oynasi va bandlik backend'da tekshiriladi)
+export const useMoveRoom = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, newRoomId }: { id: string; newRoomId: string }) => {
+      const { data } = await api.post<Reservation>(`/reservations/${id}/move-room`, {
+        new_room_id: newRoomId,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    },
+  });
+};
+
+// Bron tahriri vaqt oynasi sozlamasi (daqiqalarda, 0 = cheklovsiz)
+export interface EditWindowSettings {
+  window_minutes: number;
+  default_minutes: number;
+}
+
+export const useEditWindowSettings = () =>
+  useQuery({
+    queryKey: ['reservationEditWindow'],
+    queryFn: async () => {
+      const { data } = await api.get<EditWindowSettings>(
+        '/reservations/edit-window-settings'
+      );
+      return data;
+    },
+  });
+
+export const useSaveEditWindowSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (windowMinutes: number) => {
+      const { data } = await api.put<EditWindowSettings>(
+        '/reservations/edit-window-settings',
+        null,
+        { params: { window_minutes: windowMinutes } }
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['reservationEditWindow'] }),
+  });
+};
+
 export const useCancelReservation = () => {
   const queryClient = useQueryClient();
 

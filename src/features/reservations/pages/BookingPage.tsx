@@ -21,6 +21,7 @@ import {
   Camera,
   ScanLine,
   LogOut,
+  ArrowRightLeft,
   Sparkles,
 } from "lucide-react"
 import {
@@ -43,6 +44,8 @@ import {
   useUpdateReservation,
   useCancelReservation,
   useRequestCheckout,
+  useMoveRoom,
+  useEditWindowSettings,
 } from "../api/reservations"
 import { useRooms, useRoomTypes, useFloors } from "@/features/rooms/api/rooms"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
@@ -542,6 +545,10 @@ export function BookingPage() {
   const [cancelMode, setCancelMode] = useState(false)
   const [cancelReason, setCancelReason] = useState("")
   const [editValues, setEditValues] = useState<any>({})
+  // Xonani almashtirish rejimi (bron boshqarish modalida)
+  const [moveMode, setMoveMode] = useState(false)
+  const [moveRoomId, setMoveRoomId] = useState("")
+  const [moveError, setMoveError] = useState<string | null>(null)
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -627,6 +634,9 @@ export function BookingPage() {
   const updateReservationMutation = useUpdateReservation()
   const cancelReservationMutation = useCancelReservation()
   const requestCheckoutMutation = useRequestCheckout()
+  const moveRoomMutation = useMoveRoom()
+  // Bron tahriri vaqt oynasi (default 10 daqiqa; 0 — cheklovsiz; admin bypass)
+  const { data: editWindow } = useEditWindowSettings()
 
   // Ro'yxat dialogidagi bronlar — reservations o'zgarsa (tahrir/bekor) yangilanadi
   const dayListItems = useMemo(() => {
@@ -1154,6 +1164,31 @@ export function BookingPage() {
     setEditMode(false)
     setCancelMode(false)
     setCancelReason("")
+    setMoveMode(false)
+    setMoveRoomId("")
+    setMoveError(null)
+  }
+
+  // Bronni tanlangan xonaga ko'chirish — server bandlik, vaqt oynasi va
+  // narxni qayta tekshiradi/hisoblaydi
+  const handleMoveRoom = async () => {
+    if (!selectedReservation) return
+    if (!moveRoomId) {
+      setMoveError("Yangi xonani tanlang")
+      return
+    }
+    setMoveError(null)
+    try {
+      const updated = await moveRoomMutation.mutateAsync({
+        id: selectedReservation.id,
+        newRoomId: moveRoomId,
+      })
+      setSelectedReservation(updated)
+      setMoveMode(false)
+      setMoveRoomId("")
+    } catch (e) {
+      setMoveError(apiErrorMessage(e))
+    }
   }
 
   const handleUpdateReservation = async () => {
@@ -2849,6 +2884,256 @@ export function BookingPage() {
                       </button>
                     ) : null
                   )}
+
+                  {/* XONANI ALMASHTIRISH — vaqt oynasi ichida (admin doim).
+                      Faqat qolgan davr uchun bo'sh xonalar taklif qilinadi,
+                      narx farqi oldindan ko'rsatiladi (yakuniy hisob serverda) */}
+                  {!editMode &&
+                    !cancelMode &&
+                    !statusLocked &&
+                    canUpdate &&
+                    !isCleaner &&
+                    !res.checkout_requested_at &&
+                    (() => {
+                      const windowMin = editWindow?.window_minutes ?? 10
+                      const elapsedMin =
+                        (Date.now() - new Date(res.created_at).getTime()) / 60000
+                      const withinWindow =
+                        isAdmin || windowMin === 0 || elapsedMin <= windowMin
+                      if (!withinWindow) {
+                        return (
+                          <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-400">
+                            Xonani almashtirish muddati tugagan ({windowMin} daqiqa)
+                            — administratorga murojaat qiling.
+                          </p>
+                        )
+                      }
+                      if (!moveMode) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMoveMode(true)
+                              setMoveRoomId("")
+                              setMoveError(null)
+                            }}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-100"
+                          >
+                            <ArrowRightLeft className="h-4 w-4" />
+                            Xonani almashtirish
+                          </button>
+                        )
+                      }
+
+                      // Qolgan davr uchun bo'sh xonalar (server ham qayta tekshiradi)
+                      const todayStr2 = format(new Date(), "yyyy-MM-dd")
+                      const effIn =
+                        res.status === "CHECKED_IN" && res.check_in_date < todayStr2
+                          ? todayStr2
+                          : res.check_in_date
+                      const blocking = reservations.filter(
+                        (o: any) =>
+                          o.id !== res.id &&
+                          ["CONFIRMED", "CHECKED_IN"].includes(o.status)
+                      )
+                      const isRoomFree = (roomId: string) =>
+                        !blocking.some((o: any) => {
+                          if (o.room_id !== roomId) return false
+                          if (
+                            res.booking_type === "HOURLY" &&
+                            o.booking_type === "HOURLY" &&
+                            o.check_in_datetime &&
+                            o.check_out_datetime &&
+                            res.check_in_datetime &&
+                            res.check_out_datetime
+                          ) {
+                            return (
+                              new Date(o.check_in_datetime) <
+                                new Date(res.check_out_datetime) &&
+                              new Date(o.check_out_datetime) >
+                                new Date(res.check_in_datetime)
+                            )
+                          }
+                          return (
+                            o.check_in_date < res.check_out_date &&
+                            o.check_out_date > effIn
+                          )
+                        })
+                      const availableRooms = rooms.filter(
+                        (r: any) =>
+                          r.id !== res.room_id &&
+                          !["MAINTENANCE", "INSPECTION", "OUT_OF_SERVICE"].includes(
+                            r.current_status
+                          ) &&
+                          isRoomFree(r.id)
+                      )
+
+                      // Taxminiy yangi jami (server aynan shu formula bilan hisoblaydi)
+                      const previewTotal = (r: any): number => {
+                        const newBase = Number(r.base_price || 0)
+                        const oldBase = Number(roomObj?.base_price || 0)
+                        let charge: number
+                        if (res.booking_type === "HOURLY") {
+                          charge = Math.round(newBase)
+                        } else {
+                          const nights = Math.max(
+                            Math.round(
+                              (new Date(res.check_out_date).getTime() -
+                                new Date(res.check_in_date).getTime()) /
+                                86400000
+                            ),
+                            1
+                          )
+                          if (res.status === "CHECKED_IN") {
+                            const stayed = Math.min(
+                              Math.max(
+                                Math.round(
+                                  (new Date(todayStr2).getTime() -
+                                    new Date(res.check_in_date).getTime()) /
+                                    86400000
+                                ),
+                                0
+                              ),
+                              nights
+                            )
+                            charge =
+                              oldBase * stayed + newBase * (nights - stayed)
+                          } else {
+                            charge = newBase * nights
+                          }
+                        }
+                        const discount =
+                          Number(res.discount_percent || 0) > 0
+                            ? Math.round(
+                                (charge * Number(res.discount_percent)) / 100
+                              )
+                            : Number(res.discount_amount || 0)
+                        return Math.max(charge - discount, 0)
+                      }
+
+                      const chosen = availableRooms.find(
+                        (r: any) => r.id === moveRoomId
+                      )
+                      const newTotal = chosen ? previewTotal(chosen) : null
+                      const diff =
+                        newTotal !== null
+                          ? newTotal - Number(res.total_amount || 0)
+                          : null
+
+                      return (
+                        <div className="space-y-2.5 rounded-lg border border-violet-200 bg-violet-50/50 p-3">
+                          <p className="flex items-center gap-1.5 text-sm font-semibold text-violet-800">
+                            <ArrowRightLeft className="h-4 w-4" />
+                            Xonani almashtirish
+                          </p>
+                          {availableRooms.length === 0 ? (
+                            <p className="text-sm text-gray-500">
+                              Bu davr uchun boshqa bo'sh xona yo'q
+                            </p>
+                          ) : (
+                            <select
+                              className="w-full flex h-10 items-center rounded-md border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              value={moveRoomId}
+                              onChange={(e) => setMoveRoomId(e.target.value)}
+                            >
+                              <option value="">Yangi xonani tanlang</option>
+                              {availableRooms.map((r: any) => (
+                                <option key={r.id} value={r.id}>
+                                  {r.room_number} —{" "}
+                                  {Number(r.base_price || 0).toLocaleString()} So'm
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {chosen && newTotal !== null && (
+                            <div className="rounded-md bg-white px-3 py-2 text-sm ring-1 ring-violet-200">
+                              <p className="text-gray-600">
+                                Jami:{" "}
+                                <span className="text-gray-400 line-through">
+                                  {Number(res.total_amount || 0).toLocaleString()}
+                                </span>{" "}
+                                <b className="tabular-nums">
+                                  {newTotal.toLocaleString()} So'm
+                                </b>
+                              </p>
+                              {diff !== null && diff !== 0 && (
+                                <p
+                                  className={cn(
+                                    "text-xs font-semibold",
+                                    diff > 0 ? "text-red-600" : "text-emerald-600"
+                                  )}
+                                >
+                                  {diff > 0
+                                    ? `Qo'shimcha to'lov: +${diff.toLocaleString()} So'm`
+                                    : `Kamayadi: ${diff.toLocaleString()} So'm`}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {moveError && (
+                            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+                              {moveError}
+                            </p>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => {
+                                setMoveMode(false)
+                                setMoveError(null)
+                              }}
+                            >
+                              Bekor qilish
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleMoveRoom}
+                              disabled={moveRoomMutation.isPending || !moveRoomId}
+                            >
+                              {moveRoomMutation.isPending && (
+                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                              )}
+                              Ko'chirish
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                  {/* Ko'chirishlar tarixi — tahrirlangani yaqqol ko'rinadi */}
+                  {!editMode &&
+                    !cancelMode &&
+                    Array.isArray(res.room_moves) &&
+                    res.room_moves.length > 0 && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5">
+                        <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                          <ArrowRightLeft className="h-3.5 w-3.5" />
+                          Xona ko'chirilgan · {res.room_moves.length} marta
+                        </p>
+                        <div className="space-y-1">
+                          {res.room_moves.map((m: any, i: number) => (
+                            <p key={i} className="text-xs text-amber-700/90">
+                              {m.from_room_number || "?"} → {m.to_room_number || "?"}{" "}
+                              · {m.moved_by_name || "—"} ·{" "}
+                              {m.moved_at
+                                ? format(new Date(m.moved_at), "dd.MM HH:mm")
+                                : ""}
+                              {m.old_total !== m.new_total && (
+                                <span className="ml-1 font-semibold">
+                                  ({Number(m.old_total || 0).toLocaleString()} →{" "}
+                                  {Number(m.new_total || 0).toLocaleString()} So'm)
+                                </span>
+                              )}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                   {/* TAHRIRLASH rejimi */}
                   {editMode && !locked && (

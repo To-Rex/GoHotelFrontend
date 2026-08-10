@@ -9,6 +9,7 @@ import {
   Users,
   Timer,
   Wallet,
+  CalendarCog,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import {
@@ -16,6 +17,10 @@ import {
   useSaveHkAutoSettings,
 } from "@/features/housekeeping/api/housekeeping"
 import { useShiftSettings, useSaveShiftSettings } from "@/features/shifts/api/shifts"
+import {
+  useEditWindowSettings,
+  useSaveEditWindowSettings,
+} from "@/features/reservations/api/reservations"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -127,6 +132,34 @@ export const SettingsPage = () => {
       window.setTimeout(() => setShiftSaved(false), 3000)
     } catch (e) {
       setShiftError(apiErrorMessage(e))
+    }
+  }
+
+  // --- Bron tahriri vaqt oynasi (xona almashtirish, default 10 daqiqa) ---
+  const { data: editWindow } = useEditWindowSettings()
+  const saveEditWindowMutation = useSaveEditWindowSettings()
+  const [windowMinutes, setWindowMinutes] = useState("10")
+  const [editWinSaved, setEditWinSaved] = useState(false)
+  const [editWinError, setEditWinError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (editWindow) setWindowMinutes(String(editWindow.window_minutes))
+  }, [editWindow])
+
+  const onSaveEditWindow = async () => {
+    setEditWinError(null)
+    setEditWinSaved(false)
+    const n = parseInt(windowMinutes, 10)
+    if (Number.isNaN(n) || n < 0 || n > 1440) {
+      setEditWinError("0 dan 1440 gacha daqiqa kiriting (0 — cheklovsiz)")
+      return
+    }
+    try {
+      await saveEditWindowMutation.mutateAsync(n)
+      setEditWinSaved(true)
+      window.setTimeout(() => setEditWinSaved(false), 3000)
+    } catch (e) {
+      setEditWinError(apiErrorMessage(e))
     }
   }
 
@@ -281,6 +314,57 @@ export const SettingsPage = () => {
             </span>
           )}
           {shiftError && <span className="text-sm text-red-500">{shiftError}</span>}
+        </div>
+      </div>
+
+      {/* Bron tahriri vaqt oynasi */}
+      <div className="rounded-2xl border bg-white p-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+            <CalendarCog className="h-4.5 w-4.5" />
+          </span>
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">Bron tahriri</h2>
+            <p className="text-xs text-gray-500">
+              Xodim bron yaratilgandan keyin necha daqiqa ichida uni tahrirlashi
+              (xonani almashtirishi) mumkin. Administrator istalgan payt
+              tahrirlay oladi. 0 — cheklovsiz.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">
+              Tahrirlash oynasi (daqiqa)
+            </label>
+            <Input
+              type="number"
+              min={0}
+              max={1440}
+              className="w-36"
+              value={windowMinutes}
+              onChange={(e) => setWindowMinutes(e.target.value)}
+              placeholder="10"
+            />
+          </div>
+          <Button
+            onClick={onSaveEditWindow}
+            disabled={saveEditWindowMutation.isPending}
+          >
+            {saveEditWindowMutation.isPending && (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            )}
+            Saqlash
+          </Button>
+          {editWinSaved && (
+            <span className="inline-flex items-center gap-1.5 pb-2 text-sm font-medium text-emerald-600">
+              <CheckCircle2 className="h-4 w-4" /> Saqlandi
+            </span>
+          )}
+          {editWinError && (
+            <span className="pb-2 text-sm text-red-500">{editWinError}</span>
+          )}
         </div>
       </div>
 

@@ -87,9 +87,23 @@ export interface Reservation {
   cancelled_at?: string;
   /** Resepsiya "mehmon chiqmoqda" deb belgilagan vaqt (chiqish jarayonida) */
   checkout_requested_at?: string | null;
+  /** Xona ko'chirishlar auditi — kim, qachon, qaysi xonadan qaysinisiga */
+  room_moves?: RoomMove[] | null;
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface RoomMove {
+  from_room_id: string;
+  from_room_number?: string | null;
+  to_room_id: string;
+  to_room_number?: string | null;
+  old_total: number;
+  new_total: number;
+  moved_by: string;
+  moved_by_name?: string | null;
+  moved_at: string;
 }
 
 export interface ReservationDetail extends Reservation {
