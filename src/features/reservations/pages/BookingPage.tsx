@@ -549,6 +549,13 @@ export function BookingPage() {
   const [moveMode, setMoveMode] = useState(false)
   const [moveRoomId, setMoveRoomId] = useState("")
   const [moveError, setMoveError] = useState<string | null>(null)
+  // Almashtirish oynasining qolgan vaqti jonli yangilanishi uchun tick
+  const [, setMoveTick] = useState(0)
+  useEffect(() => {
+    if (!manageOpen) return
+    const id = setInterval(() => setMoveTick((t) => t + 1), 15_000)
+    return () => clearInterval(id)
+  }, [manageOpen])
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -627,6 +634,11 @@ export function BookingPage() {
   const canCreate = can("reservation.create")
   const canUpdate = can("reservation.update")
   const canCancel = can("reservation.cancel")
+  // Bron TAHRIRLASH (sana/vaqt/tur o'zgartirish) — faqat menejer yoki admin.
+  // Qabulxona xodimi tahrirlay olmaydi, lekin xonani almashtirishi mumkin
+  // (vaqt oynasi ichida). Menejer belgisi — shift.force_close ruxsati.
+  const isManager = !isAdmin && permissions.includes("shift.force_close")
+  const canEditDetails = canUpdate && (isAdmin || isManager)
   const canCreateGuest = can("guest.create")
 
   const createReservationMutation = useCreateReservation()
@@ -1349,9 +1361,9 @@ export function BookingPage() {
   useEffect(() => {
     if (!dragRes) return
 
-    // Tahrirlash ruxsati bo'lmasa surib ko'chirish ishlamaydi (bosish — ko'rish uchun qoladi)
+    // Surib ko'chirish ham sana tahriri — faqat menejer/admin (bosish — ko'rish uchun qoladi)
     const locked =
-      !canUpdate || ["CHECKED_OUT", "CANCELLED", "NO_SHOW"].includes(dragRes.status)
+      !canEditDetails || ["CHECKED_OUT", "CANCELLED", "NO_SHOW"].includes(dragRes.status)
 
     const onMove = (e: MouseEvent) => {
       const dx = e.clientX - dragStartX.current
@@ -2792,8 +2804,8 @@ export function BookingPage() {
             const isHourly = editValues.booking_type === "HOURLY"
             // Yakunlangan holatdagi bronni tahrirlab ham, bekor qilib ham bo'lmaydi
             const statusLocked = ["CHECKED_OUT", "CANCELLED", "NO_SHOW"].includes(res.status)
-            // Tahrirlash / bekor qilish alohida ruxsatlarga bog'liq
-            const locked = !canUpdate || statusLocked
+            // Tahrirlash — faqat menejer/admin; bekor qilish alohida ruxsat
+            const locked = !canEditDetails || statusLocked
             const cancelLocked = !canCancel || statusLocked
             const roomObj = rooms.find((r) => r.id === res.room_id)
             const saving = updateReservationMutation.isPending
@@ -2908,20 +2920,48 @@ export function BookingPage() {
                           </p>
                         )
                       }
+                      // Ruxsat vaqti ko'rsatkichi: qancha qolgani yaqqol bilinadi
+                      const remainingMin = Math.max(
+                        0,
+                        Math.ceil(windowMin - elapsedMin)
+                      )
+                      const windowInfo = isAdmin ? (
+                        <p className="text-center text-[11px] text-gray-400">
+                          Administrator uchun almashtirish muddati cheklanmagan
+                          (xodimlarga ruxsat: {windowMin} daqiqa)
+                        </p>
+                      ) : windowMin === 0 ? (
+                        <p className="text-center text-[11px] text-gray-400">
+                          Almashtirish muddati cheklanmagan
+                        </p>
+                      ) : (
+                        <p
+                          className={cn(
+                            "text-center text-[11px] font-medium",
+                            remainingMin <= 3 ? "text-amber-600" : "text-gray-400"
+                          )}
+                        >
+                          Almashtirishga ruxsat: {windowMin} daqiqa · qoldi:{" "}
+                          {remainingMin} daqiqa
+                        </p>
+                      )
                       if (!moveMode) {
                         return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMoveMode(true)
-                              setMoveRoomId("")
-                              setMoveError(null)
-                            }}
-                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-100"
-                          >
-                            <ArrowRightLeft className="h-4 w-4" />
-                            Xonani almashtirish
-                          </button>
+                          <div className="space-y-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMoveMode(true)
+                                setMoveRoomId("")
+                                setMoveError(null)
+                              }}
+                              className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-100"
+                            >
+                              <ArrowRightLeft className="h-4 w-4" />
+                              Xonani almashtirish
+                            </button>
+                            {windowInfo}
+                          </div>
                         )
                       }
 
@@ -3026,6 +3066,7 @@ export function BookingPage() {
                             <ArrowRightLeft className="h-4 w-4" />
                             Xonani almashtirish
                           </p>
+                          {windowInfo}
                           {availableRooms.length === 0 ? (
                             <p className="text-sm text-gray-500">
                               Bu davr uchun boshqa bo'sh xona yo'q
@@ -3275,7 +3316,9 @@ export function BookingPage() {
                     <p className="text-xs text-gray-400">
                       {statusLocked
                         ? "Bu holatdagi bronni tahrirlab bo'lmaydi."
-                        : "Bu bronni o'zgartirish uchun ruxsatingiz yo'q."}
+                        : canUpdate
+                          ? "Bron tafsilotlarini tahrirlash faqat menejer yoki administrator uchun."
+                          : "Bu bronni o'zgartirish uchun ruxsatingiz yo'q."}
                     </p>
                   )}
                 </div>
