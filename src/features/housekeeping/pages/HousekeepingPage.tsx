@@ -373,7 +373,158 @@ export const HousekeepingPage = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl border bg-white overflow-hidden">
+      {/* MOBIL: vazifalar karta ko'rinishida (jadval planshet/desktopda) */}
+      <div className="space-y-2.5 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+            Vazifalar topilmadi
+          </div>
+        ) : (
+          filtered.map((t) => {
+            const roomNumber = t.room?.room_number || roomMap[t.room_id] || "—"
+            const assignee = t.assigned_user
+              ? `${t.assigned_user.first_name} ${t.assigned_user.last_name}`
+              : t.assigned_to
+                ? employeeMap[t.assigned_to] || "—"
+                : ""
+            const active = t.status === "OPEN" || t.status === "IN_PROGRESS"
+            return (
+              <div
+                key={t.id}
+                className={cn(
+                  "rounded-2xl border border-l-4 bg-white p-3.5",
+                  statusRowAccent[t.status] || "border-l-transparent"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="inline-flex h-9 min-w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 px-2 text-xs font-bold text-gray-700">
+                      {roomNumber}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold leading-tight text-gray-900">
+                        {TASK_TYPES[t.task_type] || t.task_type}
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
+                        {t.scheduled_date || "—"}
+                        {t.created_at &&
+                          ` · yaratilgan: ${format(new Date(t.created_at), "dd.MM HH:mm")}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                    <span className="inline-flex items-center gap-1">
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                          statusBadge[t.status] || statusBadge.OPEN
+                        )}
+                      >
+                        {STATUSES[t.status] || t.status}
+                      </span>
+                      {t.auto_completed && (
+                        <span
+                          title="Belgilangan vaqt ichida qo'lda yakunlanmagani uchun tizim avtomatik yopdi"
+                          className="rounded-full border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
+                        >
+                          avto
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                        priorityBadge[t.priority] || priorityBadge.MEDIUM
+                      )}
+                    >
+                      {PRIORITIES[t.priority] || t.priority}
+                    </span>
+                  </div>
+                </div>
+
+                {t.notes && (
+                  <p className="mt-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs text-gray-500">
+                    {t.notes}
+                  </p>
+                )}
+
+                <div className="mt-2 flex items-center gap-2 text-sm">
+                  {assignee ? (
+                    <>
+                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-bold text-primary-700">
+                        {initials(assignee)}
+                      </span>
+                      <span className="truncate text-gray-700">{assignee}</span>
+                    </>
+                  ) : (
+                    <span className="text-xs italic text-gray-400">
+                      Biriktirilmagan
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-2.5">
+                  <button
+                    type="button"
+                    title="Fotohisobotni ko'rish"
+                    onClick={() => setPhotoTask(t)}
+                    className={cn(
+                      "relative rounded-lg p-1.5 transition-colors",
+                      t.photo_count > 0
+                        ? "text-blue-600 hover:bg-blue-50"
+                        : "text-gray-300 hover:bg-gray-50 hover:text-gray-500"
+                    )}
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    {t.photo_count > 0 && (
+                      <span className="absolute -right-1.5 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-bold text-white">
+                        {t.photo_count}
+                      </span>
+                    )}
+                  </button>
+                  {canUpdate && t.status === "OPEN" && (
+                    <button
+                      type="button"
+                      onClick={() => onStatusChange(t, "IN_PROGRESS")}
+                      className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+                    >
+                      <Play className="h-3 w-3" /> Boshlash
+                    </button>
+                  )}
+                  {canUpdate && t.status === "IN_PROGRESS" && (
+                    <button
+                      type="button"
+                      onClick={() => onStatusChange(t, "COMPLETED")}
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                    >
+                      <CheckCircle2 className="h-3 w-3" /> Yakunlash
+                    </button>
+                  )}
+                  {canAssign && active && (
+                    <Button variant="ghost" size="sm" onClick={() => openAssign(t)}>
+                      <UserPlus className="mr-1 h-3.5 w-3.5" />
+                      Mas'ul
+                    </Button>
+                  )}
+                  {canUpdate && active && (
+                    <button
+                      type="button"
+                      title="Bekor qilish"
+                      onClick={() => onStatusChange(t, "CANCELLED")}
+                      className="ml-auto rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+      <div className="hidden rounded-2xl border bg-white overflow-hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
