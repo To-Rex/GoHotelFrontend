@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
-import { LogOut, User, Menu, ScanFace, Sun, Moon, Clock } from "lucide-react";
+import { LogOut, User, Menu, ScanFace, Sun, Moon, Clock, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,22 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
   const { user, logout } = useAuthStore();
   // Yuz bilan kirishni sozlash dialogi (har bir xodim o'z yuzini biriktiradi)
   const [faceDialogOpen, setFaceDialogOpen] = useState(false);
+
+  // Yangilash: joriy sahifadagi barcha so'rovlar keshini eskirtirib qayta
+  // yuklaydi (to'liq sahifa reload emas — holat va formalar saqlanadi)
+  const queryClient = useQueryClient();
+  const isFetching = useIsFetching();
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = () => {
+    setRefreshing(true);
+    queryClient.invalidateQueries();
+  };
+  useEffect(() => {
+    if (refreshing && isFetching === 0) {
+      const t = window.setTimeout(() => setRefreshing(false), 300);
+      return () => window.clearTimeout(t);
+    }
+  }, [refreshing, isFetching]);
 
   // Kun/tun mavzusi — tanlov brauzerda saqlanadi (standart: kun)
   const [dark, setDark] = useState(() =>
@@ -126,6 +143,21 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             {user?.first_name} {user?.last_name}
           </span>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          title="Sahifani yangilash"
+        >
+          <RotateCw
+            size={18}
+            className={cn(
+              "text-muted-foreground hover:text-foreground",
+              refreshing && "animate-spin text-primary-600"
+            )}
+          />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
