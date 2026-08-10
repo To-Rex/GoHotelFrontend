@@ -492,6 +492,166 @@ export const RoomsPage = () => {
     ["OCCUPIED", "RESERVED"].includes(r.current_status)
   ).length
 
+  // GRID kartalari bitta o'zgaruvchida (kod dublikatisiz): grid rejimida
+  // to'liq ko'rsatiladi, jadval rejimida esa mobil (md dan tor) ekranda
+  // jadval o'rnini bosadi — har qavat o'z tile'i va kartalari bilan
+  const gridContent =
+    sortedRooms.length === 0 ? (
+      <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-14 text-gray-400">
+        <DoorOpen className="h-8 w-8" />
+        <p className="text-sm">
+          {search.trim() || statusFilter
+            ? "Filtr bo'yicha xona topilmadi"
+            : "Hozircha xonalar yo'q"}
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-4">
+        {groupedRooms.map(([floorId, floorRooms]) => {
+          const key = floorId || "none"
+          const collapsed = collapsedFloors.has(key)
+          const stats = floorStats(floorRooms)
+          return (
+            <div key={key}>
+              {/* Qavat tile'i — bosilsa yopiladi/ochiladi */}
+              <button
+                type="button"
+                onClick={() => toggleFloor(key)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl border bg-gradient-to-r from-primary-50/80 to-white px-4 py-3 text-left transition-all hover:shadow-sm",
+                  collapsed ? "border-gray-200" : "border-primary-100"
+                )}
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+                  <Layers className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-gray-900">
+                    {floorId
+                      ? floorMap[floorId] || "Noma'lum qavat"
+                      : "Qavat belgilanmagan"}
+                  </span>
+                  <span className="block text-[11px] text-gray-500">
+                    {floorRooms.length} ta xona
+                  </span>
+                </span>
+                {/* Bo'sh/band soni — yaqqol rangli badge'lar (mobilda ham) */}
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                    {stats.available} bo'sh
+                  </span>
+                  {stats.busy > 0 && (
+                    <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-600">
+                      {stats.busy} band
+                    </span>
+                  )}
+                  {stats.other > 0 && (
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500">
+                      {stats.other} boshqa
+                    </span>
+                  )}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 flex-shrink-0 text-gray-400 transition-transform",
+                    collapsed && "-rotate-90"
+                  )}
+                />
+              </button>
+              {!collapsed && (
+                /* auto-fill: ustunlar soni displayga qarab o'zi moslashadi —
+                   har karta kamida 170px, keng ekranda qancha sig'sa shuncha */
+                <div className="mt-3 grid gap-3 grid-cols-[repeat(auto-fill,minmax(170px,1fr))]">
+                  {floorRooms.map((room) => (
+                    <div
+                      key={room.id}
+                      className={cn(
+                        "group relative rounded-xl border p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md",
+                        statusCardAccent[room.current_status] || "border-gray-200 bg-white"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span
+                          className={cn(
+                            "flex h-9 w-9 items-center justify-center rounded-lg",
+                            statusIconAccent[room.current_status] ||
+                              "bg-primary-50 text-primary-600"
+                          )}
+                        >
+                          <DoorOpen className="h-4 w-4" />
+                        </span>
+                        <button
+                          type="button"
+                          disabled={!canStatus}
+                          onClick={() => {
+                            setStatusError(null)
+                            setStatusRoom(room)
+                          }}
+                          title={canStatus ? "Holatni o'zgartirish" : undefined}
+                          className={cn(
+                            "text-[11px] font-medium px-2 py-0.5 rounded-full",
+                            statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
+                            canStatus && "cursor-pointer hover:opacity-80"
+                          )}
+                        >
+                          {STATUS_LABELS[room.current_status] || room.current_status}
+                        </button>
+                      </div>
+                      <p className="mt-2 text-lg font-bold text-gray-900">{room.room_number}</p>
+                      <p className="truncate text-xs text-gray-500">
+                        {typeMap[room.room_type_id] || "Turi belgilanmagan"}
+                        {room.capacity ? ` · ${room.capacity} kishi` : ""}
+                      </p>
+                      {(room.current_status === "OCCUPIED" ||
+                        room.current_status === "RESERVED") &&
+                        freeAtByRoom[room.id] && (
+                          <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                            <Clock className="h-3 w-3" />
+                            Bo'shaydi: {freeAtByRoom[room.id].label}
+                          </p>
+                        )}
+                      <div className="mt-2 flex items-end justify-between">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {Number(room.base_price || 0).toLocaleString()}{" "}
+                          <span className="text-xs font-normal text-gray-400">So'm</span>
+                        </p>
+                        {(canEdit || canDelete) && (
+                          /* Amallar: telefonda (hover yo'q) doim ko'rinadi,
+                             desktopda esa avvalgidek hover'da paydo bo'ladi */
+                          <div className="flex gap-0.5 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+                            {canEdit && (
+                              <button
+                                type="button"
+                                title="Tahrirlash"
+                                onClick={() => openEdit(room)}
+                                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                type="button"
+                                title="O'chirish"
+                                onClick={() => onDelete(room)}
+                                className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -629,7 +789,13 @@ export const RoomsPage = () => {
       </div>
 
       {viewMode === "table" && (
-      <div className="rounded-2xl border bg-white overflow-hidden">
+      <>
+      {/* MOBIL: jadval rejimida ham telefonda o'sha qavatning grid kartalari
+          ko'rsatiladi (jadval faqat planshet/desktopda) */}
+      <div className="md:hidden">{gridContent}</div>
+
+      {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+      <div className="hidden rounded-2xl border bg-white overflow-hidden md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
@@ -801,163 +967,11 @@ export const RoomsPage = () => {
           </TableBody>
         </Table>
       </div>
+      </>
       )}
 
-      {/* GRID ko'rinishi — qavatlar bo'yicha kartalar */}
-      {viewMode === "grid" &&
-        (sortedRooms.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-14 text-gray-400">
-            <DoorOpen className="h-8 w-8" />
-            <p className="text-sm">
-              {search.trim() || statusFilter
-                ? "Filtr bo'yicha xona topilmadi"
-                : "Hozircha xonalar yo'q"}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {groupedRooms.map(([floorId, floorRooms]) => {
-              const key = floorId || "none"
-              const collapsed = collapsedFloors.has(key)
-              const stats = floorStats(floorRooms)
-              return (
-              <div key={key}>
-                {/* Qavat tile'i — bosilsa yopiladi/ochiladi */}
-                <button
-                  type="button"
-                  onClick={() => toggleFloor(key)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-xl border bg-gradient-to-r from-primary-50/80 to-white px-4 py-3 text-left transition-all hover:shadow-sm",
-                    collapsed ? "border-gray-200" : "border-primary-100"
-                  )}
-                >
-                  <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
-                    <Layers className="h-5 w-5" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-gray-900">
-                      {floorId
-                        ? floorMap[floorId] || "Noma'lum qavat"
-                        : "Qavat belgilanmagan"}
-                    </span>
-                    <span className="block text-[11px] text-gray-500">
-                      {floorRooms.length} ta xona
-                    </span>
-                  </span>
-                  {/* Bo'sh/band soni — yaqqol rangli badge'lar (mobilda ham) */}
-                  <span className="flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                      {stats.available} bo'sh
-                    </span>
-                    {stats.busy > 0 && (
-                      <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-600">
-                        {stats.busy} band
-                      </span>
-                    )}
-                    {stats.other > 0 && (
-                      <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500">
-                        {stats.other} boshqa
-                      </span>
-                    )}
-                  </span>
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 flex-shrink-0 text-gray-400 transition-transform",
-                      collapsed && "-rotate-90"
-                    )}
-                  />
-                </button>
-                {!collapsed && (
-                /* auto-fill: ustunlar soni displayga qarab o'zi moslashadi —
-                   har karta kamida 170px, keng ekranda qancha sig'sa shuncha */
-                <div className="mt-3 grid gap-3 grid-cols-[repeat(auto-fill,minmax(170px,1fr))]">
-                  {floorRooms.map((room) => (
-                    <div
-                      key={room.id}
-                      className={cn(
-                        "group relative rounded-xl border p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md",
-                        statusCardAccent[room.current_status] || "border-gray-200 bg-white"
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span
-                          className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-lg",
-                            statusIconAccent[room.current_status] ||
-                              "bg-primary-50 text-primary-600"
-                          )}
-                        >
-                          <DoorOpen className="h-4 w-4" />
-                        </span>
-                        <button
-                          type="button"
-                          disabled={!canStatus}
-                          onClick={() => {
-                            setStatusError(null)
-                            setStatusRoom(room)
-                          }}
-                          title={canStatus ? "Holatni o'zgartirish" : undefined}
-                          className={cn(
-                            "text-[11px] font-medium px-2 py-0.5 rounded-full",
-                            statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
-                            canStatus && "cursor-pointer hover:opacity-80"
-                          )}
-                        >
-                          {STATUS_LABELS[room.current_status] || room.current_status}
-                        </button>
-                      </div>
-                      <p className="mt-2 text-lg font-bold text-gray-900">{room.room_number}</p>
-                      <p className="truncate text-xs text-gray-500">
-                        {typeMap[room.room_type_id] || "Turi belgilanmagan"}
-                        {room.capacity ? ` · ${room.capacity} kishi` : ""}
-                      </p>
-                      {(room.current_status === "OCCUPIED" ||
-                        room.current_status === "RESERVED") &&
-                        freeAtByRoom[room.id] && (
-                          <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-amber-600">
-                            <Clock className="h-3 w-3" />
-                            Bo'shaydi: {freeAtByRoom[room.id].label}
-                          </p>
-                        )}
-                      <div className="mt-2 flex items-end justify-between">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {Number(room.base_price || 0).toLocaleString()}{" "}
-                          <span className="text-xs font-normal text-gray-400">So'm</span>
-                        </p>
-                        {(canEdit || canDelete) && (
-                          <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                            {canEdit && (
-                              <button
-                                type="button"
-                                title="Tahrirlash"
-                                onClick={() => openEdit(room)}
-                                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                            {canDelete && (
-                              <button
-                                type="button"
-                                title="O'chirish"
-                                onClick={() => onDelete(room)}
-                                className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                )}
-              </div>
-              )
-            })}
-          </div>
-        ))}
+      {/* GRID ko'rinishi — qavatlar bo'yicha kartalar (barcha ekranlarda) */}
+      {viewMode === "grid" && gridContent}
 
       {/* Yaratish/tahrirlash dialogi */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>

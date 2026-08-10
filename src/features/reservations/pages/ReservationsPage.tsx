@@ -515,7 +515,155 @@ export const ReservationsPage = () => {
       </div>
       )}
 
-      <div className="rounded-2xl border bg-white overflow-hidden">
+      {/* MOBIL: bandlovlar karta ko'rinishida (jadval planshet/desktopda) */}
+      <div className="space-y-2.5 md:hidden">
+        {sorted.length === 0 ? (
+          <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+            <div className="flex flex-col items-center gap-2">
+              <CalendarCheck className="h-8 w-8" />
+              <p className="text-sm">
+                {hasActiveFilters
+                  ? "Filtr bo'yicha bandlov topilmadi"
+                  : "Hozircha bandlovlar yo'q"}
+              </p>
+              {hasActiveFilters && (
+                <Button variant="outline" size="sm" className="mt-1" onClick={clearFilters}>
+                  Filtrlarni tozalash
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          sorted.map((res) => {
+            const isHourly = res.booking_type === "HOURLY"
+            const guest = guestMap[res.guest_id]
+            const timeRange =
+              isHourly && res.check_in_datetime && res.check_out_datetime
+                ? `${res.check_in_datetime.slice(11, 16)} – ${res.check_out_datetime.slice(11, 16)}`
+                : ""
+            const nightCount = isHourly ? 0 : nights(res.check_in_date, res.check_out_date)
+            return (
+              <div
+                key={res.id}
+                className={cn(
+                  "rounded-2xl border border-l-4 bg-white p-3.5",
+                  statusRowAccent[res.status] || "border-l-transparent"
+                )}
+              >
+                {/* Yuqori qator: bandlov raqami + turi va xona chipi */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 leading-tight">
+                      {res.reservation_number || res.id.slice(0, 8)}
+                    </p>
+                    <p className="inline-flex items-center gap-1 text-xs text-gray-400 leading-tight mt-0.5">
+                      {isHourly ? (
+                        <>
+                          <Clock className="h-3 w-3" /> Soatlik
+                        </>
+                      ) : (
+                        <>
+                          <CalendarDays className="h-3 w-3" /> Kunlik
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <span className="inline-flex h-8 min-w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 px-2 text-xs font-bold text-gray-700">
+                    {roomMap[res.room_id] || "—"}
+                  </span>
+                </div>
+
+                {/* Mehmon: avatar + ism + telefon */}
+                <div className="mt-2.5">
+                  {guest ? (
+                    <span className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-[11px] font-bold text-primary-700">
+                        {initials(guest.name)}
+                      </span>
+                      <span className="min-w-0">
+                        <p className="truncate text-gray-900 leading-tight">{guest.name}</p>
+                        {guest.phone && (
+                          <p className="text-xs text-gray-400 leading-tight mt-0.5">
+                            {guest.phone}
+                          </p>
+                        )}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
+                </div>
+
+                {/* Muddat va summa (chegirma / to'langan qismi bilan) */}
+                <div className="mt-2.5 flex items-end justify-between gap-2">
+                  <div className="min-w-0">
+                    {isHourly ? (
+                      <>
+                        <p className="text-gray-700 leading-tight">{res.check_in_date}</p>
+                        <p className="text-xs text-gray-400 leading-tight mt-0.5">
+                          {timeRange || "—"}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-gray-700 leading-tight">
+                          {res.check_in_date} → {res.check_out_date}
+                        </p>
+                        <p className="text-xs text-gray-400 leading-tight mt-0.5">
+                          {nightCount} kecha
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <p className="font-semibold text-gray-900 leading-tight">
+                      {fmt(res.total_amount)}{" "}
+                      <span className="text-xs font-normal text-gray-400">So'm</span>
+                    </p>
+                    {/* Chegirma qo'llangan bo'lsa — summasi (va foizi) */}
+                    {Number(res.discount_amount || 0) > 0 && (
+                      <p className="text-xs text-red-500 leading-tight mt-0.5">
+                        Chegirma: −{fmt(res.discount_amount)}
+                        {Number(res.discount_percent || 0) > 0 &&
+                          ` (${Number(res.discount_percent)}%)`}
+                      </p>
+                    )}
+                    {Number(res.paid_amount || 0) > 0 &&
+                      Number(res.paid_amount) < Number(res.total_amount || 0) && (
+                        <p className="text-xs text-emerald-600 leading-tight mt-0.5">
+                          To'landi: {fmt(res.paid_amount)}
+                        </p>
+                      )}
+                  </div>
+                </div>
+
+                {/* Pastki qator: holat va to'lov badge'lari */}
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-gray-100 pt-2.5">
+                  <span
+                    className={cn(
+                      "text-xs font-medium px-2.5 py-1 rounded-full",
+                      statusBadge[res.status] || statusBadge.PENDING
+                    )}
+                  >
+                    {STATUS_LABELS[res.status] || res.status}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-medium px-2.5 py-1 rounded-full",
+                      payBadge[res.payment_status] || payBadge.UNPAID
+                    )}
+                  >
+                    {PAY_LABELS[res.payment_status] || res.payment_status}
+                  </span>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+      <div className="hidden rounded-2xl border bg-white overflow-hidden md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">

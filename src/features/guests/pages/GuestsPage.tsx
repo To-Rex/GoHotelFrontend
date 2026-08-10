@@ -433,7 +433,97 @@ export const GuestsPage = () => {
         onResult={handleSearchScan}
       />
 
-      <div className="rounded-lg border bg-white overflow-hidden">
+      {/* MOBIL: mehmonlar karta ko'rinishida (jadval planshet/desktopda) */}
+      <div className="space-y-2.5 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+            <div className="flex flex-col items-center gap-2">
+              <Users className="h-8 w-8" />
+              <p className="text-sm">
+                {search.trim()
+                  ? "Qidiruv bo'yicha mehmon topilmadi"
+                  : "Hozircha mehmonlar yo'q"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          filtered.map((guest) => (
+            <div key={guest.id} className="rounded-2xl border bg-white p-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-semibold text-white shadow-sm">
+                    {initials(guest.first_name, guest.last_name)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 leading-tight truncate">
+                      {guest.first_name} {guest.last_name}
+                    </p>
+                    {guest.nationality && (
+                      <p className="text-xs text-gray-400 leading-tight truncate">
+                        {guest.nationality}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {/* Tug'ilgan sana — jadvaldagi ustun qiymati */}
+                <span className="flex-shrink-0 text-xs text-gray-600">
+                  {guest.birth_date ? (
+                    String(guest.birth_date).slice(0, 10)
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
+                </span>
+              </div>
+
+              <div className="mt-2.5 space-y-1.5 text-sm">
+                {/* Telefon */}
+                {guest.phone ? (
+                  <span className="inline-flex items-center gap-1.5 text-gray-700">
+                    <Phone className="h-3.5 w-3.5 text-gray-400" />
+                    {guest.phone}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-gray-300">
+                    <Phone className="h-3.5 w-3.5 text-gray-400" />—
+                  </span>
+                )}
+                {/* Hujjat */}
+                <div>
+                  {guest.passport_number || guest.id_document_number ? (
+                    <div className="inline-flex items-center gap-1.5">
+                      <IdCard className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="font-mono text-xs font-medium bg-gray-100 text-gray-700 rounded px-2 py-0.5">
+                        {guest.passport_number || guest.id_document_number}
+                      </span>
+                      {guest.id_document_type && (
+                        <span className="text-[11px] text-gray-400">
+                          {DOC_TYPE_LABELS[guest.id_document_type] || guest.id_document_type}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-gray-300">
+                      <IdCard className="h-3.5 w-3.5 text-gray-400" />—
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {canEdit && (
+                <div className="mt-3 flex justify-end border-t border-gray-100 pt-2.5">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(guest)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    Tahrirlash
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+      <div className="hidden rounded-lg border bg-white overflow-hidden md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">

@@ -215,7 +215,81 @@ export const ServicesPage = () => {
           )}
         </div>
 
-        <div className="rounded-md border">
+        {/* MOBIL: mehmonxona xizmatlari karta ko'rinishida (jadval planshet/desktopda) */}
+        <div className="space-y-2.5 md:hidden">
+          {hotelServices.length === 0 ? (
+            <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+              Mehmonxonaga hali xizmatlar ulanmagan
+            </div>
+          ) : (
+            hotelServices.map((hs) => (
+              <div key={hs.id} className="rounded-2xl border bg-white p-3.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+                      <ConciergeBell className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{hs.name}</p>
+                      <p className="mt-0.5 font-mono text-xs text-gray-600">
+                        {hs.code}
+                        <span className="font-sans"> · {hs.category || "—"}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
+                      hs.is_active
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-gray-100 text-gray-500"
+                    )}
+                  >
+                    {hs.is_active ? "Faol" : "O'chirilgan"}
+                  </span>
+                </div>
+                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-2.5">
+                  <span className="font-medium">
+                    {Number(hs.price || 0).toLocaleString()} So'm
+                  </span>
+                  {canManageHotelServices && (
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => openHsEdit(hs)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        Narx
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={
+                          hs.is_active
+                            ? "text-red-600 hover:text-red-700"
+                            : "text-emerald-600 hover:text-emerald-700"
+                        }
+                        onClick={() => onHsToggle(hs)}
+                      >
+                        {hs.is_active ? (
+                          <>
+                            <PowerOff className="h-3.5 w-3.5 mr-1" />
+                            O'chirish
+                          </>
+                        ) : (
+                          <>
+                            <Power className="h-3.5 w-3.5 mr-1" />
+                            Yoqish
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+        <div className="hidden rounded-md border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -323,7 +397,38 @@ export const ServicesPage = () => {
           )}
         </div>
 
-        <div className="rounded-md border">
+        {/* MOBIL: katalog karta ko'rinishida (jadval planshet/desktopda) */}
+        <div className="space-y-2.5 md:hidden">
+          {services.length === 0 ? (
+            <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+              Katalog bo'sh
+            </div>
+          ) : (
+            services.map((s) => (
+              <div key={s.id} className="rounded-2xl border bg-white p-3.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{s.name}</p>
+                    <p className="mt-0.5 font-mono text-xs text-gray-600">
+                      {s.code}
+                      <span className="font-sans"> · {s.category || "—"}</span>
+                    </p>
+                  </div>
+                  {isAdmin && (
+                    <Button variant="ghost" size="sm" onClick={() => openSvcEdit(s)}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      Tahrirlash
+                    </Button>
+                  )}
+                </div>
+                <p className="mt-1.5 text-xs text-gray-600">{s.description || "—"}</p>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+        <div className="hidden rounded-md border md:block">
           <Table>
             <TableHeader>
               <TableRow>

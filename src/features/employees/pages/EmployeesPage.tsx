@@ -419,6 +419,109 @@ export const EmployeesPage = () => {
 
   const activeCount = employees.filter((e) => e.status === "ACTIVE").length
 
+  // Xodim kartalari (grid) — "grid" rejimida asosiy ko'rinish, "table"
+  // rejimida esa mobil ekranda jadval o'rniga shu kartalar chiqadi
+  // (kod dublikat bo'lmasligi uchun bitta konstantaga ajratilgan)
+  const gridCards =
+    filtered.length === 0 ? (
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed py-14 text-gray-400">
+        <UserCog className="h-8 w-8" />
+        <p className="text-sm">Xodimlar topilmadi</p>
+      </div>
+    ) : (
+      /* auto-fill: ustunlar soni displayga qarab o'zi moslashadi */
+      <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
+        {filtered.map((e) => (
+          <div
+            key={e.id}
+            className="group relative rounded-2xl border bg-white p-5 text-center transition-all hover:-translate-y-0.5 hover:shadow-md"
+          >
+            {/* Katta surat — kartaning markaziy elementi */}
+            {photosMap[e.id] ? (
+              <img
+                src={photosMap[e.id]}
+                alt=""
+                className="mx-auto h-24 w-24 rounded-full border-2 border-primary-100 object-cover shadow-sm"
+              />
+            ) : (
+              <span className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary-100 text-2xl font-bold text-primary-700">
+                {`${e.first_name?.[0] ?? ""}${e.last_name?.[0] ?? ""}`.toUpperCase() ||
+                  "?"}
+              </span>
+            )}
+
+            <p className="mt-3 truncate font-bold text-gray-900">
+              {e.first_name} {e.last_name}
+            </p>
+            <p className="truncate text-xs text-gray-400">@{e.username}</p>
+
+            <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                {ROLE_LABELS[e.user_type] || e.user_type}
+              </span>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                  statusBadge[e.status] || statusBadge.ACTIVE
+                )}
+              >
+                {STATUS_LABELS[e.status] || e.status}
+              </span>
+            </div>
+
+            <div className="mt-3.5 space-y-1.5 border-t border-gray-100 pt-3 text-left text-xs text-gray-500">
+              <p className="flex items-center gap-2">
+                <Phone className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                <span className="truncate">{e.phone || "—"}</span>
+              </p>
+              <p className="flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                <span className="truncate">
+                  {(e.branch_id && branchMap[e.branch_id]) || "—"}
+                </span>
+              </p>
+              <p className="flex items-center gap-2">
+                <CalendarDays className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                <span className="truncate">{e.hire_date || "—"}</span>
+              </p>
+              <p className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                <span className="truncate">
+                  {e.work_start || "09:00"}–{e.work_end || "18:00"} ·{" "}
+                  {e.work_hours_per_day ?? 8} soat
+                </span>
+              </p>
+            </div>
+
+            {(canEdit || canDelete) && (
+              <div className="absolute right-2.5 top-2.5 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                {canEdit && (
+                  <button
+                    type="button"
+                    title="Tahrirlash"
+                    onClick={() => openEdit(e)}
+                    className="rounded-md bg-white/90 p-1.5 text-gray-400 shadow-sm ring-1 ring-gray-200 hover:text-gray-600"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {canDelete && e.id !== user?.id && (
+                  <button
+                    type="button"
+                    title="O'chirish"
+                    onClick={() => onDelete(e)}
+                    className="rounded-md bg-white/90 p-1.5 text-red-400 shadow-sm ring-1 ring-gray-200 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -492,108 +595,15 @@ export const EmployeesPage = () => {
       </div>
 
       {/* GRID ko'rinishi — xodim kartalari */}
-      {viewMode === "grid" &&
-        (filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed py-14 text-gray-400">
-            <UserCog className="h-8 w-8" />
-            <p className="text-sm">Xodimlar topilmadi</p>
-          </div>
-        ) : (
-          /* auto-fill: ustunlar soni displayga qarab o'zi moslashadi */
-          <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
-            {filtered.map((e) => (
-              <div
-                key={e.id}
-                className="group relative rounded-2xl border bg-white p-5 text-center transition-all hover:-translate-y-0.5 hover:shadow-md"
-              >
-                {/* Katta surat — kartaning markaziy elementi */}
-                {photosMap[e.id] ? (
-                  <img
-                    src={photosMap[e.id]}
-                    alt=""
-                    className="mx-auto h-24 w-24 rounded-full border-2 border-primary-100 object-cover shadow-sm"
-                  />
-                ) : (
-                  <span className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary-100 text-2xl font-bold text-primary-700">
-                    {`${e.first_name?.[0] ?? ""}${e.last_name?.[0] ?? ""}`.toUpperCase() ||
-                      "?"}
-                  </span>
-                )}
-
-                <p className="mt-3 truncate font-bold text-gray-900">
-                  {e.first_name} {e.last_name}
-                </p>
-                <p className="truncate text-xs text-gray-400">@{e.username}</p>
-
-                <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
-                    {ROLE_LABELS[e.user_type] || e.user_type}
-                  </span>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-[11px] font-medium",
-                      statusBadge[e.status] || statusBadge.ACTIVE
-                    )}
-                  >
-                    {STATUS_LABELS[e.status] || e.status}
-                  </span>
-                </div>
-
-                <div className="mt-3.5 space-y-1.5 border-t border-gray-100 pt-3 text-left text-xs text-gray-500">
-                  <p className="flex items-center gap-2">
-                    <Phone className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                    <span className="truncate">{e.phone || "—"}</span>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Building2 className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                    <span className="truncate">
-                      {(e.branch_id && branchMap[e.branch_id]) || "—"}
-                    </span>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <CalendarDays className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                    <span className="truncate">{e.hire_date || "—"}</span>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                    <span className="truncate">
-                      {e.work_start || "09:00"}–{e.work_end || "18:00"} ·{" "}
-                      {e.work_hours_per_day ?? 8} soat
-                    </span>
-                  </p>
-                </div>
-
-                {(canEdit || canDelete) && (
-                  <div className="absolute right-2.5 top-2.5 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                    {canEdit && (
-                      <button
-                        type="button"
-                        title="Tahrirlash"
-                        onClick={() => openEdit(e)}
-                        className="rounded-md bg-white/90 p-1.5 text-gray-400 shadow-sm ring-1 ring-gray-200 hover:text-gray-600"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                    {canDelete && e.id !== user?.id && (
-                      <button
-                        type="button"
-                        title="O'chirish"
-                        onClick={() => onDelete(e)}
-                        className="rounded-md bg-white/90 p-1.5 text-red-400 shadow-sm ring-1 ring-gray-200 hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
+      {viewMode === "grid" && gridCards}
 
       {viewMode === "table" && (
-      <div className="rounded-2xl border bg-white overflow-hidden">
+      <>
+      {/* MOBIL: jadval rejimida telefonda mavjud grid kartalar ko'rsatiladi */}
+      <div className="md:hidden">{gridCards}</div>
+
+      {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+      <div className="hidden rounded-2xl border bg-white overflow-hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -696,6 +706,7 @@ export const EmployeesPage = () => {
           </TableBody>
         </Table>
       </div>
+      </>
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>

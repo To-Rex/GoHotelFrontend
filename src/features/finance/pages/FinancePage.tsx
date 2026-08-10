@@ -375,7 +375,46 @@ export const FinancePage = () => {
       {/* To'lovlar (tushum) jadvali */}
       <div className="space-y-2">
         <h2 className="text-lg font-bold tracking-tight">To'lovlar</h2>
-        <div className="rounded-md border">
+
+        {/* MOBIL: to'lovlar karta ko'rinishida (jadval planshet/desktopda) */}
+        <div className="space-y-2.5 md:hidden">
+          {filteredPayments.length === 0 ? (
+            <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+              Tanlangan davrda to'lovlar yo'q
+            </div>
+          ) : (
+            filteredPayments.map((p) => (
+              <div key={p.id} className="rounded-2xl border bg-white p-3.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium leading-tight text-gray-900">
+                      {p.payment_number}
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
+                      {p.payment_date || "-"}
+                    </p>
+                  </div>
+                  <span className="flex-shrink-0 font-semibold text-green-600">
+                    {fmt(p.amount)} So'm
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                    {METHOD_LABELS[p.payment_method] || p.payment_method}
+                  </span>
+                </div>
+                {(p.notes || p.reference) && (
+                  <p className="mt-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs text-gray-500">
+                    {p.notes || p.reference}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+        <div className="hidden rounded-md border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -423,7 +462,35 @@ export const FinancePage = () => {
           <h2 className="text-lg font-bold tracking-tight">
             Do'kon qarzlari (bronga yozilgan)
           </h2>
-          <div className="rounded-md border">
+
+          {/* MOBIL: qarzlar karta ko'rinishida (jadval planshet/desktopda) */}
+          <div className="space-y-2.5 md:hidden">
+            {shopDebts.map((s) => (
+              <div key={s.id} className="rounded-2xl border bg-white p-3.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium leading-tight text-gray-900">
+                      {s.reservation_number || "—"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
+                      {s.created_at
+                        ? format(new Date(s.created_at), "dd.MM.yyyy HH:mm")
+                        : "—"}
+                    </p>
+                  </div>
+                  <span className="flex-shrink-0 font-semibold text-amber-600">
+                    {fmt(s.total_amount)} So'm
+                  </span>
+                </div>
+                <p className="mt-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs text-gray-500">
+                  {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+          <div className="hidden rounded-md border md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -466,7 +533,40 @@ export const FinancePage = () => {
       {shopPaid.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-lg font-bold tracking-tight">Do'kon sotuvlari</h2>
-          <div className="rounded-md border">
+
+          {/* MOBIL: sotuvlar karta ko'rinishida (jadval planshet/desktopda) */}
+          <div className="space-y-2.5 md:hidden">
+            {shopPaid.map((s) => (
+              <div key={s.id} className="rounded-2xl border bg-white p-3.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium leading-tight text-gray-900">
+                      {s.paid_at
+                        ? format(new Date(s.paid_at), "dd.MM.yyyy HH:mm")
+                        : "—"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
+                      Bron: {s.reservation_number || "—"}
+                    </p>
+                  </div>
+                  <span className="flex-shrink-0 font-semibold text-green-600">
+                    {fmt(s.total_amount)} So'm
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                    {METHOD_LABELS[s.payment_method || ""] || s.payment_method || "—"}
+                  </span>
+                </div>
+                <p className="mt-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs text-gray-500">
+                  {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+          <div className="hidden rounded-md border md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -522,7 +622,81 @@ export const FinancePage = () => {
             ))}
           </select>
         </div>
-        <div className="rounded-md border">
+        {/* MOBIL: hisob-fakturalar karta ko'rinishida (jadval planshet/desktopda) */}
+        <div className="space-y-2.5 md:hidden">
+          {filteredInvoices.length === 0 ? (
+            <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+              Tanlangan davrda hisob-fakturalar yo'q
+            </div>
+          ) : (
+            filteredInvoices.map((inv) => {
+              const remaining = Math.max(
+                Number(inv.total_amount || 0) - Number(inv.paid_amount || 0),
+                0
+              )
+              return (
+                <div key={inv.id} className="rounded-2xl border bg-white p-3.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium leading-tight text-gray-900">
+                        {inv.invoice_number}
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
+                        {inv.invoice_date || "-"} · muddati: {inv.due_date || "-"}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
+                        statusBadge[inv.status] || statusBadge.DRAFT
+                      )}
+                    >
+                      {STATUS_LABELS[inv.status] || inv.status}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t pt-2.5 text-sm">
+                    <div>
+                      <p className="text-[11px] text-gray-400">Umumiy summa</p>
+                      <p className="font-medium text-gray-900">
+                        {fmt(inv.total_amount)} So'm
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400">To'landi</p>
+                      <p className="font-semibold text-green-600">
+                        {fmt(inv.paid_amount)} So'm
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400">Chegirma</p>
+                      {Number(inv.discount_amount || 0) > 0 ? (
+                        <p className="font-medium text-red-500">
+                          −{fmt(inv.discount_amount)} So'm
+                        </p>
+                      ) : (
+                        <p className="text-gray-300">—</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400">Qoldiq</p>
+                      <p
+                        className={cn(
+                          "font-semibold",
+                          remaining > 0 ? "text-amber-600" : "text-gray-400"
+                        )}
+                      >
+                        {fmt(remaining)} So'm
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+        <div className="hidden rounded-md border md:block">
           <Table>
             <TableHeader>
               <TableRow>

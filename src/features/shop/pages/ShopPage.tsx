@@ -644,7 +644,78 @@ export const ShopPage = () => {
                 Tanlangan davrda sotuv yo'q
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                {/* MOBIL: sotuvlar karta ko'rinishida (jadval planshet/desktopda) */}
+                <div className="space-y-2.5 p-3 md:hidden">
+                  {(sales as ShopSale[]).map((s) => (
+                    <div
+                      key={s.id}
+                      role="button"
+                      tabIndex={0}
+                      title="Batafsil ko'rish"
+                      onClick={() => openDetail(s)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") openDetail(s)
+                      }}
+                      className="cursor-pointer rounded-2xl border border-border bg-card p-3.5 transition-colors hover:bg-muted/60"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">
+                            {s.created_at ? format(new Date(s.created_at), "dd.MM HH:mm") : "—"}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {s.created_by_name || "—"}
+                          </p>
+                        </div>
+                        {s.status === "PAID" ? (
+                          <Badge variant="secondary" className="flex-shrink-0 text-[11px]">
+                            {METHOD_LABELS[s.payment_method || ""] || s.payment_method}
+                          </Badge>
+                        ) : (
+                          <Badge className="flex-shrink-0 bg-amber-100 text-[11px] text-amber-700 hover:bg-amber-100">
+                            Bron: {s.reservation_number || "—"}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-2 rounded-lg bg-muted/60 px-2.5 py-1.5 text-sm">
+                        {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
+                      </p>
+                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2.5">
+                        <span className="text-sm font-semibold">{fmt(s.total_amount)} So'm</span>
+                        <div className="flex items-center gap-1">
+                          {s.status === "PENDING" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openPay(s)
+                              }}
+                            >
+                              <Banknote size={13} /> To'lash
+                            </Button>
+                          )}
+                          {canManage && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onCancelSale(s)
+                              }}
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              title="Bekor qilish (ombor qaytadi)"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+                <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -720,7 +791,8 @@ export const ShopPage = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -1102,6 +1174,22 @@ export const ShopPage = () => {
 
               {/* Mahsulot qatorlari — FIFO bo'yicha har partiya alohida narxda */}
               <div className="rounded-lg border border-border">
+                {/* MOBIL: mahsulot qatorlari karta ko'rinishida (jadval planshet/desktopda) */}
+                <div className="space-y-2.5 p-3 md:hidden">
+                  {detailSale.items.map((i, idx) => (
+                    <div key={idx} className="rounded-2xl border border-border bg-card p-3.5">
+                      <p className="text-sm font-medium">{i.product_name}</p>
+                      <div className="mt-1 flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {fmt(i.unit_price)} ×{i.quantity}
+                        </span>
+                        <span className="font-semibold">{fmt(i.total_price)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+                <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1126,6 +1214,7 @@ export const ShopPage = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
                 <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
                   <span className="text-sm text-muted-foreground">Jami:</span>
                   <span className="text-lg font-bold">{fmt(detailSale.total_amount)} So'm</span>

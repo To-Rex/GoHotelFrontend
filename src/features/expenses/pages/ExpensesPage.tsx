@@ -277,8 +277,71 @@ export const ExpensesPage = () => {
         )}
       </div>
 
-      {/* Jadval */}
-      <div className="rounded-lg border bg-white overflow-hidden">
+      {/* MOBIL: xarajatlar karta ko'rinishida (jadval planshet/desktopda) */}
+      <div className="space-y-2.5 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+            Tanlangan davrda xarajatlar yo'q
+          </div>
+        ) : (
+          filtered.map((e) => (
+            <div key={e.id} className="rounded-2xl border bg-white p-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-900 leading-tight">{e.title}</p>
+                  {e.notes && (
+                    <p className="mt-0.5 truncate text-xs leading-tight text-gray-400">
+                      {e.notes}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
+                    {e.expense_date} · {METHOD_LABELS[e.payment_method] || e.payment_method}
+                  </p>
+                </div>
+                <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                  <span className="font-semibold text-red-600">
+                    −{fmt(e.amount)}{" "}
+                    <span className="text-xs font-normal text-gray-400">So'm</span>
+                  </span>
+                  {e.category ? (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                      {e.category}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-2.5">
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-[10px] font-semibold text-white">
+                  {e.created_by_name ? (
+                    initials(e.created_by_name)
+                  ) : (
+                    <UserIcon className="h-3.5 w-3.5" />
+                  )}
+                </span>
+                <span className="truncate text-sm text-gray-700">
+                  {e.created_by_name || "Noma'lum"}
+                </span>
+                {canDelete && (
+                  <button
+                    type="button"
+                    title="O'chirish"
+                    onClick={() => onDelete(e)}
+                    className="ml-auto p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+      <div className="hidden rounded-lg border bg-white overflow-hidden md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">

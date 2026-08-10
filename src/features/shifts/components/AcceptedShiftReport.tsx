@@ -241,7 +241,39 @@ export const AcceptedShiftReport = () => {
             <p className="border-b bg-gray-50/70 px-3 py-2 text-xs font-semibold text-gray-600">
               Smena davomidagi bronlar ({prevReservations.length} ta)
             </p>
-            <div className="overflow-x-auto">
+            {/* MOBIL: bronlar ixcham karta ko'rinishida (jadval planshet/desktopda) */}
+            <div className="space-y-2.5 p-2.5 md:hidden">
+              {prevReservations.map((r) => (
+                <div key={r.id} className="rounded-2xl border bg-white p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex min-w-0 items-center gap-2 text-xs">
+                      <span className="whitespace-nowrap text-gray-500">
+                        {format(new Date(r.created_at), "HH:mm")}
+                      </span>
+                      <span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-semibold text-gray-700">
+                        {roomNumber(r.room_id)}
+                      </span>
+                      <span className="truncate text-gray-700">
+                        {guestName(r.guest_id)}
+                      </span>
+                    </span>
+                    <span
+                      className={cn(
+                        "flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                        STATUS_STYLES[r.status] || "bg-gray-100 text-gray-600"
+                      )}
+                    >
+                      {STATUS_LABELS[r.status] || r.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs font-medium tabular-nums">
+                    {fmt(Number(r.total_amount))} so'm
+                  </p>
+                </div>
+              ))}
+            </div>
+            {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -293,7 +325,26 @@ export const AcceptedShiftReport = () => {
             <p className="border-b bg-gray-50/70 px-3 py-2 text-xs font-semibold text-gray-600">
               Smena davomidagi xarajatlar ({prevExpenses.length} ta)
             </p>
-            <div className="overflow-x-auto">
+            {/* MOBIL: xarajatlar ixcham karta ko'rinishida (jadval planshet/desktopda) */}
+            <div className="space-y-2.5 p-2.5 md:hidden">
+              {prevExpenses.map((e) => (
+                <div key={e.id} className="rounded-2xl border bg-white p-2.5">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="whitespace-nowrap text-gray-500">
+                        {e.created_at ? format(new Date(e.created_at), "HH:mm") : "—"}
+                      </span>
+                      <span className="truncate text-gray-700">{e.title}</span>
+                    </span>
+                    <span className="flex-shrink-0 font-medium tabular-nums">
+                      {fmt(Number(e.amount))} so'm
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>

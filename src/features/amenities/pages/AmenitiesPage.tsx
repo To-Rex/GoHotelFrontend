@@ -169,7 +169,71 @@ export const AmenitiesPage = () => {
         />
       </div>
 
-      <div className="rounded-md border">
+      {/* MOBIL: qulayliklar karta ko'rinishida (jadval planshet/desktopda) */}
+      <div className="space-y-2.5 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+            Qulayliklar topilmadi
+          </div>
+        ) : (
+          filtered.map((a) => (
+            <div key={a.id} className="rounded-2xl border bg-white p-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+                    <Sparkles className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-medium leading-tight text-gray-900 truncate">
+                      {a.name}
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-gray-600">
+                      Belgi: {iconLabel(a.icon)}
+                    </p>
+                  </div>
+                </div>
+                {/* Holat badge'i — jadvaldagi kabi bosilsa faol/nofaol almashadi */}
+                <button
+                  type="button"
+                  disabled={!isAdmin || updateMutation.isPending}
+                  onClick={() => isAdmin && onToggleStatus(a)}
+                  title={isAdmin ? "Holatni o'zgartirish" : undefined}
+                  className={cn(
+                    "flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
+                    a.is_active
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-gray-100 text-gray-500",
+                    isAdmin && "cursor-pointer hover:opacity-80"
+                  )}
+                >
+                  {a.is_active ? "Faol" : "Nofaol"}
+                </button>
+              </div>
+
+              {isAdmin && (
+                <div className="mt-3 flex items-center gap-1 border-t border-gray-100 pt-2.5">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    Tahrirlash
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => onDelete(a)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    O'chirish
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+      <div className="hidden rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>

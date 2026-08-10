@@ -171,7 +171,81 @@ export const RoomTypesPage = () => {
         />
       </div>
 
-      <div className="rounded-md border">
+      {/* MOBIL: xona turlari karta ko'rinishida (jadval planshet/desktopda) */}
+      <div className="space-y-2.5 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
+            Xona turlari topilmadi
+          </div>
+        ) : (
+          filtered.map((rt) => (
+            <div key={rt.id} className="rounded-2xl border bg-white p-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+                    <BedDouble className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-medium leading-tight text-gray-900 truncate">
+                      {rt.name}
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-tight text-gray-600">
+                      {rt.capacity} kishi
+                    </p>
+                  </div>
+                </div>
+                {/* Holat badge'i — jadvaldagi kabi bosilsa faol/nofaol almashadi */}
+                <button
+                  type="button"
+                  disabled={!isAdmin || statusMutation.isPending}
+                  onClick={() => isAdmin && onToggleStatus(rt)}
+                  title={isAdmin ? "Holatni o'zgartirish" : undefined}
+                  className={cn(
+                    "flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
+                    rt.is_active
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-gray-100 text-gray-500",
+                    isAdmin && "cursor-pointer hover:opacity-80"
+                  )}
+                >
+                  {rt.is_active ? "Faol" : "Nofaol"}
+                </button>
+              </div>
+
+              {rt.description && (
+                <p className="mt-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600">
+                  {rt.description}
+                </p>
+              )}
+
+              <p className="mt-2 text-sm font-medium">
+                {Number(rt.base_price || 0).toLocaleString()} So'm
+              </p>
+
+              {isAdmin && (
+                <div className="mt-3 flex items-center gap-1 border-t border-gray-100 pt-2.5">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(rt)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    Tahrirlash
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => onDelete(rt)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    O'chirish
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+      <div className="hidden rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>

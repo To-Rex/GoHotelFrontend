@@ -253,7 +253,58 @@ export const MyReportsPage = () => {
                 Tanlangan davrda siz yaratgan bron yo'q
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                {/* MOBIL: bronlar karta ko'rinishida (jadval planshet/desktopda) */}
+                <div className="space-y-2.5 p-3 md:hidden">
+                  {myReservations.map((r) => (
+                    <div
+                      key={r.id}
+                      className="rounded-2xl border border-border bg-card p-3.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {guestName(r.guest_id)}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            {r.reservation_number} ·{" "}
+                            {format(new Date(r.created_at), "dd.MM HH:mm")}
+                          </p>
+                        </div>
+                        <span
+                          className={cn(
+                            "inline-flex flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                            STATUS_STYLES[r.status] || "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {STATUS_LABELS[r.status] || r.status}
+                        </span>
+                      </div>
+                      <div className="mt-2.5 flex items-end justify-between gap-2 border-t border-border pt-2">
+                        <span className="text-sm">
+                          <span className="text-muted-foreground">Xona: </span>
+                          <span className="font-medium">{roomNumber(r.room_id)}</span>
+                        </span>
+                        <div className="text-right">
+                          <p
+                            className={cn(
+                              "text-sm font-semibold",
+                              r.status === "CANCELLED" &&
+                                "text-muted-foreground line-through"
+                            )}
+                          >
+                            Jami: {fmt(r.total_amount)}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            To'langan: {fmt(r.paid_amount)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+                <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -304,7 +355,8 @@ export const MyReportsPage = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </div>
 
@@ -319,7 +371,49 @@ export const MyReportsPage = () => {
                 Tanlangan davrda siz qilgan do'kon sotuvi yo'q
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                {/* MOBIL: sotuvlar karta ko'rinishida (jadval planshet/desktopda) */}
+                <div className="space-y-2.5 p-3 md:hidden">
+                  {myShopSales.map((s) => (
+                    <div
+                      key={s.id}
+                      className="rounded-2xl border border-border bg-card p-3.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="whitespace-nowrap text-sm">
+                          {s.created_at
+                            ? format(new Date(s.created_at), "dd.MM HH:mm")
+                            : "—"}
+                        </p>
+                        {s.status === "PAID" ? (
+                          <Badge variant="secondary" className="flex-shrink-0 text-[11px]">
+                            {s.payment_method === "CASH"
+                              ? "Naqd"
+                              : s.payment_method === "CARD"
+                                ? "Karta"
+                                : s.payment_method === "TRANSFER"
+                                  ? "O'tkazma"
+                                  : s.payment_method || "To'langan"}
+                          </Badge>
+                        ) : (
+                          <Badge className="flex-shrink-0 bg-amber-100 text-[11px] text-amber-700 hover:bg-amber-100">
+                            Bron: {s.reservation_number || "—"}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-1.5 text-sm">
+                        {s.items
+                          .map((i) => `${i.product_name} ×${i.quantity}`)
+                          .join(", ")}
+                      </p>
+                      <p className="mt-2 border-t border-border pt-2 text-right text-sm font-semibold">
+                        {fmt(s.total_amount)} So'm
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+                <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -362,7 +456,8 @@ export const MyReportsPage = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </div>
 
@@ -377,7 +472,37 @@ export const MyReportsPage = () => {
                 Tanlangan davrda siz kiritgan xarajat yo'q
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                {/* MOBIL: xarajatlar karta ko'rinishida (jadval planshet/desktopda) */}
+                <div className="space-y-2.5 p-3 md:hidden">
+                  {myExpenses.map((e) => (
+                    <div
+                      key={e.id}
+                      className="rounded-2xl border border-border bg-card p-3.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{e.title}</p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            {e.expense_date
+                              ? format(new Date(e.expense_date), "dd.MM.yyyy")
+                              : "—"}
+                          </p>
+                        </div>
+                        <p className="flex-shrink-0 text-sm font-semibold text-red-600">
+                          {fmt(e.amount)}
+                        </p>
+                      </div>
+                      {e.category && (
+                        <Badge variant="secondary" className="mt-2 text-[11px]">
+                          {e.category}
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
+                <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -412,7 +537,8 @@ export const MyReportsPage = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </div>
         </>
