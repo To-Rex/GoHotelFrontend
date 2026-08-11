@@ -134,15 +134,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             </span>
           ))}
       </div>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <User size={18} />
-          </div>
-          <span className="hidden md:block">
-            {user?.first_name} {user?.last_name}
-          </span>
-        </div>
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Yangilash — yaqqol ko'rinadigan to'ldirilgan tugma */}
         <button
           type="button"
@@ -179,6 +171,16 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
         <Button variant="ghost" size="icon" onClick={logout} title="Chiqish">
           <LogOut size={18} className="text-muted-foreground hover:text-destructive" />
         </Button>
+
+        {/* Account — navbarning eng o'ng burchagida */}
+        <div className="flex items-center gap-2 border-l border-border pl-3 text-sm font-medium sm:pl-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <User size={18} />
+          </div>
+          <span className="hidden md:block">
+            {user?.first_name} {user?.last_name}
+          </span>
+        </div>
       </div>
 
       <FaceEnrollDialog open={faceDialogOpen} onOpenChange={setFaceDialogOpen} />
