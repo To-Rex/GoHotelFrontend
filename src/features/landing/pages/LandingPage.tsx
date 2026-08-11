@@ -12,7 +12,7 @@ import {
   Smartphone,
   ArrowRight,
   CheckCircle2,
-  Sparkles,
+  Sun,
   Moon,
   BedDouble,
   Users,
@@ -21,14 +21,18 @@ import {
   History,
   TrendingUp,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 /**
- * GoHotel landing (marketing) sahifasi — /landing va /leanding.
+ * GoHotel landing sahifasi — /landing va /leanding.
  *
- * To'liq mustaqil: ilova mavzusiga bog'lanmagan doimiy qora (zinc) palitra,
- * yashil aksent, GRADIENTSIZ. Scroll'da asta paydo bo'ladigan bo'limlar,
- * suzuvchi mockup, sanovchi raqamlar va cheksiz modul lentasi. Har qanday
- * display o'lchamiga moslashadi. Boshqa sahifalarga ta'sir qilmaydi.
+ * IKKI TABIAT SAHNASI (mustaqil almashtirgich, ilova mavzusiga tegmaydi):
+ *   KUN — yozgi jazirama: iliq osmon, taftli quyosh, suzuvchi bulutlar va
+ *         qanot qoqib uchib o'tayotgan qushlar;
+ *   TUN — huzurbaxsh yulduzli osmon: kraterli to'lin oy, miltillovchi
+ *         yulduzlar va vaqti-vaqti bilan uchar yulduz.
+ * Sahna soatga qarab o'zi tanlanadi, tugma bilan almashtiriladi.
+ * Fon yaxlit ranglarda — gradientsiz. Boshqa sahifalarga ta'sir yo'q.
  */
 
 // Scroll'da ko'ringan elementlarga .landing-visible qo'shadi (bir marta)
@@ -88,63 +92,105 @@ function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
   )
 }
 
-// Har karta o'z aksent rangida (ko'k ishlatilmaydi)
+// Uchib o'tayotgan qush — ikki qanotli silueti qanot qoqadi
+function Bird({ style, size = 46 }: { style?: React.CSSProperties; size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 60 26"
+      width={size}
+      height={(size * 26) / 60}
+      fill="none"
+      className="landing-bird absolute text-zinc-700/70"
+      style={style}
+    >
+      <path
+        className="landing-flap"
+        d="M3 16 Q 16 3, 30 15 Q 44 3, 57 16"
+        stroke="currentColor"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+// Suzuvchi bulut — yaxlit oq shakllardan yig'ilgan
+function Cloud({
+  style,
+  scale = 1,
+  opacity = 0.95,
+}: {
+  style?: React.CSSProperties
+  scale?: number
+  opacity?: number
+}) {
+  return (
+    <div className="landing-cloud absolute" style={style}>
+      <div className="relative h-12 w-32" style={{ transform: `scale(${scale})`, opacity }}>
+        <span className="absolute bottom-0 left-0 h-9 w-32 rounded-full bg-white" />
+        <span className="absolute bottom-3 left-5 h-10 w-14 rounded-full bg-white" />
+        <span className="absolute bottom-2 left-16 h-8 w-12 rounded-full bg-white" />
+      </div>
+    </div>
+  )
+}
+
 const FEATURES = [
   {
     icon: CalendarDays,
     title: "Bron va band qilish",
     text: "Soatlik va kunlik bronlar, jonli bandlov doskasi, surib ko'chirish va xona almashtirish — hammasi bir ekranda.",
-    color: "text-emerald-400",
-    glow: "bg-emerald-500/15",
+    day: "text-orange-600 bg-orange-500/10",
+    night: "text-amber-300 bg-amber-400/10",
   },
   {
     icon: Wallet,
     title: "Kassa va smenalar",
     text: "Smena topshirish parol tasdig'i bilan, \"ko'r sanash\" kassasi, kamomad nazorati va kunlik avtomatik kesim.",
-    color: "text-amber-400",
-    glow: "bg-amber-500/15",
+    day: "text-emerald-600 bg-emerald-500/10",
+    night: "text-emerald-300 bg-emerald-400/10",
   },
   {
     icon: ScanLine,
     title: "Hujjat skaneri",
     text: "Passport va ID kartani kamera orqali soniyalarda o'qiydi — mehmon ma'lumotlari formaga o'zi tushadi.",
-    color: "text-violet-400",
-    glow: "bg-violet-500/15",
+    day: "text-violet-600 bg-violet-500/10",
+    night: "text-violet-300 bg-violet-400/10",
   },
   {
     icon: ScanFace,
     title: "Yuz bilan kirish",
     text: "Xodimlar parol termasdan, kameraga qarashning o'zida tizimga kiradi — tez va xavfsiz.",
-    color: "text-rose-400",
-    glow: "bg-rose-500/15",
+    day: "text-rose-600 bg-rose-500/10",
+    night: "text-rose-300 bg-rose-400/10",
   },
   {
     icon: Package,
     title: "Ombor nazorati",
     text: "FIFO partiyalar, kirim-chiqim, spisaniye va inventarizatsiya — har bir mahsulot tannarxigacha hisobda.",
-    color: "text-orange-400",
-    glow: "bg-orange-500/15",
+    day: "text-amber-600 bg-amber-500/10",
+    night: "text-orange-300 bg-orange-400/10",
   },
   {
     icon: BarChart3,
     title: "Jonli statistika",
     text: "Tushum, bandlik, smenalar va xodimlar samaradorligi — boshqaruv paneli har daqiqada yangilanadi.",
-    color: "text-teal-400",
-    glow: "bg-teal-500/15",
+    day: "text-teal-600 bg-teal-500/10",
+    night: "text-teal-300 bg-teal-400/10",
   },
   {
     icon: Store,
     title: "Mini-do'kon",
     text: "Mehmonlarga savdo — bron hisobiga yoki naqd. Har sotuv moliya hisobotiga o'z-o'zidan tushadi.",
-    color: "text-lime-400",
-    glow: "bg-lime-500/15",
+    day: "text-lime-600 bg-lime-500/10",
+    night: "text-lime-300 bg-lime-400/10",
   },
   {
     icon: Smartphone,
     title: "Har qanday qurilmada",
     text: "O'rnatiladigan ilova (PWA), telefon-planshet-kompyuterga to'liq moslashgan, tun mavzusi bilan.",
-    color: "text-fuchsia-400",
-    glow: "bg-fuchsia-500/15",
+    day: "text-fuchsia-600 bg-fuchsia-500/10",
+    night: "text-fuchsia-300 bg-fuchsia-400/10",
   },
 ]
 
@@ -183,8 +229,40 @@ const STEPS = [
   },
 ]
 
+// Tungi osmon yulduzlari (foizli koordinatalar — har ekranga moslashadi)
+const STARS = [
+  { top: "5%", left: "8%", s: 3, d: "0s" },
+  { top: "9%", left: "30%", s: 2, d: "-1.4s" },
+  { top: "7%", left: "56%", s: 2, d: "-2.6s" },
+  { top: "13%", left: "78%", s: 3, d: "-0.8s" },
+  { top: "17%", left: "18%", s: 2, d: "-3.2s" },
+  { top: "21%", left: "44%", s: 2, d: "-1.9s" },
+  { top: "15%", left: "92%", s: 2, d: "-2.2s" },
+  { top: "27%", left: "66%", s: 2, d: "-0.5s" },
+  { top: "31%", left: "10%", s: 2, d: "-3.8s" },
+  { top: "35%", left: "35%", s: 3, d: "-1.1s" },
+  { top: "39%", left: "84%", s: 2, d: "-2.9s" },
+  { top: "45%", left: "52%", s: 2, d: "-0.2s" },
+  { top: "49%", left: "22%", s: 2, d: "-3.5s" },
+  { top: "55%", left: "72%", s: 2, d: "-1.6s" },
+  { top: "61%", left: "6%", s: 2, d: "-2.4s" },
+  { top: "67%", left: "40%", s: 3, d: "-0.9s" },
+  { top: "73%", left: "88%", s: 2, d: "-3.1s" },
+  { top: "79%", left: "58%", s: 2, d: "-1.3s" },
+  { top: "85%", left: "16%", s: 2, d: "-2.7s" },
+  { top: "91%", left: "76%", s: 2, d: "-0.6s" },
+  { top: "58%", left: "94%", s: 2, d: "-4.1s" },
+  { top: "83%", left: "34%", s: 2, d: "-1.8s" },
+]
+
 export const LandingPage = () => {
   useReveal()
+
+  // Sahna soatga qarab tanlanadi (19:00–06:00 — tun), tugma bilan almashtiriladi
+  const [night, setNight] = useState(() => {
+    const h = new Date().getHours()
+    return h >= 19 || h < 6
+  })
 
   useEffect(() => {
     document.title = "GoHotel — Mehmonxona boshqaruv tizimi"
@@ -193,89 +271,200 @@ export const LandingPage = () => {
     }
   }, [])
 
+  const cardCls = cn(
+    "border backdrop-blur transition-colors duration-700",
+    night ? "border-white/10 bg-white/[0.05]" : "border-orange-900/10 bg-white/75"
+  )
+
   return (
-    <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-zinc-100 antialiased">
-      {/* ORQA FON: yaxlit qora rang — GRADIENTSIZ. Bezak: miltillovchi sof
-          rangli yulduzchalar va sekin aylanadigan ingichka halqalar */}
+    <div
+      className={cn(
+        "min-h-screen overflow-x-hidden antialiased transition-colors duration-700",
+        night ? "bg-zinc-950 text-zinc-100" : "bg-[#fdf6e3] text-zinc-900"
+      )}
+    >
+      {/* ================= TABIAT SAHNASI (fon) ================= */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        {[
-          { top: "6%", left: "8%", size: 3, delay: "0s", color: "bg-emerald-400" },
-          { top: "12%", left: "72%", size: 2, delay: "-1.2s", color: "bg-white" },
-          { top: "18%", left: "38%", size: 2, delay: "-2.4s", color: "bg-amber-300" },
-          { top: "24%", left: "88%", size: 3, delay: "-0.6s", color: "bg-emerald-300" },
-          { top: "30%", left: "14%", size: 2, delay: "-3.1s", color: "bg-white" },
-          { top: "36%", left: "55%", size: 2, delay: "-1.8s", color: "bg-violet-300" },
-          { top: "44%", left: "80%", size: 2, delay: "-2.9s", color: "bg-white" },
-          { top: "50%", left: "5%", size: 3, delay: "-0.9s", color: "bg-amber-300" },
-          { top: "56%", left: "42%", size: 2, delay: "-3.7s", color: "bg-emerald-400" },
-          { top: "62%", left: "68%", size: 2, delay: "-1.5s", color: "bg-white" },
-          { top: "70%", left: "22%", size: 2, delay: "-2.1s", color: "bg-violet-300" },
-          { top: "76%", left: "90%", size: 3, delay: "-0.3s", color: "bg-white" },
-          { top: "82%", left: "50%", size: 2, delay: "-3.4s", color: "bg-emerald-300" },
-          { top: "88%", left: "12%", size: 2, delay: "-1.1s", color: "bg-amber-300" },
-          { top: "92%", left: "74%", size: 2, delay: "-2.7s", color: "bg-white" },
-          { top: "8%", left: "52%", size: 2, delay: "-4.1s", color: "bg-white" },
-          { top: "40%", left: "30%", size: 2, delay: "-0.2s", color: "bg-emerald-400" },
-          { top: "66%", left: "35%", size: 2, delay: "-3.9s", color: "bg-white" },
-          { top: "28%", left: "62%", size: 2, delay: "-1.7s", color: "bg-white" },
-          { top: "84%", left: "30%", size: 2, delay: "-2.5s", color: "bg-violet-300" },
-        ].map((s, i) => (
-          <span
-            key={i}
-            className={`landing-star ${s.color}`}
-            style={{
-              top: s.top,
-              left: s.left,
-              width: s.size,
-              height: s.size,
-              animationDelay: s.delay,
-            }}
-          />
-        ))}
-        {/* Ingichka halqalar — sof chegara ranglari, sekin aylanadi */}
-        <div className="landing-ring absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full border border-emerald-500/10 sm:h-[34rem] sm:w-[34rem]">
-          <span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/40" />
-        </div>
+        {/* --- TUN: yulduzlar, uchar yulduz, to'lin oy --- */}
         <div
-          className="landing-ring absolute -bottom-52 -left-52 h-[30rem] w-[30rem] rounded-full border border-white/5 sm:h-[38rem] sm:w-[38rem]"
-          style={{ animationDirection: "reverse", animationDuration: "80s" }}
+          className={cn(
+            "absolute inset-0 transition-opacity duration-1000",
+            night ? "opacity-100" : "opacity-0"
+          )}
         >
-          <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400/40" />
+          {STARS.map((s, i) => (
+            <span
+              key={i}
+              className="landing-star bg-white"
+              style={{
+                top: s.top,
+                left: s.left,
+                width: s.s,
+                height: s.s,
+                animationDelay: s.d,
+              }}
+            />
+          ))}
+          {/* Uchar yulduz — har 12 soniyada bir chizib o'tadi */}
+          <span className="landing-shoot absolute right-[8%] top-[12%] h-0.5 w-24 rounded-full bg-white/80" />
+          {/* To'lin oy: kraterlari bilan, atrofida yumshoq halo halqalari */}
+          <div className="absolute right-[8%] top-[9%] sm:right-[12%] sm:top-[12%]">
+            <span className="landing-sunpulse absolute -inset-5 rounded-full border border-zinc-200/10" />
+            <span className="absolute -inset-10 rounded-full border border-zinc-200/5" />
+            <div className="relative h-20 w-20 rounded-full bg-zinc-200 shadow-[0_0_50px_rgba(228,228,231,0.25)] sm:h-24 sm:w-24">
+              <span className="absolute left-4 top-5 h-4 w-4 rounded-full bg-zinc-400/50" />
+              <span className="absolute left-11 top-10 h-2.5 w-2.5 rounded-full bg-zinc-400/40" />
+              <span className="absolute left-6 top-13 h-3 w-3 rounded-full bg-zinc-400/45" />
+              <span className="absolute left-13 top-4 h-2 w-2 rounded-full bg-zinc-400/40" />
+              <span className="absolute right-3 bottom-4 h-3.5 w-3.5 rounded-full bg-zinc-400/35" />
+            </div>
+          </div>
+        </div>
+
+        {/* --- KUN: jazirama quyosh, bulutlar, qushlar --- */}
+        <div
+          className={cn(
+            "absolute inset-0 transition-opacity duration-1000",
+            night ? "opacity-0" : "opacity-100"
+          )}
+        >
+          {/* Quyosh: yaxlit sariq doira + nafas oluvchi taft halqalari */}
+          <div className="absolute right-[6%] top-[8%] sm:right-[10%] sm:top-[10%]">
+            <span className="landing-sunpulse absolute -inset-6 rounded-full border-2 border-amber-400/50" />
+            <span
+              className="landing-sunpulse absolute -inset-12 rounded-full border border-amber-400/25"
+              style={{ animationDelay: "-2.5s" }}
+            />
+            <div className="relative h-20 w-20 rounded-full bg-amber-400 shadow-[0_0_60px_rgba(251,191,36,0.55)] sm:h-24 sm:w-24" />
+          </div>
+          {/* Bulutlar — har xil balandlik, o'lcham va tezlikda */}
+          <Cloud style={{ top: "14%", animationDuration: "95s" }} scale={1.15} />
+          <Cloud
+            style={{ top: "26%", animationDuration: "70s", animationDelay: "-30s" }}
+            scale={0.8}
+            opacity={0.8}
+          />
+          <Cloud
+            style={{ top: "8%", animationDuration: "115s", animationDelay: "-60s" }}
+            scale={0.6}
+            opacity={0.7}
+          />
+          <Cloud
+            style={{ top: "38%", animationDuration: "85s", animationDelay: "-45s" }}
+            scale={0.5}
+            opacity={0.55}
+          />
+          {/* Qushlar galasi — turli balandlik va tezlikda qanot qoqib o'tadi */}
+          <Bird style={{ top: "18%", animationDuration: "30s" }} size={44} />
+          <Bird
+            style={{ top: "22%", animationDuration: "36s", animationDelay: "-6s" }}
+            size={30}
+          />
+          <Bird
+            style={{ top: "14%", animationDuration: "42s", animationDelay: "-16s" }}
+            size={24}
+          />
+          <Bird
+            style={{ top: "30%", animationDuration: "38s", animationDelay: "-26s" }}
+            size={34}
+          />
         </div>
       </div>
 
-      {/* NAVBAR */}
+      {/* ================= NAVBAR ================= */}
       <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 shadow-lg shadow-emerald-600/30 sm:h-10 sm:w-10">
-            <Building2 className="h-5 w-5 text-white" />
+          <div
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-xl shadow-lg transition-colors duration-700 sm:h-10 sm:w-10",
+              night
+                ? "bg-amber-400 shadow-amber-400/25"
+                : "bg-orange-500 shadow-orange-500/30"
+            )}
+          >
+            <Building2 className={cn("h-5 w-5", night ? "text-zinc-900" : "text-white")} />
           </div>
           <span className="text-lg font-bold tracking-tight">GoHotel</span>
         </div>
-        <nav className="hidden items-center gap-7 text-sm font-medium text-zinc-400 md:flex">
-          <a href="#features" className="transition-colors hover:text-white">
+
+        <nav
+          className={cn(
+            "hidden items-center gap-7 text-sm font-medium md:flex",
+            night ? "text-zinc-400" : "text-zinc-600"
+          )}
+        >
+          <a
+            href="#features"
+            className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
+          >
             Imkoniyatlar
           </a>
-          <a href="#how" className="transition-colors hover:text-white">
+          <a
+            href="#how"
+            className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
+          >
             Qanday ishlaydi
           </a>
-          <a href="#stats" className="transition-colors hover:text-white">
+          <a
+            href="#stats"
+            className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
+          >
             Raqamlar
           </a>
         </nav>
-        <Link
-          to="/login"
-          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:scale-105 hover:shadow-white/20 active:scale-95 sm:px-5"
-        >
-          Kirish
-        </Link>
+
+        <div className="flex items-center gap-2.5">
+          {/* Kun/Tun sahnasi almashtirgichi */}
+          <button
+            type="button"
+            onClick={() => setNight((v) => !v)}
+            title={night ? "Kun sahnasiga o'tish" : "Tun sahnasiga o'tish"}
+            className={cn(
+              "relative flex h-9 w-[68px] items-center rounded-full border transition-colors duration-500",
+              night ? "border-white/15 bg-white/10" : "border-orange-900/15 bg-white/80"
+            )}
+          >
+            <span
+              className={cn(
+                "absolute flex h-7 w-7 items-center justify-center rounded-full shadow-md transition-all duration-500",
+                night
+                  ? "left-[calc(100%-30px)] bg-zinc-200 text-zinc-800"
+                  : "left-1 bg-amber-400 text-white"
+              )}
+            >
+              {night ? <Moon size={15} /> : <Sun size={15} />}
+            </span>
+          </button>
+          <Link
+            to="/login"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 sm:px-5",
+              night
+                ? "bg-white text-zinc-900 shadow-white/10"
+                : "bg-zinc-900 text-white shadow-zinc-900/20"
+            )}
+          >
+            Kirish
+          </Link>
+        </div>
       </header>
 
-      {/* HERO */}
-      <section className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 sm:px-5 sm:pb-20 lg:grid-cols-2 lg:gap-12 lg:pt-16">
+      {/* ================= HERO ================= */}
+      <section className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 sm:px-5 sm:pb-20 lg:grid-cols-2 lg:gap-12 lg:pt-14">
         <div>
-          <p className="landing-reveal inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+          <p
+            className={cn(
+              "landing-reveal inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium backdrop-blur",
+              night
+                ? "border-white/10 bg-white/5 text-zinc-300"
+                : "border-orange-900/10 bg-white/70 text-zinc-600"
+            )}
+          >
+            {night ? (
+              <Moon className="h-3.5 w-3.5 text-amber-300" />
+            ) : (
+              <Sun className="h-3.5 w-3.5 text-orange-500" />
+            )}
             Zamonaviy mehmonxonalar uchun yagona tizim
           </p>
           <h1
@@ -284,13 +473,25 @@ export const LandingPage = () => {
           >
             Mehmonxonangizni{" "}
             <span className="relative whitespace-nowrap">
-              <span className="relative z-10 text-emerald-400">bitta tizimda</span>
-              <span className="absolute inset-x-0 bottom-1 -z-0 h-3 rounded-full bg-emerald-500/20" />
+              <span
+                className={cn("relative z-10", night ? "text-amber-300" : "text-orange-600")}
+              >
+                bitta tizimda
+              </span>
+              <span
+                className={cn(
+                  "absolute inset-x-0 bottom-1 -z-0 h-3 rounded-full",
+                  night ? "bg-amber-400/20" : "bg-orange-500/20"
+                )}
+              />
             </span>{" "}
             boshqaring
           </h1>
           <p
-            className="landing-reveal mt-5 max-w-lg text-base leading-relaxed text-zinc-400 sm:text-lg"
+            className={cn(
+              "landing-reveal mt-5 max-w-lg text-base leading-relaxed sm:text-lg",
+              night ? "text-zinc-400" : "text-zinc-600"
+            )}
             style={{ transitionDelay: "160ms" }}
           >
             Bron, kassa-smena, ombor, do'kon va jonli hisobotlar — resepsiyadan
@@ -303,110 +504,177 @@ export const LandingPage = () => {
           >
             <Link
               to="/login"
-              className="group flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.03] hover:bg-emerald-500 active:scale-95 sm:px-7"
+              className={cn(
+                "group flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold shadow-xl transition-all hover:scale-[1.03] active:scale-95 sm:px-7",
+                night
+                  ? "bg-amber-400 text-zinc-900 shadow-amber-400/25 hover:bg-amber-300"
+                  : "bg-orange-600 text-white shadow-orange-600/25 hover:bg-orange-500"
+              )}
             >
               Tizimga kirish
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <a
               href="#features"
-              className="rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-semibold text-zinc-200 backdrop-blur transition-all hover:border-white/30 hover:bg-white/10 active:scale-95 sm:px-7"
+              className={cn(
+                "rounded-full border px-6 py-3.5 text-sm font-semibold backdrop-blur transition-all active:scale-95 sm:px-7",
+                night
+                  ? "border-white/15 bg-white/5 text-zinc-200 hover:border-white/30 hover:bg-white/10"
+                  : "border-orange-900/15 bg-white/70 text-zinc-700 hover:border-orange-900/30 hover:bg-white"
+              )}
             >
               Imkoniyatlarni ko'rish
             </a>
           </div>
           <div
-            className="landing-reveal mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-zinc-400"
+            className={cn(
+              "landing-reveal mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs",
+              night ? "text-zinc-400" : "text-zinc-600"
+            )}
             style={{ transitionDelay: "320ms" }}
           >
-            {["O'rnatiladigan PWA ilova", "Yuz bilan kirish", "Hujjat skaneri"].map(
-              (t) => (
-                <span key={t} className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                  {t}
-                </span>
-              )
-            )}
+            {["O'rnatiladigan PWA ilova", "Yuz bilan kirish", "Hujjat skaneri"].map((t) => (
+              <span key={t} className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                {t}
+              </span>
+            ))}
           </div>
         </div>
 
         {/* HERO MOCKUP — suzuvchi mini boshqaruv paneli */}
         <div className="landing-reveal relative" style={{ transitionDelay: "200ms" }}>
           <div className="animate-landing-float relative mx-auto w-full max-w-md">
-            {/* Asosiy oyna */}
-            <div className="rounded-2xl border border-white/10 bg-zinc-900/90 p-4 shadow-2xl shadow-black/50 backdrop-blur sm:p-5">
+            <div
+              className={cn(
+                "rounded-2xl p-4 shadow-2xl sm:p-5",
+                cardCls,
+                night ? "shadow-black/50" : "shadow-orange-900/15"
+              )}
+            >
               <div className="mb-4 flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
-                <span className="ml-3 truncate text-[11px] text-zinc-500">
+                <span
+                  className={cn(
+                    "ml-3 truncate text-[11px]",
+                    night ? "text-zinc-500" : "text-zinc-500"
+                  )}
+                >
                   GoHotel · Boshqaruv paneli
                 </span>
               </div>
-              {/* KPI chiplar */}
               <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                 {[
-                  { label: "Tushum", value: "12.4M", color: "text-emerald-400" },
-                  { label: "Bandlik", value: "86%", color: "text-amber-400" },
-                  { label: "Bronlar", value: "34", color: "text-violet-400" },
+                  {
+                    label: "Tushum",
+                    value: "12.4M",
+                    color: night ? "text-emerald-300" : "text-emerald-600",
+                  },
+                  {
+                    label: "Bandlik",
+                    value: "86%",
+                    color: night ? "text-amber-300" : "text-orange-600",
+                  },
+                  {
+                    label: "Bronlar",
+                    value: "34",
+                    color: night ? "text-violet-300" : "text-violet-600",
+                  },
                 ].map((k) => (
                   <div
                     key={k.label}
-                    className="rounded-xl border border-white/5 bg-white/5 p-2.5 sm:p-3"
+                    className={cn(
+                      "rounded-xl border p-2.5 sm:p-3",
+                      night ? "border-white/5 bg-white/5" : "border-orange-900/5 bg-white/70"
+                    )}
                   >
                     <p className="text-[10px] text-zinc-500">{k.label}</p>
-                    <p
-                      className={`text-base font-bold tabular-nums sm:text-lg ${k.color}`}
-                    >
+                    <p className={cn("text-base font-bold tabular-nums sm:text-lg", k.color)}>
                       {k.value}
                     </p>
                   </div>
                 ))}
               </div>
-              {/* Grafik — o'sib chiqadigan yashil ustunlar */}
-              <div className="mt-4 flex h-24 items-end gap-1.5 rounded-xl border border-white/5 bg-white/5 p-3 sm:h-28 sm:gap-2">
+              <div
+                className={cn(
+                  "mt-4 flex h-24 items-end gap-1.5 rounded-xl border p-3 sm:h-28 sm:gap-2",
+                  night ? "border-white/5 bg-white/5" : "border-orange-900/5 bg-white/70"
+                )}
+              >
                 {[35, 55, 42, 70, 58, 85, 64, 92, 76, 100, 68, 88].map((h, i) => (
                   <span
                     key={i}
-                    className="landing-bar flex-1 rounded-t-md bg-emerald-500"
+                    className={cn(
+                      "landing-bar flex-1 rounded-t-md",
+                      night ? "bg-amber-400" : "bg-orange-500"
+                    )}
                     style={{
                       height: `${h}%`,
                       animationDelay: `${300 + i * 90}ms`,
-                      opacity: 0.55 + (h / 100) * 0.45,
+                      opacity: 0.5 + (h / 100) * 0.5,
                     }}
                   />
                 ))}
               </div>
-              {/* Pastki qator */}
-              <div className="mt-4 flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-white/5 px-3.5 py-2.5">
-                <span className="flex items-center gap-2 text-xs text-zinc-300">
+              <div
+                className={cn(
+                  "mt-4 flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5",
+                  night ? "border-white/5 bg-white/5" : "border-orange-900/5 bg-white/70"
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex items-center gap-2 text-xs",
+                    night ? "text-zinc-300" : "text-zinc-600"
+                  )}
+                >
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                   </span>
                   Smena faol · kassa nazoratda
                 </span>
-                <TrendingUp className="h-4 w-4 flex-shrink-0 text-emerald-400" />
+                <TrendingUp className="h-4 w-4 flex-shrink-0 text-emerald-500" />
               </div>
             </div>
 
-            {/* Suzuvchi yon kartalar (faqat keng ekranlarda) */}
+            {/* Suzuvchi yon kartalar (keng ekranlarda) */}
             <div
-              className="animate-landing-float absolute -left-6 top-16 hidden rounded-xl border border-white/10 bg-zinc-900/95 px-3.5 py-2.5 shadow-xl shadow-black/40 backdrop-blur sm:block"
+              className={cn(
+                "animate-landing-float absolute -left-6 top-16 hidden rounded-xl px-3.5 py-2.5 shadow-xl sm:block",
+                cardCls,
+                night ? "shadow-black/40" : "shadow-orange-900/10"
+              )}
               style={{ animationDelay: "-2.5s" }}
             >
-              <p className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-                <BedDouble className="h-3.5 w-3.5 text-emerald-400" />
+              <p
+                className={cn(
+                  "flex items-center gap-2 text-xs font-semibold",
+                  night ? "text-zinc-200" : "text-zinc-700"
+                )}
+              >
+                <BedDouble className="h-3.5 w-3.5 text-emerald-500" />
                 104-xona band qilindi
               </p>
               <p className="mt-0.5 text-[10px] text-zinc-500">hozirgina · 2 kecha</p>
             </div>
             <div
-              className="animate-landing-float absolute -right-4 bottom-10 hidden rounded-xl border border-white/10 bg-zinc-900/95 px-3.5 py-2.5 shadow-xl shadow-black/40 backdrop-blur sm:block"
+              className={cn(
+                "animate-landing-float absolute -right-4 bottom-10 hidden rounded-xl px-3.5 py-2.5 shadow-xl sm:block",
+                cardCls,
+                night ? "shadow-black/40" : "shadow-orange-900/10"
+              )}
               style={{ animationDelay: "-4.5s" }}
             >
-              <p className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-                <ScanLine className="h-3.5 w-3.5 text-violet-400" />
+              <p
+                className={cn(
+                  "flex items-center gap-2 text-xs font-semibold",
+                  night ? "text-zinc-200" : "text-zinc-700"
+                )}
+              >
+                <ScanLine className="h-3.5 w-3.5 text-violet-500" />
                 Passport o'qildi
               </p>
               <p className="mt-0.5 text-[10px] text-zinc-500">2 soniyada · avtomatik</p>
@@ -415,88 +683,133 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* MODUL LENTASI — ikki yo'nalishda oqadigan cheksiz marquee */}
-      <section className="relative z-10 space-y-2.5 border-y border-white/5 bg-white/[0.03] py-4 sm:space-y-3 sm:py-5">
-        <div className="overflow-hidden">
-          <div className="flex w-max animate-landing-marquee gap-2.5 sm:gap-3">
-            {[...MARQUEE, ...MARQUEE].map((m, i) => (
-              <span
-                key={i}
-                className="flex items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-300 sm:px-4 sm:py-2 sm:text-sm"
-              >
-                <m.icon className="h-4 w-4 text-emerald-400" />
-                {m.label}
-              </span>
-            ))}
+      {/* ================= MODUL LENTASI ================= */}
+      <section
+        className={cn(
+          "relative z-10 space-y-2.5 border-y py-4 transition-colors duration-700 sm:space-y-3 sm:py-5",
+          night ? "border-white/5 bg-white/[0.03]" : "border-orange-900/10 bg-white/50"
+        )}
+      >
+        {[false, true].map((reverse) => (
+          <div key={String(reverse)} className="overflow-hidden">
+            <div
+              className="flex w-max animate-landing-marquee gap-2.5 sm:gap-3"
+              style={
+                reverse
+                  ? { animationDirection: "reverse", animationDuration: "38s" }
+                  : undefined
+              }
+            >
+              {(reverse ? [...MARQUEE].reverse() : MARQUEE)
+                .concat(reverse ? [...MARQUEE].reverse() : MARQUEE)
+                .map((m, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "flex items-center gap-2 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm",
+                      night
+                        ? "border-white/10 bg-white/5 text-zinc-300"
+                        : "border-orange-900/10 bg-white/80 text-zinc-600"
+                    )}
+                  >
+                    <m.icon
+                      className={cn(
+                        "h-4 w-4",
+                        reverse
+                          ? night
+                            ? "text-emerald-400"
+                            : "text-emerald-600"
+                          : night
+                            ? "text-amber-300"
+                            : "text-orange-500"
+                      )}
+                    />
+                    {m.label}
+                  </span>
+                ))}
+            </div>
           </div>
-        </div>
-        <div className="overflow-hidden">
-          <div
-            className="flex w-max animate-landing-marquee gap-2.5 sm:gap-3"
-            style={{ animationDirection: "reverse", animationDuration: "38s" }}
-          >
-            {[...MARQUEE].reverse().concat([...MARQUEE].reverse()).map((m, i) => (
-              <span
-                key={i}
-                className="flex items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-400 sm:px-4 sm:py-2 sm:text-sm"
-              >
-                <m.icon className="h-4 w-4 text-amber-400" />
-                {m.label}
-              </span>
-            ))}
-          </div>
-        </div>
+        ))}
       </section>
 
-      {/* IMKONIYATLAR */}
-      <section
-        id="features"
-        className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24"
-      >
+      {/* ================= IMKONIYATLAR ================= */}
+      <section id="features" className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400">
+          <p
+            className={cn(
+              "text-xs font-bold uppercase tracking-[0.25em]",
+              night ? "text-amber-300" : "text-orange-600"
+            )}
+          >
             Imkoniyatlar
           </p>
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
             Har bir bo'lim — puxta o'ylangan
           </h2>
-          <p className="mt-3 text-sm text-zinc-400 sm:text-base">
+          <p
+            className={cn(
+              "mt-3 text-sm sm:text-base",
+              night ? "text-zinc-400" : "text-zinc-600"
+            )}
+          >
             Kichik hosteldan yirik mehmonxonagacha — kundalik ishning har bir
             qadami uchun tayyor vosita.
           </p>
         </div>
         <div className="mt-10 grid gap-3.5 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-          {FEATURES.map((f, i) => (
-            <div
-              key={f.title}
-              className="landing-reveal group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20 hover:bg-white/[0.07] hover:shadow-2xl hover:shadow-black/40"
-              style={{ transitionDelay: `${(i % 4) * 70}ms` }}
-            >
+          {FEATURES.map((f, i) => {
+            const accent = night ? f.night : f.day
+            return (
               <div
-                className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100 ${f.glow}`}
-              />
-              <span
-                className={`relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 ${f.color}`}
+                key={f.title}
+                className={cn(
+                  "landing-reveal group rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl",
+                  cardCls,
+                  night
+                    ? "hover:border-white/20 hover:bg-white/[0.08] hover:shadow-black/40"
+                    : "hover:border-orange-900/20 hover:bg-white hover:shadow-orange-900/10"
+                )}
+                style={{ transitionDelay: `${(i % 4) * 70}ms` }}
               >
-                <f.icon className="h-5 w-5" />
-              </span>
-              <h3 className="relative mt-4 font-bold text-zinc-100">{f.title}</h3>
-              <p className="relative mt-1.5 text-sm leading-relaxed text-zinc-400">
-                {f.text}
-              </p>
-            </div>
-          ))}
+                <span
+                  className={cn(
+                    "flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110",
+                    accent
+                  )}
+                >
+                  <f.icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 font-bold">{f.title}</h3>
+                <p
+                  className={cn(
+                    "mt-1.5 text-sm leading-relaxed",
+                    night ? "text-zinc-400" : "text-zinc-600"
+                  )}
+                >
+                  {f.text}
+                </p>
+              </div>
+            )
+          })}
         </div>
       </section>
 
-      {/* QANDAY ISHLAYDI */}
+      {/* ================= QANDAY ISHLAYDI ================= */}
       <section
         id="how"
-        className="relative z-10 border-t border-white/5 bg-white/[0.02]"
+        className={cn(
+          "relative z-10 border-t transition-colors duration-700",
+          night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
+        )}
       >
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
           <div className="landing-reveal mx-auto max-w-2xl text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400">
+            <p
+              className={cn(
+                "text-xs font-bold uppercase tracking-[0.25em]",
+                night ? "text-amber-300" : "text-orange-600"
+              )}
+            >
               Qanday ishlaydi
             </p>
             <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
@@ -507,16 +820,33 @@ export const LandingPage = () => {
             {STEPS.map((s, i) => (
               <div
                 key={s.n}
-                className="landing-reveal relative rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur"
+                className={cn("landing-reveal relative rounded-2xl p-6", cardCls)}
                 style={{ transitionDelay: `${i * 120}ms` }}
               >
-                <span className="text-5xl font-extrabold text-white/10">{s.n}</span>
+                <span
+                  className={cn(
+                    "text-5xl font-extrabold",
+                    night ? "text-white/10" : "text-zinc-900/10"
+                  )}
+                >
+                  {s.n}
+                </span>
                 <h3 className="mt-3 text-lg font-bold">{s.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                <p
+                  className={cn(
+                    "mt-1.5 text-sm leading-relaxed",
+                    night ? "text-zinc-400" : "text-zinc-600"
+                  )}
+                >
                   {s.text}
                 </p>
                 {i < STEPS.length - 1 && (
-                  <ArrowRight className="absolute -right-4 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-zinc-600 md:block" />
+                  <ArrowRight
+                    className={cn(
+                      "absolute -right-4 top-1/2 hidden h-5 w-5 -translate-y-1/2 md:block",
+                      night ? "text-zinc-600" : "text-zinc-400"
+                    )}
+                  />
                 )}
               </div>
             ))}
@@ -524,12 +854,15 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* RAQAMLAR */}
-      <section
-        id="stats"
-        className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24"
-      >
-        <div className="landing-reveal grid gap-6 rounded-3xl border border-emerald-500/20 bg-white/[0.04] p-7 backdrop-blur sm:grid-cols-2 sm:gap-4 sm:p-10 lg:grid-cols-4">
+      {/* ================= RAQAMLAR ================= */}
+      <section id="stats" className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
+        <div
+          className={cn(
+            "landing-reveal grid gap-6 rounded-3xl p-7 sm:grid-cols-2 sm:gap-4 sm:p-10 lg:grid-cols-4",
+            cardCls,
+            night ? "border-amber-400/20" : "border-orange-500/25"
+          )}
+        >
           {[
             { to: 15, suffix: "+", label: "Tayyor modul" },
             { to: 2, suffix: " son.", label: "Hujjatni o'qish tezligi" },
@@ -537,29 +870,52 @@ export const LandingPage = () => {
             { to: 24, suffix: "/7", label: "Doim ishlaydi" },
           ].map((s) => (
             <div key={s.label} className="text-center">
-              <p className="text-3xl font-extrabold text-emerald-400 sm:text-5xl">
+              <p
+                className={cn(
+                  "text-3xl font-extrabold sm:text-5xl",
+                  night ? "text-amber-300" : "text-orange-600"
+                )}
+              >
                 <CountUp to={s.to} suffix={s.suffix} />
               </p>
-              <p className="mt-1.5 text-sm text-zinc-400">{s.label}</p>
+              <p
+                className={cn(
+                  "mt-1.5 text-sm",
+                  night ? "text-zinc-400" : "text-zinc-600"
+                )}
+              >
+                {s.label}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
+      {/* ================= CTA ================= */}
       <section className="relative z-10 mx-auto max-w-3xl px-4 pb-16 text-center sm:px-5 sm:pb-24">
         <div className="landing-reveal">
           <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl">
-            Mehmonxonangizni <span className="text-emerald-400">bugundan</span>{" "}
+            Mehmonxonangizni{" "}
+            <span className={night ? "text-amber-300" : "text-orange-600"}>bugundan</span>{" "}
             zamonaviy boshqaring
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400 sm:text-base">
+          <p
+            className={cn(
+              "mx-auto mt-4 max-w-xl text-sm sm:text-base",
+              night ? "text-zinc-400" : "text-zinc-600"
+            )}
+          >
             Qog'oz daftarlar va tarqoq jadvallar o'rniga — bitta tezkor tizim.
             Kirish bir daqiqa ham olmaydi.
           </p>
           <Link
             to="/login"
-            className="group mx-auto mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-8 py-4 text-base font-bold text-white shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.03] hover:bg-emerald-500 active:scale-95 sm:px-9"
+            className={cn(
+              "group mx-auto mt-8 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-bold shadow-xl transition-all hover:scale-[1.03] active:scale-95 sm:px-9",
+              night
+                ? "bg-amber-400 text-zinc-900 shadow-amber-400/25 hover:bg-amber-300"
+                : "bg-orange-600 text-white shadow-orange-600/25 hover:bg-orange-500"
+            )}
           >
             Hoziroq boshlash
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -567,18 +923,33 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="relative z-10 border-t border-white/5">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-zinc-500 sm:px-5 sm:py-7 sm:text-sm">
+      {/* ================= FOOTER ================= */}
+      <footer
+        className={cn(
+          "relative z-10 border-t transition-colors duration-700",
+          night ? "border-white/5" : "border-orange-900/10"
+        )}
+      >
+        <div
+          className={cn(
+            "mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs sm:px-5 sm:py-7 sm:text-sm",
+            night ? "text-zinc-500" : "text-zinc-500"
+          )}
+        >
           <span className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600">
-              <Building2 className="h-3.5 w-3.5 text-white" />
+            <span
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-lg",
+                night ? "bg-amber-400" : "bg-orange-500"
+              )}
+            >
+              <Building2 className={cn("h-3.5 w-3.5", night ? "text-zinc-900" : "text-white")} />
             </span>
-            <span className="font-semibold text-zinc-300">GoHotel</span>
+            <span className={cn("font-semibold", night ? "text-zinc-300" : "text-zinc-700")}>
+              GoHotel
+            </span>
           </span>
-          <span>
-            © {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi
-          </span>
+          <span>© {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi</span>
         </div>
       </footer>
     </div>
