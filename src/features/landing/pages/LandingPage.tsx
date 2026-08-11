@@ -739,9 +739,9 @@ export const LandingPage = () => {
 
         {/* HERO MOCKUP — suzuvchi mini boshqaruv paneli */}
         <div className="landing-reveal relative" style={{ transitionDelay: "200ms" }}>
-          {/* Katta displayda oyna eni bosqichma-bosqich kengayadi va 2xl da
-              transform bilan yana biroz kattalashadi */}
-          <div className="2xl:origin-top 2xl:scale-[1.1]">
+          {/* Katta displayda oyna eni kengayadi va transform bilan yanada
+              kattalashadi — ichki dizayn piksel-aniq, bo'sh joy to'ladi */}
+          <div className="lg:origin-center lg:scale-105 xl:scale-[1.18] 2xl:scale-[1.3]">
           <div className="animate-landing-float relative mx-auto w-full max-w-md lg:max-w-lg xl:max-w-[34rem]">
             {/* HAQIQIY ilova sahifalari miniaturasi — har 4 soniyada sahifa
                 almashinadi (Boshqaruv → Bandlov doskasi → Smenalar → Ombor),
