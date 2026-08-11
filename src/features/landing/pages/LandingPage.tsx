@@ -636,8 +636,9 @@ export const LandingPage = () => {
       {/* Fixed navbar ostidagi joy egallagichi — kontent tagida qolmasligi uchun */}
       <div aria-hidden className="h-[58px] sm:h-[63px]" />
 
-      {/* ================= HERO ================= */}
-      <section className="relative z-10 mx-auto grid max-w-6xl 2xl:max-w-[88rem] items-center gap-10 px-4 pb-16 pt-8 sm:px-5 sm:pb-20 lg:grid-cols-2 lg:gap-12 lg:pt-14 2xl:gap-24 2xl:pt-20">
+      {/* ================= HERO — birinchi ekranni TO'LIQ egallaydi
+          (keyingi bo'lim faqat scroll'da ko'rinadi) ================= */}
+      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-58px)] max-w-6xl 2xl:max-w-[88rem] items-center gap-10 px-4 py-8 sm:min-h-[calc(100dvh-63px)] sm:px-5 lg:grid-cols-2 lg:gap-12 2xl:gap-24">
         <div>
           <p
             className={cn(
