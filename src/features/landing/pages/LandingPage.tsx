@@ -525,7 +525,7 @@ export const LandingPage = () => {
       </div>
 
       {/* ================= NAVBAR ================= */}
-      <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
+      <header className="relative z-20 mx-auto flex max-w-6xl 2xl:max-w-[88rem] items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex items-center gap-2.5">
           <div
             className={cn(
@@ -542,7 +542,7 @@ export const LandingPage = () => {
 
         <nav
           className={cn(
-            "hidden items-center gap-7 text-sm font-medium md:flex",
+            "hidden items-center gap-7 text-sm font-medium md:flex 2xl:gap-9 2xl:text-base",
             night ? "text-zinc-400" : "text-zinc-600"
           )}
         >
@@ -609,7 +609,7 @@ export const LandingPage = () => {
       </header>
 
       {/* ================= HERO ================= */}
-      <section className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 sm:px-5 sm:pb-20 lg:grid-cols-2 lg:gap-12 lg:pt-14">
+      <section className="relative z-10 mx-auto grid max-w-6xl 2xl:max-w-[88rem] items-center gap-10 px-4 pb-16 pt-8 sm:px-5 sm:pb-20 lg:grid-cols-2 lg:gap-12 lg:pt-14 2xl:gap-24 2xl:pt-20">
         <div>
           <p
             className={cn(
@@ -627,7 +627,7 @@ export const LandingPage = () => {
             Zamonaviy mehmonxonalar uchun yagona tizim
           </p>
           <h1
-            className="landing-reveal mt-5 text-3xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-6xl"
+            className="landing-reveal mt-5 text-3xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-6xl 2xl:text-7xl"
             style={{ transitionDelay: "80ms" }}
           >
             Mehmonxonangizni{" "}
@@ -664,7 +664,7 @@ export const LandingPage = () => {
             <Link
               to="/login"
               className={cn(
-                "group flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold shadow-xl transition-all hover:scale-[1.03] active:scale-95 sm:px-7",
+                "group flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold 2xl:px-9 2xl:py-4 2xl:text-base shadow-xl transition-all hover:scale-[1.03] active:scale-95 sm:px-7",
                 night
                   ? "bg-amber-400 text-zinc-900 shadow-amber-400/25 hover:bg-amber-300"
                   : "bg-orange-600 text-white shadow-orange-600/25 hover:bg-orange-500"
@@ -676,7 +676,7 @@ export const LandingPage = () => {
             <a
               href="#features"
               className={cn(
-                "rounded-full border px-6 py-3.5 text-sm font-semibold backdrop-blur transition-all active:scale-95 sm:px-7",
+                "rounded-full border px-6 py-3.5 text-sm font-semibold 2xl:px-9 2xl:py-4 2xl:text-base backdrop-blur transition-all active:scale-95 sm:px-7",
                 night
                   ? "border-white/15 bg-white/5 text-zinc-200 hover:border-white/30 hover:bg-white/10"
                   : "border-orange-900/15 bg-white/70 text-zinc-700 hover:border-orange-900/30 hover:bg-white"
@@ -703,6 +703,9 @@ export const LandingPage = () => {
 
         {/* HERO MOCKUP — suzuvchi mini boshqaruv paneli */}
         <div className="landing-reveal relative" style={{ transitionDelay: "200ms" }}>
+          {/* Katta displayda oyna transform bilan kattalashadi — ichki dizayn
+              piksel-aniq saqlanadi */}
+          <div className="2xl:origin-top 2xl:scale-[1.22]">
           <div className="animate-landing-float relative mx-auto w-full max-w-md">
             {/* HAQIQIY ilova sahifalari miniaturasi — har 4 soniyada sahifa
                 almashinadi (Boshqaruv → Bandlov doskasi → Smenalar → Ombor),
@@ -1131,6 +1134,7 @@ export const LandingPage = () => {
               <p className="mt-0.5 text-[10px] text-zinc-500">2 soniyada · avtomatik</p>
             </div>
           </div>
+          </div>
         </div>
       </section>
 
@@ -1157,7 +1161,7 @@ export const LandingPage = () => {
                   <span
                     key={i}
                     className={cn(
-                      "flex items-center gap-2 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm",
+                      "flex items-center gap-2 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm 2xl:px-5 2xl:py-2.5 2xl:text-base",
                       night
                         ? "border-white/10 bg-white/5 text-zinc-300"
                         : "border-orange-900/10 bg-white/80 text-zinc-600"
@@ -1184,7 +1188,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= IMKONIYATLAR ================= */}
-      <section id="features" className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
+      <section id="features" className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1194,7 +1198,7 @@ export const LandingPage = () => {
           >
             Imkoniyatlar
           </p>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
             Har bir bo'lim — puxta o'ylangan
           </h2>
           <p
@@ -1214,7 +1218,7 @@ export const LandingPage = () => {
               <div
                 key={f.title}
                 className={cn(
-                  "landing-reveal group rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl",
+                  "landing-reveal group rounded-2xl p-5 2xl:p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl",
                   cardCls,
                   night
                     ? "hover:border-white/20 hover:bg-white/[0.08] hover:shadow-black/40"
@@ -1233,7 +1237,7 @@ export const LandingPage = () => {
                 <h3 className="mt-4 font-bold">{f.title}</h3>
                 <p
                   className={cn(
-                    "mt-1.5 text-sm leading-relaxed",
+                    "mt-1.5 text-sm leading-relaxed 2xl:text-base",
                     night ? "text-zinc-400" : "text-zinc-600"
                   )}
                 >
@@ -1253,7 +1257,7 @@ export const LandingPage = () => {
           night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
+        <div className="mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
           <div className="landing-reveal mx-auto max-w-2xl text-center">
             <p
               className={cn(
@@ -1263,7 +1267,7 @@ export const LandingPage = () => {
             >
               Qanday ishlaydi
             </p>
-            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
               3 qadamda ishga tushadi
             </h2>
           </div>
@@ -1285,7 +1289,7 @@ export const LandingPage = () => {
                 <h3 className="mt-3 text-lg font-bold">{s.title}</h3>
                 <p
                   className={cn(
-                    "mt-1.5 text-sm leading-relaxed",
+                    "mt-1.5 text-sm leading-relaxed 2xl:text-base",
                     night ? "text-zinc-400" : "text-zinc-600"
                   )}
                 >
@@ -1306,7 +1310,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= KIM UCHUN (ROLLAR) ================= */}
-      <section className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
+      <section className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1316,7 +1320,7 @@ export const LandingPage = () => {
           >
             Kim uchun
           </p>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
             Har bir xodimga — o'z ish stoli
           </h2>
           <p
@@ -1334,7 +1338,7 @@ export const LandingPage = () => {
             <div
               key={r.title}
               className={cn(
-                "landing-reveal rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl",
+                "landing-reveal rounded-2xl p-5 2xl:p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl",
                 cardCls,
                 night ? "hover:shadow-black/40" : "hover:shadow-orange-900/10"
               )}
@@ -1369,7 +1373,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= RAQAMLAR ================= */}
-      <section id="stats" className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
+      <section id="stats" className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div
           className={cn(
             "landing-reveal grid gap-6 rounded-3xl p-7 sm:grid-cols-2 sm:gap-4 sm:p-10 lg:grid-cols-4",
@@ -1386,7 +1390,7 @@ export const LandingPage = () => {
             <div key={s.label} className="text-center">
               <p
                 className={cn(
-                  "text-3xl font-extrabold sm:text-5xl",
+                  "text-3xl font-extrabold sm:text-5xl 2xl:text-6xl",
                   night ? "text-amber-300" : "text-orange-600"
                 )}
               >
@@ -1412,7 +1416,7 @@ export const LandingPage = () => {
           night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div className="mx-auto max-w-4xl px-4 py-16 sm:px-5 sm:py-24">
+        <div className="mx-auto max-w-4xl 2xl:max-w-6xl px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
           <div className="landing-reveal mx-auto max-w-2xl text-center">
             <p
               className={cn(
@@ -1422,7 +1426,7 @@ export const LandingPage = () => {
             >
               Nima o'zgaradi
             </p>
-            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
               Qog'oz daftardan — jonli tizimga
             </h2>
           </div>
@@ -1485,7 +1489,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= VA YANA (qo'shimcha qulayliklar) ================= */}
-      <section className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
+      <section className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1495,7 +1499,7 @@ export const LandingPage = () => {
           >
             Va yana
           </p>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
             Mayda-chuydasigacha o'ylangan qulayliklar
           </h2>
         </div>
@@ -1504,7 +1508,7 @@ export const LandingPage = () => {
             <div
               key={e}
               className={cn(
-                "landing-reveal flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-medium transition-transform duration-300 hover:scale-[1.03]",
+                "landing-reveal flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-medium 2xl:px-5 2xl:py-3.5 2xl:text-base transition-transform duration-300 hover:scale-[1.03]",
                 cardCls
               )}
               style={{ transitionDelay: `${(i % 4) * 50}ms` }}
@@ -1523,7 +1527,7 @@ export const LandingPage = () => {
           night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-5 sm:py-24 lg:grid-cols-[1fr_1.4fr] lg:gap-14">
+        <div className="mx-auto grid max-w-6xl 2xl:max-w-[88rem] gap-10 px-4 py-16 sm:px-5 sm:py-24 2xl:py-32 lg:grid-cols-[1fr_1.4fr] lg:gap-14">
           <div className="landing-reveal">
             <p
               className={cn(
@@ -1533,12 +1537,12 @@ export const LandingPage = () => {
             >
               Doimiy rivojlanish
             </p>
-            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
               Tizim har hafta yangilanib boradi
             </h2>
             <p
               className={cn(
-                "mt-4 text-sm leading-relaxed sm:text-base",
+                "mt-4 text-sm leading-relaxed 2xl:text-base sm:text-base",
                 night ? "text-zinc-400" : "text-zinc-600"
               )}
             >
@@ -1595,7 +1599,7 @@ export const LandingPage = () => {
                   <h3 className="font-bold">{t.title}</h3>
                   <p
                     className={cn(
-                      "mt-1 text-sm leading-relaxed",
+                      "mt-1 text-sm leading-relaxed 2xl:text-base",
                       night ? "text-zinc-400" : "text-zinc-600"
                     )}
                   >
@@ -1609,7 +1613,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= FAQ ================= */}
-      <section id="faq" className="relative z-10 mx-auto max-w-5xl px-4 py-16 sm:px-5 sm:py-24">
+      <section id="faq" className="relative z-10 mx-auto max-w-5xl 2xl:max-w-7xl px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1619,7 +1623,7 @@ export const LandingPage = () => {
           >
             Savol-javob
           </p>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
             Ko'p so'raladigan savollar
           </h2>
         </div>
@@ -1637,7 +1641,7 @@ export const LandingPage = () => {
                   onClick={() => setFaqOpen(open ? null : i)}
                   className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
                 >
-                  <span className="text-sm font-bold sm:text-base">{f.q}</span>
+                  <span className="text-sm font-bold sm:text-base 2xl:text-lg">{f.q}</span>
                   <ChevronDown
                     className={cn(
                       "h-4 w-4 flex-shrink-0 transition-transform duration-300",
@@ -1653,7 +1657,7 @@ export const LandingPage = () => {
                   <div className="overflow-hidden">
                     <p
                       className={cn(
-                        "px-5 pb-4 text-sm leading-relaxed",
+                        "px-5 pb-4 text-sm leading-relaxed 2xl:text-base",
                         night ? "text-zinc-400" : "text-zinc-600"
                       )}
                     >
@@ -1668,7 +1672,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= CTA — keng yakuniy panel ================= */}
-      <section className="relative z-10 mx-auto max-w-6xl px-4 pb-16 sm:px-5 sm:pb-24">
+      <section className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 pb-16 sm:px-5 sm:pb-24">
         <div
           className={cn(
             "landing-reveal grid items-center gap-8 rounded-3xl p-8 sm:p-12 lg:grid-cols-[1.4fr_1fr]",
@@ -1677,7 +1681,7 @@ export const LandingPage = () => {
           )}
         >
           <div>
-            <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl">
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
               Mehmonxonangizni{" "}
               <span className={night ? "text-amber-300" : "text-orange-600"}>
                 bugundan
@@ -1739,7 +1743,7 @@ export const LandingPage = () => {
           night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-5 sm:py-12 lg:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl 2xl:max-w-[88rem] gap-8 px-4 py-10 sm:grid-cols-2 sm:px-5 sm:py-12 lg:grid-cols-4">
           <div>
             <span className="flex items-center gap-2.5">
               <span
@@ -1756,7 +1760,7 @@ export const LandingPage = () => {
             </span>
             <p
               className={cn(
-                "mt-3 max-w-xs text-sm leading-relaxed",
+                "mt-3 max-w-xs text-sm leading-relaxed 2xl:text-base",
                 night ? "text-zinc-400" : "text-zinc-600"
               )}
             >
@@ -1861,7 +1865,7 @@ export const LandingPage = () => {
         >
           <div
             className={cn(
-              "mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs sm:px-5 sm:text-sm",
+              "mx-auto flex max-w-6xl 2xl:max-w-[88rem] flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs sm:px-5 sm:text-sm",
               "text-zinc-500"
             )}
           >
