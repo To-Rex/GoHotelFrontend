@@ -409,6 +409,14 @@ export const LandingPage = () => {
   // FAQ akkordeoni — bittasi ochiq turadi
   const [faqOpen, setFaqOpen] = useState<number | null>(0)
 
+  // Hero maketida sahifalar har 4 soniyada almashinib turadi
+  const [slide, setSlide] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setSlide((s) => (s + 1) % 4), 4000)
+    return () => clearInterval(id)
+  }, [])
+  const SLIDE_TITLES = ["Boshqaruv paneli", "Bandlov doskasi", "Smenalar", "Ombor"]
+
   useEffect(() => {
     document.title = "GoHotel — Mehmonxona boshqaruv tizimi"
     return () => {
@@ -696,24 +704,35 @@ export const LandingPage = () => {
         {/* HERO MOCKUP — suzuvchi mini boshqaruv paneli */}
         <div className="landing-reveal relative" style={{ transitionDelay: "200ms" }}>
           <div className="animate-landing-float relative mx-auto w-full max-w-md">
-            {/* HAQIQIY boshqaruv paneli miniaturasi — ilovadagi asl dizayn
-                (oq kartalar, raqamlar reykasi, aksent-chiziqli KPI, grafik,
-                xonalar holati) xuddi skrinshotdek, o'z ranglarida */}
+            {/* HAQIQIY ilova sahifalari miniaturasi — har 4 soniyada sahifa
+                almashinadi (Boshqaruv → Bandlov doskasi → Smenalar → Ombor),
+                asl oq mavzu va o'z ranglarida, xuddi skrinshotdek */}
             <div
               className={cn(
-                "rounded-2xl border border-zinc-200 bg-white p-4 text-zinc-900 shadow-2xl",
+                "overflow-hidden rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-2xl",
                 night ? "shadow-black/60" : "shadow-orange-900/20"
               )}
             >
-              <div className="mb-3 flex items-center gap-1.5">
+              {/* Oyna sarlavhasi — joriy sahifa nomi bilan */}
+              <div className="flex items-center gap-1.5 border-b border-zinc-100 px-4 py-2.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
                 <span className="ml-3 truncate text-[10px] text-zinc-400">
-                  GoHotel · Boshqaruv paneli
+                  GoHotel · {SLIDE_TITLES[slide]}
                 </span>
               </div>
 
+              <div className="relative h-[398px] sm:h-[418px]">
+                {/* ---------- SLAYD 1: Boshqaruv paneli ---------- */}
+                <div
+                  className={cn(
+                    "absolute inset-0 p-4 transition-all duration-700",
+                    slide === 0
+                      ? "translate-x-0 opacity-100"
+                      : "pointer-events-none -translate-x-5 opacity-0"
+                  )}
+                >
               {/* Tipografik sarlavha + jonli soat */}
               <div className="flex items-end justify-between gap-2">
                 <div>
@@ -844,6 +863,231 @@ export const LandingPage = () => {
                   Smena faol · kassa nazoratda
                 </span>
                 <TrendingUp className="h-3 w-3 flex-shrink-0 text-emerald-500" />
+              </div>
+                </div>
+
+                {/* ---------- SLAYD 2: Bandlov doskasi ---------- */}
+                <div
+                  className={cn(
+                    "absolute inset-0 p-4 transition-all duration-700",
+                    slide === 1
+                      ? "translate-x-0 opacity-100"
+                      : "pointer-events-none translate-x-5 opacity-0"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-extrabold tracking-tight">
+                      Bandlov doskasi
+                    </p>
+                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[7.5px] font-semibold text-zinc-600">
+                      Bugun · 11-avgust
+                    </span>
+                  </div>
+                  {/* Soat shkalasi */}
+                  <div className="mt-2.5 flex justify-between px-9 text-[6.5px] text-zinc-400">
+                    {["08:00", "10:00", "12:00", "14:00", "16:00", "18:00"].map((t) => (
+                      <span key={t}>{t}</span>
+                    ))}
+                  </div>
+                  {/* Xona qatorlari + bron bloklari */}
+                  <div className="mt-1 space-y-1.5">
+                    {[
+                      { room: "101", bars: [{ l: "4%", w: "30%", c: "bg-emerald-500", t: "Aliyev" }] },
+                      { room: "102", bars: [{ l: "20%", w: "42%", c: "bg-blue-500", t: "Karimova" }] },
+                      { room: "103", bars: [{ l: "8%", w: "22%", c: "bg-emerald-500", t: "Umarov" }, { l: "56%", w: "30%", c: "bg-amber-500", t: "Band" }] },
+                      { room: "104", bars: [] },
+                      { room: "105", bars: [{ l: "34%", w: "52%", c: "bg-blue-500", t: "Rahimov" }] },
+                      { room: "106", bars: [{ l: "12%", w: "70%", c: "bg-red-500", t: "Sobirova" }] },
+                    ].map((r) => (
+                      <div key={r.room} className="flex items-center gap-1.5">
+                        <span className="flex h-6 w-8 flex-shrink-0 items-center justify-center rounded-md bg-zinc-100 text-[8px] font-bold text-zinc-700">
+                          {r.room}
+                        </span>
+                        <div className="relative h-6 flex-1 rounded-md border border-zinc-100 bg-zinc-50">
+                          {r.bars.map((b, i) => (
+                            <span
+                              key={i}
+                              className={cn(
+                                "absolute top-1/2 flex h-4 -translate-y-1/2 items-center overflow-hidden rounded px-1 text-[6.5px] font-semibold text-white",
+                                b.c
+                              )}
+                              style={{ left: b.l, width: b.w }}
+                            >
+                              {b.t}
+                            </span>
+                          ))}
+                          {r.bars.length === 0 && (
+                            <span className="absolute inset-0 flex items-center justify-center text-[6.5px] text-zinc-300">
+                              bo'sh
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Legenda */}
+                  <div className="mt-2.5 flex flex-wrap gap-x-2.5 gap-y-1">
+                    {[
+                      ["bg-emerald-500", "Kirilgan"],
+                      ["bg-blue-500", "Tasdiqlangan"],
+                      ["bg-amber-500", "Kutilmoqda"],
+                      ["bg-red-500", "Soatlik"],
+                    ].map(([dot, label]) => (
+                      <span
+                        key={label}
+                        className="flex items-center gap-1 text-[6.5px] text-zinc-500"
+                      >
+                        <span className={cn("h-1.5 w-1.5 rounded-full", dot)} />
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[7.5px] font-semibold text-emerald-700">
+                    Xona bosilganda 1 soatlik bron darhol boshlanadi
+                  </div>
+                </div>
+
+                {/* ---------- SLAYD 3: Smenalar ---------- */}
+                <div
+                  className={cn(
+                    "absolute inset-0 p-4 transition-all duration-700",
+                    slide === 2
+                      ? "translate-x-0 opacity-100"
+                      : "pointer-events-none translate-x-5 opacity-0"
+                  )}
+                >
+                  <p className="text-sm font-extrabold tracking-tight">Smenalar tarixi</p>
+                  <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                    {[
+                      { label: "Yopilgan", value: "6 ta", c: "text-emerald-600 bg-emerald-50" },
+                      { label: "Farqli", value: "1 ta", c: "text-red-600 bg-red-50" },
+                      { label: "Jami sanalgan", value: "12.4M", c: "text-zinc-700 bg-zinc-100" },
+                    ].map((s) => (
+                      <div key={s.label} className={cn("rounded-lg p-1.5 text-center", s.c)}>
+                        <p className="text-[9px] font-bold tabular-nums">{s.value}</p>
+                        <p className="text-[6.5px] opacity-70">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2.5 space-y-1.5">
+                    {[
+                      { n: "Dilnoza A.", t: "08:00–16:00", sum: "4 850 000", diff: "0", ok: true },
+                      { n: "Jasur T.", t: "16:00–00:00", sum: "3 920 000", diff: "0", ok: true },
+                      { n: "Aziz R.", t: "00:00–08:00", sum: "1 210 000", diff: "−50 000", ok: false },
+                      { n: "Malika S.", t: "08:00–16:00", sum: "2 460 000", diff: "0", ok: true },
+                    ].map((r) => (
+                      <div
+                        key={r.n}
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg border px-2 py-1.5",
+                          r.ok ? "border-zinc-100" : "border-red-200 bg-red-50/60"
+                        )}
+                      >
+                        <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[6.5px] font-bold text-zinc-600">
+                          {r.n.split(" ").map((w) => w[0]).join("")}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[8px] font-bold">{r.n}</p>
+                          <p className="text-[6.5px] text-zinc-400">{r.t}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[8px] font-bold tabular-nums">{r.sum}</p>
+                          <p
+                            className={cn(
+                              "text-[6.5px] font-semibold tabular-nums",
+                              r.ok ? "text-emerald-600" : "text-red-600"
+                            )}
+                          >
+                            farq: {r.diff}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between rounded-xl border border-zinc-200 px-2.5 py-1.5">
+                    <span className="text-[7.5px] font-semibold text-zinc-600">
+                      "Ko'r sanash" — farq avtomatik aniqlanadi
+                    </span>
+                    <ShieldCheck className="h-3 w-3 text-emerald-500" />
+                  </div>
+                </div>
+
+                {/* ---------- SLAYD 4: Ombor ---------- */}
+                <div
+                  className={cn(
+                    "absolute inset-0 p-4 transition-all duration-700",
+                    slide === 3
+                      ? "translate-x-0 opacity-100"
+                      : "pointer-events-none translate-x-5 opacity-0"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-extrabold tracking-tight">Ombor</p>
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[7.5px] font-semibold text-amber-600">
+                      2 ta kam qoldiq
+                    </span>
+                  </div>
+                  <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                    {[
+                      { label: "Mahsulotlar", value: "24" },
+                      { label: "Ombor qiymati", value: "8.6M" },
+                      { label: "Bugungi kirim", value: "3 ta" },
+                    ].map((s) => (
+                      <div key={s.label} className="rounded-lg bg-zinc-100 p-1.5 text-center">
+                        <p className="text-[9px] font-bold tabular-nums text-zinc-700">
+                          {s.value}
+                        </p>
+                        <p className="text-[6.5px] text-zinc-500">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2.5 space-y-1.5">
+                    {[
+                      { n: "Coca-Cola 0.5", q: 42, w: "84%", c: "bg-emerald-500" },
+                      { n: "Suv 1L", q: 35, w: "70%", c: "bg-emerald-500" },
+                      { n: "Shokolad", q: 8, w: "16%", c: "bg-amber-500" },
+                      { n: "Chips", q: 4, w: "8%", c: "bg-red-500" },
+                      { n: "Sok 0.3", q: 26, w: "52%", c: "bg-emerald-500" },
+                    ].map((p) => (
+                      <div key={p.n} className="rounded-lg border border-zinc-100 px-2 py-1.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[8px] font-bold">{p.n}</p>
+                          <p className="text-[7.5px] font-semibold tabular-nums text-zinc-500">
+                            {p.q} dona
+                          </p>
+                        </div>
+                        <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-zinc-100">
+                          <div
+                            className={cn("h-full rounded-full", p.c)}
+                            style={{ width: p.w }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between rounded-xl border border-zinc-200 px-2.5 py-1.5">
+                    <span className="text-[7.5px] font-semibold text-zinc-600">
+                      FIFO partiyalar · tannarx nazorati
+                    </span>
+                    <Package className="h-3 w-3 text-amber-500" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sahifa indikatorlari */}
+              <div className="flex items-center justify-center gap-1.5 border-t border-zinc-100 py-2">
+                {SLIDE_TITLES.map((t, i) => (
+                  <button
+                    key={t}
+                    type="button"
+                    title={t}
+                    onClick={() => setSlide(i)}
+                    className={cn(
+                      "h-1.5 rounded-full transition-all duration-300",
+                      i === slide ? "w-5 bg-zinc-700" : "w-1.5 bg-zinc-300 hover:bg-zinc-400"
+                    )}
+                  />
+                ))}
               </div>
             </div>
 
