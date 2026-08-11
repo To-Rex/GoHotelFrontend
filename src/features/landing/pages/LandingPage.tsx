@@ -541,16 +541,16 @@ export const LandingPage = () => {
         </div>
       </div>
 
-      {/* ================= NAVBAR — fixed: scroll'da ham DOIM tepada turadi ================= */}
-      <header
-        className={cn(
-          "fixed inset-x-0 top-0 z-40 border-b backdrop-blur-md transition-colors duration-700",
-          night
-            ? "border-white/5 bg-zinc-950/80"
-            : "border-orange-900/10 bg-[#fdf6e3]/80"
-        )}
-      >
-        <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-3.5">
+      {/* ================= NAVBAR — suzuvchi zamonaviy pill (fixed, doim tepada) ================= */}
+      <header className="fixed inset-x-0 top-0 z-40 px-3 sm:px-5">
+        <div
+          className={cn(
+            "mx-auto mt-3 flex max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] items-center justify-between gap-3 rounded-full border px-3 py-2 shadow-lg backdrop-blur-xl transition-colors duration-700 sm:mt-4 sm:px-4",
+            night
+              ? "border-white/10 bg-zinc-900/70 shadow-black/25"
+              : "border-orange-900/10 bg-white/70 shadow-orange-900/10"
+          )}
+        >
         <div className="flex items-center gap-2.5">
           <div
             className={cn(
@@ -567,34 +567,29 @@ export const LandingPage = () => {
 
         <nav
           className={cn(
-            "hidden items-center gap-7 text-sm font-medium md:flex 2xl:gap-9 2xl:text-base",
+            "hidden items-center gap-1 text-sm font-medium md:flex 2xl:text-base",
             night ? "text-zinc-400" : "text-zinc-600"
           )}
         >
-          <a
-            href="#features"
-            className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
-          >
-            Imkoniyatlar
-          </a>
-          <a
-            href="#how"
-            className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
-          >
-            Qanday ishlaydi
-          </a>
-          <a
-            href="#stats"
-            className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
-          >
-            Raqamlar
-          </a>
-          <a
-            href="#faq"
-            className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
-          >
-            Savollar
-          </a>
+          {[
+            ["#features", "Imkoniyatlar"],
+            ["#how", "Qanday ishlaydi"],
+            ["#stats", "Raqamlar"],
+            ["#faq", "Savollar"],
+          ].map(([href, label]) => (
+            <a
+              key={href}
+              href={href}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 transition-colors 2xl:px-4",
+                night
+                  ? "hover:bg-white/10 hover:text-white"
+                  : "hover:bg-zinc-900/5 hover:text-zinc-900"
+              )}
+            >
+              {label}
+            </a>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2.5">
@@ -634,11 +629,11 @@ export const LandingPage = () => {
         </div>
       </header>
       {/* Fixed navbar ostidagi joy egallagichi — kontent tagida qolmasligi uchun */}
-      <div aria-hidden className="h-[58px] sm:h-[63px]" />
+      <div aria-hidden className="h-[70px] sm:h-[78px]" />
 
       {/* ================= HERO — birinchi ekranni TO'LIQ egallaydi
           (keyingi bo'lim faqat scroll'da ko'rinadi) ================= */}
-      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-58px)] max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] items-center gap-10 px-4 py-8 sm:min-h-[calc(100dvh-63px)] sm:px-5 lg:grid-cols-[1fr_1.15fr] lg:gap-12 xl:gap-16 2xl:gap-20">
+      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-70px)] max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] items-center gap-10 px-4 py-8 sm:min-h-[calc(100dvh-78px)] sm:px-5 lg:grid-cols-[1fr_1.15fr] lg:gap-12 xl:gap-16 2xl:gap-20">
         <div>
           <p
             className={cn(
