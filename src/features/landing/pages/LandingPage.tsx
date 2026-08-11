@@ -29,6 +29,7 @@ import {
   Check,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useSeo } from "@/lib/seo"
 
 /**
  * GoHotel landing sahifasi — /landing va /leanding.
@@ -412,7 +413,24 @@ const STARS = [
   { top: "83%", left: "34%", s: 2, d: "-1.8s" },
 ]
 
+// Qidiruv botlari uchun FAQ strukturaviy ma'lumoti (Google/Yandex rich results)
+const FAQ_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+})
+
 export const LandingPage = () => {
+  useSeo({
+    title: "GoHotel — Mehmonxona boshqaruv tizimi (PMS) | Bron, kassa-smena, hisobotlar",
+    description:
+      "GoHotel — mehmonxona, hostel va soatlik ijara uchun zamonaviy boshqaruv tizimi: jonli bandlov doskasi, kassa-smena nazorati, ombor va do'kon hisobi, xodimlar ruxsatlari, hisobotlar. Brauzerda ishlaydi, telefonga ilova sifatida o'rnatiladi.",
+    canonicalPath: "/",
+  })
   useReveal()
 
   // Sahna soatga qarab tanlanadi (19:00–06:00 — tun), tugma bilan almashtiriladi
@@ -463,6 +481,8 @@ export const LandingPage = () => {
         night ? "bg-zinc-950 text-zinc-100" : "bg-[#fdf6e3] text-zinc-900"
       )}
     >
+      {/* FAQ rich-result strukturaviy ma'lumoti — botlar body ichidan ham o'qiydi */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: FAQ_LD }} />
       {/* ================= TABIAT SAHNASI (fon) ================= */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         {/* --- TUN: yulduzlar, uchar yulduz, to'lin oy --- */}

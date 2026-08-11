@@ -21,10 +21,12 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         manifest: {
-          name: 'GoHotel — Mehmonxona boshqaruvi',
+          name: 'GoHotel — Mehmonxona boshqaruv tizimi',
           short_name: 'GoHotel',
-          description: 'Mehmonxonani boshqarish tizimi',
+          description:
+            "Mehmonxona, hostel va soatlik ijara uchun boshqaruv tizimi: jonli bandlov doskasi, kassa-smena nazorati, ombor va do'kon hisobi, hisobotlar.",
           lang: 'uz',
+          categories: ['business', 'productivity'],
           start_url: '/',
           scope: '/',
           display: 'standalone',

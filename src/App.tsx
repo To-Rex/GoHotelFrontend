@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { MainLayout } from "./components/layout/MainLayout";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
@@ -24,11 +24,21 @@ import { LandingPage } from "./features/landing/pages/LandingPage";
 import { WarehousePage } from "./features/shop/pages/WarehousePage";
 import { useAuthStore } from "./store/auth";
 
-// Auth Guard Component
-const RequireAuth = ({ children }: { children: React.ReactNode }) => {
+// Ildiz darvozasi: tizimga kirganlar avvalgidek boshqaruv panelini ko'radi,
+// anonim mehmon esa aynan "/" manzilda landing sahifasini ko'radi (SEO:
+// asosiy URL to'liq kontentli bo'lishi shart). Boshqa himoyalangan yo'llar
+// avvalgidek login sahifasiga yo'naltiriladi.
+const RootGate = () => {
   const { isAuthenticated } = useAuthStore();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <>{children}</>;
+  const location = useLocation();
+  if (!isAuthenticated) {
+    return location.pathname === "/" ? (
+      <LandingPage />
+    ) : (
+      <Navigate to="/login" replace />
+    );
+  }
+  return <MainLayout />;
 };
 
 function App() {
@@ -41,14 +51,7 @@ function App() {
         <Route path="/leanding" element={<LandingPage />} />
         
         {/* Protected Routes */}
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <MainLayout />
-            </RequireAuth>
-          }
-        >
+        <Route path="/" element={<RootGate />}>
           <Route index element={<DashboardPage />} />
           <Route path="booking" element={<BookingPage />} />
           <Route path="reservations" element={<ReservationsPage />} />

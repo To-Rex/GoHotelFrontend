@@ -6,10 +6,115 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#2563eb" />
-    <title>GoHotel</title>
+
+    <!-- ===== SEO: statik qatlam (JS'siz ham botlarga to'liq ko'rinadi) ===== -->
+    <title>GoHotel — Mehmonxona boshqaruv tizimi (PMS) | O'zbekiston</title>
+    <meta
+      name="description"
+      content="GoHotel — mehmonxona, hostel va soatlik ijara uchun zamonaviy boshqaruv tizimi: jonli bandlov doskasi, kassa-smena nazorati, ombor va do'kon hisobi, xodimlar ruxsatlari, jonli hisobotlar. Brauzerda ishlaydi, telefon va kompyuterga ilova sifatida o'rnatiladi."
+    />
+    <meta
+      name="keywords"
+      content="mehmonxona boshqaruv tizimi, mehmonxona dasturi, mehmonxona crm, mehmonxona pms, hostel dasturi, bron qilish tizimi, kassa smena nazorati, mehmonxona avtomatlashtirish, GoHotel, gohotels, hotel PMS, hotel management system Uzbekistan, property management system, мехмонхона бошқарув тизими, мехмонхона дастури, система управления гостиницей, программа для гостиницы, PMS для отеля, Узбекистан"
+    />
+    <link rel="canonical" href="https://gohotels.uz/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+
+    <!-- Open Graph (Google, Yandex, Telegram, ijtimoiy tarmoqlar) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GoHotel" />
+    <meta property="og:locale" content="uz_UZ" />
+    <meta property="og:locale:alternate" content="ru_RU" />
+    <meta property="og:title" content="GoHotel — Mehmonxona boshqaruv tizimi (PMS)" />
+    <meta
+      property="og:description"
+      content="Bron, kassa-smena, ombor, do'kon va jonli hisobotlar — butun mehmonxona bitta oynada. Telefonda ham, kompyuterda ham."
+    />
+    <meta property="og:url" content="https://gohotels.uz/" />
+    <meta property="og:image" content="https://gohotels.uz/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GoHotel — mehmonxona boshqaruv tizimi" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="GoHotel — Mehmonxona boshqaruv tizimi (PMS)" />
+    <meta
+      name="twitter:description"
+      content="Bron, kassa-smena, ombor va jonli hisobotlar — butun mehmonxona bitta oynada."
+    />
+    <meta name="twitter:image" content="https://gohotels.uz/og-image.png" />
+
+    <!-- Strukturaviy ma'lumot: tashkilot, sayt va dastur (Google/Yandex) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://gohotels.uz/#org",
+            "name": "GoHotel",
+            "url": "https://gohotels.uz/",
+            "logo": "https://gohotels.uz/pwa-512x512.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://gohotels.uz/#website",
+            "url": "https://gohotels.uz/",
+            "name": "GoHotel — Mehmonxona boshqaruv tizimi",
+            "inLanguage": "uz",
+            "publisher": { "@id": "https://gohotels.uz/#org" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "GoHotel",
+            "url": "https://gohotels.uz/",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web, Android, iOS, Windows, macOS",
+            "inLanguage": "uz",
+            "description": "Mehmonxona, hostel va soatlik ijara uchun boshqaruv tizimi (PMS): jonli bandlov doskasi, kassa-smena nazorati, ombor va do'kon hisobi, xodimlar ruxsatlari, hisobotlar."
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Statik zaxira: JS yuklangunicha (va JS'siz botlarga) ko'rinadi,
+           React ishga tushishi bilan to'liq interfeys bilan almashadi -->
+      <div
+        style="
+          font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+          min-height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 24px;
+          text-align: center;
+          color: #3f3f46;
+        "
+      >
+        <p style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em">
+          Go<span style="color: #2563eb">Hotel</span>
+        </p>
+        <h1 style="margin: 0; max-width: 34rem; font-size: 15px; font-weight: 600; line-height: 1.5">
+          Mehmonxona boshqaruv tizimi — bron, kassa-smena, ombor va jonli
+          hisobotlar bitta oynada
+        </h1>
+        <p style="margin: 0; font-size: 13px; color: #a1a1aa">Yuklanmoqda…</p>
+      </div>
+    </div>
+    <noscript>
+      <div style="font-family: system-ui, sans-serif; max-width: 40rem; margin: 0 auto; padding: 24px">
+        <p>
+          <strong>GoHotel</strong> — mehmonxona, hostel va soatlik ijara uchun
+          boshqaruv tizimi: jonli bandlov doskasi, kassa-smena nazorati, ombor va
+          do'kon hisobi, xodimlar ruxsatlari va hisobotlar. Tizim ishlashi uchun
+          brauzerda JavaScript yoqilgan bo'lishi kerak.
+        </p>
+        <p><a href="/login">Tizimga kirish</a></p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

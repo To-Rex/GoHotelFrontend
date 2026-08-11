@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth";
 import { api } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
+import { useSeo } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -105,6 +106,12 @@ function Cloud({
 }
 
 export const LoginPage = () => {
+  useSeo({
+    title: "Kirish — GoHotel | Mehmonxona boshqaruv tizimi",
+    description:
+      "GoHotel tizimiga kirish: mehmonxonangiz bandlovlari, kassa-smena, ombor va hisobotlarini bitta oynada boshqaring.",
+    canonicalPath: "/login",
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);

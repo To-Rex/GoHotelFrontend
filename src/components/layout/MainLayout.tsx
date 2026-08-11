@@ -7,6 +7,7 @@ import { usePermissions } from "@/lib/permissions";
 import { useShiftState, shiftRestriction, isCashStaff } from "@/features/shifts/api/shifts";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useSeo } from "@/lib/seo";
 
 // Ekranni to'liq egallashi kerak bo'lgan sahifalar: bu yerda max-w-7xl cheklovi va
 // p-6 padding qo'llanmaydi, sahifaning o'zi butun bo'sh joyni boshqaradi.
@@ -21,6 +22,8 @@ const SHIFT_ALLOWED_ROUTES = ["/my-reports", "/expenses"];
 export const MainLayout = () => {
   const { isAuthenticated, setUser, user } = useAuthStore();
   const { pathname } = useLocation();
+  // Ichki boshqaruv sahifalari qidiruvga chiqmasligi kerak (noindex)
+  useSeo({ title: "Boshqaruv paneli — GoHotel", noindex: true });
   const { canRoute, firstAllowedRoute } = usePermissions();
 
   // Smena holati — faqat kassa bilan ishlaydigan xodimlar uchun so'raladi.

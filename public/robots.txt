@@ -1,0 +1,27 @@
+# GoHotel — gohotels.uz
+# Ochiq sahifalar indekslanadi, ichki boshqaruv sahifalari skanerlanmaydi
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /booking
+Disallow: /reservations
+Disallow: /rooms
+Disallow: /floors
+Disallow: /guests
+Disallow: /finance
+Disallow: /expenses
+Disallow: /shop
+Disallow: /my-reports
+Disallow: /shifts
+Disallow: /profile
+Disallow: /warehouse
+Disallow: /room-types
+Disallow: /amenities
+Disallow: /services
+Disallow: /housekeeping
+Disallow: /employees
+Disallow: /permissions
+Disallow: /settings
+
+Sitemap: https://gohotels.uz/sitemap.xml
