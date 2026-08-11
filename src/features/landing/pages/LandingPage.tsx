@@ -327,6 +327,50 @@ const FAQ = [
   },
 ]
 
+// "Va yana" — tizimdagi mayda-yirik qulayliklar to'plami
+const EXTRAS = [
+  "Xona turlari va qavatlar",
+  "Qulayliklar katalogi",
+  "Qo'shimcha xizmatlar",
+  "Yagona mehmonlar bazasi",
+  "Dublikat mehmonni avto-aniqlash",
+  "Chegirmalar — foiz va summa",
+  "Qisman (bo'lib) to'lash",
+  "Xona almashtirish auditi",
+  "Soatlik bronlar orasida tanaffus",
+  "Muddati tugaganda avto check-out",
+  "Vazifalarni avto-yakunlash",
+  "Push bildirishnomalar",
+  "Navbarda ish vaqti hisoblagichi",
+  "Bir bosishda ma'lumot yangilash",
+  "To'liq o'zbek tilida",
+  "Ilova ichida tun/kun mavzusi",
+]
+
+// Doimiy rivojlanish xronologiyasi (so'nggi yirik yangiliklar)
+const TIMELINE = [
+  {
+    title: "Smena va kassa tizimi",
+    text: "\"Ko'r sanash\", parol bilan topshirish, kamomad nazorati va smenalar tarixi.",
+  },
+  {
+    title: "Ombor moduli",
+    text: "FIFO partiyalar, kirim, spisaniye, inventarizatsiya va harakatlar jurnali.",
+  },
+  {
+    title: "Tezkor hujjat skaneri",
+    text: "Nazorat raqamlari tekshiruvi bilan — endi yanada aniq va bir necha barobar tez.",
+  },
+  {
+    title: "Xonani almashtirish",
+    text: "Bo'sh xonalar ro'yxati, narx farqini avto-hisoblash va o'chirilmas audit.",
+  },
+  {
+    title: "Profil va landing sahifalari",
+    text: "Har xodim o'z ruxsatlarini ko'radi; tizim bilan tanishuv sahifasi ikki sahnada.",
+  },
+]
+
 // Tungi osmon yulduzlari (foizli koordinatalar — har ekranga moslashadi)
 const STARS = [
   { top: "5%", left: "8%", s: 3, d: "0s" },
@@ -1140,8 +1184,132 @@ export const LandingPage = () => {
         </div>
       </section>
 
+      {/* ================= VA YANA (qo'shimcha qulayliklar) ================= */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
+        <div className="landing-reveal mx-auto max-w-2xl text-center">
+          <p
+            className={cn(
+              "text-xs font-bold uppercase tracking-[0.25em]",
+              night ? "text-amber-300" : "text-orange-600"
+            )}
+          >
+            Va yana
+          </p>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+            Mayda-chuydasigacha o'ylangan qulayliklar
+          </h2>
+        </div>
+        <div className="mt-10 grid gap-2.5 sm:mt-12 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+          {EXTRAS.map((e, i) => (
+            <div
+              key={e}
+              className={cn(
+                "landing-reveal flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-medium transition-transform duration-300 hover:scale-[1.03]",
+                cardCls
+              )}
+              style={{ transitionDelay: `${(i % 4) * 50}ms` }}
+            >
+              <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+              {e}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ================= DOIMIY RIVOJLANISH ================= */}
+      <section
+        className={cn(
+          "relative z-10 border-t transition-colors duration-700",
+          night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
+        )}
+      >
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-5 sm:py-24 lg:grid-cols-[1fr_1.4fr] lg:gap-14">
+          <div className="landing-reveal">
+            <p
+              className={cn(
+                "text-xs font-bold uppercase tracking-[0.25em]",
+                night ? "text-amber-300" : "text-orange-600"
+              )}
+            >
+              Doimiy rivojlanish
+            </p>
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+              Tizim har hafta yangilanib boradi
+            </h2>
+            <p
+              className={cn(
+                "mt-4 text-sm leading-relaxed sm:text-base",
+                night ? "text-zinc-400" : "text-zinc-600"
+              )}
+            >
+              GoHotel — tirik mahsulot: takliflaringiz tez orada tizimda paydo
+              bo'ladi. Yangilanishlar avtomatik yetib boradi — hech narsani
+              qo'lda o'rnatish shart emas. Mana so'nggi qo'shilganlaridan
+              ba'zilari:
+            </p>
+            <div
+              className={cn(
+                "mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold",
+                night
+                  ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                  : "border-emerald-600/20 bg-emerald-500/10 text-emerald-700"
+              )}
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              Yangilanishlar avtomatik — PWA o'zi yangilanadi
+            </div>
+          </div>
+          {/* Vertikal xronologiya */}
+          <div className="relative">
+            <span
+              className={cn(
+                "absolute bottom-2 left-[9px] top-2 w-px",
+                night ? "bg-white/10" : "bg-orange-900/15"
+              )}
+            />
+            <div className="space-y-6">
+              {TIMELINE.map((t, i) => (
+                <div
+                  key={t.title}
+                  className="landing-reveal relative pl-9"
+                  style={{ transitionDelay: `${i * 90}ms` }}
+                >
+                  <span
+                    className={cn(
+                      "absolute left-0 top-1 flex h-[19px] w-[19px] items-center justify-center rounded-full border-2",
+                      night
+                        ? "border-amber-300 bg-zinc-950"
+                        : "border-orange-500 bg-[#fdf6e3]"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "h-2 w-2 rounded-full",
+                        night ? "bg-amber-300" : "bg-orange-500"
+                      )}
+                    />
+                  </span>
+                  <h3 className="font-bold">{t.title}</h3>
+                  <p
+                    className={cn(
+                      "mt-1 text-sm leading-relaxed",
+                      night ? "text-zinc-400" : "text-zinc-600"
+                    )}
+                  >
+                    {t.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ================= FAQ ================= */}
-      <section id="faq" className="relative z-10 mx-auto max-w-3xl px-4 py-16 sm:px-5 sm:py-24">
+      <section id="faq" className="relative z-10 mx-auto max-w-5xl px-4 py-16 sm:px-5 sm:py-24">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1155,7 +1323,7 @@ export const LandingPage = () => {
             Ko'p so'raladigan savollar
           </h2>
         </div>
-        <div className="mt-10 space-y-3 sm:mt-12">
+        <div className="mt-10 gap-3 space-y-3 sm:mt-12 lg:columns-2 lg:space-y-0 [&>div]:lg:mb-3 [&>div]:lg:break-inside-avoid">
           {FAQ.map((f, i) => {
             const open = faqOpen === i
             return (
@@ -1199,65 +1367,210 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* ================= CTA ================= */}
-      <section className="relative z-10 mx-auto max-w-3xl px-4 pb-16 text-center sm:px-5 sm:pb-24">
-        <div className="landing-reveal">
-          <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl">
-            Mehmonxonangizni{" "}
-            <span className={night ? "text-amber-300" : "text-orange-600"}>bugundan</span>{" "}
-            zamonaviy boshqaring
-          </h2>
-          <p
-            className={cn(
-              "mx-auto mt-4 max-w-xl text-sm sm:text-base",
-              night ? "text-zinc-400" : "text-zinc-600"
-            )}
-          >
-            Qog'oz daftarlar va tarqoq jadvallar o'rniga — bitta tezkor tizim.
-            Kirish bir daqiqa ham olmaydi.
-          </p>
-          <Link
-            to="/login"
-            className={cn(
-              "group mx-auto mt-8 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-bold shadow-xl transition-all hover:scale-[1.03] active:scale-95 sm:px-9",
-              night
-                ? "bg-amber-400 text-zinc-900 shadow-amber-400/25 hover:bg-amber-300"
-                : "bg-orange-600 text-white shadow-orange-600/25 hover:bg-orange-500"
-            )}
-          >
-            Hoziroq boshlash
-            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-          </Link>
+      {/* ================= CTA — keng yakuniy panel ================= */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 pb-16 sm:px-5 sm:pb-24">
+        <div
+          className={cn(
+            "landing-reveal grid items-center gap-8 rounded-3xl p-8 sm:p-12 lg:grid-cols-[1.4fr_1fr]",
+            cardCls,
+            night ? "border-amber-400/20" : "border-orange-500/25"
+          )}
+        >
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl">
+              Mehmonxonangizni{" "}
+              <span className={night ? "text-amber-300" : "text-orange-600"}>
+                bugundan
+              </span>{" "}
+              zamonaviy boshqaring
+            </h2>
+            <p
+              className={cn(
+                "mt-4 max-w-xl text-sm sm:text-base",
+                night ? "text-zinc-400" : "text-zinc-600"
+              )}
+            >
+              Qog'oz daftarlar va tarqoq jadvallar o'rniga — bitta tezkor tizim.
+              Kirish bir daqiqa ham olmaydi.
+            </p>
+            <ul className="mt-5 space-y-2">
+              {[
+                "Hech narsa o'rnatilmaydi — brauzerda ochiladi",
+                "Xodimlar yarim soatda o'rganib oladi",
+                "Ma'lumotlaringiz xavfsiz bulut serverda",
+              ].map((t) => (
+                <li
+                  key={t}
+                  className={cn(
+                    "flex items-center gap-2 text-sm",
+                    night ? "text-zinc-300" : "text-zinc-700"
+                  )}
+                >
+                  <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex flex-col items-center gap-3 lg:items-end">
+            <Link
+              to="/login"
+              className={cn(
+                "group inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-bold shadow-xl transition-all hover:scale-[1.03] active:scale-95 sm:px-9",
+                night
+                  ? "bg-amber-400 text-zinc-900 shadow-amber-400/25 hover:bg-amber-300"
+                  : "bg-orange-600 text-white shadow-orange-600/25 hover:bg-orange-500"
+              )}
+            >
+              Hoziroq boshlash
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <p className={cn("text-xs", night ? "text-zinc-500" : "text-zinc-500")}>
+              Yuz bilan yoki login-parol orqali kirish
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* ================= FOOTER ================= */}
+      {/* ================= FOOTER — to'laqonli ================= */}
       <footer
         className={cn(
           "relative z-10 border-t transition-colors duration-700",
-          night ? "border-white/5" : "border-orange-900/10"
+          night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div
-          className={cn(
-            "mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs sm:px-5 sm:py-7 sm:text-sm",
-            night ? "text-zinc-500" : "text-zinc-500"
-          )}
-        >
-          <span className="flex items-center gap-2">
-            <span
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-5 sm:py-12 lg:grid-cols-4">
+          <div>
+            <span className="flex items-center gap-2.5">
+              <span
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-xl",
+                  night ? "bg-amber-400" : "bg-orange-500"
+                )}
+              >
+                <Building2
+                  className={cn("h-4.5 w-4.5", night ? "text-zinc-900" : "text-white")}
+                />
+              </span>
+              <span className="text-lg font-bold">GoHotel</span>
+            </span>
+            <p
               className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-lg",
-                night ? "bg-amber-400" : "bg-orange-500"
+                "mt-3 max-w-xs text-sm leading-relaxed",
+                night ? "text-zinc-400" : "text-zinc-600"
               )}
             >
-              <Building2 className={cn("h-3.5 w-3.5", night ? "text-zinc-900" : "text-white")} />
+              Mehmonxona, hostel va soatlik ijara uchun zamonaviy boshqaruv
+              tizimi — bron qilishdan hisobotgacha.
+            </p>
+          </div>
+          <div>
+            <p
+              className={cn(
+                "text-xs font-bold uppercase tracking-wider",
+                night ? "text-zinc-300" : "text-zinc-700"
+              )}
+            >
+              Sahifa
+            </p>
+            <ul
+              className={cn(
+                "mt-3 space-y-2 text-sm",
+                night ? "text-zinc-400" : "text-zinc-600"
+              )}
+            >
+              {[
+                ["#features", "Imkoniyatlar"],
+                ["#how", "Qanday ishlaydi"],
+                ["#stats", "Raqamlar"],
+                ["#faq", "Savol-javob"],
+              ].map(([href, label]) => (
+                <li key={href}>
+                  <a
+                    href={href}
+                    className={cn(
+                      "transition-colors",
+                      night ? "hover:text-white" : "hover:text-zinc-900"
+                    )}
+                  >
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p
+              className={cn(
+                "text-xs font-bold uppercase tracking-wider",
+                night ? "text-zinc-300" : "text-zinc-700"
+              )}
+            >
+              Modullar
+            </p>
+            <ul
+              className={cn(
+                "mt-3 space-y-2 text-sm",
+                night ? "text-zinc-400" : "text-zinc-600"
+              )}
+            >
+              <li>Bandlov doskasi va bronlar</li>
+              <li>Kassa, smenalar va moliya</li>
+              <li>Ombor va mini-do'kon</li>
+              <li>Xo'jalik ishlari va hisobotlar</li>
+            </ul>
+          </div>
+          <div>
+            <p
+              className={cn(
+                "text-xs font-bold uppercase tracking-wider",
+                night ? "text-zinc-300" : "text-zinc-700"
+              )}
+            >
+              Boshlash
+            </p>
+            <ul
+              className={cn(
+                "mt-3 space-y-2 text-sm",
+                night ? "text-zinc-400" : "text-zinc-600"
+              )}
+            >
+              <li>
+                <Link
+                  to="/login"
+                  className={cn(
+                    "font-semibold transition-colors",
+                    night
+                      ? "text-amber-300 hover:text-amber-200"
+                      : "text-orange-600 hover:text-orange-500"
+                  )}
+                >
+                  Tizimga kirish →
+                </Link>
+              </li>
+              <li>Telefonga PWA sifatida o'rnatish mumkin</li>
+              <li>Yuz bilan kirishni sozlash ilova ichida</li>
+            </ul>
+          </div>
+        </div>
+        <div
+          className={cn(
+            "border-t transition-colors duration-700",
+            night ? "border-white/5" : "border-orange-900/10"
+          )}
+        >
+          <div
+            className={cn(
+              "mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs sm:px-5 sm:text-sm",
+              "text-zinc-500"
+            )}
+          >
+            <span>© {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi</span>
+            <span className="flex items-center gap-1.5">
+              O'zbekistonda ishlab chiqilgan
+              <span className={night ? "text-amber-300" : "text-orange-500"}>♥</span>
             </span>
-            <span className={cn("font-semibold", night ? "text-zinc-300" : "text-zinc-700")}>
-              GoHotel
-            </span>
-          </span>
-          <span>© {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi</span>
+          </div>
         </div>
       </footer>
     </div>
