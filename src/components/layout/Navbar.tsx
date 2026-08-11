@@ -143,21 +143,19 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             {user?.first_name} {user?.last_name}
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
+        {/* Yangilash — yaqqol ko'rinadigan to'ldirilgan tugma */}
+        <button
+          type="button"
           onClick={handleRefresh}
           disabled={refreshing}
           title="Sahifani yangilash"
+          className="flex items-center gap-1.5 rounded-full bg-primary-600 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-primary-500/30 transition-all hover:bg-primary-700 hover:shadow-primary-500/40 active:scale-95 disabled:opacity-70 sm:px-4 sm:text-sm"
         >
-          <RotateCw
-            size={18}
-            className={cn(
-              "text-muted-foreground hover:text-foreground",
-              refreshing && "animate-spin text-primary-600"
-            )}
-          />
-        </Button>
+          <RotateCw size={16} className={cn(refreshing && "animate-spin")} />
+          <span className="hidden sm:inline">
+            {refreshing ? "Yangilanmoqda..." : "Yangilash"}
+          </span>
+        </button>
         <Button
           variant="ghost"
           size="icon"
