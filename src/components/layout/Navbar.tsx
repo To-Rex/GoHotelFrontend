@@ -1,7 +1,17 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
-import { LogOut, User, Menu, ScanFace, Sun, Moon, Clock, RotateCw } from "lucide-react";
+import {
+  LogOut,
+  User,
+  Menu,
+  ScanFace,
+  Sun,
+  Moon,
+  Clock,
+  RotateCw,
+  ChevronDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
 import { cn } from "@/lib/utils";
@@ -24,6 +34,28 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
   const { user, logout } = useAuthStore();
   // Yuz bilan kirishni sozlash dialogi (har bir xodim o'z yuzini biriktiradi)
   const [faceDialogOpen, setFaceDialogOpen] = useState(false);
+
+  // Profil menyusi: account bosilganda ochiladi (ichida Chiqish tugmasi).
+  // Tashqariga bosilganda yoki Escape'da yopiladi
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   // Yangilash: joriy sahifadagi barcha so'rovlar keshini eskirtirib qayta
   // yuklaydi (to'liq sahifa reload emas — holat va formalar saqlanadi)
@@ -168,18 +200,58 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
         >
           <ScanFace size={18} className="text-muted-foreground hover:text-foreground" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={logout} title="Chiqish">
-          <LogOut size={18} className="text-muted-foreground hover:text-destructive" />
-        </Button>
+        {/* Account — eng o'ng burchakda; bosilganda profil menyusi ochiladi */}
+        <div ref={menuRef} className="relative border-l border-border pl-2 sm:pl-3">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            title="Profil"
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-1.5 py-1 text-sm font-medium transition-colors hover:bg-muted",
+              menuOpen && "bg-muted"
+            )}
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <User size={18} />
+            </span>
+            <span className="hidden md:block">
+              {user?.first_name} {user?.last_name}
+            </span>
+            <ChevronDown
+              size={14}
+              className={cn(
+                "text-muted-foreground transition-transform",
+                menuOpen && "rotate-180"
+              )}
+            />
+          </button>
 
-        {/* Account — navbarning eng o'ng burchagida */}
-        <div className="flex items-center gap-2 border-l border-border pl-3 text-sm font-medium sm:pl-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <User size={18} />
-          </div>
-          <span className="hidden md:block">
-            {user?.first_name} {user?.last_name}
-          </span>
+          {menuOpen && (
+            <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+              {/* Profil ma'lumoti */}
+              <div className="border-b border-border px-4 py-3">
+                <p className="truncate text-sm font-semibold">
+                  {user?.first_name} {user?.last_name}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  @{user?.username}
+                  {user?.hotel_name ? ` · ${user.hotel_name}` : ""}
+                </p>
+              </div>
+              {/* Chiqish */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  logout();
+                }}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+              >
+                <LogOut size={16} />
+                Chiqish
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
