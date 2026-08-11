@@ -20,6 +20,13 @@ import {
   ShieldCheck,
   History,
   TrendingUp,
+  Briefcase,
+  BellRing,
+  Sparkles,
+  Lock,
+  ChevronDown,
+  X,
+  Check,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -229,6 +236,97 @@ const STEPS = [
   },
 ]
 
+// Har bir rol tizimdan nima oladi
+const ROLES = [
+  {
+    icon: Briefcase,
+    title: "Direktor",
+    points: [
+      "Jonli tushum va bandlik statistikasi",
+      "Smenalar, kamomadlar va farqlar nazorati",
+      "Xodimlar samaradorligi reytingi",
+      "Har amal auditda — kim, qachon, nima qildi",
+    ],
+  },
+  {
+    icon: ShieldCheck,
+    title: "Menejer",
+    points: [
+      "Bronlarni tahrirlash va xonalar boshqaruvi",
+      "Kassani majburiy yopish va tuzatish huquqi",
+      "Ombor: kirim, spisaniye, inventarizatsiya",
+      "Xodim yaratish va vazifalar taqsimoti",
+    ],
+  },
+  {
+    icon: BellRing,
+    title: "Resepshn",
+    points: [
+      "Bir bosishda bron — jonli doskada",
+      "Passport/ID skaneri — forma o'zi to'ladi",
+      "Kassa-smena: ochish, topshirish, qabul qilish",
+      "Do'kon savdosi va shaxsiy hisobot",
+    ],
+  },
+  {
+    icon: Sparkles,
+    title: "Farrosh",
+    points: [
+      "O'z vazifalari ro'yxati — telefonida",
+      "Boshlash/yakunlash bir tugmada",
+      "Fotohisobot yuklash imkoniyati",
+      "Tozalash bitishi bilan bron o'zi yopiladi",
+    ],
+  },
+]
+
+// Qog'oz daftar bilan taqqoslash
+const COMPARE = [
+  { old: "Bronni daftardan qidirish — daqiqalab vaqt", now: "Qidiruv va filtrlar — bir soniyada topiladi" },
+  { old: "Kassa hisobi qo'lda, xatolar yashirin qoladi", now: "\"Ko'r sanash\" — har so'm avtomatik solishtiriladi" },
+  { old: "Mehmon ma'lumotini qo'lda terish", now: "Skaner passportni 2 soniyada o'qiydi" },
+  { old: "Hisobot oy oxirida, taxminiy", now: "Jonli statistika — har daqiqada aniq" },
+  { old: "Kim nima qilgani noma'lum", now: "To'liq audit: kim, qachon, qancha" },
+]
+
+// Xavfsizlik kafolatlari
+const SECURITY = [
+  { icon: ShieldCheck, label: "Rollar va aniq ruxsatnomalar" },
+  { icon: Lock, label: "Parollar faqat hash ko'rinishida" },
+  { icon: History, label: "Har bir amal audit izida" },
+  { icon: ScanLine, label: "Skaner ma'lumoti qurilmadan chiqmaydi" },
+  { icon: Wallet, label: "Kunlik majburiy kassa kesimi" },
+  { icon: Smartphone, label: "HTTPS orqali xavfsiz ulanish" },
+]
+
+// Ko'p so'raladigan savollar
+const FAQ = [
+  {
+    q: "Tizimni ishlatish uchun nimadir o'rnatish kerakmi?",
+    a: "Yo'q — GoHotel brauzerda ishlaydi. Xohlasangiz, telefon yoki kompyuterga PWA ilova sifatida bir bosishda o'rnatib olasiz: alohida oynada, native ilovadek ochiladi va yangilanishlarni o'zi oladi.",
+  },
+  {
+    q: "Xodimlarim tizimda nimalarni ko'ra oladi?",
+    a: "Har xodimga rol va aniq ruxsatlar beriladi: resepshn faqat o'z ishini, farrosh faqat vazifalarini, menejer boshqaruvni ko'radi. Tannarxlar, hisobotlar va sozlamalar faqat rahbariyatga ochiq.",
+  },
+  {
+    q: "Kassa hisobi qanday nazorat qilinadi?",
+    a: "Har smena o'z kassasi bilan ochiladi. Topshirishda xodim pulni sanab kiritadi, tizim kutilgan summani hisoblab farqni chiqaradi. Farqlar (kamomad ham, ortiqcha ham) xodim nomiga yozilib, smenalar tarixida saqlanadi.",
+  },
+  {
+    q: "Soatlik ijara ham qo'llab-quvvatlanadimi?",
+    a: "Ha — kunlik ham, soatlik ham. Jonli bandlov doskasida har ikkalasi yonma-yon ko'rinadi, soatlik bronlar orasida tozalash tanaffusi ham hisobga olinadi.",
+  },
+  {
+    q: "Internet uzilib qolsa nima bo'ladi?",
+    a: "Ma'lumotlar bulutdagi serverda xavfsiz saqlanadi — qurilmangiz almashsa ham hech narsa yo'qolmaydi. Aloqa tiklanishi bilan ish davom etadi, o'rnatilgan PWA esa qayta ochilishda so'nggi holatni ko'rsatadi.",
+  },
+  {
+    q: "Bir nechta filialim bor — hammasini boshqara olamanmi?",
+    a: "Ha, tizim ko'p filialli ishlashga mo'ljallangan: xonalar, xodimlar va bronlar filial kesimida yuritiladi, hisobotlar esa umumiy ko'rinishda jamlanadi.",
+  },
+]
+
 // Tungi osmon yulduzlari (foizli koordinatalar — har ekranga moslashadi)
 const STARS = [
   { top: "5%", left: "8%", s: 3, d: "0s" },
@@ -263,6 +361,9 @@ export const LandingPage = () => {
     const h = new Date().getHours()
     return h >= 19 || h < 6
   })
+
+  // FAQ akkordeoni — bittasi ochiq turadi
+  const [faqOpen, setFaqOpen] = useState<number | null>(0)
 
   useEffect(() => {
     document.title = "GoHotel — Mehmonxona boshqaruv tizimi"
@@ -410,6 +511,12 @@ export const LandingPage = () => {
             className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
           >
             Raqamlar
+          </a>
+          <a
+            href="#faq"
+            className={cn("transition-colors", night ? "hover:text-white" : "hover:text-zinc-900")}
+          >
+            Savollar
           </a>
         </nav>
 
@@ -854,6 +961,69 @@ export const LandingPage = () => {
         </div>
       </section>
 
+      {/* ================= KIM UCHUN (ROLLAR) ================= */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
+        <div className="landing-reveal mx-auto max-w-2xl text-center">
+          <p
+            className={cn(
+              "text-xs font-bold uppercase tracking-[0.25em]",
+              night ? "text-amber-300" : "text-orange-600"
+            )}
+          >
+            Kim uchun
+          </p>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+            Har bir xodimga — o'z ish stoli
+          </h2>
+          <p
+            className={cn(
+              "mt-3 text-sm sm:text-base",
+              night ? "text-zinc-400" : "text-zinc-600"
+            )}
+          >
+            Rollar va ruxsatnomalar tizimi tufayli har kim faqat o'ziga
+            keraklisini ko'radi — ortiqcha narsa chalg'itmaydi.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-3.5 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          {ROLES.map((r, i) => (
+            <div
+              key={r.title}
+              className={cn(
+                "landing-reveal rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl",
+                cardCls,
+                night ? "hover:shadow-black/40" : "hover:shadow-orange-900/10"
+              )}
+              style={{ transitionDelay: `${(i % 4) * 80}ms` }}
+            >
+              <span
+                className={cn(
+                  "flex h-11 w-11 items-center justify-center rounded-xl",
+                  night ? "bg-amber-400/10 text-amber-300" : "bg-orange-500/10 text-orange-600"
+                )}
+              >
+                <r.icon className="h-5 w-5" />
+              </span>
+              <h3 className="mt-4 text-lg font-bold">{r.title}</h3>
+              <ul className="mt-3 space-y-2">
+                {r.points.map((p) => (
+                  <li
+                    key={p}
+                    className={cn(
+                      "flex items-start gap-2 text-sm leading-snug",
+                      night ? "text-zinc-400" : "text-zinc-600"
+                    )}
+                  >
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ================= RAQAMLAR ================= */}
       <section id="stats" className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
         <div
@@ -888,6 +1058,144 @@ export const LandingPage = () => {
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ================= AVVAL → ENDI ================= */}
+      <section
+        className={cn(
+          "relative z-10 border-t transition-colors duration-700",
+          night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
+        )}
+      >
+        <div className="mx-auto max-w-4xl px-4 py-16 sm:px-5 sm:py-24">
+          <div className="landing-reveal mx-auto max-w-2xl text-center">
+            <p
+              className={cn(
+                "text-xs font-bold uppercase tracking-[0.25em]",
+                night ? "text-amber-300" : "text-orange-600"
+              )}
+            >
+              Nima o'zgaradi
+            </p>
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+              Qog'oz daftardan — jonli tizimga
+            </h2>
+          </div>
+          <div className="mt-10 space-y-3 sm:mt-12">
+            {COMPARE.map((row, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "landing-reveal grid overflow-hidden rounded-2xl sm:grid-cols-2",
+                  cardCls
+                )}
+                style={{ transitionDelay: `${i * 70}ms` }}
+              >
+                <div
+                  className={cn(
+                    "flex items-start gap-2.5 p-4",
+                    night ? "bg-white/[0.02]" : "bg-zinc-900/[0.03]"
+                  )}
+                >
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-500/15">
+                    <X className="h-3 w-3 text-red-500" />
+                  </span>
+                  <p
+                    className={cn(
+                      "text-sm leading-snug line-through decoration-red-500/40",
+                      night ? "text-zinc-500" : "text-zinc-500"
+                    )}
+                  >
+                    {row.old}
+                  </p>
+                </div>
+                <div className="flex items-start gap-2.5 p-4">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
+                    <Check className="h-3 w-3 text-emerald-500" />
+                  </span>
+                  <p className="text-sm font-medium leading-snug">{row.now}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Xavfsizlik kafolatlari */}
+          <div className="landing-reveal mt-10 flex flex-wrap justify-center gap-2 sm:mt-12 sm:gap-2.5">
+            {SECURITY.map((s) => (
+              <span
+                key={s.label}
+                className={cn(
+                  "flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium sm:text-sm",
+                  night
+                    ? "border-white/10 bg-white/5 text-zinc-300"
+                    : "border-orange-900/10 bg-white/80 text-zinc-600"
+                )}
+              >
+                <s.icon className="h-4 w-4 text-emerald-500" />
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================= FAQ ================= */}
+      <section id="faq" className="relative z-10 mx-auto max-w-3xl px-4 py-16 sm:px-5 sm:py-24">
+        <div className="landing-reveal mx-auto max-w-2xl text-center">
+          <p
+            className={cn(
+              "text-xs font-bold uppercase tracking-[0.25em]",
+              night ? "text-amber-300" : "text-orange-600"
+            )}
+          >
+            Savol-javob
+          </p>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+            Ko'p so'raladigan savollar
+          </h2>
+        </div>
+        <div className="mt-10 space-y-3 sm:mt-12">
+          {FAQ.map((f, i) => {
+            const open = faqOpen === i
+            return (
+              <div
+                key={i}
+                className={cn("landing-reveal overflow-hidden rounded-2xl", cardCls)}
+                style={{ transitionDelay: `${i * 50}ms` }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setFaqOpen(open ? null : i)}
+                  className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+                >
+                  <span className="text-sm font-bold sm:text-base">{f.q}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 flex-shrink-0 transition-transform duration-300",
+                      open && "rotate-180",
+                      night ? "text-amber-300" : "text-orange-600"
+                    )}
+                  />
+                </button>
+                <div
+                  className="grid transition-[grid-template-rows] duration-300 ease-out"
+                  style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+                >
+                  <div className="overflow-hidden">
+                    <p
+                      className={cn(
+                        "px-5 pb-4 text-sm leading-relaxed",
+                        night ? "text-zinc-400" : "text-zinc-600"
+                      )}
+                    >
+                      {f.a}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </section>
 
