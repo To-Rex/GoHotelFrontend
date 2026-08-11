@@ -696,98 +696,154 @@ export const LandingPage = () => {
         {/* HERO MOCKUP — suzuvchi mini boshqaruv paneli */}
         <div className="landing-reveal relative" style={{ transitionDelay: "200ms" }}>
           <div className="animate-landing-float relative mx-auto w-full max-w-md">
+            {/* HAQIQIY boshqaruv paneli miniaturasi — ilovadagi asl dizayn
+                (oq kartalar, raqamlar reykasi, aksent-chiziqli KPI, grafik,
+                xonalar holati) xuddi skrinshotdek, o'z ranglarida */}
             <div
               className={cn(
-                "rounded-2xl p-4 shadow-2xl sm:p-5",
-                cardCls,
-                night ? "shadow-black/50" : "shadow-orange-900/15"
+                "rounded-2xl border border-zinc-200 bg-white p-4 text-zinc-900 shadow-2xl",
+                night ? "shadow-black/60" : "shadow-orange-900/20"
               )}
             >
-              <div className="mb-4 flex items-center gap-1.5">
+              <div className="mb-3 flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
-                <span
-                  className={cn(
-                    "ml-3 truncate text-[11px]",
-                    night ? "text-zinc-500" : "text-zinc-500"
-                  )}
-                >
+                <span className="ml-3 truncate text-[10px] text-zinc-400">
                   GoHotel · Boshqaruv paneli
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+
+              {/* Tipografik sarlavha + jonli soat */}
+              <div className="flex items-end justify-between gap-2">
+                <div>
+                  <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                    11-avgust, seshanba
+                  </p>
+                  <p className="text-sm font-extrabold tracking-tight">
+                    Xayrli kun, Jasur!
+                  </p>
+                </div>
+                <p className="text-lg font-bold tabular-nums tracking-tight">14:32</p>
+              </div>
+
+              {/* Asosiy raqamlar reykasi */}
+              <div className="mt-2.5 grid grid-cols-3 divide-x divide-zinc-100 rounded-xl border border-zinc-200">
+                <div className="p-2">
+                  <p className="text-[7px] font-semibold uppercase tracking-wider text-zinc-400">
+                    Bugungi tushum
+                  </p>
+                  <p className="text-[11px] font-bold tabular-nums">4 250 000</p>
+                  <svg viewBox="0 0 60 18" className="mt-1 h-3.5 w-full">
+                    <polyline
+                      points="0,13 10,9 20,11 30,5 40,9 50,3 60,6"
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div className="p-2">
+                  <p className="text-[7px] font-semibold uppercase tracking-wider text-zinc-400">
+                    Sof natija
+                  </p>
+                  <p className="text-[11px] font-bold tabular-nums text-emerald-600">
+                    +3 180 000
+                  </p>
+                  <p className="mt-1 text-[6.5px] leading-tight text-zinc-400">
+                    tushum + do'kon − xarajat
+                  </p>
+                </div>
+                <div className="p-2">
+                  <p className="text-[7px] font-semibold uppercase tracking-wider text-zinc-400">
+                    Bandlik
+                  </p>
+                  <p className="text-[11px] font-bold tabular-nums">
+                    86<span className="text-[8px] text-zinc-400">%</span>
+                  </p>
+                  <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-zinc-100">
+                    <div className="h-full w-[86%] rounded-full bg-[#2563eb]" />
+                  </div>
+                </div>
+              </div>
+
+              {/* KPI kartalari — aksent chiziqlar bilan */}
+              <div className="mt-2 grid grid-cols-3 gap-2">
                 {[
-                  {
-                    label: "Tushum",
-                    value: "12.4M",
-                    color: night ? "text-emerald-300" : "text-emerald-600",
-                  },
-                  {
-                    label: "Bandlik",
-                    value: "86%",
-                    color: night ? "text-amber-300" : "text-orange-600",
-                  },
-                  {
-                    label: "Bronlar",
-                    value: "34",
-                    color: night ? "text-violet-300" : "text-violet-600",
-                  },
-                ].map((k) => (
-                  <div
-                    key={k.label}
-                    className={cn(
-                      "rounded-xl border p-2.5 sm:p-3",
-                      night ? "border-white/5 bg-white/5" : "border-orange-900/5 bg-white/70"
-                    )}
-                  >
-                    <p className="text-[10px] text-zinc-500">{k.label}</p>
-                    <p className={cn("text-base font-bold tabular-nums sm:text-lg", k.color)}>
-                      {k.value}
+                  { label: "Bugungi xarajat", value: "620 000", bar: "bg-red-500" },
+                  { label: "Do'kon (bugun)", value: "485 000", bar: "bg-violet-500" },
+                  { label: "Faol bandlovlar", value: "34", bar: "bg-sky-500" },
+                ].map((t) => (
+                  <div key={t.label} className="rounded-lg border border-zinc-200 p-1.5">
+                    <p className="truncate text-[6.5px] font-medium text-zinc-400">
+                      {t.label}
                     </p>
+                    <p className="text-[10px] font-bold tabular-nums">{t.value}</p>
+                    <span className={cn("mt-1 block h-0.5 w-4 rounded-full", t.bar)} />
                   </div>
                 ))}
               </div>
-              <div
-                className={cn(
-                  "mt-4 flex h-24 items-end gap-1.5 rounded-xl border p-3 sm:h-28 sm:gap-2",
-                  night ? "border-white/5 bg-white/5" : "border-orange-900/5 bg-white/70"
-                )}
-              >
-                {[35, 55, 42, 70, 58, 85, 64, 92, 76, 100, 68, 88].map((h, i) => (
-                  <span
-                    key={i}
-                    className={cn(
-                      "landing-bar flex-1 rounded-t-md",
-                      night ? "bg-amber-400" : "bg-orange-500"
-                    )}
-                    style={{
-                      height: `${h}%`,
-                      animationDelay: `${300 + i * 90}ms`,
-                      opacity: 0.5 + (h / 100) * 0.5,
-                    }}
-                  />
-                ))}
+
+              {/* 7 kunlik tushum grafigi — asl ko'k ustunlar */}
+              <div className="mt-2 rounded-xl border border-zinc-200 p-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[7.5px] font-bold text-zinc-600">
+                    Oxirgi 7 kun tushumi
+                  </span>
+                  <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[6.5px] font-semibold text-emerald-600">
+                    Jami: 28.4M So'm
+                  </span>
+                </div>
+                <div className="mt-1.5 flex h-12 items-end gap-1 sm:h-14">
+                  {[45, 65, 38, 78, 56, 96, 72].map((h, i) => (
+                    <span
+                      key={i}
+                      className="landing-bar flex-1 rounded-t-[3px] bg-[#2563eb]"
+                      style={{ height: `${h}%`, animationDelay: `${300 + i * 110}ms` }}
+                    />
+                  ))}
+                </div>
               </div>
-              <div
-                className={cn(
-                  "mt-4 flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5",
-                  night ? "border-white/5 bg-white/5" : "border-orange-900/5 bg-white/70"
-                )}
-              >
-                <span
-                  className={cn(
-                    "flex items-center gap-2 text-xs",
-                    night ? "text-zinc-300" : "text-zinc-600"
-                  )}
-                >
-                  <span className="relative flex h-2 w-2">
+
+              {/* Xonalar holati — segmentli chiziq */}
+              <div className="mt-2 rounded-xl border border-zinc-200 p-2">
+                <p className="text-[7.5px] font-bold text-zinc-600">Xonalar holati</p>
+                <div className="mt-1.5 flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full">
+                  <span className="w-[42%] bg-emerald-500" />
+                  <span className="w-[26%] bg-red-500" />
+                  <span className="w-[18%] bg-blue-500" />
+                  <span className="w-[14%] bg-amber-500" />
+                </div>
+                <div className="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-0.5">
+                  {[
+                    ["bg-emerald-500", "Bo'sh 13"],
+                    ["bg-red-500", "Band 8"],
+                    ["bg-blue-500", "Band qilingan 5"],
+                    ["bg-amber-500", "Tozalanmoqda 4"],
+                  ].map(([dot, label]) => (
+                    <span
+                      key={label}
+                      className="flex items-center gap-1 text-[6.5px] text-zinc-500"
+                    >
+                      <span className={cn("h-1.5 w-1.5 rounded-full", dot)} />
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Jonli smena indikatori */}
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-zinc-200 px-2.5 py-1.5">
+                <span className="flex items-center gap-1.5 text-[8px] text-zinc-600">
+                  <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   </span>
                   Smena faol · kassa nazoratda
                 </span>
-                <TrendingUp className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+                <TrendingUp className="h-3 w-3 flex-shrink-0 text-emerald-500" />
               </div>
             </div>
 
