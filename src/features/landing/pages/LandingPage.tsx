@@ -432,7 +432,9 @@ export const LandingPage = () => {
   return (
     <div
       className={cn(
-        "min-h-screen overflow-x-hidden antialiased transition-colors duration-700",
+        // overflow-x-clip: gorizontal chiqib ketishni kesadi, lekin fixed/sticky
+        // navbar ishlashiga xalaqit bermaydi (overflow-hidden xalaqit berardi)
+        "min-h-screen overflow-x-clip antialiased transition-colors duration-700",
         night ? "bg-zinc-950 text-zinc-100" : "bg-[#fdf6e3] text-zinc-900"
       )}
     >
@@ -524,10 +526,10 @@ export const LandingPage = () => {
         </div>
       </div>
 
-      {/* ================= NAVBAR — yopishqoq, scroll'da ham doim ko'rinadi ================= */}
+      {/* ================= NAVBAR — fixed: scroll'da ham DOIM tepada turadi ================= */}
       <header
         className={cn(
-          "sticky top-0 z-40 border-b backdrop-blur-md transition-colors duration-700",
+          "fixed inset-x-0 top-0 z-40 border-b backdrop-blur-md transition-colors duration-700",
           night
             ? "border-white/5 bg-zinc-950/80"
             : "border-orange-900/10 bg-[#fdf6e3]/80"
@@ -616,6 +618,8 @@ export const LandingPage = () => {
         </div>
         </div>
       </header>
+      {/* Fixed navbar ostidagi joy egallagichi — kontent tagida qolmasligi uchun */}
+      <div aria-hidden className="h-[58px] sm:h-[63px]" />
 
       {/* ================= HERO ================= */}
       <section className="relative z-10 mx-auto grid max-w-6xl 2xl:max-w-[88rem] items-center gap-10 px-4 pb-16 pt-8 sm:px-5 sm:pb-20 lg:grid-cols-2 lg:gap-12 lg:pt-14 2xl:gap-24 2xl:pt-20">
