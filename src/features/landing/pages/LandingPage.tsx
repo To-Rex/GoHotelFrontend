@@ -550,7 +550,7 @@ export const LandingPage = () => {
             : "border-orange-900/10 bg-[#fdf6e3]/80"
         )}
       >
-        <div className="mx-auto flex max-w-6xl 2xl:max-w-[88rem] items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-3.5">
+        <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-3.5">
         <div className="flex items-center gap-2.5">
           <div
             className={cn(
@@ -638,7 +638,7 @@ export const LandingPage = () => {
 
       {/* ================= HERO — birinchi ekranni TO'LIQ egallaydi
           (keyingi bo'lim faqat scroll'da ko'rinadi) ================= */}
-      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-58px)] max-w-6xl 2xl:max-w-[88rem] items-center gap-10 px-4 py-8 sm:min-h-[calc(100dvh-63px)] sm:px-5 lg:grid-cols-2 lg:gap-12 2xl:gap-24">
+      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-58px)] max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] items-center gap-10 px-4 py-8 sm:min-h-[calc(100dvh-63px)] sm:px-5 lg:grid-cols-[1fr_1.15fr] lg:gap-12 xl:gap-16 2xl:gap-20">
         <div>
           <p
             className={cn(
@@ -732,10 +732,10 @@ export const LandingPage = () => {
 
         {/* HERO MOCKUP — suzuvchi mini boshqaruv paneli */}
         <div className="landing-reveal relative" style={{ transitionDelay: "200ms" }}>
-          {/* Katta displayda oyna transform bilan kattalashadi — ichki dizayn
-              piksel-aniq saqlanadi */}
-          <div className="2xl:origin-top 2xl:scale-[1.22]">
-          <div className="animate-landing-float relative mx-auto w-full max-w-md">
+          {/* Katta displayda oyna eni bosqichma-bosqich kengayadi va 2xl da
+              transform bilan yana biroz kattalashadi */}
+          <div className="2xl:origin-top 2xl:scale-[1.1]">
+          <div className="animate-landing-float relative mx-auto w-full max-w-md lg:max-w-lg xl:max-w-[34rem]">
             {/* HAQIQIY ilova sahifalari miniaturasi — har 4 soniyada sahifa
                 almashinadi (Boshqaruv → Bandlov doskasi → Smenalar → Ombor),
                 asl oq mavzu va o'z ranglarida, xuddi skrinshotdek */}
@@ -1217,7 +1217,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= IMKONIYATLAR ================= */}
-      <section id="features" className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
+      <section id="features" className="relative z-10 mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1286,7 +1286,7 @@ export const LandingPage = () => {
           night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div className="mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
+        <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
           <div className="landing-reveal mx-auto max-w-2xl text-center">
             <p
               className={cn(
@@ -1339,7 +1339,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= KIM UCHUN (ROLLAR) ================= */}
-      <section className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
+      <section className="relative z-10 mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1402,7 +1402,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= RAQAMLAR ================= */}
-      <section id="stats" className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
+      <section id="stats" className="relative z-10 mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div
           className={cn(
             "landing-reveal grid gap-6 rounded-3xl p-7 sm:grid-cols-2 sm:gap-4 sm:p-10 lg:grid-cols-4",
@@ -1445,7 +1445,7 @@ export const LandingPage = () => {
           night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div className="mx-auto max-w-4xl 2xl:max-w-6xl px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
+        <div className="mx-auto max-w-4xl xl:max-w-5xl 2xl:max-w-6xl px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
           <div className="landing-reveal mx-auto max-w-2xl text-center">
             <p
               className={cn(
@@ -1518,7 +1518,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= VA YANA (qo'shimcha qulayliklar) ================= */}
-      <section className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
+      <section className="relative z-10 mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1556,7 +1556,7 @@ export const LandingPage = () => {
           night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div className="mx-auto grid max-w-6xl 2xl:max-w-[88rem] gap-10 px-4 py-16 sm:px-5 sm:py-24 2xl:py-32 lg:grid-cols-[1fr_1.4fr] lg:gap-14">
+        <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] gap-10 px-4 py-16 sm:px-5 sm:py-24 2xl:py-32 lg:grid-cols-[1fr_1.4fr] lg:gap-14">
           <div className="landing-reveal">
             <p
               className={cn(
@@ -1642,7 +1642,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= FAQ ================= */}
-      <section id="faq" className="relative z-10 mx-auto max-w-5xl 2xl:max-w-7xl px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
+      <section id="faq" className="relative z-10 mx-auto max-w-5xl xl:max-w-6xl 2xl:max-w-7xl px-4 py-16 sm:px-5 sm:py-24 2xl:py-32">
         <div className="landing-reveal mx-auto max-w-2xl text-center">
           <p
             className={cn(
@@ -1701,7 +1701,7 @@ export const LandingPage = () => {
       </section>
 
       {/* ================= CTA — keng yakuniy panel ================= */}
-      <section className="relative z-10 mx-auto max-w-6xl 2xl:max-w-[88rem] px-4 pb-16 sm:px-5 sm:pb-24">
+      <section className="relative z-10 mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] px-4 pb-16 sm:px-5 sm:pb-24">
         <div
           className={cn(
             "landing-reveal grid items-center gap-8 rounded-3xl p-8 sm:p-12 lg:grid-cols-[1.4fr_1fr]",
@@ -1772,7 +1772,7 @@ export const LandingPage = () => {
           night ? "border-white/5 bg-white/[0.02]" : "border-orange-900/10 bg-white/40"
         )}
       >
-        <div className="mx-auto grid max-w-6xl 2xl:max-w-[88rem] gap-8 px-4 py-10 sm:grid-cols-2 sm:px-5 sm:py-12 lg:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] gap-8 px-4 py-10 sm:grid-cols-2 sm:px-5 sm:py-12 lg:grid-cols-4">
           <div>
             <span className="flex items-center gap-2.5">
               <span
@@ -1894,7 +1894,7 @@ export const LandingPage = () => {
         >
           <div
             className={cn(
-              "mx-auto flex max-w-6xl 2xl:max-w-[88rem] flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs sm:px-5 sm:text-sm",
+              "mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs sm:px-5 sm:text-sm",
               "text-zinc-500"
             )}
           >
