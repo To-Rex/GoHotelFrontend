@@ -10,6 +10,12 @@ import {
   Timer,
   Wallet,
   CalendarCog,
+  Sparkles,
+  Brush,
+  Wrench,
+  ClipboardCheck,
+  Moon,
+  type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import {
@@ -60,13 +66,78 @@ const TABLE_LABELS: Record<string, string> = {
   users: "Xodimlar",
 }
 
-// Avto-yakunlash sozlamasidagi vazifa turlari nomlari
-const HK_TYPE_LABELS: Record<string, string> = {
-  CLEANING: "Tozalash",
-  DEEP_CLEANING: "Chuqur tozalash",
-  MAINTENANCE: "Ta'mirlash",
-  INSPECTION: "Tekshiruv",
-  TURN_DOWN: "Kechki tayyorlash",
+// Avto-yakunlash sozlamasidagi vazifa turlari (nom + ikonka)
+const HK_TYPES: Array<{ key: string; label: string; icon: LucideIcon }> = [
+  { key: "CLEANING", label: "Tozalash", icon: Sparkles },
+  { key: "DEEP_CLEANING", label: "Chuqur tozalash", icon: Brush },
+  { key: "MAINTENANCE", label: "Ta'mirlash", icon: Wrench },
+  { key: "INSPECTION", label: "Tekshiruv", icon: ClipboardCheck },
+  { key: "TURN_DOWN", label: "Kechki tayyorlash", icon: Moon },
+]
+
+// Sozlama kartasi qobig'i: sarlavha bandi (ikonka + nom + izoh) va tanasi
+function SettingCard({
+  id,
+  icon: Icon,
+  iconClass,
+  title,
+  desc,
+  children,
+}: {
+  id: string
+  icon: LucideIcon
+  iconClass: string
+  title: string
+  desc: string
+  children: React.ReactNode
+}) {
+  return (
+    <section id={id} className="overflow-hidden rounded-2xl border bg-white scroll-mt-4">
+      <div className="flex items-start gap-3 border-b bg-gray-50/70 px-5 py-4">
+        <span
+          className={cn(
+            "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl",
+            iconClass
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-bold text-gray-900">{title}</h2>
+          <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{desc}</p>
+        </div>
+      </div>
+      <div className="p-5">{children}</div>
+    </section>
+  )
+}
+
+// Saqlash qatori: tugma + "Saqlandi"/xato holati (barcha kartalarda bir xil)
+function SaveRow({
+  onSave,
+  pending,
+  saved,
+  error,
+}: {
+  onSave: () => void
+  pending: boolean
+  saved: boolean
+  error: string | null
+}) {
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
+      <Button onClick={onSave} disabled={pending} className="min-w-[120px]">
+        {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Saqlash
+      </Button>
+      {saved && (
+        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+          <CheckCircle2 className="h-4 w-4" /> Saqlandi
+        </span>
+      )}
+      {error && <span className="text-sm text-red-500">{error}</span>}
+    </div>
+  )
 }
 
 export const SettingsPage = () => {
@@ -217,208 +288,219 @@ export const SettingsPage = () => {
     },
   ]
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2.5">
-        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
-          <Settings className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sozlamalar</h1>
-          <p className="text-sm text-gray-500">Tizim boshqaruvi</p>
-        </div>
-      </div>
+  const NAV_CHIPS = [
+    { href: "#shift", label: "Smena va kassa", dot: "bg-violet-500" },
+    { href: "#booking-edit", label: "Bron tahriri", dot: "bg-sky-500" },
+    { href: "#auto-complete", label: "Avto-yakunlash", dot: "bg-primary-600" },
+    { href: "#reset", label: "Tozalash", dot: "bg-red-500" },
+  ]
 
-      {/* Smena va kassa rejimi */}
-      <div className="rounded-2xl border bg-white p-5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
-            <Wallet className="h-4.5 w-4.5" />
-          </span>
+  return (
+    <div className="space-y-5">
+      {/* Sarlavha */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
+            <Settings className="h-5 w-5 text-white" />
+          </div>
           <div>
-            <h2 className="text-sm font-bold text-gray-900">Smena va kassa</h2>
-            <p className="text-xs text-gray-500">
-              Kassali rejimda xodimlar smenani ochadi/topshiradi, kassa "ko'r
-              sanash" bilan yopiladi va har kuni belgilangan vaqtda kesiladi.
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Sozlamalar</h1>
+            <p className="text-sm text-gray-500">
+              {user?.hotel_name || "Mehmonxona"} uchun tizim sozlamalari
             </p>
           </div>
         </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setShiftMode("simple")}
-            className={cn(
-              "rounded-xl border p-4 text-left transition-all",
-              shiftMode === "simple"
-                ? "border-primary-400 ring-2 ring-primary-400/30 bg-primary-50/40"
-                : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
-            )}
-          >
-            <p className="text-sm font-semibold text-gray-900">Oddiy rejim</p>
-            <p className="mt-1 text-xs text-gray-600 leading-snug">
-              Smena va kassa nazorati yo'q — hamma hozirgidek ishlaydi. Kichik
-              jamoalar uchun qulay.
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => setShiftMode("cash")}
-            className={cn(
-              "rounded-xl border p-4 text-left transition-all",
-              shiftMode === "cash"
-                ? "border-primary-400 ring-2 ring-primary-400/30 bg-primary-50/40"
-                : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
-            )}
-          >
-            <p className="text-sm font-semibold text-gray-900">Kassali rejim</p>
-            <p className="mt-1 text-xs text-gray-600 leading-snug">
-              Smena topshirish (keyingi xodim parol bilan qabul qiladi), kassa
-              "ko'r sanash" bilan yopiladi, farqlar xodim hisobiga yoziladi.
-              Yopilmagan smena boshqa xodimni bloklaydi — menejer/admin majburiy
-              yopa oladi.
-            </p>
-          </button>
+        {/* Bo'limlarga tez o'tish */}
+        <div className="flex flex-wrap gap-1.5">
+          {NAV_CHIPS.map((c) => (
+            <a
+              key={c.href}
+              href={c.href}
+              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700"
+            >
+              <span className={cn("h-2 w-2 rounded-full", c.dot)} />
+              {c.label}
+            </a>
+          ))}
         </div>
+      </div>
 
-        {shiftMode === "cash" && (
-          <div className="mt-4 flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
+      {/* Sozlamalar — keng ekranda ikki ustun */}
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        {/* Smena va kassa rejimi */}
+        <SettingCard
+          id="shift"
+          icon={Wallet}
+          iconClass="bg-violet-50 text-violet-600"
+          title="Smena va kassa"
+          desc='Kassali rejimda xodimlar smenani ochadi/topshiradi, kassa "ko&apos;r sanash" bilan yopiladi va har kuni belgilangan vaqtda kesiladi.'
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            {[
+              {
+                key: "simple" as const,
+                title: "Oddiy rejim",
+                text: "Smena va kassa nazorati yo'q — hamma hozirgidek ishlaydi. Kichik jamoalar uchun qulay.",
+              },
+              {
+                key: "cash" as const,
+                title: "Kassali rejim",
+                text: "Smena topshirish (keyingi xodim parol bilan qabul qiladi), kassa \"ko'r sanash\" bilan yopiladi, farqlar xodim hisobiga yoziladi. Yopilmagan smena boshqa xodimni bloklaydi.",
+              },
+            ].map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => setShiftMode(m.key)}
+                className={cn(
+                  "relative rounded-xl border p-4 text-left transition-all",
+                  shiftMode === m.key
+                    ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                    : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                )}
+              >
+                {shiftMode === m.key && (
+                  <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary-600" />
+                )}
+                <p className="pr-6 text-sm font-semibold text-gray-900">{m.title}</p>
+                <p className="mt-1 text-xs leading-snug text-gray-600">{m.text}</p>
+              </button>
+            ))}
+          </div>
+
+          {shiftMode === "cash" && (
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50/60 p-3.5">
               <label className="text-xs font-medium text-gray-600">
                 Kunlik kassa kesimi vaqti
               </label>
-              <Input
-                type="time"
-                className="w-36"
-                value={dayClose}
-                onChange={(e) => setDayClose(e.target.value)}
-              />
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <Input
+                  type="time"
+                  className="w-32 bg-white"
+                  value={dayClose}
+                  onChange={(e) => setDayClose(e.target.value)}
+                />
+                {/* Tez tanlovlar */}
+                {["00:00", "06:00"].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setDayClose(t)}
+                    className={cn(
+                      "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                      dayClose === t
+                        ? "bg-primary-600 text-white"
+                        : "bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-100"
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-gray-400">
+                Shu vaqtda ochiq kassalar topshirilishi shart bo'ladi. Tungi
+                smena kesilib qolmasligi uchun ertalabki soat (06:00) qulay.
+              </p>
             </div>
-            <p className="pb-2 text-xs text-gray-400">
-              Shu vaqtda ochiq kassalar topshirilishi shart bo'ladi (tungi smena
-              kesilmasligi uchun ertalabki soatni tanlash mumkin, masalan 06:00).
-            </p>
-          </div>
-        )}
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button onClick={onSaveShift} disabled={saveShiftMutation.isPending}>
-            {saveShiftMutation.isPending && (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            )}
-            Saqlash
-          </Button>
-          {shiftSaved && (
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" /> Saqlandi
-            </span>
           )}
-          {shiftError && <span className="text-sm text-red-500">{shiftError}</span>}
-        </div>
-      </div>
 
-      {/* Bron tahriri vaqt oynasi */}
-      <div className="rounded-2xl border bg-white p-5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
-            <CalendarCog className="h-4.5 w-4.5" />
-          </span>
-          <div>
-            <h2 className="text-sm font-bold text-gray-900">Bron tahriri</h2>
-            <p className="text-xs text-gray-500">
-              Xodim bron yaratilgandan keyin necha daqiqa ichida uni tahrirlashi
-              (xonani almashtirishi) mumkin. Administrator istalgan payt
-              tahrirlay oladi. 0 — cheklovsiz.
-            </p>
-          </div>
-        </div>
+          <SaveRow
+            onSave={onSaveShift}
+            pending={saveShiftMutation.isPending}
+            saved={shiftSaved}
+            error={shiftError}
+          />
+        </SettingCard>
 
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">
+        <div className="grid gap-4">
+          {/* Bron tahriri vaqt oynasi */}
+          <SettingCard
+            id="booking-edit"
+            icon={CalendarCog}
+            iconClass="bg-sky-50 text-sky-600"
+            title="Bron tahriri"
+            desc="Xodim bron yaratilgandan keyin necha daqiqa ichida xonani almashtira olishi. Administrator istalgan payt tahrirlaydi. 0 — cheklovsiz."
+          >
+            <label className="text-xs font-medium text-gray-600">
               Tahrirlash oynasi (daqiqa)
             </label>
-            <Input
-              type="number"
-              min={0}
-              max={1440}
-              className="w-36"
-              value={windowMinutes}
-              onChange={(e) => setWindowMinutes(e.target.value)}
-              placeholder="10"
-            />
-          </div>
-          <Button
-            onClick={onSaveEditWindow}
-            disabled={saveEditWindowMutation.isPending}
-          >
-            {saveEditWindowMutation.isPending && (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            )}
-            Saqlash
-          </Button>
-          {editWinSaved && (
-            <span className="inline-flex items-center gap-1.5 pb-2 text-sm font-medium text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" /> Saqlandi
-            </span>
-          )}
-          {editWinError && (
-            <span className="pb-2 text-sm text-red-500">{editWinError}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Vazifalarni avtomatik yakunlash vaqtlari */}
-      <div className="rounded-2xl border bg-white p-5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
-            <Timer className="h-4.5 w-4.5" />
-          </span>
-          <div>
-            <h2 className="text-sm font-bold text-gray-900">
-              Vazifalarni avtomatik yakunlash
-            </h2>
-            <p className="text-xs text-gray-500">
-              Belgilangan vaqt ichida qo'lda yakunlanmagan xo'jalik vazifasini
-              tizim o'zi yopadi (jadvalda "avto" belgisi bilan ko'rinadi).
-              0 — avtomatik yakunlash o'chirilgan.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
-          {Object.entries(HK_TYPE_LABELS).map(([type, label]) => (
-            <div key={type} className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">
-                {label} (daqiqa)
-              </label>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <Input
                 type="number"
                 min={0}
                 max={1440}
-                value={durations[type] ?? ""}
-                onChange={(e) =>
-                  setDurations((d) => ({ ...d, [type]: e.target.value }))
-                }
-                placeholder={String(hkSettings?.defaults?.[type] ?? "")}
+                className="w-28"
+                value={windowMinutes}
+                onChange={(e) => setWindowMinutes(e.target.value)}
+                placeholder="10"
               />
+              {/* Tez tanlovlar */}
+              {["5", "10", "15", "30", "0"].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setWindowMinutes(m)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                    windowMinutes === m
+                      ? "bg-primary-600 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  )}
+                >
+                  {m === "0" ? "Cheklovsiz" : `${m} daq`}
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
+            <SaveRow
+              onSave={onSaveEditWindow}
+              pending={saveEditWindowMutation.isPending}
+              saved={editWinSaved}
+              error={editWinError}
+            />
+          </SettingCard>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button onClick={onSaveHk} disabled={saveHkMutation.isPending}>
-            {saveHkMutation.isPending && (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            )}
-            Saqlash
-          </Button>
-          {hkSaved && (
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" /> Saqlandi
-            </span>
-          )}
-          {hkError && <span className="text-sm text-red-500">{hkError}</span>}
+          {/* Vazifalarni avtomatik yakunlash vaqtlari */}
+          <SettingCard
+            id="auto-complete"
+            icon={Timer}
+            iconClass="bg-primary-50 text-primary-600"
+            title="Vazifalarni avtomatik yakunlash"
+            desc='Belgilangan vaqt ichida qo&apos;lda yakunlanmagan xo&apos;jalik vazifasini tizim o&apos;zi yopadi (jadvalda "avto" belgisi bilan). 0 — o&apos;chirilgan.'
+          >
+            <div className="grid gap-2.5 grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
+              {HK_TYPES.map((t) => (
+                <div
+                  key={t.key}
+                  className="rounded-xl border border-gray-200 p-3"
+                >
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                    <t.icon className="h-3.5 w-3.5 text-gray-400" />
+                    {t.label}
+                  </label>
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1440}
+                      className="h-9"
+                      value={durations[t.key] ?? ""}
+                      onChange={(e) =>
+                        setDurations((d) => ({ ...d, [t.key]: e.target.value }))
+                      }
+                      placeholder={String(hkSettings?.defaults?.[t.key] ?? "")}
+                    />
+                    <span className="text-[11px] text-gray-400">daq</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <SaveRow
+              onSave={onSaveHk}
+              pending={saveHkMutation.isPending}
+              saved={hkSaved}
+              error={hkError}
+            />
+          </SettingCard>
         </div>
       </div>
 
@@ -448,15 +530,20 @@ export const SettingsPage = () => {
       )}
 
       {/* Xavfli hudud */}
-      <div className="rounded-lg border-2 border-red-200 bg-white">
-        <div className="flex items-center gap-2 border-b border-red-100 bg-red-50/60 px-4 py-3 rounded-t-md">
-          <AlertTriangle className="h-4 w-4 text-red-500" />
-          <h2 className="text-sm font-bold text-red-700">
-            Xavfli hudud — ma'lumotlarni tozalash (Reset)
-          </h2>
+      <div id="reset" className="overflow-hidden rounded-2xl border-2 border-red-200 bg-white scroll-mt-4">
+        <div className="flex items-center gap-3 border-b border-red-100 bg-red-50/60 px-5 py-4">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+            <AlertTriangle className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="font-bold text-red-700">Xavfli hudud — ma'lumotlarni tozalash</h2>
+            <p className="mt-0.5 text-xs text-red-600/70">
+              Qaytarib bo'lmaydigan amal — faqat to'liq ishonch bilan bajaring
+            </p>
+          </div>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="space-y-4 p-5">
           <p className="text-sm text-gray-600">
             Tizimni "yangidek" holatga qaytarish. Bu amal{" "}
             <span className="font-semibold text-red-600">qaytarib bo'lmaydi</span> va
