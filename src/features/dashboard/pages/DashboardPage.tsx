@@ -29,6 +29,7 @@ import {
   Tooltip,
   LineChart,
   Line,
+  LabelList,
 } from "recharts"
 import { useRooms } from "@/features/rooms/api/rooms"
 import { useReservations } from "@/features/reservations/api/reservations"
@@ -159,25 +160,36 @@ function ChartTooltip({ active, payload, label }: any) {
   )
 }
 
-// Ro'yxat panellari uchun umumiy karta qobig'i
+// Ro'yxat panellari uchun umumiy karta qobig'i: bosqichli kirish animatsiyasi,
+// hover'da yengil ko'tarilish va ikonkaning jonlanishi (landing uslubida)
 function Panel({
   icon: Icon,
   iconClass,
   title,
   count,
+  delay = 0,
   children,
 }: {
   icon: any
   iconClass: string
   title: string
   count?: number
+  delay?: number
   children: React.ReactNode
 }) {
   return (
-    <div className="animate-dash-rise rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md">
+    <div
+      className="group animate-dash-rise rounded-2xl border bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+      style={{ animationDelay: `${340 + delay}ms` }}
+    >
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold text-gray-900">
-          <Icon className={cn("h-4 w-4 flex-shrink-0", iconClass)} />
+          <Icon
+            className={cn(
+              "h-4 w-4 flex-shrink-0 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110",
+              iconClass
+            )}
+          />
           <span className="truncate">{title}</span>
         </h2>
         {count !== undefined && (
@@ -286,6 +298,9 @@ export const DashboardPage = () => {
   }, [weekPayments])
 
   const weekTotal = chartData.reduce((s, d) => s + d.amount, 0)
+  // Eng yuqori kun — grafikda faqat shu ustun ustiga qiymat yoziladi
+  // (dataviz qoidasi: har nuqtaga emas, tanlab to'g'ridan-to'g'ri yorliq)
+  const weekMax = Math.max(...chartData.map((d) => d.amount), 0)
 
   // --- Xonalar holati taqsimoti ---
   const statusCounts = useMemo(() => {
@@ -497,7 +512,7 @@ export const DashboardPage = () => {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">
             {dateLine}
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl 2xl:text-4xl">
             {greeting}
             {user?.first_name ? `, ${user.first_name}` : ""}!
           </h1>
@@ -506,7 +521,7 @@ export const DashboardPage = () => {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-4xl">
+          <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-4xl 2xl:text-5xl">
             {clock}
           </p>
           <p className="text-[11px] text-gray-400">mahalliy vaqt</p>
@@ -523,7 +538,7 @@ export const DashboardPage = () => {
             <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
               Bugungi tushum
             </p>
-            <p className="mt-1 truncate text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+            <p className="mt-1 truncate text-2xl font-bold tabular-nums tracking-tight 2xl:text-3xl text-gray-900">
               {fmt(incomeAnim)}
               <span className="ml-1 text-sm font-medium text-gray-400">So'm</span>
             </p>
@@ -554,7 +569,7 @@ export const DashboardPage = () => {
           </p>
           <p
             className={cn(
-              "mt-1 truncate text-2xl font-bold tabular-nums tracking-tight",
+              "mt-1 truncate text-2xl font-bold tabular-nums tracking-tight 2xl:text-3xl",
               todayNet < 0 ? "text-red-600" : "text-emerald-600"
             )}
           >
@@ -570,7 +585,7 @@ export const DashboardPage = () => {
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
             Bandlik
           </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight 2xl:text-3xl text-gray-900">
             {occupancyAnim}
             <span className="text-sm font-medium text-gray-400">%</span>
           </p>
@@ -596,9 +611,14 @@ export const DashboardPage = () => {
           >
             <div className="flex items-center justify-between gap-2">
               <p className="truncate text-xs font-medium text-gray-500">{t.label}</p>
-              <t.icon className={cn("h-4 w-4 flex-shrink-0", t.iconClass)} />
+              <t.icon
+                className={cn(
+                  "h-4 w-4 flex-shrink-0 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-125",
+                  t.iconClass
+                )}
+              />
             </div>
-            <p className="mt-1.5 truncate text-2xl font-bold tracking-tight text-gray-900">
+            <p className="mt-1.5 truncate text-2xl font-bold tracking-tight text-gray-900 2xl:text-3xl">
               {t.value}
             </p>
             {/* Rang aksenti — hover'da cho'ziladigan chiziq */}
@@ -648,7 +668,38 @@ export const DashboardPage = () => {
                   }
                 />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(59,130,246,0.06)" }} />
-                <Bar dataKey="amount" fill="#2563eb" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                <Bar
+                  dataKey="amount"
+                  fill="#2563eb"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={40}
+                  activeBar={{ fill: "#1d4ed8" }}
+                >
+                  {/* Faqat eng yuqori kunga qiymat yorlig'i */}
+                  <LabelList
+                    dataKey="amount"
+                    content={(props: any) => {
+                      const { x, y, width, value } = props
+                      if (!value || value !== weekMax) return null
+                      return (
+                        <text
+                          x={Number(x) + Number(width) / 2}
+                          y={Number(y) - 7}
+                          textAnchor="middle"
+                          fontSize={11}
+                          fontWeight={700}
+                          fill="#9ca3af"
+                        >
+                          {value >= 1000000
+                            ? `${(value / 1000000).toFixed(1)}M`
+                            : value >= 1000
+                              ? `${Math.round(value / 1000)}K`
+                              : String(value)}
+                        </text>
+                      )
+                    }}
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -672,6 +723,7 @@ export const DashboardPage = () => {
                   <div
                     key={s.key}
                     title={`${s.label}: ${statusCounts[s.key]} ta`}
+                    className="transition-all duration-700"
                     style={{
                       width: `${(statusCounts[s.key] / totalRooms) * 100}%`,
                       backgroundColor: s.color,
@@ -886,6 +938,7 @@ export const DashboardPage = () => {
           iconClass="text-amber-600"
           title="Bugungi chiqishlar"
           count={departures.length}
+          delay={60}
         >
           {departures.length === 0 ? (
             <p className="text-sm text-gray-400">Bugun chiqishlar yo'q</p>
@@ -919,6 +972,7 @@ export const DashboardPage = () => {
           icon={CalendarCheck}
           iconClass="text-primary-600"
           title="So'nggi bandlovlar"
+          delay={120}
         >
           {recentReservations.length === 0 ? (
             <p className="text-sm text-gray-400">Bandlovlar yo'q</p>
@@ -954,6 +1008,7 @@ export const DashboardPage = () => {
           icon={Wallet}
           iconClass="text-emerald-600"
           title="To'lov usullari (bugun)"
+          delay={180}
         >
           {methodSplit.length === 0 ? (
             <p className="text-sm text-gray-400">Bugun to'lovlar yo'q</p>
@@ -1005,6 +1060,7 @@ export const DashboardPage = () => {
           icon={Trophy}
           iconClass="text-amber-600"
           title="Eng faol xodimlar (bugun)"
+          delay={240}
         >
           {topStaff.length === 0 ? (
             <p className="text-sm text-gray-400">Bugun bronlar yaratilmagan</p>
@@ -1053,6 +1109,7 @@ export const DashboardPage = () => {
           iconClass="text-orange-600"
           title="Xo'jalik vazifalari"
           count={openTasks.length}
+          delay={300}
         >
           {openTasks.length === 0 ? (
             <p className="text-sm text-gray-400">Ochiq vazifalar yo'q</p>
