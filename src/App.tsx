@@ -19,6 +19,7 @@ import { ExpensesPage } from "./features/expenses/pages/ExpensesPage";
 import { ShopPage } from "./features/shop/pages/ShopPage";
 import { MyReportsPage } from "./features/reports/pages/MyReportsPage";
 import { ShiftsHistoryPage } from "./features/shifts/pages/ShiftsHistoryPage";
+import { ProfilePage } from "./features/profile/pages/ProfilePage";
 import { WarehousePage } from "./features/shop/pages/WarehousePage";
 import { useAuthStore } from "./store/auth";
 
@@ -55,6 +56,7 @@ function App() {
           <Route path="shop" element={<ShopPage />} />
           <Route path="my-reports" element={<MyReportsPage />} />
           <Route path="shifts" element={<ShiftsHistoryPage />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="warehouse" element={<WarehousePage />} />
           {/* Boshqaruv bo'limlari (admin/menejer) */}
           <Route path="room-types" element={<RoomTypesPage />} />

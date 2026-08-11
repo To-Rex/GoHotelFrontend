@@ -186,12 +186,15 @@ export const Sidebar = () => {
         </div>
       )}
 
-      {/* User */}
+      {/* User — bosilganda profil sahifasi ochiladi */}
       <div className="flex-shrink-0 border-t border-border/70 p-3">
-        <div
+        <Link
+          to="/profile"
+          title="Profil"
           className={cn(
             "flex items-center rounded-xl transition-colors",
-            isOpen ? "gap-3 p-2 hover:bg-muted" : "justify-center"
+            isOpen ? "gap-3 p-2 hover:bg-muted" : "justify-center py-1 hover:opacity-80",
+            location.pathname === "/profile" && isOpen && "bg-muted"
           )}
         >
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-semibold text-white shadow-sm ring-2 ring-primary-500/15">
@@ -207,7 +210,7 @@ export const Sidebar = () => {
               </p>
             </div>
           )}
-        </div>
+        </Link>
       </div>
     </aside>
   );

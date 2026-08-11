@@ -66,6 +66,8 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
     "service.update",
     "hotel_service.manage",
   ],
+  // Profil — har bir kirgan foydalanuvchi o'zinikini ko'radi
+  "/profile": [],
 };
 
 // Faqat ADMIN/SUPER_ADMIN uchun ochiq marshrutlar (avvalgi xatti-harakat saqlangan).

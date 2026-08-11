@@ -22,7 +22,7 @@ const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 
 // Modul nomlarini o'zbekchaga o'girish (backend `module` maydoni)
-const MODULE_LABELS: Record<string, string> = {
+export const MODULE_LABELS: Record<string, string> = {
   reservation: "Bronlar",
   guest: "Mehmonlar",
   room: "Xonalar",
@@ -46,7 +46,7 @@ const HOUSEKEEPER_TEMPLATE = PERMISSION_TEMPLATES.find((t) => t.id === "housekee
 // --- Ruxsat kodlarining O'ZBEKCHA nomlari ---
 // Ma'lum kodlar uchun tabiiy ibora; ro'yxatda yo'qlari uchun kod bo'laklaridan
 // avtomatik yasaladi (pastdagi uzPermissionLabel)
-const UZ_PERMISSION_LABELS: Record<string, string> = {
+export const UZ_PERMISSION_LABELS: Record<string, string> = {
   "reservation.create": "Bron yaratish",
   "reservation.update": "Bronni tahrirlash",
   "reservation.view": "Bronlarni ko'rish",
@@ -151,7 +151,7 @@ const UZ_SUBJECTS: Record<string, string> = {
   amenity: "Qulaylik",
 }
 
-function uzPermissionLabel(code: string, fallback: string): string {
+export function uzPermissionLabel(code: string, fallback: string): string {
   if (UZ_PERMISSION_LABELS[code]) return UZ_PERMISSION_LABELS[code]
   const parts = code.split(".")
   if (parts.length < 2) return fallback

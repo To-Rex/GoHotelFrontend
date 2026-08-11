@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
 import {
@@ -11,6 +12,7 @@ import {
   Clock,
   RotateCw,
   ChevronDown,
+  UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
@@ -238,6 +240,15 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                   {user?.hotel_name ? ` · ${user.hotel_name}` : ""}
                 </p>
               </div>
+              {/* Profil sahifasi */}
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <UserRound size={16} className="text-muted-foreground" />
+                Profil
+              </Link>
               {/* Chiqish */}
               <button
                 type="button"
@@ -245,7 +256,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                   setMenuOpen(false);
                   logout();
                 }}
-                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                className="flex w-full items-center gap-2.5 border-t border-border px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
               >
                 <LogOut size={16} />
                 Chiqish

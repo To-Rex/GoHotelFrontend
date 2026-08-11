@@ -21,6 +21,10 @@ export interface User {
   work_hours_per_day?: number;
   work_start?: string;
   work_end?: string;
+  // Profil sahifasi uchun qo'shimcha maydonlar (/auth/me dan keladi)
+  phone?: string | null;
+  status?: string;
+  last_login_at?: string | null;
 }
 
 interface AuthState {
