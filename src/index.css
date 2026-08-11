@@ -82,6 +82,24 @@
   from { transform: scaleY(0.08); }
   to { transform: scaleY(1); }
 }
+/* Fon yulduzchalari — sof rangli nuqtalarning miltillashi (gradientsiz) */
+@keyframes landing-twinkle {
+  0%, 100% { opacity: 0.12; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.6); }
+}
+.landing-star {
+  position: absolute;
+  border-radius: 9999px;
+  animation: landing-twinkle 4.5s ease-in-out infinite;
+}
+/* Sekin aylanadigan bezak halqalari */
+@keyframes landing-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.landing-ring {
+  animation: landing-spin-slow 60s linear infinite;
+}
 .landing-bar {
   transform-origin: bottom;
   animation: landing-bar 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -108,6 +126,8 @@
   .animate-landing-float,
   .animate-landing-marquee,
   .landing-bar,
+  .landing-star,
+  .landing-ring,
   .animate-ping {
     animation: none !important;
   }

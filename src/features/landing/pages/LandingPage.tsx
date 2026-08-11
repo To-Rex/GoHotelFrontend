@@ -195,18 +195,53 @@ export const LandingPage = () => {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-zinc-100 antialiased">
-      {/* ORQA FON: suzuvchi yorug' dog'lar (yashil/sariq/binafsha) + nuqtali to'r */}
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute -top-40 -left-40 h-[26rem] w-[26rem] rounded-full bg-emerald-500/12 blur-3xl animate-login-blob sm:h-[30rem] sm:w-[30rem]" />
+      {/* ORQA FON: yaxlit qora rang — GRADIENTSIZ. Bezak: miltillovchi sof
+          rangli yulduzchalar va sekin aylanadigan ingichka halqalar */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        {[
+          { top: "6%", left: "8%", size: 3, delay: "0s", color: "bg-emerald-400" },
+          { top: "12%", left: "72%", size: 2, delay: "-1.2s", color: "bg-white" },
+          { top: "18%", left: "38%", size: 2, delay: "-2.4s", color: "bg-amber-300" },
+          { top: "24%", left: "88%", size: 3, delay: "-0.6s", color: "bg-emerald-300" },
+          { top: "30%", left: "14%", size: 2, delay: "-3.1s", color: "bg-white" },
+          { top: "36%", left: "55%", size: 2, delay: "-1.8s", color: "bg-violet-300" },
+          { top: "44%", left: "80%", size: 2, delay: "-2.9s", color: "bg-white" },
+          { top: "50%", left: "5%", size: 3, delay: "-0.9s", color: "bg-amber-300" },
+          { top: "56%", left: "42%", size: 2, delay: "-3.7s", color: "bg-emerald-400" },
+          { top: "62%", left: "68%", size: 2, delay: "-1.5s", color: "bg-white" },
+          { top: "70%", left: "22%", size: 2, delay: "-2.1s", color: "bg-violet-300" },
+          { top: "76%", left: "90%", size: 3, delay: "-0.3s", color: "bg-white" },
+          { top: "82%", left: "50%", size: 2, delay: "-3.4s", color: "bg-emerald-300" },
+          { top: "88%", left: "12%", size: 2, delay: "-1.1s", color: "bg-amber-300" },
+          { top: "92%", left: "74%", size: 2, delay: "-2.7s", color: "bg-white" },
+          { top: "8%", left: "52%", size: 2, delay: "-4.1s", color: "bg-white" },
+          { top: "40%", left: "30%", size: 2, delay: "-0.2s", color: "bg-emerald-400" },
+          { top: "66%", left: "35%", size: 2, delay: "-3.9s", color: "bg-white" },
+          { top: "28%", left: "62%", size: 2, delay: "-1.7s", color: "bg-white" },
+          { top: "84%", left: "30%", size: 2, delay: "-2.5s", color: "bg-violet-300" },
+        ].map((s, i) => (
+          <span
+            key={i}
+            className={`landing-star ${s.color}`}
+            style={{
+              top: s.top,
+              left: s.left,
+              width: s.size,
+              height: s.size,
+              animationDelay: s.delay,
+            }}
+          />
+        ))}
+        {/* Ingichka halqalar — sof chegara ranglari, sekin aylanadi */}
+        <div className="landing-ring absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full border border-emerald-500/10 sm:h-[34rem] sm:w-[34rem]">
+          <span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/40" />
+        </div>
         <div
-          className="absolute top-1/3 -right-48 h-[22rem] w-[22rem] rounded-full bg-amber-500/8 blur-3xl animate-login-blob sm:h-[26rem] sm:w-[26rem]"
-          style={{ animationDelay: "-7s" }}
-        />
-        <div
-          className="absolute -bottom-48 left-1/4 h-[20rem] w-[20rem] rounded-full bg-violet-500/8 blur-3xl animate-login-blob sm:h-[24rem] sm:w-[24rem]"
-          style={{ animationDelay: "-12s" }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[size:30px_30px]" />
+          className="landing-ring absolute -bottom-52 -left-52 h-[30rem] w-[30rem] rounded-full border border-white/5 sm:h-[38rem] sm:w-[38rem]"
+          style={{ animationDirection: "reverse", animationDuration: "80s" }}
+        >
+          <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400/40" />
+        </div>
       </div>
 
       {/* NAVBAR */}
@@ -380,8 +415,8 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* MODUL LENTASI — cheksiz marquee */}
-      <section className="relative z-10 border-y border-white/5 bg-white/[0.03] py-4 sm:py-5">
+      {/* MODUL LENTASI — ikki yo'nalishda oqadigan cheksiz marquee */}
+      <section className="relative z-10 space-y-2.5 border-y border-white/5 bg-white/[0.03] py-4 sm:space-y-3 sm:py-5">
         <div className="overflow-hidden">
           <div className="flex w-max animate-landing-marquee gap-2.5 sm:gap-3">
             {[...MARQUEE, ...MARQUEE].map((m, i) => (
@@ -390,6 +425,22 @@ export const LandingPage = () => {
                 className="flex items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-300 sm:px-4 sm:py-2 sm:text-sm"
               >
                 <m.icon className="h-4 w-4 text-emerald-400" />
+                {m.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="overflow-hidden">
+          <div
+            className="flex w-max animate-landing-marquee gap-2.5 sm:gap-3"
+            style={{ animationDirection: "reverse", animationDuration: "38s" }}
+          >
+            {[...MARQUEE].reverse().concat([...MARQUEE].reverse()).map((m, i) => (
+              <span
+                key={i}
+                className="flex items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-400 sm:px-4 sm:py-2 sm:text-sm"
+              >
+                <m.icon className="h-4 w-4 text-amber-400" />
                 {m.label}
               </span>
             ))}
@@ -425,7 +476,7 @@ export const LandingPage = () => {
                 className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100 ${f.glow}`}
               />
               <span
-                className={`relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 ${f.color}`}
+                className={`relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 ${f.color}`}
               >
                 <f.icon className="h-5 w-5" />
               </span>
