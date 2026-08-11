@@ -524,8 +524,16 @@ export const LandingPage = () => {
         </div>
       </div>
 
-      {/* ================= NAVBAR ================= */}
-      <header className="relative z-20 mx-auto flex max-w-6xl 2xl:max-w-[88rem] items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
+      {/* ================= NAVBAR — yopishqoq, scroll'da ham doim ko'rinadi ================= */}
+      <header
+        className={cn(
+          "sticky top-0 z-40 border-b backdrop-blur-md transition-colors duration-700",
+          night
+            ? "border-white/5 bg-zinc-950/80"
+            : "border-orange-900/10 bg-[#fdf6e3]/80"
+        )}
+      >
+        <div className="mx-auto flex max-w-6xl 2xl:max-w-[88rem] items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-3.5">
         <div className="flex items-center gap-2.5">
           <div
             className={cn(
@@ -605,6 +613,7 @@ export const LandingPage = () => {
           >
             Kirish
           </Link>
+        </div>
         </div>
       </header>
 
