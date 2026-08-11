@@ -42,8 +42,14 @@ import { cn } from "@/lib/utils"
  * Fon yaxlit ranglarda — gradientsiz. Boshqa sahifalarga ta'sir yo'q.
  */
 
-// Scroll'da ko'ringan elementlarga .landing-visible qo'shadi (bir marta)
+// Scroll'da ko'ringan elementlarga .landing-visible qo'shadi (bir marta).
+// MUHIM: klass classList orqali (React'siz) qo'shilgani uchun sahna (kun/tun)
+// almashganda React className'ni qayta yozib uni o'chirib yuborardi — shuning
+// uchun ochilgan elementlar WeakSet'da eslab qolinadi va HAR renderdan keyin
+// klass qayta tiklanadi. Aks holda bo'limlar ko'rinmay qolib ketadi.
 function useReveal() {
+  const revealedRef = useRef<WeakSet<Element>>(new WeakSet())
+
   useEffect(() => {
     const els = document.querySelectorAll(".landing-reveal")
     const io = new IntersectionObserver(
@@ -51,6 +57,7 @@ function useReveal() {
         for (const e of entries) {
           if (e.isIntersecting) {
             e.target.classList.add("landing-visible")
+            revealedRef.current.add(e.target)
             io.unobserve(e.target)
           }
         }
@@ -60,6 +67,14 @@ function useReveal() {
     els.forEach((el) => io.observe(el))
     return () => io.disconnect()
   }, [])
+
+  // Har renderdan keyin: React o'chirib yuborgan bo'lsa, ochilgan elementlarga
+  // landing-visible qayta qo'yiladi (deps yo'q — ataylab har render)
+  useEffect(() => {
+    document.querySelectorAll(".landing-reveal").forEach((el) => {
+      if (revealedRef.current.has(el)) el.classList.add("landing-visible")
+    })
+  })
 }
 
 // Ko'ringanda 0 dan sanab chiqadigan raqam
