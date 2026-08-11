@@ -25,9 +25,10 @@ import {
 /**
  * GoHotel landing (marketing) sahifasi — /landing va /leanding.
  *
- * To'liq mustaqil: ilova mavzusiga bog'lanmagan doimiy tungi palitra,
- * scroll'da asta paydo bo'ladigan bo'limlar, suzuvchi mockup, sanovchi
- * raqamlar va cheksiz modul lentasi. Boshqa sahifalarga ta'sir qilmaydi.
+ * To'liq mustaqil: ilova mavzusiga bog'lanmagan doimiy qora (zinc) palitra,
+ * yashil aksent, GRADIENTSIZ. Scroll'da asta paydo bo'ladigan bo'limlar,
+ * suzuvchi mockup, sanovchi raqamlar va cheksiz modul lentasi. Har qanday
+ * display o'lchamiga moslashadi. Boshqa sahifalarga ta'sir qilmaydi.
  */
 
 // Scroll'da ko'ringan elementlarga .landing-visible qo'shadi (bir marta)
@@ -87,54 +88,63 @@ function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
   )
 }
 
+// Har karta o'z aksent rangida (ko'k ishlatilmaydi)
 const FEATURES = [
   {
     icon: CalendarDays,
     title: "Bron va band qilish",
     text: "Soatlik va kunlik bronlar, jonli bandlov doskasi, surib ko'chirish va xona almashtirish — hammasi bir ekranda.",
-    accent: "from-sky-500/20 to-sky-500/0 text-sky-400",
+    color: "text-emerald-400",
+    glow: "bg-emerald-500/15",
   },
   {
     icon: Wallet,
     title: "Kassa va smenalar",
     text: "Smena topshirish parol tasdig'i bilan, \"ko'r sanash\" kassasi, kamomad nazorati va kunlik avtomatik kesim.",
-    accent: "from-emerald-500/20 to-emerald-500/0 text-emerald-400",
+    color: "text-amber-400",
+    glow: "bg-amber-500/15",
   },
   {
     icon: ScanLine,
     title: "Hujjat skaneri",
     text: "Passport va ID kartani kamera orqali soniyalarda o'qiydi — mehmon ma'lumotlari formaga o'zi tushadi.",
-    accent: "from-violet-500/20 to-violet-500/0 text-violet-400",
+    color: "text-violet-400",
+    glow: "bg-violet-500/15",
   },
   {
     icon: ScanFace,
     title: "Yuz bilan kirish",
     text: "Xodimlar parol termasdan, kameraga qarashning o'zida tizimga kiradi — tez va xavfsiz.",
-    accent: "from-fuchsia-500/20 to-fuchsia-500/0 text-fuchsia-400",
+    color: "text-rose-400",
+    glow: "bg-rose-500/15",
   },
   {
     icon: Package,
     title: "Ombor nazorati",
     text: "FIFO partiyalar, kirim-chiqim, spisaniye va inventarizatsiya — har bir mahsulot tannarxigacha hisobda.",
-    accent: "from-amber-500/20 to-amber-500/0 text-amber-400",
+    color: "text-orange-400",
+    glow: "bg-orange-500/15",
   },
   {
     icon: BarChart3,
     title: "Jonli statistika",
     text: "Tushum, bandlik, smenalar va xodimlar samaradorligi — boshqaruv paneli har daqiqada yangilanadi.",
-    accent: "from-blue-500/20 to-blue-500/0 text-blue-400",
+    color: "text-teal-400",
+    glow: "bg-teal-500/15",
   },
   {
     icon: Store,
     title: "Mini-do'kon",
     text: "Mehmonlarga savdo — bron hisobiga yoki naqd. Har sotuv moliya hisobotiga o'z-o'zidan tushadi.",
-    accent: "from-rose-500/20 to-rose-500/0 text-rose-400",
+    color: "text-lime-400",
+    glow: "bg-lime-500/15",
   },
   {
     icon: Smartphone,
     title: "Har qanday qurilmada",
     text: "O'rnatiladigan ilova (PWA), telefon-planshet-kompyuterga to'liq moslashgan, tun mavzusi bilan.",
-    accent: "from-teal-500/20 to-teal-500/0 text-teal-400",
+    color: "text-fuchsia-400",
+    glow: "bg-fuchsia-500/15",
   },
 ]
 
@@ -184,30 +194,30 @@ export const LandingPage = () => {
   }, [])
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-950 text-slate-100 antialiased">
-      {/* ORQA FON: suzuvchi yorug' dog'lar + nuqtali to'r */}
+    <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-zinc-100 antialiased">
+      {/* ORQA FON: suzuvchi yorug' dog'lar (yashil/sariq/binafsha) + nuqtali to'r */}
       <div className="pointer-events-none fixed inset-0">
-        <div className="absolute -top-40 -left-40 h-[30rem] w-[30rem] rounded-full bg-primary-500/20 blur-3xl animate-login-blob" />
+        <div className="absolute -top-40 -left-40 h-[26rem] w-[26rem] rounded-full bg-emerald-500/12 blur-3xl animate-login-blob sm:h-[30rem] sm:w-[30rem]" />
         <div
-          className="absolute top-1/3 -right-48 h-[26rem] w-[26rem] rounded-full bg-indigo-500/15 blur-3xl animate-login-blob"
+          className="absolute top-1/3 -right-48 h-[22rem] w-[22rem] rounded-full bg-amber-500/8 blur-3xl animate-login-blob sm:h-[26rem] sm:w-[26rem]"
           style={{ animationDelay: "-7s" }}
         />
         <div
-          className="absolute -bottom-48 left-1/4 h-[24rem] w-[24rem] rounded-full bg-cyan-500/10 blur-3xl animate-login-blob"
+          className="absolute -bottom-48 left-1/4 h-[20rem] w-[20rem] rounded-full bg-violet-500/8 blur-3xl animate-login-blob sm:h-[24rem] sm:w-[24rem]"
           style={{ animationDelay: "-12s" }}
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] bg-[size:30px_30px]" />
       </div>
 
       {/* NAVBAR */}
-      <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
+      <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 shadow-lg shadow-primary-600/40">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 shadow-lg shadow-emerald-600/30 sm:h-10 sm:w-10">
             <Building2 className="h-5 w-5 text-white" />
           </div>
           <span className="text-lg font-bold tracking-tight">GoHotel</span>
         </div>
-        <nav className="hidden items-center gap-7 text-sm font-medium text-slate-300 md:flex">
+        <nav className="hidden items-center gap-7 text-sm font-medium text-zinc-400 md:flex">
           <a href="#features" className="transition-colors hover:text-white">
             Imkoniyatlar
           </a>
@@ -220,34 +230,32 @@ export const LandingPage = () => {
         </nav>
         <Link
           to="/login"
-          className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-white/10 transition-all hover:scale-105 hover:shadow-white/20 active:scale-95"
+          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:scale-105 hover:shadow-white/20 active:scale-95 sm:px-5"
         >
           Kirish
         </Link>
       </header>
 
       {/* HERO */}
-      <section className="relative z-10 mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-10 lg:grid-cols-2 lg:pt-16">
+      <section className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 sm:px-5 sm:pb-20 lg:grid-cols-2 lg:gap-12 lg:pt-16">
         <div>
-          <p className="landing-reveal inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-slate-300 backdrop-blur">
+          <p className="landing-reveal inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-amber-300" />
             Zamonaviy mehmonxonalar uchun yagona tizim
           </p>
           <h1
-            className="landing-reveal mt-5 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
+            className="landing-reveal mt-5 text-3xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-6xl"
             style={{ transitionDelay: "80ms" }}
           >
             Mehmonxonangizni{" "}
             <span className="relative whitespace-nowrap">
-              <span className="relative z-10 bg-gradient-to-r from-primary-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent">
-                bitta tizimda
-              </span>
-              <span className="absolute inset-x-0 bottom-1 -z-0 h-3 rounded-full bg-primary-500/20" />
+              <span className="relative z-10 text-emerald-400">bitta tizimda</span>
+              <span className="absolute inset-x-0 bottom-1 -z-0 h-3 rounded-full bg-emerald-500/20" />
             </span>{" "}
             boshqaring
           </h1>
           <p
-            className="landing-reveal mt-5 max-w-lg text-base leading-relaxed text-slate-400 sm:text-lg"
+            className="landing-reveal mt-5 max-w-lg text-base leading-relaxed text-zinc-400 sm:text-lg"
             style={{ transitionDelay: "160ms" }}
           >
             Bron, kassa-smena, ombor, do'kon va jonli hisobotlar — resepsiyadan
@@ -260,20 +268,20 @@ export const LandingPage = () => {
           >
             <Link
               to="/login"
-              className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-600 to-indigo-600 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-primary-600/30 transition-all hover:scale-[1.03] hover:shadow-primary-500/40 active:scale-95"
+              className="group flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.03] hover:bg-emerald-500 active:scale-95 sm:px-7"
             >
               Tizimga kirish
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <a
               href="#features"
-              className="rounded-full border border-white/15 bg-white/5 px-7 py-3.5 text-sm font-semibold text-slate-200 backdrop-blur transition-all hover:border-white/30 hover:bg-white/10 active:scale-95"
+              className="rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-semibold text-zinc-200 backdrop-blur transition-all hover:border-white/30 hover:bg-white/10 active:scale-95 sm:px-7"
             >
               Imkoniyatlarni ko'rish
             </a>
           </div>
           <div
-            className="landing-reveal mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-400"
+            className="landing-reveal mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-zinc-400"
             style={{ transitionDelay: "320ms" }}
           >
             {["O'rnatiladigan PWA ilova", "Yuz bilan kirish", "Hujjat skaneri"].map(
@@ -289,93 +297,99 @@ export const LandingPage = () => {
 
         {/* HERO MOCKUP — suzuvchi mini boshqaruv paneli */}
         <div className="landing-reveal relative" style={{ transitionDelay: "200ms" }}>
-          <div className="animate-landing-float relative mx-auto max-w-md">
+          <div className="animate-landing-float relative mx-auto w-full max-w-md">
             {/* Asosiy oyna */}
-            <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-5 shadow-2xl shadow-black/50 backdrop-blur">
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/90 p-4 shadow-2xl shadow-black/50 backdrop-blur sm:p-5">
               <div className="mb-4 flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
-                <span className="ml-3 text-[11px] text-slate-500">
+                <span className="ml-3 truncate text-[11px] text-zinc-500">
                   GoHotel · Boshqaruv paneli
                 </span>
               </div>
               {/* KPI chiplar */}
-              <div className="grid grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                 {[
                   { label: "Tushum", value: "12.4M", color: "text-emerald-400" },
-                  { label: "Bandlik", value: "86%", color: "text-sky-400" },
+                  { label: "Bandlik", value: "86%", color: "text-amber-400" },
                   { label: "Bronlar", value: "34", color: "text-violet-400" },
                 ].map((k) => (
                   <div
                     key={k.label}
-                    className="rounded-xl border border-white/5 bg-white/5 p-3"
+                    className="rounded-xl border border-white/5 bg-white/5 p-2.5 sm:p-3"
                   >
-                    <p className="text-[10px] text-slate-500">{k.label}</p>
-                    <p className={`text-lg font-bold tabular-nums ${k.color}`}>
+                    <p className="text-[10px] text-zinc-500">{k.label}</p>
+                    <p
+                      className={`text-base font-bold tabular-nums sm:text-lg ${k.color}`}
+                    >
                       {k.value}
                     </p>
                   </div>
                 ))}
               </div>
-              {/* Grafik — o'sib chiqadigan ustunlar */}
-              <div className="mt-4 flex h-28 items-end gap-2 rounded-xl border border-white/5 bg-white/5 p-3">
+              {/* Grafik — o'sib chiqadigan yashil ustunlar */}
+              <div className="mt-4 flex h-24 items-end gap-1.5 rounded-xl border border-white/5 bg-white/5 p-3 sm:h-28 sm:gap-2">
                 {[35, 55, 42, 70, 58, 85, 64, 92, 76, 100, 68, 88].map((h, i) => (
                   <span
                     key={i}
-                    className="landing-bar flex-1 rounded-t-md bg-gradient-to-t from-primary-600 to-sky-400"
-                    style={{ height: `${h}%`, animationDelay: `${300 + i * 90}ms` }}
+                    className="landing-bar flex-1 rounded-t-md bg-emerald-500"
+                    style={{
+                      height: `${h}%`,
+                      animationDelay: `${300 + i * 90}ms`,
+                      opacity: 0.55 + (h / 100) * 0.45,
+                    }}
                   />
                 ))}
               </div>
               {/* Pastki qator */}
-              <div className="mt-4 flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-3.5 py-2.5">
-                <span className="flex items-center gap-2 text-xs text-slate-300">
+              <div className="mt-4 flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-white/5 px-3.5 py-2.5">
+                <span className="flex items-center gap-2 text-xs text-zinc-300">
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                   </span>
                   Smena faol · kassa nazoratda
                 </span>
-                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <TrendingUp className="h-4 w-4 flex-shrink-0 text-emerald-400" />
               </div>
             </div>
 
-            {/* Suzuvchi yon kartalar */}
+            {/* Suzuvchi yon kartalar (faqat keng ekranlarda) */}
             <div
-              className="animate-landing-float absolute -left-6 top-16 hidden rounded-xl border border-white/10 bg-slate-900/95 px-3.5 py-2.5 shadow-xl shadow-black/40 backdrop-blur sm:block"
+              className="animate-landing-float absolute -left-6 top-16 hidden rounded-xl border border-white/10 bg-zinc-900/95 px-3.5 py-2.5 shadow-xl shadow-black/40 backdrop-blur sm:block"
               style={{ animationDelay: "-2.5s" }}
             >
-              <p className="flex items-center gap-2 text-xs font-semibold text-slate-200">
-                <BedDouble className="h-3.5 w-3.5 text-sky-400" />
+              <p className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
+                <BedDouble className="h-3.5 w-3.5 text-emerald-400" />
                 104-xona band qilindi
               </p>
-              <p className="mt-0.5 text-[10px] text-slate-500">hozirgina · 2 kecha</p>
+              <p className="mt-0.5 text-[10px] text-zinc-500">hozirgina · 2 kecha</p>
             </div>
             <div
-              className="animate-landing-float absolute -right-4 bottom-10 hidden rounded-xl border border-white/10 bg-slate-900/95 px-3.5 py-2.5 shadow-xl shadow-black/40 backdrop-blur sm:block"
+              className="animate-landing-float absolute -right-4 bottom-10 hidden rounded-xl border border-white/10 bg-zinc-900/95 px-3.5 py-2.5 shadow-xl shadow-black/40 backdrop-blur sm:block"
               style={{ animationDelay: "-4.5s" }}
             >
-              <p className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+              <p className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
                 <ScanLine className="h-3.5 w-3.5 text-violet-400" />
                 Passport o'qildi
               </p>
-              <p className="mt-0.5 text-[10px] text-slate-500">2 soniyada · avtomatik</p>
+              <p className="mt-0.5 text-[10px] text-zinc-500">2 soniyada · avtomatik</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* MODUL LENTASI — cheksiz marquee */}
-      <section className="relative z-10 border-y border-white/5 bg-white/[0.03] py-5">
+      <section className="relative z-10 border-y border-white/5 bg-white/[0.03] py-4 sm:py-5">
         <div className="overflow-hidden">
-          <div className="flex w-max animate-landing-marquee gap-3">
+          <div className="flex w-max animate-landing-marquee gap-2.5 sm:gap-3">
             {[...MARQUEE, ...MARQUEE].map((m, i) => (
               <span
                 key={i}
-                className="flex items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-300"
+                className="flex items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-zinc-300 sm:px-4 sm:py-2 sm:text-sm"
               >
-                <m.icon className="h-4 w-4 text-primary-400" />
+                <m.icon className="h-4 w-4 text-emerald-400" />
                 {m.label}
               </span>
             ))}
@@ -384,20 +398,23 @@ export const LandingPage = () => {
       </section>
 
       {/* IMKONIYATLAR */}
-      <section id="features" className="relative z-10 mx-auto max-w-6xl px-5 py-24">
+      <section
+        id="features"
+        className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24"
+      >
         <div className="landing-reveal mx-auto max-w-2xl text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-400">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400">
             Imkoniyatlar
           </p>
-          <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
             Har bir bo'lim — puxta o'ylangan
           </h2>
-          <p className="mt-3 text-slate-400">
+          <p className="mt-3 text-sm text-zinc-400 sm:text-base">
             Kichik hosteldan yirik mehmonxonagacha — kundalik ishning har bir
             qadami uchun tayyor vosita.
           </p>
         </div>
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-3.5 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {FEATURES.map((f, i) => (
             <div
               key={f.title}
@@ -405,15 +422,15 @@ export const LandingPage = () => {
               style={{ transitionDelay: `${(i % 4) * 70}ms` }}
             >
               <div
-                className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100 ${f.accent.split(" ").slice(0, 2).join(" ")}`}
+                className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100 ${f.glow}`}
               />
               <span
-                className={`relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 ${f.accent.split(" ").pop()}`}
+                className={`relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 ${f.color}`}
               >
                 <f.icon className="h-5 w-5" />
               </span>
-              <h3 className="relative mt-4 font-bold text-slate-100">{f.title}</h3>
-              <p className="relative mt-1.5 text-sm leading-relaxed text-slate-400">
+              <h3 className="relative mt-4 font-bold text-zinc-100">{f.title}</h3>
+              <p className="relative mt-1.5 text-sm leading-relaxed text-zinc-400">
                 {f.text}
               </p>
             </div>
@@ -422,30 +439,33 @@ export const LandingPage = () => {
       </section>
 
       {/* QANDAY ISHLAYDI */}
-      <section id="how" className="relative z-10 border-t border-white/5 bg-white/[0.02]">
-        <div className="mx-auto max-w-6xl px-5 py-24">
+      <section
+        id="how"
+        className="relative z-10 border-t border-white/5 bg-white/[0.02]"
+      >
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24">
           <div className="landing-reveal mx-auto max-w-2xl text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-400">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400">
               Qanday ishlaydi
             </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
               3 qadamda ishga tushadi
             </h2>
           </div>
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
+          <div className="mt-10 grid gap-4 sm:mt-12 md:grid-cols-3">
             {STEPS.map((s, i) => (
               <div
                 key={s.n}
                 className="landing-reveal relative rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur"
                 style={{ transitionDelay: `${i * 120}ms` }}
               >
-                <span className="bg-gradient-to-b from-white/25 to-white/0 bg-clip-text text-5xl font-extrabold text-transparent">
-                  {s.n}
-                </span>
+                <span className="text-5xl font-extrabold text-white/10">{s.n}</span>
                 <h3 className="mt-3 text-lg font-bold">{s.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{s.text}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                  {s.text}
+                </p>
                 {i < STEPS.length - 1 && (
-                  <ArrowRight className="absolute -right-4 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-slate-600 md:block" />
+                  <ArrowRight className="absolute -right-4 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-zinc-600 md:block" />
                 )}
               </div>
             ))}
@@ -454,8 +474,11 @@ export const LandingPage = () => {
       </section>
 
       {/* RAQAMLAR */}
-      <section id="stats" className="relative z-10 mx-auto max-w-6xl px-5 py-24">
-        <div className="landing-reveal grid gap-4 rounded-3xl border border-white/10 bg-gradient-to-br from-primary-600/15 via-slate-900/60 to-indigo-600/15 p-8 backdrop-blur sm:grid-cols-2 lg:grid-cols-4 sm:p-10">
+      <section
+        id="stats"
+        className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-5 sm:py-24"
+      >
+        <div className="landing-reveal grid gap-6 rounded-3xl border border-emerald-500/20 bg-white/[0.04] p-7 backdrop-blur sm:grid-cols-2 sm:gap-4 sm:p-10 lg:grid-cols-4">
           {[
             { to: 15, suffix: "+", label: "Tayyor modul" },
             { to: 2, suffix: " son.", label: "Hujjatni o'qish tezligi" },
@@ -463,32 +486,29 @@ export const LandingPage = () => {
             { to: 24, suffix: "/7", label: "Doim ishlaydi" },
           ].map((s) => (
             <div key={s.label} className="text-center">
-              <p className="text-4xl font-extrabold text-white sm:text-5xl">
+              <p className="text-3xl font-extrabold text-emerald-400 sm:text-5xl">
                 <CountUp to={s.to} suffix={s.suffix} />
               </p>
-              <p className="mt-1.5 text-sm text-slate-400">{s.label}</p>
+              <p className="mt-1.5 text-sm text-zinc-400">{s.label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="relative z-10 mx-auto max-w-3xl px-5 pb-24 text-center">
+      <section className="relative z-10 mx-auto max-w-3xl px-4 pb-16 text-center sm:px-5 sm:pb-24">
         <div className="landing-reveal">
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Mehmonxonangizni{" "}
-            <span className="bg-gradient-to-r from-primary-400 to-indigo-400 bg-clip-text text-transparent">
-              bugundan
-            </span>{" "}
+          <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl">
+            Mehmonxonangizni <span className="text-emerald-400">bugundan</span>{" "}
             zamonaviy boshqaring
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-slate-400">
+          <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400 sm:text-base">
             Qog'oz daftarlar va tarqoq jadvallar o'rniga — bitta tezkor tizim.
             Kirish bir daqiqa ham olmaydi.
           </p>
           <Link
             to="/login"
-            className="group mx-auto mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-600 to-indigo-600 px-9 py-4 text-base font-bold text-white shadow-xl shadow-primary-600/30 transition-all hover:scale-[1.03] hover:shadow-primary-500/50 active:scale-95"
+            className="group mx-auto mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-8 py-4 text-base font-bold text-white shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.03] hover:bg-emerald-500 active:scale-95 sm:px-9"
           >
             Hoziroq boshlash
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -498,12 +518,12 @@ export const LandingPage = () => {
 
       {/* FOOTER */}
       <footer className="relative z-10 border-t border-white/5">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-7 text-sm text-slate-500">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-zinc-500 sm:px-5 sm:py-7 sm:text-sm">
           <span className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-indigo-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600">
               <Building2 className="h-3.5 w-3.5 text-white" />
             </span>
-            <span className="font-semibold text-slate-300">GoHotel</span>
+            <span className="font-semibold text-zinc-300">GoHotel</span>
           </span>
           <span>
             © {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi
