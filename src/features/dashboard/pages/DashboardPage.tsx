@@ -99,7 +99,7 @@ const METHOD_GROUPS = [
   { key: "CASH", label: "Naqd", color: "#10b981", dot: "bg-emerald-500" },
   { key: "CARD", label: "Karta", color: "#3b82f6", dot: "bg-blue-500" },
   { key: "TRANSFER", label: "O'tkazma", color: "#8b5cf6", dot: "bg-violet-500" },
-  { key: "OTHER", label: "Boshqa", color: "#f59e0b", dot: "bg-amber-500" },
+  { key: "OTHER", label: "Boshqa", color: "#94a3b8", dot: "bg-slate-400" },
 ]
 const methodGroupKey = (m: string): string =>
   m === "CASH"
@@ -125,8 +125,8 @@ const ROOM_STATUSES: Array<{ key: string; label: string; color: string; dot: str
   { key: "AVAILABLE", label: "Bo'sh", color: "#10b981", dot: "bg-emerald-500" },
   { key: "OCCUPIED", label: "Band", color: "#ef4444", dot: "bg-red-500" },
   { key: "RESERVED", label: "Band qilingan", color: "#3b82f6", dot: "bg-blue-500" },
-  { key: "CLEANING", label: "Tozalanmoqda", color: "#f59e0b", dot: "bg-amber-500" },
-  { key: "MAINTENANCE", label: "Ta'mirda", color: "#f97316", dot: "bg-orange-500" },
+  { key: "CLEANING", label: "Tozalanmoqda", color: "#06b6d4", dot: "bg-cyan-500" },
+  { key: "MAINTENANCE", label: "Ta'mirda", color: "#64748b", dot: "bg-slate-500" },
   { key: "INSPECTION", label: "Tekshiruvda", color: "#a855f7", dot: "bg-purple-500" },
   { key: "OUT_OF_SERVICE", label: "Xizmatdan tashqari", color: "#9ca3af", dot: "bg-gray-400" },
 ]
@@ -141,7 +141,7 @@ const RES_STATUS_LABELS: Record<string, string> = {
 }
 
 const resStatusBadge: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-700",
+  PENDING: "bg-violet-100 text-violet-700",
   CONFIRMED: "bg-blue-100 text-blue-700",
   CHECKED_IN: "bg-emerald-100 text-emerald-700",
   CHECKED_OUT: "bg-gray-200 text-gray-600",
@@ -183,13 +183,15 @@ function Panel({
       style={{ animationDelay: `${340 + delay}ms` }}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold text-gray-900">
-          <Icon
+        <h2 className="flex min-w-0 items-center gap-2.5 text-sm font-bold text-gray-900">
+          <span
             className={cn(
-              "h-4 w-4 flex-shrink-0 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110",
+              "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110",
               iconClass
             )}
-          />
+          >
+            <Icon className="h-4 w-4" />
+          </span>
           <span className="truncate">{title}</span>
         </h2>
         {count !== undefined && (
@@ -491,16 +493,16 @@ export const DashboardPage = () => {
       value: String(guests.length),
       sub: `Oxirgi 7 kunda: +${newGuestsWeek}`,
       icon: Users,
-      iconClass: "text-amber-600",
-      bar: "bg-amber-500",
+      iconClass: "text-emerald-600",
+      bar: "bg-emerald-500",
     },
     {
       label: "Xo'jalik vazifalari",
       value: String(openTasks.length),
       sub: `Bugun bajarildi: ${doneToday}`,
       icon: ClipboardList,
-      iconClass: "text-orange-600",
-      bar: "bg-orange-500",
+      iconClass: "text-slate-600",
+      bar: "bg-slate-500",
     },
   ]
 
@@ -530,10 +532,10 @@ export const DashboardPage = () => {
 
       {/* ASOSIY RAQAMLAR REYKASI — sanab chiquvchi animatsiya bilan */}
       <div
-        className="animate-dash-rise grid divide-y divide-gray-100 rounded-2xl border bg-white lg:grid-cols-3 lg:divide-x lg:divide-y-0"
+        className="animate-dash-rise grid divide-y divide-gray-100 overflow-hidden rounded-2xl border bg-white lg:grid-cols-3 lg:divide-x lg:divide-y-0"
         style={{ animationDelay: "60ms" }}
       >
-        <div className="flex items-center justify-between gap-3 p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-gray-50/70 sm:p-5">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
               Bugungi tushum
@@ -563,7 +565,7 @@ export const DashboardPage = () => {
           </div>
         </div>
 
-        <div className="p-4 sm:p-5">
+        <div className="p-4 transition-colors hover:bg-gray-50/70 sm:p-5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
             Sof natija
           </p>
@@ -581,7 +583,7 @@ export const DashboardPage = () => {
           </p>
         </div>
 
-        <div className="p-4 sm:p-5">
+        <div className="p-4 transition-colors hover:bg-gray-50/70 sm:p-5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
             Bandlik
           </p>
@@ -640,8 +642,10 @@ export const DashboardPage = () => {
       >
         <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md lg:col-span-2 sm:p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900">
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
+            <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <TrendingUp className="h-4 w-4" />
+              </span>
               Oxirgi 7 kun tushumi
             </h2>
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -708,8 +712,10 @@ export const DashboardPage = () => {
         {/* Xonalar holati taqsimoti */}
         <div className="rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md sm:p-5">
           <div className="mb-3">
-            <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900">
-              <BedDouble className="h-4 w-4 text-blue-600" />
+            <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <BedDouble className="h-4 w-4" />
+              </span>
               Xonalar holati
             </h2>
           </div>
@@ -760,8 +766,10 @@ export const DashboardPage = () => {
         >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-gray-50/70 px-4 py-3">
             <div className="flex items-center gap-2.5">
-              <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900">
-                <History className="h-4 w-4 text-violet-600" />
+              <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                  <History className="h-4 w-4" />
+                </span>
                 Smenalar
               </h2>
               {activeShifts.length > 0 && (
@@ -837,14 +845,14 @@ export const DashboardPage = () => {
                 <div className="space-y-2.5">
                   {pendingShifts.slice(0, 4).map((s) => (
                     <div key={s.id} className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600">
                         <ArrowRightLeft className="h-3.5 w-3.5" />
                       </span>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold leading-tight text-gray-900">
                           {s.user_name}
                         </p>
-                        <p className="text-[11px] leading-tight text-amber-600">
+                        <p className="text-[11px] leading-tight text-violet-600">
                           Keyingi xodim qabul qilishi kutilmoqda
                         </p>
                       </div>
@@ -901,7 +909,7 @@ export const DashboardPage = () => {
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
         <Panel
           icon={LogIn}
-          iconClass="text-emerald-600"
+          iconClass="bg-emerald-50 text-emerald-600"
           title="Bugungi kirishlar"
           count={arrivals.length}
         >
@@ -935,7 +943,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={LogOut}
-          iconClass="text-amber-600"
+          iconClass="bg-sky-50 text-sky-600"
           title="Bugungi chiqishlar"
           count={departures.length}
           delay={60}
@@ -970,7 +978,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={CalendarCheck}
-          iconClass="text-primary-600"
+          iconClass="bg-primary-50 text-primary-600"
           title="So'nggi bandlovlar"
           delay={120}
         >
@@ -1006,7 +1014,7 @@ export const DashboardPage = () => {
         {/* Bugungi to'lov usullari taqsimoti */}
         <Panel
           icon={Wallet}
-          iconClass="text-emerald-600"
+          iconClass="bg-blue-50 text-blue-600"
           title="To'lov usullari (bugun)"
           delay={180}
         >
@@ -1058,7 +1066,7 @@ export const DashboardPage = () => {
         {employeesList.length > 0 && (
         <Panel
           icon={Trophy}
-          iconClass="text-amber-600"
+          iconClass="bg-violet-50 text-violet-600"
           title="Eng faol xodimlar (bugun)"
           delay={240}
         >
@@ -1076,11 +1084,11 @@ export const DashboardPage = () => {
                       className={cn(
                         "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold",
                         i === 0
-                          ? "bg-amber-100 text-amber-700"
+                          ? "bg-primary-100 text-primary-700"
                           : i === 1
                             ? "bg-gray-200 text-gray-600"
                             : i === 2
-                              ? "bg-orange-100 text-orange-700"
+                              ? "bg-sky-100 text-sky-700"
                               : "bg-gray-100 text-gray-500"
                       )}
                     >
@@ -1106,7 +1114,7 @@ export const DashboardPage = () => {
 
         <Panel
           icon={ClipboardList}
-          iconClass="text-orange-600"
+          iconClass="bg-slate-100 text-slate-600"
           title="Xo'jalik vazifalari"
           count={openTasks.length}
           delay={300}
@@ -1138,7 +1146,7 @@ export const DashboardPage = () => {
                       "flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
                       t.status === "IN_PROGRESS"
                         ? "bg-blue-100 text-blue-700"
-                        : "bg-amber-100 text-amber-700"
+                        : "bg-violet-100 text-violet-700"
                     )}
                   >
                     {t.status === "IN_PROGRESS" ? "Jarayonda" : "Ochiq"}
