@@ -424,6 +424,16 @@ export const LandingPage = () => {
   // FAQ akkordeoni — bittasi ochiq turadi
   const [faqOpen, setFaqOpen] = useState<number | null>(0)
 
+  // Navbar: sahifa tepasida shaffof (elevation 0), scroll boshlanishi bilan
+  // shisha-pill ko'rinishiga silliq o'tadi
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
   // Hero maketida sahifalar har 4 soniyada almashinib turadi
   const [slide, setSlide] = useState(0)
   useEffect(() => {
@@ -545,10 +555,12 @@ export const LandingPage = () => {
       <header className="fixed inset-x-0 top-0 z-40 px-3 sm:px-5">
         <div
           className={cn(
-            "mx-auto mt-3 flex max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] items-center justify-between gap-3 rounded-full border px-3 py-2 shadow-lg backdrop-blur-xl transition-colors duration-700 sm:mt-4 sm:px-4",
-            night
-              ? "border-white/10 bg-zinc-900/70 shadow-black/25"
-              : "border-orange-900/10 bg-white/70 shadow-orange-900/10"
+            "mx-auto mt-3 flex max-w-6xl xl:max-w-7xl 2xl:max-w-[92rem] items-center justify-between gap-3 rounded-full border px-3 py-2 transition-all duration-500 sm:mt-4 sm:px-4",
+            scrolled
+              ? night
+                ? "border-white/10 bg-zinc-900/70 shadow-lg shadow-black/25 backdrop-blur-xl"
+                : "border-orange-900/10 bg-white/70 shadow-lg shadow-orange-900/10 backdrop-blur-xl"
+              : "border-transparent bg-transparent shadow-none"
           )}
         >
         <div className="flex items-center gap-2.5">
