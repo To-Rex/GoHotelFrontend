@@ -20,6 +20,7 @@ import { ShopPage } from "./features/shop/pages/ShopPage";
 import { MyReportsPage } from "./features/reports/pages/MyReportsPage";
 import { ShiftsHistoryPage } from "./features/shifts/pages/ShiftsHistoryPage";
 import { ProfilePage } from "./features/profile/pages/ProfilePage";
+import { LandingPage } from "./features/landing/pages/LandingPage";
 import { WarehousePage } from "./features/shop/pages/WarehousePage";
 import { useAuthStore } from "./store/auth";
 
@@ -35,6 +36,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        {/* Landing (marketing) sahifasi — ochiq, autentifikatsiyasiz */}
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/leanding" element={<LandingPage />} />
         
         {/* Protected Routes */}
         <Route
