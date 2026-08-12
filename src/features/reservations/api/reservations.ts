@@ -108,6 +108,38 @@ export const useMoveRoom = () => {
   });
 };
 
+// Bron balansi bo'yicha hisob-kitob: xona almashtirishdan keyin qo'shimcha
+// to'lov (PAY, qisman ham mumkin) yoki ortiqcha to'langanni qaytarish (REFUND).
+// Qaytarim manfiy Payment bo'lib yoziladi — hisobotlarda avtomatik aks etadi.
+export const useSettleReservation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      amount,
+      paymentMethod,
+      direction,
+    }: {
+      id: string;
+      amount: number;
+      paymentMethod: string;
+      direction: 'PAY' | 'REFUND';
+    }) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${id}/settle-payment`,
+        { amount, payment_method: paymentMethod, direction }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+    },
+  });
+};
+
 // Bron tahriri vaqt oynasi sozlamasi (daqiqalarda, 0 = cheklovsiz)
 export interface EditWindowSettings {
   window_minutes: number;

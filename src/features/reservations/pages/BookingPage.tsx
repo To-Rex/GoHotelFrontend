@@ -23,6 +23,7 @@ import {
   LogOut,
   ArrowRightLeft,
   Sparkles,
+  Banknote,
 } from "lucide-react"
 import {
   startOfMonth,
@@ -45,6 +46,7 @@ import {
   useCancelReservation,
   useRequestCheckout,
   useMoveRoom,
+  useSettleReservation,
   useEditWindowSettings,
 } from "../api/reservations"
 import { useRooms, useRoomTypes, useFloors } from "@/features/rooms/api/rooms"
@@ -557,6 +559,19 @@ export function BookingPage() {
     return () => clearInterval(id)
   }, [manageOpen])
 
+  // Balans bo'yicha hisob-kitob (xona almashtirilgach qo'shimcha to'lov /
+  // qaytarim) — modal ochilganda toza holatga qaytadi
+  const [settleAmount, setSettleAmount] = useState("")
+  const [settleMethod, setSettleMethod] = useState("CASH")
+  const [settleError, setSettleError] = useState<string | null>(null)
+  useEffect(() => {
+    if (manageOpen) {
+      setSettleAmount("")
+      setSettleMethod("CASH")
+      setSettleError(null)
+    }
+  }, [manageOpen])
+
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
@@ -647,6 +662,7 @@ export function BookingPage() {
   const cancelReservationMutation = useCancelReservation()
   const requestCheckoutMutation = useRequestCheckout()
   const moveRoomMutation = useMoveRoom()
+  const settleMutation = useSettleReservation()
   // Bron tahriri vaqt oynasi (default 10 daqiqa; 0 — cheklovsiz; admin bypass)
   const { data: editWindow } = useEditWindowSettings()
 
@@ -1198,8 +1214,41 @@ export function BookingPage() {
       setSelectedReservation(updated)
       setMoveMode(false)
       setMoveRoomId("")
+      // Yangi narx bo'yicha balans ochiq qolsa, hisob-kitob paneli toza chiqadi
+      setSettleAmount("")
+      setSettleError(null)
     } catch (e) {
       setMoveError(apiErrorMessage(e))
+    }
+  }
+
+  // Qo'shimcha to'lov (PAY) yoki qaytarim (REFUND) — maxAmount dan oshmaydi,
+  // qisman summa ham mumkin (qolgani qarz/ortiqcha bo'lib qolaveradi)
+  const handleSettle = async (direction: "PAY" | "REFUND", maxAmount: number) => {
+    if (!selectedReservation) return
+    const amt = settleAmount.trim() === "" ? maxAmount : Number(settleAmount)
+    if (!amt || isNaN(amt) || amt <= 0) {
+      setSettleError("Summani kiriting")
+      return
+    }
+    if (amt > maxAmount + 0.01) {
+      setSettleError(
+        `Summa ${maxAmount.toLocaleString()} So'mdan oshmasligi kerak`
+      )
+      return
+    }
+    setSettleError(null)
+    try {
+      const updated = await settleMutation.mutateAsync({
+        id: selectedReservation.id,
+        amount: amt,
+        paymentMethod: settleMethod,
+        direction,
+      })
+      setSelectedReservation(updated)
+      setSettleAmount("")
+    } catch (e) {
+      setSettleError(apiErrorMessage(e))
     }
   }
 
@@ -3175,6 +3224,105 @@ export function BookingPage() {
                         </div>
                       </div>
                     )}
+
+                  {/* BALANS HISOB-KITOBI — xona almashtirilgach narx farqi:
+                      qimmatroq xonada qo'shimcha to'lov (qisman ham mumkin,
+                      xohlasa qarz bo'lib qoladi), arzonroq xonada ortiqcha
+                      to'langan pul qaytariladi. Teng bo'lsa panel chiqmaydi */}
+                  {!editMode &&
+                    !cancelMode &&
+                    !moveMode &&
+                    can("finance.payment.create") &&
+                    !["CANCELLED", "NO_SHOW"].includes(res.status) &&
+                    (() => {
+                      const total = Number(res.total_amount || 0)
+                      const paid = Number(res.paid_amount || 0)
+                      const due = total - paid
+                      // 1 so'mgacha farq — hisob teng deb qabul qilinadi
+                      if (Math.abs(due) < 1) return null
+                      const isRefund = due < 0
+                      const maxAmount = Math.abs(due)
+                      return (
+                        <div
+                          className={cn(
+                            "space-y-2.5 rounded-lg border p-3",
+                            isRefund
+                              ? "border-emerald-200 bg-emerald-50/60"
+                              : "border-blue-200 bg-blue-50/60"
+                          )}
+                        >
+                          <p
+                            className={cn(
+                              "flex flex-wrap items-center justify-between gap-2 text-sm font-semibold",
+                              isRefund ? "text-emerald-800" : "text-blue-700"
+                            )}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Banknote className="h-4 w-4" />
+                              {isRefund
+                                ? "Mehmonga qaytariladigan summa"
+                                : "Qo'shimcha to'lov (qarz)"}
+                            </span>
+                            <b className="tabular-nums">
+                              {maxAmount.toLocaleString()} So'm
+                            </b>
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={maxAmount}
+                              value={settleAmount}
+                              onChange={(e) => setSettleAmount(e.target.value)}
+                              placeholder={maxAmount.toLocaleString()}
+                              className="h-9 w-32 bg-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setSettleAmount(String(maxAmount))}
+                              className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
+                            >
+                              To'liq
+                            </button>
+                            <select
+                              className="flex h-9 items-center rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              value={settleMethod}
+                              onChange={(e) => setSettleMethod(e.target.value)}
+                            >
+                              {PAYMENT_METHOD_OPTIONS.map((m) => (
+                                <option key={m.value} value={m.value}>
+                                  {m.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          {settleError && (
+                            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+                              {settleError}
+                            </p>
+                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="w-full"
+                            disabled={settleMutation.isPending}
+                            onClick={() =>
+                              handleSettle(isRefund ? "REFUND" : "PAY", maxAmount)
+                            }
+                          >
+                            {settleMutation.isPending && (
+                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            )}
+                            {isRefund ? "Pulni qaytarish" : "To'lovni qabul qilish"}
+                          </Button>
+                          <p className="text-[11px] leading-relaxed text-gray-500">
+                            {isRefund
+                              ? "Qaytarim hisobotlarda minus bilan aks etadi (kassadan chiqim)."
+                              : "Qisman to'lash mumkin — to'lanmagan qismi bron qarzi sifatida saqlanadi."}
+                          </p>
+                        </div>
+                      )
+                    })()}
 
                   {/* TAHRIRLASH rejimi */}
                   {editMode && !locked && (
