@@ -516,21 +516,21 @@ export const RoomsPage = () => {
           const collapsed = collapsedFloors.has(key)
           const stats = floorStats(floorRooms)
           return (
-            <div key={key}>
-              {/* Qavat tile'i — bosilsa yopiladi/ochiladi */}
+            <section
+              key={key}
+              className="overflow-hidden rounded-2xl border border-gray-200 bg-white"
+            >
+              {/* Qavat sarlavhasi — bosilsa yopiladi/ochiladi */}
               <button
                 type="button"
                 onClick={() => toggleFloor(key)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3 text-left transition-all hover:border-primary-200 hover:shadow-sm",
-                  collapsed ? "border-gray-200" : "border-primary-100"
-                )}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50/70"
               >
                 <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
                   <Layers className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold text-gray-900">
+                  <span className="block truncate text-[15px] font-bold text-gray-900">
                     {floorId
                       ? floorMap[floorId] || "Noma'lum qavat"
                       : "Qavat belgilanmagan"}
@@ -539,21 +539,21 @@ export const RoomsPage = () => {
                     {floorRooms.length} ta xona
                   </span>
                 </span>
-                {/* Bo'sh/band soni — kichik nuqtali sokin ko'rsatkichlar */}
-                <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-gray-600">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                {/* Bo'sh/band soni — yaqqol ko'rinadigan pill ko'rsatkichlar */}
+                <span className="flex flex-wrap items-center justify-end gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     {stats.available} bo'sh
                   </span>
                   {stats.busy > 0 && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-red-500" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
                       {stats.busy} band
                     </span>
                   )}
                   {stats.other > 0 && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-gray-300" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
                       {stats.other} boshqa
                     </span>
                   )}
@@ -566,9 +566,10 @@ export const RoomsPage = () => {
                 />
               </button>
               {!collapsed && (
-                /* auto-fill: ustunlar soni displayga qarab o'zi moslashadi —
-                   har karta kamida 170px, keng ekranda qancha sig'sa shuncha */
-                <div className="mt-3 grid gap-3 grid-cols-[repeat(auto-fill,minmax(170px,1fr))]">
+                <div className="border-t border-gray-100 bg-gray-50/40 p-3">
+                  {/* auto-fill: ustunlar soni displayga qarab o'zi moslashadi —
+                     har karta kamida 170px, keng ekranda qancha sig'sa shuncha */}
+                  <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(170px,1fr))]">
                   {floorRooms.map((room) => (
                     <div
                       key={room.id}
@@ -594,11 +595,17 @@ export const RoomsPage = () => {
                           }}
                           title={canStatus ? "Holatni o'zgartirish" : undefined}
                           className={cn(
-                            "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold",
                             statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
                             canStatus && "cursor-pointer hover:opacity-80"
                           )}
                         >
+                          <span
+                            className={cn(
+                              "h-1.5 w-1.5 rounded-full",
+                              statusDot[room.current_status] || "bg-gray-400"
+                            )}
+                          />
                           {STATUS_LABELS[room.current_status] || room.current_status}
                         </button>
                       </div>
@@ -652,9 +659,10 @@ export const RoomsPage = () => {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
-            </div>
+            </section>
           )
         })}
       </div>
@@ -845,16 +853,19 @@ export const RoomsPage = () => {
                         · {floorRooms.length} ta xona
                       </span>
                       <span className="ml-auto flex items-center gap-1.5 normal-case tracking-normal">
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           {stats.available} bo'sh
                         </span>
                         {stats.busy > 0 && (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-600">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-600">
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
                             {stats.busy} band
                           </span>
                         )}
                         {stats.other > 0 && (
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                            <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
                             {stats.other} boshqa
                           </span>
                         )}
@@ -900,11 +911,17 @@ export const RoomsPage = () => {
                       }}
                       title={canStatus ? "Holatni o'zgartirish" : undefined}
                       className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-medium",
+                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold",
                         statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
                         canStatus && "cursor-pointer hover:opacity-80"
                       )}
                     >
+                      <span
+                        className={cn(
+                          "h-1.5 w-1.5 rounded-full",
+                          statusDot[room.current_status] || "bg-gray-400"
+                        )}
+                      />
                       {STATUS_LABELS[room.current_status] || room.current_status}
                     </button>
                     {(room.current_status === "OCCUPIED" ||
