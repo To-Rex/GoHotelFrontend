@@ -70,26 +70,16 @@ const statusRowAccent: Record<string, string> = {
   OUT_OF_SERVICE: "border-l-gray-300",
 }
 
-// Grid kartasining fon/ramka rangi — bo'sh yashil, band qizil va h.k.
-const statusCardAccent: Record<string, string> = {
-  AVAILABLE: "border-gray-200 bg-white",
-  RESERVED: "border-blue-200 bg-blue-50/60",
-  OCCUPIED: "border-red-200 bg-red-50/60",
-  CLEANING: "border-amber-200 bg-amber-50/60",
-  MAINTENANCE: "border-orange-200 bg-orange-50/60",
-  INSPECTION: "border-purple-200 bg-purple-50/60",
-  OUT_OF_SERVICE: "border-gray-200 bg-gray-50",
-}
-
-// Karta tepasidagi yupqa rang chizig'i — holat bir qarashda o'qiladi
-const statusStrip: Record<string, string> = {
-  AVAILABLE: "bg-emerald-500",
-  RESERVED: "bg-blue-500",
-  OCCUPIED: "bg-red-500",
-  CLEANING: "bg-amber-500",
-  MAINTENANCE: "bg-orange-500",
-  INSPECTION: "bg-purple-500",
-  OUT_OF_SERVICE: "bg-gray-400",
+// Karta chap chekkasidagi nozik holat chizig'i — bo'sh xona TOZA oq qoladi,
+// faqat band/tozalash kabi holatlar yumshoq ajralib turadi (ranglar kam)
+const statusEdge: Record<string, string> = {
+  AVAILABLE: "bg-transparent",
+  RESERVED: "bg-blue-400",
+  OCCUPIED: "bg-red-400",
+  CLEANING: "bg-amber-400",
+  MAINTENANCE: "bg-orange-400",
+  INSPECTION: "bg-purple-400",
+  OUT_OF_SERVICE: "bg-gray-300",
 }
 
 // Filtr chiplaridagi rang nuqtasi uchun
@@ -101,17 +91,6 @@ const statusDot: Record<string, string> = {
   MAINTENANCE: "bg-orange-500",
   INSPECTION: "bg-purple-500",
   OUT_OF_SERVICE: "bg-gray-400",
-}
-
-// Tanlangan filtr chipi — o'sha holatning o'z rangida yonadi
-const statusChipActive: Record<string, string> = {
-  AVAILABLE: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  RESERVED: "border-blue-200 bg-blue-50 text-blue-700",
-  OCCUPIED: "border-red-200 bg-red-50 text-red-600",
-  CLEANING: "border-amber-200 bg-amber-50 text-amber-700",
-  MAINTENANCE: "border-orange-200 bg-orange-50 text-orange-700",
-  INSPECTION: "border-purple-200 bg-purple-50 text-purple-700",
-  OUT_OF_SERVICE: "border-gray-300 bg-gray-100 text-gray-600",
 }
 
 export const RoomsPage = () => {
@@ -509,8 +488,6 @@ export const RoomsPage = () => {
   const busyCount = rooms.filter((r) =>
     ["OCCUPIED", "RESERVED"].includes(r.current_status)
   ).length
-  const occupancyPct =
-    rooms.length > 0 ? Math.round((busyCount / rooms.length) * 100) : 0
 
   // GRID kartalari bitta o'zgaruvchida (kod dublikatisiz): grid rejimida
   // to'liq ko'rsatiladi, jadval rejimida esa mobil (md dan tor) ekranda
@@ -562,18 +539,21 @@ export const RoomsPage = () => {
                     {floorRooms.length} ta xona
                   </span>
                 </span>
-                {/* Bo'sh/band soni — yaqqol rangli badge'lar (mobilda ham) */}
-                <span className="flex flex-wrap items-center gap-1.5">
-                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                {/* Bo'sh/band soni — kichik nuqtali sokin ko'rsatkichlar */}
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-gray-600">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
                     {stats.available} bo'sh
                   </span>
                   {stats.busy > 0 && (
-                    <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-600">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-red-500" />
                       {stats.busy} band
                     </span>
                   )}
                   {stats.other > 0 && (
-                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-gray-300" />
                       {stats.other} boshqa
                     </span>
                   )}
@@ -592,20 +572,17 @@ export const RoomsPage = () => {
                   {floorRooms.map((room) => (
                     <div
                       key={room.id}
-                      className={cn(
-                        "group relative overflow-hidden rounded-2xl border p-3.5 pt-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg",
-                        statusCardAccent[room.current_status] || "border-gray-200 bg-white"
-                      )}
+                      className="group relative rounded-xl border border-gray-200 bg-white p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md"
                     >
-                      {/* Holat chizig'i — kartaning yuqori chekkasi */}
+                      {/* Chap chekkadagi nozik holat chizig'i (bo'sh xonada ko'rinmaydi) */}
                       <span
                         className={cn(
-                          "absolute inset-x-0 top-0 h-1",
-                          statusStrip[room.current_status] || "bg-gray-300"
+                          "absolute bottom-3 left-0 top-3 w-[3px] rounded-r-full",
+                          statusEdge[room.current_status] || "bg-transparent"
                         )}
                       />
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-xl font-bold tracking-tight text-gray-900">
+                        <p className="text-lg font-bold tracking-tight text-gray-900">
                           {room.room_number}
                         </p>
                         <button
@@ -636,7 +613,7 @@ export const RoomsPage = () => {
                       {(room.current_status === "OCCUPIED" ||
                         room.current_status === "RESERVED") &&
                         freeAtByRoom[room.id] && (
-                          <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                          <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-amber-600">
                             <Clock className="h-3 w-3" />
                             Bo'shaydi: {freeAtByRoom[room.id].label}
                           </p>
@@ -719,75 +696,10 @@ export const RoomsPage = () => {
         )}
       </div>
 
-      {/* BANDLIK PANELI — segmentli chiziq + bosiladigan holat filtrlari */}
-      {rooms.length > 0 && (
-        <div
-          className="animate-dash-rise rounded-2xl border bg-white p-4"
-          style={{ animationDelay: "60ms" }}
-        >
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-              Xonalar bandligi
-            </span>
-            <span className="text-xs font-bold tabular-nums text-gray-900">
-              {occupancyPct}% band
-            </span>
-          </div>
-          {/* Segmentli ulush chizig'i — har holat o'z rangida */}
-          <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full">
-            {Object.keys(STATUS_LABELS)
-              .filter((s) => statusCounts[s])
-              .map((s) => (
-                <div
-                  key={s}
-                  title={`${STATUS_LABELS[s]}: ${statusCounts[s]} ta`}
-                  className={cn("transition-all duration-700", statusStrip[s])}
-                  style={{ width: `${(statusCounts[s] / rooms.length) * 100}%` }}
-                />
-              ))}
-          </div>
-          {/* Holat chiplari — bosilsa filtr, rangi holat rangida yonadi */}
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => setStatusFilter("")}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                !statusFilter
-                  ? "border-primary-200 bg-primary-50 text-primary-700"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
-              )}
-            >
-              Barchasi ({rooms.length})
-            </button>
-            {Object.entries(STATUS_LABELS)
-              .filter(([value]) => statusCounts[value])
-              .map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setStatusFilter(statusFilter === value ? "" : value)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                    statusFilter === value
-                      ? statusChipActive[value] || "border-primary-200 bg-primary-50 text-primary-700"
-                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                  )}
-                >
-                  <span
-                    className={cn("h-2 w-2 rounded-full", statusDot[value] || "bg-gray-400")}
-                  />
-                  {label} ({statusCounts[value]})
-                </button>
-              ))}
-          </div>
-        </div>
-      )}
-
-      {/* QIDIRUV + KO'RINISH */}
+      {/* QIDIRUV + HOLAT FILTRLARI + KO'RINISH — bitta sokin qator */}
       <div
         className="animate-dash-rise flex flex-wrap items-center gap-3"
-        style={{ animationDelay: "120ms" }}
+        style={{ animationDelay: "60ms" }}
       >
         <div className="relative min-w-[200px] max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -797,6 +709,43 @@ export const RoomsPage = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("")}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              !statusFilter
+                ? "border-primary-600 bg-primary-50 text-primary-700"
+                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+            )}
+          >
+            Barchasi ({rooms.length})
+          </button>
+          {Object.entries(STATUS_LABELS)
+            .filter(([value]) => statusCounts[value])
+            .map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatusFilter(statusFilter === value ? "" : value)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  statusFilter === value
+                    ? "border-primary-600 bg-primary-50 text-primary-700"
+                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    statusDot[value] || "bg-gray-400"
+                  )}
+                />
+                {label} ({statusCounts[value]})
+              </button>
+            ))}
         </div>
 
         {/* Ko'rinish almashtirgich: jadval / grid */}
@@ -832,7 +781,7 @@ export const RoomsPage = () => {
         </div>
       </div>
 
-      <div className="animate-dash-rise" style={{ animationDelay: "180ms" }}>
+      <div className="animate-dash-rise" style={{ animationDelay: "120ms" }}>
       {viewMode === "table" && (
       <>
       {/* MOBIL: jadval rejimida ham telefonda o'sha qavatning grid kartalari
@@ -922,15 +871,7 @@ export const RoomsPage = () => {
                   )}
                 >
                   <TableCell>
-                    <span className="inline-flex items-center gap-2.5">
-                      <span
-                        className={cn(
-                          "h-8 w-1.5 rounded-full",
-                          statusStrip[room.current_status] || "bg-gray-300"
-                        )}
-                      />
-                      <span className="text-base font-bold text-gray-900">{room.room_number}</span>
-                    </span>
+                    <span className="text-base font-bold text-gray-900">{room.room_number}</span>
                   </TableCell>
                   <TableCell className="text-gray-600">
                     {typeMap[room.room_type_id] || <span className="text-gray-300">—</span>}
