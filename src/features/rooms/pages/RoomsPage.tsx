@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List, Clock, ChevronDown } from "lucide-react"
+import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List, Clock, ChevronDown, CheckCircle2 } from "lucide-react"
 import { useReservations } from "@/features/reservations/api/reservations"
 import {
   useRooms,
@@ -81,15 +81,15 @@ const statusCardAccent: Record<string, string> = {
   OUT_OF_SERVICE: "border-gray-200 bg-gray-50",
 }
 
-// Xona ikonkasi ham holat rangida
-const statusIconAccent: Record<string, string> = {
-  AVAILABLE: "bg-primary-50 text-primary-600",
-  RESERVED: "bg-blue-100 text-blue-600",
-  OCCUPIED: "bg-red-100 text-red-600",
-  CLEANING: "bg-amber-100 text-amber-600",
-  MAINTENANCE: "bg-orange-100 text-orange-600",
-  INSPECTION: "bg-purple-100 text-purple-600",
-  OUT_OF_SERVICE: "bg-gray-100 text-gray-500",
+// Karta tepasidagi yupqa rang chizig'i — holat bir qarashda o'qiladi
+const statusStrip: Record<string, string> = {
+  AVAILABLE: "bg-emerald-500",
+  RESERVED: "bg-blue-500",
+  OCCUPIED: "bg-red-500",
+  CLEANING: "bg-amber-500",
+  MAINTENANCE: "bg-orange-500",
+  INSPECTION: "bg-purple-500",
+  OUT_OF_SERVICE: "bg-gray-400",
 }
 
 // Filtr chiplaridagi rang nuqtasi uchun
@@ -101,6 +101,17 @@ const statusDot: Record<string, string> = {
   MAINTENANCE: "bg-orange-500",
   INSPECTION: "bg-purple-500",
   OUT_OF_SERVICE: "bg-gray-400",
+}
+
+// Tanlangan filtr chipi — o'sha holatning o'z rangida yonadi
+const statusChipActive: Record<string, string> = {
+  AVAILABLE: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  RESERVED: "border-blue-200 bg-blue-50 text-blue-700",
+  OCCUPIED: "border-red-200 bg-red-50 text-red-600",
+  CLEANING: "border-amber-200 bg-amber-50 text-amber-700",
+  MAINTENANCE: "border-orange-200 bg-orange-50 text-orange-700",
+  INSPECTION: "border-purple-200 bg-purple-50 text-purple-700",
+  OUT_OF_SERVICE: "border-gray-300 bg-gray-100 text-gray-600",
 }
 
 export const RoomsPage = () => {
@@ -472,12 +483,19 @@ export const RoomsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Xonalar</h1>
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-11 w-11 rounded-xl" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </div>
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(170px,1fr))]">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+          ))}
         </div>
       </div>
     )
@@ -491,19 +509,28 @@ export const RoomsPage = () => {
   const busyCount = rooms.filter((r) =>
     ["OCCUPIED", "RESERVED"].includes(r.current_status)
   ).length
+  const occupancyPct =
+    rooms.length > 0 ? Math.round((busyCount / rooms.length) * 100) : 0
 
   // GRID kartalari bitta o'zgaruvchida (kod dublikatisiz): grid rejimida
   // to'liq ko'rsatiladi, jadval rejimida esa mobil (md dan tor) ekranda
   // jadval o'rnini bosadi — har qavat o'z tile'i va kartalari bilan
   const gridContent =
     sortedRooms.length === 0 ? (
-      <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-14 text-gray-400">
-        <DoorOpen className="h-8 w-8" />
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed py-16 text-gray-400">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
+          <DoorOpen className="h-7 w-7" />
+        </span>
         <p className="text-sm">
           {search.trim() || statusFilter
             ? "Filtr bo'yicha xona topilmadi"
             : "Hozircha xonalar yo'q"}
         </p>
+        {canCreate && !search.trim() && !statusFilter && (
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={openCreate}>
+            <Plus className="h-4 w-4" /> Xona qo'shish
+          </Button>
+        )}
       </div>
     ) : (
       <div className="space-y-4">
@@ -518,11 +545,11 @@ export const RoomsPage = () => {
                 type="button"
                 onClick={() => toggleFloor(key)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl border bg-gradient-to-r from-primary-50/80 to-white px-4 py-3 text-left transition-all hover:shadow-sm",
+                  "flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3 text-left transition-all hover:border-primary-200 hover:shadow-sm",
                   collapsed ? "border-gray-200" : "border-primary-100"
                 )}
               >
-                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
                   <Layers className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -553,7 +580,7 @@ export const RoomsPage = () => {
                 </span>
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 flex-shrink-0 text-gray-400 transition-transform",
+                    "h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-300",
                     collapsed && "-rotate-90"
                   )}
                 />
@@ -566,20 +593,21 @@ export const RoomsPage = () => {
                     <div
                       key={room.id}
                       className={cn(
-                        "group relative rounded-xl border p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md",
+                        "group relative overflow-hidden rounded-2xl border p-3.5 pt-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg",
                         statusCardAccent[room.current_status] || "border-gray-200 bg-white"
                       )}
                     >
+                      {/* Holat chizig'i — kartaning yuqori chekkasi */}
+                      <span
+                        className={cn(
+                          "absolute inset-x-0 top-0 h-1",
+                          statusStrip[room.current_status] || "bg-gray-300"
+                        )}
+                      />
                       <div className="flex items-start justify-between gap-2">
-                        <span
-                          className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-lg",
-                            statusIconAccent[room.current_status] ||
-                              "bg-primary-50 text-primary-600"
-                          )}
-                        >
-                          <DoorOpen className="h-4 w-4" />
-                        </span>
+                        <p className="text-xl font-bold tracking-tight text-gray-900">
+                          {room.room_number}
+                        </p>
                         <button
                           type="button"
                           disabled={!canStatus}
@@ -589,7 +617,7 @@ export const RoomsPage = () => {
                           }}
                           title={canStatus ? "Holatni o'zgartirish" : undefined}
                           className={cn(
-                            "text-[11px] font-medium px-2 py-0.5 rounded-full",
+                            "rounded-full px-2 py-0.5 text-[11px] font-medium",
                             statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
                             canStatus && "cursor-pointer hover:opacity-80"
                           )}
@@ -597,21 +625,24 @@ export const RoomsPage = () => {
                           {STATUS_LABELS[room.current_status] || room.current_status}
                         </button>
                       </div>
-                      <p className="mt-2 text-lg font-bold text-gray-900">{room.room_number}</p>
-                      <p className="truncate text-xs text-gray-500">
+                      <p className="mt-1 flex items-center gap-1 truncate text-xs text-gray-500">
                         {typeMap[room.room_type_id] || "Turi belgilanmagan"}
-                        {room.capacity ? ` · ${room.capacity} kishi` : ""}
+                        {room.capacity ? (
+                          <span className="inline-flex items-center gap-0.5 text-gray-400">
+                            · <Users className="h-3 w-3" /> {room.capacity}
+                          </span>
+                        ) : null}
                       </p>
                       {(room.current_status === "OCCUPIED" ||
                         room.current_status === "RESERVED") &&
                         freeAtByRoom[room.id] && (
-                          <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                          <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
                             <Clock className="h-3 w-3" />
                             Bo'shaydi: {freeAtByRoom[room.id].label}
                           </p>
                         )}
-                      <div className="mt-2 flex items-end justify-between">
-                        <p className="text-sm font-semibold text-gray-900">
+                      <div className="mt-2.5 flex items-end justify-between">
+                        <p className="text-sm font-bold tabular-nums text-gray-900">
                           {Number(room.base_price || 0).toLocaleString()}{" "}
                           <span className="text-xs font-normal text-gray-400">So'm</span>
                         </p>
@@ -624,7 +655,7 @@ export const RoomsPage = () => {
                                 type="button"
                                 title="Tahrirlash"
                                 onClick={() => openEdit(room)}
-                                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
@@ -634,7 +665,7 @@ export const RoomsPage = () => {
                                 type="button"
                                 title="O'chirish"
                                 onClick={() => onDelete(room)}
-                                className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                                className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -654,7 +685,8 @@ export const RoomsPage = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* SARLAVHA */}
+      <div className="animate-dash-rise flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
             <DoorOpen className="h-5 w-5 text-white" />
@@ -680,60 +712,91 @@ export const RoomsPage = () => {
           </div>
         </div>
         {canCreate && (
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={openCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
             Xona qo'shish
           </Button>
         )}
       </div>
 
-      {/* Qidiruv + holat bo'yicha filtr chiplari */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative max-w-xs flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+      {/* BANDLIK PANELI — segmentli chiziq + bosiladigan holat filtrlari */}
+      {rooms.length > 0 && (
+        <div
+          className="animate-dash-rise rounded-2xl border bg-white p-4"
+          style={{ animationDelay: "60ms" }}
+        >
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              Xonalar bandligi
+            </span>
+            <span className="text-xs font-bold tabular-nums text-gray-900">
+              {occupancyPct}% band
+            </span>
+          </div>
+          {/* Segmentli ulush chizig'i — har holat o'z rangida */}
+          <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full">
+            {Object.keys(STATUS_LABELS)
+              .filter((s) => statusCounts[s])
+              .map((s) => (
+                <div
+                  key={s}
+                  title={`${STATUS_LABELS[s]}: ${statusCounts[s]} ta`}
+                  className={cn("transition-all duration-700", statusStrip[s])}
+                  style={{ width: `${(statusCounts[s] / rooms.length) * 100}%` }}
+                />
+              ))}
+          </div>
+          {/* Holat chiplari — bosilsa filtr, rangi holat rangida yonadi */}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("")}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                !statusFilter
+                  ? "border-primary-200 bg-primary-50 text-primary-700"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
+              )}
+            >
+              Barchasi ({rooms.length})
+            </button>
+            {Object.entries(STATUS_LABELS)
+              .filter(([value]) => statusCounts[value])
+              .map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatusFilter(statusFilter === value ? "" : value)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                    statusFilter === value
+                      ? statusChipActive[value] || "border-primary-200 bg-primary-50 text-primary-700"
+                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  <span
+                    className={cn("h-2 w-2 rounded-full", statusDot[value] || "bg-gray-400")}
+                  />
+                  {label} ({statusCounts[value]})
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* QIDIRUV + KO'RINISH */}
+      <div
+        className="animate-dash-rise flex flex-wrap items-center gap-3"
+        style={{ animationDelay: "120ms" }}
+      >
+        <div className="relative min-w-[200px] max-w-xs flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             className="pl-9"
             placeholder="Xona raqami bo'yicha qidirish..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => setStatusFilter("")}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-              !statusFilter
-                ? "border-primary-600 bg-primary-50 text-primary-700"
-                : "border-gray-200 text-gray-600 hover:bg-gray-50"
-            )}
-          >
-            Barchasi ({rooms.length})
-          </button>
-          {Object.entries(STATUS_LABELS)
-            .filter(([value]) => statusCounts[value])
-            .map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setStatusFilter(statusFilter === value ? "" : value)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                  statusFilter === value
-                    ? "border-primary-600 bg-primary-50 text-primary-700"
-                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                )}
-              >
-                <span
-                  className={cn(
-                    "h-2 w-2 rounded-full",
-                    statusDot[value] || "bg-gray-400"
-                  )}
-                />
-                {label} ({statusCounts[value]})
-              </button>
-            ))}
         </div>
 
         {/* Ko'rinish almashtirgich: jadval / grid */}
@@ -769,25 +832,7 @@ export const RoomsPage = () => {
         </div>
       </div>
 
-      {/* Rang ko'rsatkichi — qaysi rang qaysi holatni bildirishi */}
-      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 rounded-xl border border-gray-100 bg-gray-50/70 px-3.5 py-2 text-[11px] text-gray-600">
-        <span className="font-semibold text-gray-400">Ranglar:</span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm border border-gray-300 bg-white" />
-          Bo'sh
-        </span>
-        {Object.entries(STATUS_LABELS)
-          .filter(([value]) => value !== "AVAILABLE")
-          .map(([value, label]) => (
-            <span key={value} className="inline-flex items-center gap-1.5">
-              <span
-                className={cn("h-2.5 w-2.5 rounded-sm", statusDot[value] || "bg-gray-400")}
-              />
-              {label}
-            </span>
-          ))}
-      </div>
-
+      <div className="animate-dash-rise" style={{ animationDelay: "180ms" }}>
       {viewMode === "table" && (
       <>
       {/* MOBIL: jadval rejimida ham telefonda o'sha qavatning grid kartalari
@@ -795,17 +840,17 @@ export const RoomsPage = () => {
       <div className="md:hidden">{gridContent}</div>
 
       {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
-      <div className="hidden rounded-2xl border bg-white overflow-hidden md:block">
+      <div className="hidden overflow-hidden rounded-2xl border bg-white md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
-              <TableHead>Xona</TableHead>
-              <TableHead>Turi</TableHead>
-              <TableHead>Narxi</TableHead>
-              <TableHead>Sig'imi</TableHead>
-              <TableHead>Holati</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Xona</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Turi</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Narxi</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Sig'imi</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Holati</TableHead>
               {(canEdit || canDelete) && (
-                <TableHead className="text-right">Amallar</TableHead>
+                <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">Amallar</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -833,13 +878,13 @@ export const RoomsPage = () => {
                 <TableRow
                   key={`floor-${key}`}
                   onClick={() => toggleFloor(key)}
-                  className="cursor-pointer select-none bg-primary-50/60 hover:bg-primary-100/60 border-y border-primary-100"
+                  className="cursor-pointer select-none border-y border-primary-100 bg-primary-50/60 hover:bg-primary-100/60"
                 >
                   <TableCell colSpan={(canEdit || canDelete) ? 6 : 5} className="py-2.5">
                     <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary-700">
                       <ChevronDown
                         className={cn(
-                          "h-4 w-4 text-primary-400 transition-transform",
+                          "h-4 w-4 text-primary-400 transition-transform duration-300",
                           collapsed && "-rotate-90"
                         )}
                       />
@@ -880,20 +925,17 @@ export const RoomsPage = () => {
                     <span className="inline-flex items-center gap-2.5">
                       <span
                         className={cn(
-                          "flex h-9 w-9 items-center justify-center rounded-lg",
-                          statusIconAccent[room.current_status] ||
-                            "bg-primary-50 text-primary-600"
+                          "h-8 w-1.5 rounded-full",
+                          statusStrip[room.current_status] || "bg-gray-300"
                         )}
-                      >
-                        <DoorOpen className="h-4 w-4" />
-                      </span>
-                      <span className="font-semibold text-gray-900">{room.room_number}</span>
+                      />
+                      <span className="text-base font-bold text-gray-900">{room.room_number}</span>
                     </span>
                   </TableCell>
                   <TableCell className="text-gray-600">
                     {typeMap[room.room_type_id] || <span className="text-gray-300">—</span>}
                   </TableCell>
-                  <TableCell className="font-medium text-gray-900">
+                  <TableCell className="font-medium tabular-nums text-gray-900">
                     {Number(room.base_price || 0).toLocaleString()}{" "}
                     <span className="text-xs font-normal text-gray-400">So'm</span>
                   </TableCell>
@@ -917,7 +959,7 @@ export const RoomsPage = () => {
                       }}
                       title={canStatus ? "Holatni o'zgartirish" : undefined}
                       className={cn(
-                        "text-xs font-medium px-2.5 py-1 rounded-full",
+                        "rounded-full px-2.5 py-1 text-xs font-medium",
                         statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
                         canStatus && "cursor-pointer hover:opacity-80"
                       )}
@@ -927,7 +969,7 @@ export const RoomsPage = () => {
                     {(room.current_status === "OCCUPIED" ||
                       room.current_status === "RESERVED") &&
                       freeAtByRoom[room.id] && (
-                        <p className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] text-amber-600">
+                        <p className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] font-medium text-amber-600">
                           <Clock className="h-3 w-3" />
                           Bo'shaydi: {freeAtByRoom[room.id].label}
                         </p>
@@ -941,7 +983,7 @@ export const RoomsPage = () => {
                             type="button"
                             title="Tahrirlash"
                             onClick={() => openEdit(room)}
-                            className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                            className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -951,7 +993,7 @@ export const RoomsPage = () => {
                             type="button"
                             title="O'chirish"
                             onClick={() => onDelete(room)}
-                            className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
+                            className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -972,17 +1014,23 @@ export const RoomsPage = () => {
 
       {/* GRID ko'rinishi — qavatlar bo'yicha kartalar (barcha ekranlarda) */}
       {viewMode === "grid" && gridContent}
+      </div>
 
       {/* Yaratish/tahrirlash dialogi */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>{editing ? "Xonani tahrirlash" : "Yangi xona"}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                <DoorOpen className="h-4 w-4" />
+              </span>
+              {editing ? `Xonani tahrirlash — ${editing.room_number}` : "Yangi xona"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Xona raqami *</label>
+                <label className="text-xs font-medium text-gray-600">Xona raqami *</label>
                 <Input
                   value={roomNumber}
                   onChange={(e) => setRoomNumber(e.target.value)}
@@ -992,7 +1040,7 @@ export const RoomsPage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Filial *</label>
+                <label className="text-xs font-medium text-gray-600">Filial *</label>
                 <select
                   className={selectClass}
                   value={branchId}
@@ -1013,7 +1061,7 @@ export const RoomsPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Qavat *</label>
+                <label className="text-xs font-medium text-gray-600">Qavat *</label>
                 <select
                   className={selectClass}
                   value={floorId}
@@ -1028,7 +1076,7 @@ export const RoomsPage = () => {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Xona turi *</label>
+                <label className="text-xs font-medium text-gray-600">Xona turi *</label>
                 <select
                   className={selectClass}
                   value={roomTypeId}
@@ -1058,7 +1106,7 @@ export const RoomsPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Narx (So'm)</label>
+                <label className="text-xs font-medium text-gray-600">Narx (So'm)</label>
                 <Input
                   type="number"
                   min={0}
@@ -1068,7 +1116,7 @@ export const RoomsPage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Sig'im (kishi)</label>
+                <label className="text-xs font-medium text-gray-600">Sig'im (kishi)</label>
                 <Input
                   type="number"
                   min={1}
@@ -1078,7 +1126,7 @@ export const RoomsPage = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Izoh</label>
+              <label className="text-xs font-medium text-gray-600">Izoh</label>
               <Input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -1086,7 +1134,9 @@ export const RoomsPage = () => {
               />
             </div>
             {errorMsg && (
-              <p className="text-sm text-red-500 whitespace-pre-line">{errorMsg}</p>
+              <p className="whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+                {errorMsg}
+              </p>
             )}
           </div>
           <DialogFooter>
@@ -1094,7 +1144,7 @@ export const RoomsPage = () => {
               Bekor qilish
             </Button>
             <Button onClick={onSubmit} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editing ? "Saqlash" : "Qo'shish"}
             </Button>
           </DialogFooter>
@@ -1103,14 +1153,17 @@ export const RoomsPage = () => {
 
       {/* Holatni o'zgartirish dialogi */}
       <Dialog open={!!statusRoom} onOpenChange={(o) => !o && setStatusRoom(null)}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                <DoorOpen className="h-4 w-4" />
+              </span>
               Xona holati — {statusRoom?.room_number}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-2 space-y-3">
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-3 py-2">
+            <div className="grid grid-cols-2 gap-2">
               {Object.entries(STATUS_LABELS).map(([value, label]) => (
                 <button
                   key={value}
@@ -1118,21 +1171,35 @@ export const RoomsPage = () => {
                   disabled={statusMutation.isPending}
                   onClick={() => onStatusPick(value)}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
+                    "flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all disabled:opacity-60",
                     statusRoom?.current_status === value
-                      ? "border-primary-600 bg-primary-50 text-primary-700"
-                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                      ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                      : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
                   )}
                 >
                   {statusMutation.isPending ? (
-                    <RefreshCw className="h-3 w-3 animate-spin inline mr-1" />
-                  ) : null}
-                  {label}
+                    <RefreshCw className="h-3.5 w-3.5 flex-shrink-0 animate-spin text-gray-400" />
+                  ) : (
+                    <span
+                      className={cn(
+                        "h-2.5 w-2.5 flex-shrink-0 rounded-full",
+                        statusDot[value] || "bg-gray-400"
+                      )}
+                    />
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+                    {label}
+                  </span>
+                  {statusRoom?.current_status === value && (
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-primary-600" />
+                  )}
                 </button>
               ))}
             </div>
             {statusError && (
-              <p className="text-sm text-red-500 whitespace-pre-line">{statusError}</p>
+              <p className="whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+                {statusError}
+              </p>
             )}
           </div>
         </DialogContent>
