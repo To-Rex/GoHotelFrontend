@@ -18,6 +18,9 @@ import {
   Moon,
   Printer,
   ArrowRight,
+  Search,
+  RefreshCw,
+  Receipt,
   type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
@@ -33,6 +36,15 @@ import {
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
+import {
+  DEFAULT_TPRINTS_URL,
+  getPrinterUrl,
+  setPrinterUrl as savePrinterUrl,
+  pingPrinter,
+  printTest,
+  discoverTPrints,
+  type TPrintsInfo,
+} from "@/lib/tprints"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -291,8 +303,71 @@ export const SettingsPage = () => {
     },
   ]
 
+  // ---- Chek printeri (TPrints) — sozlama SHU qurilmada saqlanadi ----
+  const [tpUrl, setTpUrl] = useState(getPrinterUrl)
+  const [tpMsg, setTpMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [tpBusy, setTpBusy] = useState<null | "check" | "test" | "scan">(null)
+  const [tpFound, setTpFound] = useState<TPrintsInfo[]>([])
+  const [tpProgress, setTpProgress] = useState<[number, number] | null>(null)
+  const [tpSaved, setTpSaved] = useState(false)
+
+  const tpSave = () => {
+    savePrinterUrl(tpUrl)
+    setTpSaved(true)
+    window.setTimeout(() => setTpSaved(false), 2500)
+  }
+
+  const tpCheck = async () => {
+    savePrinterUrl(tpUrl)
+    setTpBusy("check")
+    setTpMsg(null)
+    const r = await pingPrinter()
+    setTpMsg({ ok: r.ok, text: r.msg })
+    setTpBusy(null)
+  }
+
+  const tpTest = async () => {
+    savePrinterUrl(tpUrl)
+    setTpBusy("test")
+    setTpMsg(null)
+    const r = await printTest()
+    setTpMsg(
+      r.ok
+        ? { ok: true, text: "Sinov chek yuborildi — printerni tekshiring" }
+        : { ok: false, text: r.error || "Xato" }
+    )
+    setTpBusy(null)
+  }
+
+  const tpScan = async () => {
+    setTpBusy("scan")
+    setTpMsg(null)
+    setTpFound([])
+    setTpProgress([0, 0])
+    const found = await discoverTPrints(tpUrl, (d, t) => setTpProgress([d, t]))
+    setTpProgress(null)
+    setTpFound(found)
+    setTpMsg(
+      found.length
+        ? { ok: true, text: `${found.length} ta TPrints server topildi — kerakligini tanlang` }
+        : {
+            ok: false,
+            text: "TPrints topilmadi — kassa kompyuterida dastur ishlab turganini tekshiring",
+          }
+    )
+    setTpBusy(null)
+  }
+
+  // Topilgan serverni tanlash — darhol saqlanadi
+  const tpPick = (u: string) => {
+    setTpUrl(u)
+    savePrinterUrl(u)
+    setTpMsg({ ok: true, text: `Tanlandi va saqlandi: ${u}` })
+  }
+
   const NAV_CHIPS = [
     { href: "#shift", label: "Smena va kassa", dot: "bg-violet-500" },
+    { href: "#tprints", label: "Chek printeri", dot: "bg-slate-500" },
     { href: "#booking-edit", label: "Bron tahriri", dot: "bg-sky-500" },
     { href: "#auto-complete", label: "Avto-yakunlash", dot: "bg-primary-600" },
     { href: "#receipt", label: "Chek dizayni", dot: "bg-emerald-500" },
@@ -331,6 +406,8 @@ export const SettingsPage = () => {
 
       {/* Sozlamalar — keng ekranda ikki ustun */}
       <div className="grid items-start gap-4 xl:grid-cols-2">
+        {/* Chap ustun */}
+        <div className="grid gap-4">
         {/* Smena va kassa rejimi */}
         <SettingCard
           id="shift"
@@ -415,6 +492,136 @@ export const SettingsPage = () => {
             error={shiftError}
           />
         </SettingCard>
+
+        {/* Chek printeri (TPrints) — sozlama shu qurilmada saqlanadi */}
+        <SettingCard
+          id="tprints"
+          icon={Printer}
+          iconClass="bg-slate-100 text-slate-600"
+          title="Chek printeri (TPrints)"
+          desc="Do'kon cheklari kassa kompyuterida ishlab turgan TPrints dasturi orqali chiqadi. Manzil har kassa qurilmasining o'zida saqlanadi — mehmonxona bo'ylab umumiy emas."
+        >
+          <label className="text-xs font-medium text-gray-600">
+            Print-server manzili
+          </label>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <Input
+              value={tpUrl}
+              onChange={(e) => setTpUrl(e.target.value)}
+              placeholder={DEFAULT_TPRINTS_URL}
+              className="w-full max-w-xs"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={tpSave}
+              className="gap-1.5"
+            >
+              {tpSaved && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
+              {tpSaved ? "Saqlandi" : "Saqlash"}
+            </Button>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-gray-400">
+            Odatiy: http://127.0.0.1:9100 (shu kompyuter). Printer boshqa
+            kompyuterda bo'lsa o'sha kompyuter IP'sini yozing — "Qidirish"
+            maydondagi IP tarmog'ini ham to'liq skan qiladi (masalan
+            http://192.168.1.1:9100 yozib qidirsangiz, 192.168.1.* tekshiriladi).
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={tpBusy !== null}
+              onClick={tpCheck}
+            >
+              {tpBusy === "check" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Tekshirish
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={tpBusy !== null}
+              onClick={tpTest}
+            >
+              {tpBusy === "test" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Receipt className="h-4 w-4" />
+              )}
+              Sinov chek
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={tpBusy !== null}
+              onClick={tpScan}
+            >
+              {tpBusy === "scan" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              Qidirish
+            </Button>
+            {tpProgress && (
+              <span className="text-xs tabular-nums text-gray-400">
+                skan: {tpProgress[0]}/{tpProgress[1]}
+              </span>
+            )}
+          </div>
+
+          {tpMsg && (
+            <p
+              className={cn(
+                "mt-3 text-xs font-medium",
+                tpMsg.ok ? "text-emerald-600" : "text-red-600"
+              )}
+            >
+              {tpMsg.text}
+            </p>
+          )}
+
+          {/* Topilgan serverlar — bosilsa tanlanadi va saqlanadi */}
+          {tpFound.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              {tpFound.map((f) => (
+                <button
+                  key={f.url}
+                  type="button"
+                  onClick={() => tpPick(f.url)}
+                  className={cn(
+                    "flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border p-3 text-left transition-all",
+                    tpUrl === f.url
+                      ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                      : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                  )}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-gray-900">
+                      {f.url}
+                    </span>
+                    <span className="block text-[11px] text-gray-500">
+                      {f.app} {f.version} · {f.printers} ta printer
+                      {f.defaultPrinter ? ` · standart: ${f.defaultPrinter}` : ""}
+                    </span>
+                  </span>
+                  {tpUrl === f.url && (
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-primary-600" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </SettingCard>
+        </div>
 
         <div className="grid gap-4">
           {/* Bron tahriri vaqt oynasi */}

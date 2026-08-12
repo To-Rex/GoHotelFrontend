@@ -73,6 +73,86 @@ export const printTest = async (): Promise<{ ok: boolean; error?: string }> => {
   return { ok: r.ok, error: r.error }
 }
 
+// ---------------------------------------------- TPrints'ni qidirish (skan) --
+
+export interface TPrintsInfo {
+  url: string
+  app: string
+  version: string
+  printers: number
+  defaultPrinter: string
+}
+
+const fetchJson = async (url: string, timeoutMs: number): Promise<any | null> => {
+  const ctrl = new AbortController()
+  const t = window.setTimeout(() => ctrl.abort(), timeoutMs)
+  try {
+    const res = await fetch(url, { signal: ctrl.signal })
+    return await res.json()
+  } catch {
+    return null
+  } finally {
+    window.clearTimeout(t)
+  }
+}
+
+/** Berilgan manzilda TPrints ishlayaptimi — ishlayotgan bo'lsa ma'lumoti */
+export const probeTPrints = async (
+  url: string,
+  timeoutMs = 900
+): Promise<TPrintsInfo | null> => {
+  const data = await fetchJson(url + "/", timeoutMs)
+  // 9100-port oddiy printer porti hamdir — javob aynan TPrints ekaniga ishonch
+  if (!data?.ok || !String(data.app || "").toLowerCase().includes("tprint")) return null
+  const p = await fetchJson(url + "/printers", 2500)
+  return {
+    url,
+    app: String(data.app),
+    version: String(data.version || ""),
+    printers: Array.isArray(p?.printers) ? p.printers.length : 0,
+    defaultPrinter: String(p?.app_default || ""),
+  }
+}
+
+/**
+ * TPrints serverlarini qidirish:
+ *  1) joriy saqlangan manzil va maydondagi manzil;
+ *  2) shu kompyuter (127.0.0.1) 9100–9110 portlari;
+ *  3) maydonda lokal tarmoq IP'si yozilgan bo'lsa — o'sha subnet (/24) skan.
+ * Diqqat: https sahifadan faqat 127.0.0.1 tekshiriladi (brauzer cheklovi).
+ */
+export const discoverTPrints = async (
+  hint: string,
+  onProgress?: (done: number, total: number) => void
+): Promise<TPrintsInfo[]> => {
+  const candidates = new Set<string>()
+  candidates.add(getPrinterUrl())
+  const hintUrl = hint.trim().replace(/\/+$/, "")
+  if (/^https?:\/\//.test(hintUrl)) candidates.add(hintUrl)
+  for (let p = 9100; p <= 9110; p++) candidates.add(`http://127.0.0.1:${p}`)
+  const m = hintUrl.match(/^http:\/\/(\d+\.\d+\.\d+)\.\d+(?::(\d+))?$/)
+  if (m && m[1] !== "127.0.0") {
+    const port = m[2] || "9100"
+    for (let i = 1; i <= 254; i++) candidates.add(`http://${m[1]}.${i}:${port}`)
+  }
+
+  const list = [...candidates]
+  const found: TPrintsInfo[] = []
+  let done = 0
+  const CHUNK = 24
+  for (let i = 0; i < list.length; i += CHUNK) {
+    await Promise.all(
+      list.slice(i, i + CHUNK).map(async (u) => {
+        const info = await probeTPrints(u, 800)
+        done++
+        onProgress?.(done, list.length)
+        if (info) found.push(info)
+      })
+    )
+  }
+  return found.sort((a, b) => a.url.localeCompare(b.url))
+}
+
 const METHOD_LABELS: Record<string, string> = {
   CASH: "Naqd",
   CARD: "Karta",
