@@ -33,6 +33,7 @@ import {
   useCreateShopSale,
   usePayShopSale,
   useCancelShopSale,
+  useReceiptSettings,
   type ShopProduct,
   type ShopSale,
 } from "../api/shop"
@@ -411,6 +412,8 @@ export const ShopPage = () => {
 
   // ---- Chek printeri (TPrints, lokal print-server) ----
   const user = useAuthStore((s) => s.user)
+  // Mehmonxonaning o'z chek dizayni (sozlamalar sahifasida tahrirlanadi)
+  const { data: receiptDesign } = useReceiptSettings()
   const [receiptOn, setReceiptOn] = useState(getAutoPrint)
   const [printerModal, setPrinterModal] = useState(false)
   const [printerUrl, setPrinterUrlInput] = useState(getPrinterUrl)
@@ -439,7 +442,12 @@ export const ShopPage = () => {
   // Chek chiqarish — xatoda sotuv jarayonini TO'XTATMAYDI (sotuv allaqachon
   // saqlangan), faqat ogohlantirish va qayta urinish imkonini ko'rsatadi
   const doPrintReceipt = async (sale: ShopSale) => {
-    const r = await printShopReceipt(sale, user?.hotel_name || "GoHotel", guestNameFor(sale))
+    const r = await printShopReceipt(
+      sale,
+      user?.hotel_name || "GoHotel",
+      guestNameFor(sale),
+      receiptDesign
+    )
     if (!r.ok) {
       setPrintError(r.error || "Chek chiqmadi")
       setPrintRetrySale(sale)

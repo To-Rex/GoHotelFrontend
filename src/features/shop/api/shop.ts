@@ -226,6 +226,59 @@ export const useInventoryProduct = () => {
   });
 };
 
+// --- Chek dizayni (har mehmonxona uchun alohida, hotels.settings JSONB) ---
+
+export interface ReceiptSettings {
+  /** Bo'sh — mehmonxona nomi ishlatiladi */
+  title: string;
+  subtitle: string;
+  header_note: string;
+  footer_text: string;
+  footer_note: string;
+  show_check_no: boolean;
+  show_seller: boolean;
+  show_guest: boolean;
+  paper: 58 | 80;
+  qr_url: string;
+}
+
+export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
+  title: '',
+  subtitle: "Mini-do'kon cheki",
+  header_note: '',
+  footer_text: 'Xaridingiz uchun rahmat!',
+  footer_note: '',
+  show_check_no: true,
+  show_seller: true,
+  show_guest: true,
+  paper: 80,
+  qr_url: '',
+};
+
+export const useReceiptSettings = () =>
+  useQuery({
+    queryKey: ['receiptSettings'],
+    queryFn: async () => {
+      const { data } = await api.get<ReceiptSettings>('/shop/receipt-settings');
+      return { ...DEFAULT_RECEIPT_SETTINGS, ...(data || {}) };
+    },
+  });
+
+export const useSaveReceiptSettings = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: ReceiptSettings) => {
+      const { data } = await api.put<ReceiptSettings>('/shop/receipt-settings', payload);
+      return data;
+    },
+    onSuccess: (data) =>
+      qc.setQueryData(['receiptSettings'], {
+        ...DEFAULT_RECEIPT_SETTINGS,
+        ...(data || {}),
+      }),
+  });
+};
+
 export const useCreateShopSale = () => {
   const qc = useQueryClient();
   return useMutation({

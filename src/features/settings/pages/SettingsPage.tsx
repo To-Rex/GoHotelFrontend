@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Link } from "react-router-dom"
 import {
   Settings,
   AlertTriangle,
@@ -15,6 +16,8 @@ import {
   Wrench,
   ClipboardCheck,
   Moon,
+  Printer,
+  ArrowRight,
   type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
@@ -292,6 +295,7 @@ export const SettingsPage = () => {
     { href: "#shift", label: "Smena va kassa", dot: "bg-violet-500" },
     { href: "#booking-edit", label: "Bron tahriri", dot: "bg-sky-500" },
     { href: "#auto-complete", label: "Avto-yakunlash", dot: "bg-primary-600" },
+    { href: "#receipt", label: "Chek dizayni", dot: "bg-emerald-500" },
     { href: "#reset", label: "Tozalash", dot: "bg-red-500" },
   ]
 
@@ -500,6 +504,27 @@ export const SettingsPage = () => {
               saved={hkSaved}
               error={hkError}
             />
+          </SettingCard>
+
+          {/* Chek dizayni — alohida tahrirlash sahifasiga olib boradi */}
+          <SettingCard
+            id="receipt"
+            icon={Printer}
+            iconClass="bg-emerald-50 text-emerald-600"
+            title="Chek dizayni"
+            desc="Do'kon chekining ko'rinishi: sarlavha, izohlar, ko'rsatiladigan maydonlar, QR-kod va qog'oz kengligi. Har mehmonxona o'z dizaynini alohida saqlaydi — boshqalar bilan aralashmaydi."
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="max-w-xs text-sm leading-relaxed text-gray-600">
+                Chek jonli ko'rinish bilan alohida sahifada tahrirlanadi va
+                printerda sinab ko'riladi.
+              </p>
+              <Button asChild>
+                <Link to="/settings/receipt" className="gap-2">
+                  Tahrirlash <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </SettingCard>
         </div>
       </div>

@@ -71,7 +71,7 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
 };
 
 // Faqat ADMIN/SUPER_ADMIN uchun ochiq marshrutlar (avvalgi xatti-harakat saqlangan).
-export const ADMIN_ONLY_ROUTES = ["/settings"];
+export const ADMIN_ONLY_ROUTES = ["/settings", "/settings/receipt"];
 
 export function usePermissions() {
   const user = useAuthStore((s) => s.user);

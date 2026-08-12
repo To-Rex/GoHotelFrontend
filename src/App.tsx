@@ -15,6 +15,7 @@ import { HousekeepingPage } from "./features/housekeeping/pages/HousekeepingPage
 import { EmployeesPage } from "./features/employees/pages/EmployeesPage";
 import { PermissionsPage } from "./features/employees/pages/PermissionsPage";
 import { SettingsPage } from "./features/settings/pages/SettingsPage";
+import { ReceiptDesignPage } from "./features/settings/pages/ReceiptDesignPage";
 import { ExpensesPage } from "./features/expenses/pages/ExpensesPage";
 import { ShopPage } from "./features/shop/pages/ShopPage";
 import { MyReportsPage } from "./features/reports/pages/MyReportsPage";
@@ -73,6 +74,7 @@ function App() {
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="permissions" element={<PermissionsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/receipt" element={<ReceiptDesignPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

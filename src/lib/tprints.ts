@@ -3,7 +3,11 @@
 // va HTTP JSON qabul qilib chekni termal printerga chiqaradi. Manzil har bir
 // kompyuter uchun localStorage'da saqlanadi (kassa qurilmasiga bog'liq sozlama).
 import { format } from "date-fns"
-import type { ShopSale } from "@/features/shop/api/shop"
+import {
+  DEFAULT_RECEIPT_SETTINGS,
+  type ReceiptSettings,
+  type ShopSale,
+} from "@/features/shop/api/shop"
 
 const URL_KEY = "tprints_url"
 const AUTO_KEY = "tprints_auto_print"
@@ -75,29 +79,41 @@ const METHOD_LABELS: Record<string, string> = {
   TRANSFER: "O'tkazma",
 }
 
-/** Do'kon sotuvi chekini chiqarish */
-export const printShopReceipt = async (
+/** Chek elementlari — mehmonxonaning saqlangan dizayni bo'yicha quriladi */
+const buildReceiptElements = (
   sale: ShopSale,
   hotelName: string,
-  guestName?: string | null
-): Promise<{ ok: boolean; error?: string }> => {
+  guestName: string | null | undefined,
+  design: ReceiptSettings
+): any[] => {
   const when = sale.created_at ? new Date(sale.created_at) : new Date()
   const elements: any[] = [
-    { type: "title", value: hotelName || "GoHotel", size: 2 },
-    { type: "text", value: "Mini-do'kon cheki", align: "center" },
-    { type: "line" },
-    { type: "row", left: "Sana:", right: format(when, "dd.MM.yyyy HH:mm") },
-    { type: "row", left: "Chek:", right: `#${sale.id.slice(0, 8).toUpperCase()}` },
+    { type: "title", value: design.title.trim() || hotelName || "GoHotel", size: 2 },
   ]
-  if (sale.created_by_name) {
+  if (design.subtitle.trim()) {
+    elements.push({ type: "text", value: design.subtitle.trim(), align: "center" })
+  }
+  if (design.header_note.trim()) {
+    elements.push({ type: "text", value: design.header_note.trim(), align: "center" })
+  }
+  elements.push(
+    { type: "line" },
+    { type: "row", left: "Sana:", right: format(when, "dd.MM.yyyy HH:mm") }
+  )
+  if (design.show_check_no) {
+    elements.push({ type: "row", left: "Chek:", right: `#${sale.id.slice(0, 8).toUpperCase()}` })
+  }
+  if (design.show_seller && sale.created_by_name) {
     elements.push({ type: "row", left: "Sotuvchi:", right: sale.created_by_name })
   }
-  if (sale.reservation_number) {
-    elements.push({ type: "row", left: "Bron:", right: sale.reservation_number })
-  }
-  const guest = guestName || sale.guest_name
-  if (guest) {
-    elements.push({ type: "row", left: "Mehmon:", right: guest })
+  if (design.show_guest) {
+    if (sale.reservation_number) {
+      elements.push({ type: "row", left: "Bron:", right: sale.reservation_number })
+    }
+    const guest = guestName || sale.guest_name
+    if (guest) {
+      elements.push({ type: "row", left: "Mehmon:", right: guest })
+    }
   }
   elements.push(
     { type: "line", style: "dashed" },
@@ -136,16 +152,66 @@ export const printShopReceipt = async (
       align: "center",
     })
   }
-  elements.push(
-    { type: "line", style: "dashed" },
-    { type: "text", value: "Xaridingiz uchun rahmat!", align: "center", bold: true },
-    { type: "feed", lines: 1 }
-  )
+  elements.push({ type: "line", style: "dashed" })
+  if (design.footer_text.trim()) {
+    elements.push({
+      type: "text",
+      value: design.footer_text.trim(),
+      align: "center",
+      bold: true,
+    })
+  }
+  if (design.footer_note.trim()) {
+    elements.push({ type: "text", value: design.footer_note.trim(), align: "center" })
+  }
+  if (design.qr_url.trim()) {
+    elements.push({ type: "qr", value: design.qr_url.trim(), size: 5 })
+  }
+  elements.push({ type: "feed", lines: 1 })
+  return elements
+}
 
+/** Do'kon sotuvi chekini chiqarish (dizayn berilmasa — standart) */
+export const printShopReceipt = async (
+  sale: ShopSale,
+  hotelName: string,
+  guestName?: string | null,
+  design?: ReceiptSettings | null
+): Promise<{ ok: boolean; error?: string }> => {
+  const d = design || DEFAULT_RECEIPT_SETTINGS
   const r = await request("/print", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ elements }),
+    body: JSON.stringify({
+      paper: d.paper,
+      elements: buildReceiptElements(sale, hotelName, guestName, d),
+    }),
   })
   return { ok: r.ok, error: r.error }
+}
+
+/** Dizayn sahifasidagi "Sinov chek" — namunaviy sotuv bilan chiqaradi */
+export const printSampleReceipt = async (
+  design: ReceiptSettings,
+  hotelName: string
+): Promise<{ ok: boolean; error?: string }> => {
+  const sample: ShopSale = {
+    id: "namuna01-0000-0000-0000-000000000000",
+    reservation_id: null,
+    reservation_number: "RES-NAMUNA",
+    guest_name: "Jasur Toshmatov",
+    total_amount: 57000,
+    payment_method: "CASH",
+    status: "PAID",
+    paid_at: null,
+    created_by: "",
+    created_by_name: "Aziza Karimova",
+    created_at: new Date().toISOString(),
+    items: [
+      { product_id: "1", product_name: "Coca-Cola 0.5", quantity: 2, unit_price: 12000, total_price: 24000 },
+      { product_id: "2", product_name: "Shokolad", quantity: 1, unit_price: 18000, total_price: 18000 },
+      { product_id: "3", product_name: "Suv 1L", quantity: 3, unit_price: 5000, total_price: 15000 },
+    ],
+  }
+  return printShopReceipt(sample, hotelName, null, design)
 }
