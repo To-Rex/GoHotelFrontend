@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { format } from "date-fns"
 import {
   Wallet,
@@ -65,6 +65,22 @@ export const ShiftPanel = () => {
   const [counted, setCounted] = useState("")
   const [notes, setNotes] = useState("")
   const [countError, setCountError] = useState<string | null>(null)
+  // Dialog ochilganda kutilgan summa maydonga AVTOMATIK yozib qo'yiladi —
+  // xodim istasa o'zgartiradi. Har ochilishda bir marta to'ldiriladi,
+  // keyin qo'lda kiritilgan qiymat ustun turadi
+  const prefilledRef = useRef(false)
+  useEffect(() => {
+    if (!countDialog) {
+      prefilledRef.current = false
+      return
+    }
+    if (!prefilledRef.current && expectedData) {
+      const v = Math.max(0, Math.round(Number(expectedData.expected_cash || 0)))
+      setCounted(String(v))
+      setCountError(null)
+      prefilledRef.current = true
+    }
+  }, [countDialog, expectedData])
   // Yopilgandan keyingi hisobot (kutilgan/sanalgan/farq)
   const [report, setReport] = useState<ShiftSession | null>(null)
 
