@@ -22,17 +22,23 @@ import {
   ShieldCheck,
   History,
   Warehouse,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { usePermissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth";
+import { useStaffMessages } from "@/features/messages/api/messages";
 
 export const Sidebar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(true);
   const { canRoute } = usePermissions();
   const user = useAuthStore((s) => s.user);
+
+  // Ochiq xabar/so'rovlar soni — Xabarlar bandida qizil belgi bo'lib turadi
+  const { data: staffMessages = [] } = useStaffMessages(60_000);
+  const openMessages = staffMessages.filter((m) => m.status === "OPEN").length;
 
   const allLinks = [
     { name: "Boshqaruv", href: "/", icon: LayoutDashboard },
@@ -45,6 +51,7 @@ export const Sidebar = () => {
     { name: "Xarajatlar", href: "/expenses", icon: TrendingDown },
     { name: "Do'kon", href: "/shop", icon: Store },
     { name: "Mening hisobotim", href: "/my-reports", icon: FileBarChart },
+    { name: "Xabarlar", href: "/messages", icon: MessageSquare, badge: openMessages },
     { name: "Sozlamalar", href: "/settings", icon: Settings },
   ];
 
@@ -76,13 +83,15 @@ export const Sidebar = () => {
         ? "Administrator"
         : "Xodim";
 
-  // Bitta havolani chizish — asosiy va administratsiya guruhlari uchun umumiy
-  const renderLink = (link: { name: string; href: string; icon: any }) => {
+  // Bitta havolani chizish — asosiy va administratsiya guruhlari uchun umumiy.
+  // badge — ochiq xabar/so'rovlar soni kabi jonli ko'rsatkich (0 da yashirin)
+  const renderLink = (link: { name: string; href: string; icon: any; badge?: number }) => {
     const isActive =
       link.href === "/"
         ? location.pathname === "/"
         : location.pathname === link.href ||
           location.pathname.startsWith(link.href + "/");
+    const badge = link.badge ?? 0;
     return (
       <Link
         key={link.name}
@@ -100,14 +109,27 @@ export const Sidebar = () => {
         {isActive && (
           <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
         )}
-        <link.icon
-          size={19}
-          className={cn(
-            "flex-shrink-0 transition-transform duration-200",
-            isActive ? "scale-105" : "group-hover:scale-105"
+        <span className="relative flex-shrink-0">
+          <link.icon
+            size={19}
+            className={cn(
+              "transition-transform duration-200",
+              isActive ? "scale-105" : "group-hover:scale-105"
+            )}
+          />
+          {/* Yig'ilgan holatda belgi ikonka burchagida nuqta bo'lib turadi */}
+          {!isOpen && badge > 0 && (
+            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white">
+              {badge > 9 ? "9+" : badge}
+            </span>
           )}
-        />
+        </span>
         {isOpen && <span className="truncate">{link.name}</span>}
+        {isOpen && badge > 0 && (
+          <span className="ml-auto flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
       </Link>
     );
   };

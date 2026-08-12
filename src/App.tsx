@@ -23,6 +23,7 @@ import { ShiftsHistoryPage } from "./features/shifts/pages/ShiftsHistoryPage";
 import { ProfilePage } from "./features/profile/pages/ProfilePage";
 import { LandingPage } from "./features/landing/pages/LandingPage";
 import { WarehousePage } from "./features/shop/pages/WarehousePage";
+import { MessagesPage } from "./features/messages/pages/MessagesPage";
 import { useAuthStore } from "./store/auth";
 
 // Ildiz darvozasi: tizimga kirganlar avvalgidek boshqaruv panelini ko'radi,
@@ -66,6 +67,7 @@ function App() {
           <Route path="shifts" element={<ShiftsHistoryPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="warehouse" element={<WarehousePage />} />
+          <Route path="messages" element={<MessagesPage />} />
           {/* Boshqaruv bo'limlari (admin/menejer) */}
           <Route path="room-types" element={<RoomTypesPage />} />
           <Route path="amenities" element={<AmenitiesPage />} />

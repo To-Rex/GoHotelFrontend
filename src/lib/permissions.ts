@@ -68,6 +68,8 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   ],
   // Profil — har bir kirgan foydalanuvchi o'zinikini ko'radi
   "/profile": [],
+  // Xabarlar — barcha xodimlar (farrosh ham) yuboradi/ko'radi
+  "/messages": [],
 };
 
 // Faqat ADMIN/SUPER_ADMIN uchun ochiq marshrutlar (avvalgi xatti-harakat saqlangan).
