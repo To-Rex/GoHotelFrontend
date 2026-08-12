@@ -541,19 +541,19 @@ export const RoomsPage = () => {
                 </span>
                 {/* Bo'sh/band soni — yaqqol ko'rinadigan pill ko'rsatkichlar */}
                 <span className="flex flex-wrap items-center justify-end gap-1.5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
                     {stats.available} bo'sh
                   </span>
                   {stats.busy > 0 && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600">
-                      <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                    <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-bold text-red-600">
+                      <span className="h-2 w-2 rounded-full bg-red-500" />
                       {stats.busy} band
                     </span>
                   )}
                   {stats.other > 0 && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600">
-                      <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                    <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-sm font-bold text-gray-600">
+                      <span className="h-2 w-2 rounded-full bg-gray-400" />
                       {stats.other} boshqa
                     </span>
                   )}
@@ -582,7 +582,7 @@ export const RoomsPage = () => {
                           statusEdge[room.current_status] || "bg-transparent"
                         )}
                       />
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
                         <p className="text-lg font-bold tracking-tight text-gray-900">
                           {room.room_number}
                         </p>
@@ -595,14 +595,14 @@ export const RoomsPage = () => {
                           }}
                           title={canStatus ? "Holatni o'zgartirish" : undefined}
                           className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold",
+                            "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold",
                             statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
                             canStatus && "cursor-pointer hover:opacity-80"
                           )}
                         >
                           <span
                             className={cn(
-                              "h-1.5 w-1.5 rounded-full",
+                              "h-2 w-2 rounded-full",
                               statusDot[room.current_status] || "bg-gray-400"
                             )}
                           />
@@ -853,19 +853,19 @@ export const RoomsPage = () => {
                         · {floorRooms.length} ta xona
                       </span>
                       <span className="ml-auto flex items-center gap-1.5 normal-case tracking-normal">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500" />
                           {stats.available} bo'sh
                         </span>
                         {stats.busy > 0 && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-600">
-                            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                          <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-bold text-red-600">
+                            <span className="h-2 w-2 rounded-full bg-red-500" />
                             {stats.busy} band
                           </span>
                         )}
                         {stats.other > 0 && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
-                            <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                          <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-sm font-bold text-gray-600">
+                            <span className="h-2 w-2 rounded-full bg-gray-400" />
                             {stats.other} boshqa
                           </span>
                         )}
@@ -911,14 +911,14 @@ export const RoomsPage = () => {
                       }}
                       title={canStatus ? "Holatni o'zgartirish" : undefined}
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold",
+                        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold",
                         statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
                         canStatus && "cursor-pointer hover:opacity-80"
                       )}
                     >
                       <span
                         className={cn(
-                          "h-1.5 w-1.5 rounded-full",
+                          "h-2 w-2 rounded-full",
                           statusDot[room.current_status] || "bg-gray-400"
                         )}
                       />
