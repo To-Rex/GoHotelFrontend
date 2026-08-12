@@ -18,6 +18,10 @@ import {
   BedDouble,
   Loader2,
   Layers,
+  Printer,
+  Settings2,
+  RefreshCw,
+  X,
 } from "lucide-react"
 import {
   useShopProducts,
@@ -38,6 +42,17 @@ import { useRooms } from "@/features/rooms/api/rooms"
 import type { Reservation } from "@/types/api"
 import { usePermissions } from "@/lib/permissions"
 import { apiErrorMessage } from "@/lib/apiError"
+import { useAuthStore } from "@/store/auth"
+import {
+  DEFAULT_TPRINTS_URL,
+  getAutoPrint,
+  getPrinterUrl,
+  setPrinterUrl as savePrinterUrl,
+  setAutoPrint,
+  pingPrinter,
+  printTest,
+  printShopReceipt,
+} from "@/lib/tprints"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -202,6 +217,8 @@ export const ShopPage = () => {
           : `${fmt(sale.total_amount)} So'm — bron hisobiga yozildi`
       )
       window.setTimeout(() => setSoldBanner(null), 3500)
+      // Chek yoqilgan bo'lsa avtomatik chiqariladi (kutmasdan, fonda)
+      if (receiptOn) void doPrintReceipt(sale)
     } catch (e) {
       setSellError(apiErrorMessage(e))
     }
@@ -374,8 +391,10 @@ export const ShopPage = () => {
   const doPay = async (m: string) => {
     if (!payTarget) return
     try {
-      await paySale.mutateAsync({ id: payTarget.id, payment_method: m })
+      const updated = await paySale.mutateAsync({ id: payTarget.id, payment_method: m })
       setPayModal(false)
+      // To'lov cheki — chek rejimi yoqiq bo'lsa
+      if (receiptOn && updated) void doPrintReceipt(updated)
     } catch (e) {
       setPayError(apiErrorMessage(e))
     }
@@ -388,6 +407,72 @@ export const ShopPage = () => {
     } catch (e) {
       alert(apiErrorMessage(e))
     }
+  }
+
+  // ---- Chek printeri (TPrints, lokal print-server) ----
+  const user = useAuthStore((s) => s.user)
+  const [receiptOn, setReceiptOn] = useState(getAutoPrint)
+  const [printerModal, setPrinterModal] = useState(false)
+  const [printerUrl, setPrinterUrlInput] = useState(getPrinterUrl)
+  const [printerTest, setPrinterTest] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [printerBusy, setPrinterBusy] = useState(false)
+  const [printError, setPrintError] = useState<string | null>(null)
+  const [printRetrySale, setPrintRetrySale] = useState<ShopSale | null>(null)
+  const [detailPrinting, setDetailPrinting] = useState(false)
+
+  const toggleReceipt = () =>
+    setReceiptOn((v) => {
+      setAutoPrint(!v)
+      return !v
+    })
+
+  // Mijoz ismi (chek uchun): serverdan kelmasa bron ro'yxatidan topamiz
+  const guestNameFor = (sale: ShopSale): string | null => {
+    if (sale.guest_name) return sale.guest_name
+    if (!sale.reservation_id) return null
+    const res = (reservations as Reservation[]).find((r) => r.id === sale.reservation_id)
+    if (!res) return null
+    const g = (guests as any[]).find((x) => x.id === res.guest_id)
+    return g ? `${g.first_name ?? ""} ${g.last_name ?? ""}`.trim() || null : null
+  }
+
+  // Chek chiqarish — xatoda sotuv jarayonini TO'XTATMAYDI (sotuv allaqachon
+  // saqlangan), faqat ogohlantirish va qayta urinish imkonini ko'rsatadi
+  const doPrintReceipt = async (sale: ShopSale) => {
+    const r = await printShopReceipt(sale, user?.hotel_name || "GoHotel", guestNameFor(sale))
+    if (!r.ok) {
+      setPrintError(r.error || "Chek chiqmadi")
+      setPrintRetrySale(sale)
+    } else {
+      setPrintError(null)
+      setPrintRetrySale(null)
+    }
+    return r.ok
+  }
+
+  const checkPrinter = async () => {
+    savePrinterUrl(printerUrl)
+    setPrinterBusy(true)
+    setPrinterTest(await pingPrinter())
+    setPrinterBusy(false)
+  }
+
+  const sendTestPrint = async () => {
+    savePrinterUrl(printerUrl)
+    setPrinterBusy(true)
+    const r = await printTest()
+    setPrinterTest(
+      r.ok
+        ? { ok: true, msg: "Sinov chek yuborildi — printerni tekshiring" }
+        : { ok: false, msg: r.error || "Xato" }
+    )
+    setPrinterBusy(false)
+  }
+
+  const savePrinter = () => {
+    savePrinterUrl(printerUrl)
+    setPrinterTest(null)
+    setPrinterModal(false)
   }
 
   return (
@@ -825,6 +910,31 @@ export const ShopPage = () => {
               </div>
             )}
 
+            {/* Chek chiqmagan holat — sotuv saqlangan, faqat print xatosi */}
+            {printError && (
+              <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-amber-700">
+                <Printer size={14} className="flex-shrink-0" />
+                <span className="min-w-0 flex-1 text-xs font-medium">{printError}</span>
+                {printRetrySale && (
+                  <button
+                    onClick={() => void doPrintReceipt(printRetrySale)}
+                    className="flex flex-shrink-0 items-center gap-1 rounded-md border border-amber-300 px-2 py-1 text-[11px] font-semibold hover:bg-amber-100"
+                  >
+                    <RefreshCw size={11} /> Qayta
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setPrintError(null)
+                    setPrintRetrySale(null)
+                  }}
+                  className="flex-shrink-0 text-amber-600 transition-opacity hover:opacity-70"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {cart.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-muted-foreground">
                 <ShoppingCart size={28} className="opacity-50" />
@@ -943,6 +1053,43 @@ export const ShopPage = () => {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm text-muted-foreground">Jami:</span>
                 <span className="text-xl font-bold">{fmt(cartTotal)} So'm</span>
+              </div>
+
+              {/* Chek rejimi — o'chirilsa cheksiz sotiladi (hech narsa o'zgarmaydi) */}
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={toggleReceipt}
+                  className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <span
+                    className={cn(
+                      "flex h-5 w-9 flex-shrink-0 items-center rounded-full p-0.5 transition-colors",
+                      receiptOn ? "bg-primary" : "bg-muted-foreground/30"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "h-4 w-4 rounded-full bg-white shadow transition-transform",
+                        receiptOn && "translate-x-4"
+                      )}
+                    />
+                  </span>
+                  <Printer size={13} />
+                  {receiptOn ? "Chek chiqariladi" : "Cheksiz sotish"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrinterUrlInput(getPrinterUrl())
+                    setPrinterTest(null)
+                    setPrinterModal(true)
+                  }}
+                  title="Chek printeri sozlamalari"
+                  className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Settings2 size={14} />
+                </button>
               </div>
 
               <Button
@@ -1221,19 +1368,112 @@ export const ShopPage = () => {
                 </div>
               </div>
 
-              {detailSale.status === "PENDING" && (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {/* Chekni qayta chiqarish — istalgan sotuv uchun */}
                 <Button
-                  className="w-full gap-2"
-                  onClick={() => {
-                    setDetailModal(false)
-                    openPay(detailSale)
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  disabled={detailPrinting}
+                  onClick={async () => {
+                    setDetailPrinting(true)
+                    await doPrintReceipt(detailSale)
+                    setDetailPrinting(false)
                   }}
                 >
-                  <Banknote size={16} /> To'lovni qabul qilish
+                  {detailPrinting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Printer size={16} />
+                  )}
+                  Chek chiqarish
                 </Button>
+                {detailSale.status === "PENDING" && (
+                  <Button
+                    className="flex-1 gap-2"
+                    onClick={() => {
+                      setDetailModal(false)
+                      openPay(detailSale)
+                    }}
+                  >
+                    <Banknote size={16} /> To'lovni qabul qilish
+                  </Button>
+                )}
+              </div>
+              {printError && (
+                <p className="text-xs font-medium text-amber-600">{printError}</p>
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ---------- Chek printeri sozlamalari (TPrints) ---------- */}
+      <Dialog open={printerModal} onOpenChange={setPrinterModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer size={18} /> Chek printeri (TPrints)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Print-server manzili
+              </label>
+              <Input
+                value={printerUrl}
+                onChange={(e) => setPrinterUrlInput(e.target.value)}
+                placeholder={DEFAULT_TPRINTS_URL}
+                className="mt-1"
+              />
+              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                Chek chiqishi uchun kassa kompyuterida TPrints dasturi ishlab
+                turishi kerak. Odatiy manzil:{" "}
+                <b className="text-foreground">http://127.0.0.1:9100</b>. Printer
+                boshqa kompyuterda bo'lsa, o'sha kompyuter IP manzilini yozing
+                (masalan http://192.168.1.102:9100). Sozlama shu qurilmaning
+                o'zida saqlanadi.
+              </p>
+            </div>
+            {printerTest && (
+              <p
+                className={cn(
+                  "text-xs font-medium",
+                  printerTest.ok ? "text-emerald-600" : "text-destructive"
+                )}
+              >
+                {printerTest.msg}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={printerBusy}
+                onClick={checkPrinter}
+              >
+                {printerBusy ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={14} />
+                )}
+                Tekshirish
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={printerBusy}
+                onClick={sendTestPrint}
+              >
+                <Receipt size={14} /> Sinov chek
+              </Button>
+              <Button size="sm" className="ml-auto" onClick={savePrinter}>
+                Saqlash
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
