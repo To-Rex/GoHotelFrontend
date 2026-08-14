@@ -193,9 +193,26 @@ export const ShiftPanel = () => {
               </p>
               <p className="mt-0.5 text-sm text-red-600/80">
                 {blocking.status === "PENDING_HANDOVER"
-                  ? "Smena tugallangan — qabul qilib olishingiz mumkin. Qabul qilgach o'z smenangiz 0 so'mdan boshlanadi, avvalgi hisob-kitob avvalgi xodimda qoladi."
+                  ? "Smena tugallangan — qabul qilib olishingiz mumkin. Kassadagi pul sizga o'tadi va yangi smenangizning BOSHLANG'ICH kassasi bo'ladi; avvalgi tushum-chiqim hisobi avvalgi xodimda qoladi."
                   : "Xodim smenani tugallamagan. Menejer yoki administrator majburiy yopishi kerak."}
               </p>
+
+              {/* Topshirilayotgan kassa — qabul qiluvchi sanab tekshirishi kerak */}
+              {blocking.status === "PENDING_HANDOVER" &&
+                blocking.counted_cash != null && (
+                  <div className="mt-2.5 inline-flex flex-wrap items-center gap-2 rounded-lg bg-white px-3 py-2 ring-1 ring-red-200">
+                    <Wallet className="h-4 w-4 flex-shrink-0 text-red-500" />
+                    <span className="text-sm text-gray-600">
+                      Qabul qilinayotgan kassa:
+                    </span>
+                    <b className="text-base tabular-nums text-gray-900">
+                      {fmtMoney(blocking.counted_cash)} so'm
+                    </b>
+                    <span className="text-[11px] text-gray-400">
+                      — pulni sanab tekshiring
+                    </span>
+                  </div>
+                )}
 
               {blocking.status === "PENDING_HANDOVER" && (
                 <div className="mt-3 flex flex-wrap items-end gap-2">
