@@ -760,9 +760,12 @@ export const EmployeesPage = () => {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[580px]">
+        {/* overflow-hidden QO'YILMAYDI — dialog asosidagi overflow-y-auto
+            ishlashi kerak, aks holda pastdagi Rol bo'limi kichik ekranlarda
+            ko'rinmay qoladi (scroll bo'lmaydi) */}
+        <DialogContent className="gap-0 p-0 sm:max-w-[580px]">
           {/* Sarlavha — ikonka kartochkasi bilan, scrollda tepada qoladi */}
-          <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-white px-5 py-4">
+          <div className="sticky top-0 z-10 flex items-center gap-3 rounded-t-lg border-b bg-white px-5 py-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-500/25">
               {editing ? (
                 <Pencil className="h-4 w-4 text-white" />
@@ -1055,7 +1058,7 @@ export const EmployeesPage = () => {
           </div>
 
           {/* Futer — scrollda pastda qoladi */}
-          <div className="sticky bottom-0 z-10 flex justify-end gap-2 border-t bg-white px-5 py-3.5">
+          <div className="sticky bottom-0 z-10 flex justify-end gap-2 rounded-b-lg border-t bg-white px-5 py-3.5">
             <Button variant="outline" onClick={() => setModalOpen(false)}>
               Bekor qilish
             </Button>
