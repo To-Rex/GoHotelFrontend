@@ -2337,6 +2337,50 @@ export function BookingPage() {
               </label>
 
               {!showNewGuest ? (
+                (() => {
+                  // Tanlangan mehmon ALOHIDA karta bo'lib ko'rsatiladi —
+                  // kim tanlangani bir qarashda aniq; "O'zgartirish" bosilsa
+                  // qidiruv ro'yxati qaytadi (tanlov bekor bo'ladi)
+                  const selectedGuestObj = selectedGuestId
+                    ? (guests as any[]).find((g) => g.id === selectedGuestId)
+                    : null
+                  if (selectedGuestObj) {
+                    const initials = `${selectedGuestObj.first_name?.[0] ?? ""}${
+                      selectedGuestObj.last_name?.[0] ?? ""
+                    }`.toUpperCase()
+                    return (
+                      <div className="flex items-center gap-3 rounded-lg border-2 border-primary-200 bg-primary-50 px-3 py-2.5">
+                        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
+                          {initials || "?"}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+                            <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-primary-600" />
+                            <span className="truncate">
+                              {selectedGuestObj.first_name} {selectedGuestObj.last_name}
+                            </span>
+                          </p>
+                          <p className="truncate text-xs text-gray-500">
+                            {[selectedGuestObj.phone, selectedGuestObj.passport_number]
+                              .filter(Boolean)
+                              .join(" · ") || "Qo'shimcha ma'lumot yo'q"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setValue("guest_id", "")
+                            setSelectedGuestId("")
+                            setGuestSearch("")
+                          }}
+                          className="flex-shrink-0 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                        >
+                          O'zgartirish
+                        </button>
+                      </div>
+                    )
+                  }
+                  return (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
@@ -2445,6 +2489,8 @@ export function BookingPage() {
                   )}
                   {errors.guest_id && <p className="text-xs text-red-500">{errors.guest_id.message}</p>}
                 </div>
+                  )
+                })()
               ) : (
                 <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
                   {/* Blok sarlavhasi + ro'yxatga qaytish tugmasi (forma uzun bo'lgani
