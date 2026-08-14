@@ -167,9 +167,11 @@ function preprocessCrop(
   crop: { sx: number; sy: number; sw: number; sh: number },
   mode: PrepMode
 ): HTMLCanvasElement {
-  // Passportning 44 belgili qatorlari uchun ham yetarli aniqlik bo'lsin
-  const targetW = 1800
-  const scale = Math.min(Math.max(targetW / crop.sw, 1), 4)
+  // Passportning 44 belgili qatorlari uchun ham yetarli aniqlik: ~36px/belgi.
+  // KATTA kadrlar KICHRAYTIRILADI ham (0.25x gacha) — yuqori aniqlikdagi
+  // kamerada OCR bir xil o'lchamda ishlaydi, tezlik barqaror bo'ladi
+  const targetW = 1600
+  const scale = Math.min(Math.max(targetW / crop.sw, 0.25), 4)
   const out = document.createElement("canvas")
   out.width = Math.round(crop.sw * scale)
   out.height = Math.round(crop.sh * scale)
@@ -258,6 +260,49 @@ function preprocessCrop(
   return out
 }
 
+/* OCR resurslari LOKAL serverdan (public/ocr) yuklanadi — CDN'ga bog'liqlik
+   YO'Q: tashqi internet sekin yoki yopiq bo'lsa ham skaner ishlayveradi
+   (fayllar PWA tomonidan oldindan keshlab ham qo'yiladi).
+   Worker BIR MARTA yaratiladi va sessiya davomida "issiq" turadi — dialog
+   yopib-ochilganda qayta yuklab o'tirmaydi, skan darhol boshlanadi. */
+let sharedWorker: Promise<any> | null = null
+let onOcrProgress: ((p: number) => void) | null = null
+
+async function getSharedWorker(): Promise<any> {
+  if (!sharedWorker) {
+    sharedWorker = (async () => {
+      const Tesseract = await import("tesseract.js")
+      const worker = await Tesseract.createWorker("eng", 1, {
+        workerPath: "/ocr/worker.min.js",
+        corePath: "/ocr",
+        langPath: "/ocr",
+        logger: (m: any) => {
+          if (m.status === "recognizing text") {
+            onOcrProgress?.(Math.round((m.progress || 0) * 100))
+          }
+        },
+      })
+      // MRZ faqat shu belgilar to'plamidan iborat; PSM 6 — yaxlit matn bloki.
+      // Lug'atlar o'chirilgan (MRZ so'z emas), invert-urinish ham o'chirilgan.
+      await worker.setParameters({
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
+        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+        tessedit_do_invert: "0",
+        load_system_dawg: "0",
+        load_freq_dawg: "0",
+        user_defined_dpi: "300",
+        preserve_interword_spaces: "1",
+      } as any)
+      return worker
+    })().catch((e) => {
+      // Yaratish xatosida keyingi urinish yangidan boshlaydi
+      sharedWorker = null
+      throw e
+    })
+  }
+  return sharedWorker
+}
+
 export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScannerProps) {
   const [phase, setPhase] = useState<Phase>("select")
   const [docType, setDocType] = useState<DocType>("ID_CARD")
@@ -270,7 +315,6 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const workerRef = useRef<any>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const liveActiveRef = useRef(false)
   const busyRef = useRef(false)
@@ -319,28 +363,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   }, [])
 
   const getWorker = async () => {
-    if (workerRef.current) return workerRef.current
-    const Tesseract = await import("tesseract.js")
-    const worker = await Tesseract.createWorker("eng", 1, {
-      logger: (m: any) => {
-        if (m.status === "recognizing text") {
-          setProgress(Math.round((m.progress || 0) * 100))
-        }
-      },
-    })
-    // MRZ faqat shu belgilar to'plamidan iborat; PSM 6 — yaxlit matn bloki.
-    // Qo'shimcha: lug'atlar o'chiriladi (MRZ so'z emas — lug'at faqat
-    // chalg'itadi va sekinlashtiradi), invert-urinish ham o'chirilgan.
-    await worker.setParameters({
-      tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
-      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
-      tessedit_do_invert: "0",
-      load_system_dawg: "0",
-      load_freq_dawg: "0",
-      user_defined_dpi: "300",
-      preserve_interword_spaces: "1",
-    } as any)
-    workerRef.current = worker
+    const worker = await getSharedWorker()
     setOcrReady(true)
     return worker
   }
@@ -440,7 +463,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     const worker = await getWorker()
     const t = docTypeRef.current
     const mode: PrepMode = attempt % 2 === 0 ? "binary" : "gray"
-    const regions = attempt % 3 === 2 ? [mrzRegion(t), frameRegion(t)] : [mrzRegion(t)]
+    // To'liq ramka skani katta va sekin — faqat har 4-urinishda (hujjat
+    // ramkaga noto'g'ri joylangan holatlar uchun zaxira yo'l)
+    const regions = attempt % 4 === 3 ? [mrzRegion(t), frameRegion(t)] : [mrzRegion(t)]
     let best: { doc: ScannedDoc; score: number; strong: boolean } | null = null
     for (const region of regions) {
       const crop = containerToSource(video.videoWidth, video.videoHeight, region)
@@ -530,32 +555,36 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         busyRef.current = false
       }
       // OCR o'zi vaqt oladi — oradagi pauza minimal (UI nafas olishi uchun)
-      await new Promise((r) => setTimeout(r, 120))
+      await new Promise((r) => setTimeout(r, 50))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Dialog ochilganda tur tanlashdan boshlaymiz; yopilganda hammasi tozalanadi
+  // Progress xabarlari shu ochiq nusxaga bog'lanadi
+  useEffect(() => {
+    const cb = (p: number) => setProgress(p)
+    onOcrProgress = cb
+    return () => {
+      if (onOcrProgress === cb) onOcrProgress = null
+    }
+  }, [])
+
+  // Dialog ochilganda tur tanlashdan boshlaymiz va OCR OLDINDAN isitiladi
+  // (foydalanuvchi hujjat turini tanlaguncha worker tayyor bo'lib ulguradi).
+  // Yopilganda faqat kamera to'xtatiladi — worker issiq qoladi, keyingi
+  // ochilishda kutish umuman bo'lmaydi.
   useEffect(() => {
     if (open) {
       setPhase("select")
       setResult(null)
       setErrorMsg(null)
       setAttempts(0)
+      getWorker().catch(() => {})
     } else {
       stopCamera()
-      if (workerRef.current) {
-        workerRef.current.terminate().catch(() => {})
-        workerRef.current = null
-        setOcrReady(false)
-      }
     }
     return () => {
       stopCamera()
-      if (workerRef.current) {
-        workerRef.current.terminate().catch(() => {})
-        workerRef.current = null
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])

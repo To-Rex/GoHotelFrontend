@@ -42,7 +42,8 @@ export default defineConfig(({ mode }) => {
           // API so'rovlari hech qachon kesh/fallback ga tushmasligi kerak —
           // ular doim to'g'ridan-to'g'ri serverga boradi.
           navigateFallbackDenylist: [/^\/api/],
-          globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+          // gz — OCR til fayli (eng.traineddata.gz): skaner offline'da ham ishlashi uchun
+          globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,gz}'],
           // Katta chunk'lar (tesseract, recharts) ham precache ga sig'ishi uchun
           maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         },
