@@ -26,12 +26,17 @@ import {
   useDeleteEmployee,
   usePermissionsList,
   useSetUserPermissions,
+  useUserPermissions,
   uploadEmployeePhoto,
   useEmployeePhotos,
   EMPLOYEE_PHOTO_ACCEPT,
   EMPLOYEE_PHOTO_MAX_BYTES,
 } from "../api/employees"
-import { PERMISSION_TEMPLATES, templatePermissionIds } from "../permissionTemplates"
+import {
+  PERMISSION_TEMPLATES,
+  templatePermissionIds,
+  findMatchingTemplate,
+} from "../permissionTemplates"
 import { useBranches } from "@/features/rooms/api/rooms"
 import type { Employee } from "@/types/api"
 import { usePermissions } from "@/lib/permissions"
@@ -110,11 +115,14 @@ export const EmployeesPage = () => {
   const deleteMutation = useDeleteEmployee()
   const setPermsMutation = useSetUserPermissions()
 
-  // Yangi xodimga beriladigan rol shablonlari: menejer (admin emas) faqat
-  // "Farrosh" rolini bera oladi — backend ham xuddi shuni tekshiradi;
+  // Rol shablonlari: menejer (admin emas) faqat "Farrosh" va "Texnik xizmat"
+  // rollarini bera oladi — backend ham xuddi shuni tekshiradi;
   // ADMIN/SUPER_ADMIN istalgan rolni tanlashi mumkin.
   const roleOptions = useMemo(
-    () => PERMISSION_TEMPLATES.filter((t) => isAdmin || t.id === "housekeeper"),
+    () =>
+      PERMISSION_TEMPLATES.filter(
+        (t) => isAdmin || t.id === "housekeeper" || t.id === "maintenance"
+      ),
     [isAdmin]
   )
 
@@ -189,9 +197,24 @@ export const EmployeesPage = () => {
     setWorkHours(hours)
     setWorkEnd(computeWorkEnd(workStart, hours))
   }
-  // Yangi xodimga biriktiriladigan rol shabloni (bo'sh — rolsiz)
+  // Rol shabloni: yaratishda — biriktiriladigan rol (bo'sh — rolsiz),
+  // tahrirlashda — yangi rol (bo'sh — o'zgartirilmaydi)
   const [roleTemplateId, setRoleTemplateId] = useState("")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  // Tahrirlanayotgan xodimning joriy ruxsatlari — joriy rolni aniqlash va
+  // rol almashtirilganda to'liq almashtirish uchun
+  const { data: editingPerms = [] } = useUserPermissions(editing?.id)
+  const editingRole = useMemo(
+    () =>
+      editing
+        ? findMatchingTemplate(
+            (editingPerms as any[]).map((p: any) => p.id),
+            allPermissions
+          )
+        : null,
+    [editing, editingPerms, allPermissions]
+  )
 
   // Xodim surati (yaratishda ham, tahrirlashda ham tanlash mumkin)
   const [photo, setPhoto] = useState<File | null>(null)
@@ -268,6 +291,8 @@ export const EmployeesPage = () => {
     setWorkStart(e.work_start || "09:00")
     setWorkEnd(e.work_end || "18:00")
     setWorkHours(String(e.work_hours_per_day ?? 8))
+    // Tahrirlashda rol standart "o'zgartirilmaydi" — tanlansagina almashadi
+    setRoleTemplateId("")
     handlePhoto(null)
     setErrorMsg(null)
     setModalOpen(true)
@@ -319,6 +344,31 @@ export const EmployeesPage = () => {
           setModalOpen(false)
           alert("Ma'lumotlar saqlandi, lekin surat yuklanmadi:\n" + photoErr)
           return
+        }
+
+        // Rol almashtirilgan bo'lsa — shablon ruxsatlari TO'LIQ almashtiriladi.
+        // Menejer faqat Farrosh/Texnik xizmat doirasida — backend tekshiradi.
+        if (roleTemplateId && editing.user_type !== "ADMIN") {
+          const template = PERMISSION_TEMPLATES.find((t) => t.id === roleTemplateId)
+          const permissionIds = template
+            ? templatePermissionIds(template, allPermissions)
+            : []
+          if (permissionIds.length > 0) {
+            try {
+              await setPermsMutation.mutateAsync({
+                userId: editing.id,
+                permissionIds,
+                currentIds: (editingPerms as any[]).map((p: any) => p.id),
+              })
+            } catch (permError) {
+              setModalOpen(false)
+              alert(
+                "Ma'lumotlar saqlandi, lekin rolni almashtirishda xatolik:\n" +
+                  apiErrorMessage(permError)
+              )
+              return
+            }
+          }
         }
       } else {
         if (username.trim().length < 3) {
@@ -944,9 +994,10 @@ export const EmployeesPage = () => {
                 </p>
               </div>
             </FormSection>
-            {/* Rol — faqat yangi xodim qo'shishda; menejer faqat Farroshni
-                tanlay oladi, admin barcha rollarni */}
-            {!editing && (
+            {/* Rol — yaratishda biriktiriladi, tahrirlashda almashtiriladi.
+                Menejer faqat Farrosh va Texnik xizmatni tanlay oladi,
+                admin barcha rollarni (backend ham xuddi shuni tekshiradi) */}
+            {!editing ? (
               <FormSection icon={ShieldCheck} title={`Rol${!isAdmin ? " *" : ""}`}>
                 <select
                   className={selectClass}
@@ -964,6 +1015,36 @@ export const EmployeesPage = () => {
                   Tanlangan rolga mos ruxsatlar xodimga avtomatik biriktiriladi.
                 </p>
               </FormSection>
+            ) : (
+              editing.user_type !== "ADMIN" && (
+                <FormSection icon={ShieldCheck} title="Rol">
+                  <select
+                    className={selectClass}
+                    value={roleTemplateId}
+                    onChange={(e) => setRoleTemplateId(e.target.value)}
+                  >
+                    <option value="">
+                      O'zgartirilmasin (joriy:{" "}
+                      {editingRole?.name ||
+                        ((editingPerms as any[]).length > 0
+                          ? "maxsus to'plam"
+                          : "rolsiz")}
+                      )
+                    </option>
+                    {roleOptions.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400">
+                    Yangi rol tanlansa, xodim ruxsatlari shu rol shabloni bilan
+                    TO'LIQ almashtiriladi.
+                    {!isAdmin &&
+                      " Menejer faqat Farrosh va Texnik xizmat rollarini biriktira oladi."}
+                  </p>
+                </FormSection>
+              )
             )}
 
             {errorMsg && (
