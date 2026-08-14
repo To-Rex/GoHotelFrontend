@@ -89,6 +89,27 @@ export const useRequestCheckout = () => {
   });
 };
 
+// Mehmon keldi (check-in): bron CHECKED_IN, xona OCCUPIED holatiga o'tadi.
+// Backend shartlari: bron CONFIRMED, xona RESERVED, kirish sanasi kelgan.
+export const useCheckInReservation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, hotelId }: { id: string; hotelId?: string }) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${id}/check-in`,
+        null,
+        { params: hotelId ? { hotel_id: hotelId } : {} }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+    },
+  });
+};
+
 // Bronni boshqa xonaga ko'chirish (vaqt oynasi va bandlik backend'da tekshiriladi)
 export const useMoveRoom = () => {
   const queryClient = useQueryClient();

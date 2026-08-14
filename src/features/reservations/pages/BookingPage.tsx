@@ -21,6 +21,7 @@ import {
   Camera,
   ScanLine,
   LogOut,
+  LogIn,
   ArrowRightLeft,
   Sparkles,
   Banknote,
@@ -45,6 +46,7 @@ import {
   useUpdateReservation,
   useCancelReservation,
   useRequestCheckout,
+  useCheckInReservation,
   useMoveRoom,
   useSettleReservation,
   useEditWindowSettings,
@@ -663,6 +665,7 @@ export function BookingPage() {
   const requestCheckoutMutation = useRequestCheckout()
   const moveRoomMutation = useMoveRoom()
   const settleMutation = useSettleReservation()
+  const checkInMutation = useCheckInReservation()
   // Bron tahriri vaqt oynasi (default 10 daqiqa; 0 — cheklovsiz; admin bypass)
   const { data: editWindow } = useEditWindowSettings()
 
@@ -1201,6 +1204,20 @@ export function BookingPage() {
 
   // Bronni tanlangan xonaga ko'chirish — server bandlik, vaqt oynasi va
   // narxni qayta tekshiradi/hisoblaydi
+  // Mehmon keldi — kirishni rasmiylashtirish (bron CHECKED_IN, xona OCCUPIED)
+  const handleCheckIn = async () => {
+    if (!selectedReservation) return
+    try {
+      const updated = await checkInMutation.mutateAsync({
+        id: selectedReservation.id,
+        hotelId: selectedReservation.hotel_id || undefined,
+      })
+      setSelectedReservation(updated)
+    } catch (e) {
+      setErrorDialog(apiErrorMessage(e))
+    }
+  }
+
   const handleMoveRoom = async () => {
     if (!selectedReservation) return
     if (!moveRoomId) {
@@ -2897,6 +2914,33 @@ export function BookingPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* MEHMON KELDI (check-in) — tasdiqlangan bron, kirish sanasi
+                      kelgan bo'lsa. Bron "Kirgan" (CHECKED_IN), xona esa
+                      OCCUPIED bo'ladi — xonalar sahifasida haqiqiy holat
+                      ko'rinadi, xona almashtirishda narx aniqroq hisoblanadi */}
+                  {res.status === "CONFIRMED" &&
+                    !editMode &&
+                    !cancelMode &&
+                    !res.checkout_requested_at &&
+                    canUpdate &&
+                    !isCleaner &&
+                    String(res.check_in_date) <=
+                      format(new Date(), "yyyy-MM-dd") && (
+                      <button
+                        type="button"
+                        onClick={handleCheckIn}
+                        disabled={checkInMutation.isPending}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-100 disabled:opacity-60"
+                      >
+                        {checkInMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <LogIn className="h-4 w-4" />
+                        )}
+                        Mehmon keldi — kirishni rasmiylashtirish
+                      </button>
+                    )}
 
                   {/* CHIQISH JARAYONI. Bron darhol yopilmaydi: farroshga vazifa
                       boradi, tozalash yakunlangach bron avtomatik CHECKED_OUT
