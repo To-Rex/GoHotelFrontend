@@ -157,6 +157,7 @@ const METHOD_LABELS: Record<string, string> = {
   CASH: "Naqd",
   CARD: "Karta",
   TRANSFER: "O'tkazma",
+  MIXED: "Aralash",
 }
 
 /** Chek elementlari — mehmonxonaning saqlangan dizayni bo'yicha quriladi */
@@ -216,15 +217,26 @@ const buildReceiptElements = (
       bold: true,
       size: 2,
     },
-    {
+  )
+  // Bo'lib to'lashda har bir usul o'z summasi bilan alohida qatorda chiqadi
+  if (sale.status === "PAID" && sale.payments && sale.payments.length > 0) {
+    sale.payments.forEach((p, i) => {
+      elements.push({
+        type: "row",
+        left: i === 0 ? "To'lov:" : "",
+        right: `${METHOD_LABELS[p.payment_method] || p.payment_method}: ${Number(p.amount).toLocaleString()}`,
+      })
+    })
+  } else {
+    elements.push({
       type: "row",
       left: "To'lov:",
       right:
         sale.status === "PAID"
           ? METHOD_LABELS[sale.payment_method || ""] || sale.payment_method || "—"
           : "Bron hisobiga",
-    }
-  )
+    })
+  }
   if (sale.status === "PENDING") {
     elements.push({
       type: "text",

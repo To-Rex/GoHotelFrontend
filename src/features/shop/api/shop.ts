@@ -32,6 +32,12 @@ export interface ShopSaleItem {
   total_price: number;
 }
 
+/** Bo'lib to'lashning bitta bo'lagi (summa + usul) */
+export interface SalePaymentPart {
+  amount: number;
+  payment_method: string;
+}
+
 export interface ShopSale {
   id: string;
   reservation_id: string | null;
@@ -39,6 +45,8 @@ export interface ShopSale {
   guest_name?: string | null;
   total_amount: number;
   payment_method: string | null;
+  /** Bo'lib to'lash bo'laklari (oddiy to'lovda null) */
+  payments?: SalePaymentPart[] | null;
   status: 'PAID' | 'PENDING';
   paid_at: string | null;
   created_by: string;
@@ -285,6 +293,8 @@ export const useCreateShopSale = () => {
     mutationFn: async (payload: {
       items: { product_id: string; quantity: number }[];
       payment_method?: string | null;
+      /** Bo'lib to'lash: bo'laklar jami sotuv summasiga teng bo'lishi shart */
+      payments?: SalePaymentPart[] | null;
       reservation_id?: string | null;
     }) => {
       const { data } = await api.post<ShopSale>('/shop/sales', payload);
@@ -297,8 +307,19 @@ export const useCreateShopSale = () => {
 export const usePayShopSale = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, payment_method }: { id: string; payment_method: string }) => {
-      const { data } = await api.post<ShopSale>(`/shop/sales/${id}/pay`, { payment_method });
+    mutationFn: async ({
+      id,
+      payment_method,
+      payments,
+    }: {
+      id: string;
+      payment_method?: string;
+      payments?: SalePaymentPart[] | null;
+    }) => {
+      const { data } = await api.post<ShopSale>(`/shop/sales/${id}/pay`, {
+        payment_method: payment_method || null,
+        payments: payments || null,
+      });
       return data;
     },
     onSuccess: () => invalidateShop(qc),

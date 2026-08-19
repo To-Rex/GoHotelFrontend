@@ -89,6 +89,7 @@ const METHOD_LABELS: Record<string, string> = {
   CASH: "Naqd",
   CARD: "Karta",
   TRANSFER: "O'tkazma",
+  MIXED: "Aralash",
 }
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
@@ -141,6 +142,13 @@ export const ShopPage = () => {
   const [cart, setCart] = useState<CartLine[]>([])
   const [saleMode, setSaleMode] = useState<"DIRECT" | "RESERVATION">("DIRECT")
   const [method, setMethod] = useState("CASH")
+  // Bo'lib to'lash: bir chekning bir qismi naqd, qismi karta/o'tkazma.
+  // Bo'laklar jami savat summasiga teng bo'lishi shart (backend ham tekshiradi)
+  const [splitMode, setSplitMode] = useState(false)
+  const [splitRows, setSplitRows] = useState<Array<{ amount: string; method: string }>>([
+    { amount: "", method: "CASH" },
+    { amount: "", method: "CARD" },
+  ])
   const [reservationId, setReservationId] = useState("")
   const [sellError, setSellError] = useState<string | null>(null)
   const [soldBanner, setSoldBanner] = useState<string | null>(null)
@@ -202,16 +210,57 @@ export const ShopPage = () => {
     )
   }
 
+  // Bo'lib to'lash yordamchilari
+  const splitSum = splitRows.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+  const splitMatches = Math.abs(splitSum - cartTotal) <= 0.01 && cartTotal > 0
+  const updateSplitRow = (
+    i: number,
+    patch: Partial<{ amount: string; method: string }>
+  ) =>
+    setSplitRows((rows) =>
+      rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r))
+    )
+  // Shu qatorga qolgan summani yozib qo'yish (qulaylik uchun)
+  const fillSplitRemaining = (i: number) => {
+    const others = splitRows.reduce(
+      (s, r, idx) => (idx === i ? s : s + (Number(r.amount) || 0)),
+      0
+    )
+    updateSplitRow(i, { amount: String(Math.max(Math.round(cartTotal - others), 0)) })
+  }
+
   const sell = async () => {
     if (!cart.length || createSale.isPending) return
     setSellError(null)
+    // Bo'lib to'lashda bo'laklar savat summasiga teng bo'lishi shart
+    let splitParts: Array<{ amount: number; payment_method: string }> | null = null
+    if (saleMode === "DIRECT" && splitMode) {
+      splitParts = splitRows
+        .map((r) => ({ amount: Number(r.amount) || 0, payment_method: r.method }))
+        .filter((p) => p.amount > 0)
+      const sum = splitParts.reduce((s, p) => s + p.amount, 0)
+      if (!splitParts.length || Math.abs(sum - cartTotal) > 0.01) {
+        setSellError(
+          `Bo'laklar jami (${fmt(sum)}) savat summasiga (${fmt(cartTotal)}) teng bo'lishi kerak`
+        )
+        return
+      }
+    }
     try {
       const sale = await createSale.mutateAsync({
         items: cart.map((i) => ({ product_id: i.productId, quantity: i.qty })),
-        payment_method: saleMode === "DIRECT" ? method : null,
+        payment_method:
+          saleMode === "DIRECT"
+            ? splitParts
+              ? splitParts[0].payment_method
+              : method
+            : null,
+        payments: saleMode === "DIRECT" ? splitParts : null,
         reservation_id: saleMode === "RESERVATION" ? reservationId || null : null,
       })
       setCart([])
+      // Keyingi savdo uchun bo'lak summalari tozalanadi (rejim saqlanadi)
+      setSplitRows((rows) => rows.map((r) => ({ ...r, amount: "" })))
       setSoldBanner(
         sale.status === "PAID"
           ? `${fmt(sale.total_amount)} So'm — sotuv qayd etildi`
@@ -228,7 +277,8 @@ export const ShopPage = () => {
   const sellDisabled =
     !cart.length ||
     createSale.isPending ||
-    (saleMode === "RESERVATION" && !reservationId)
+    (saleMode === "RESERVATION" && !reservationId) ||
+    (saleMode === "DIRECT" && splitMode && !splitMatches)
 
   // ---- Statistika (tanlangan davr) ----
   const paidSales = (sales as ShopSale[]).filter((s) => s.status === "PAID")
@@ -382,10 +432,23 @@ export const ShopPage = () => {
   const [payModal, setPayModal] = useState(false)
   const [payTarget, setPayTarget] = useState<ShopSale | null>(null)
   const [payError, setPayError] = useState<string | null>(null)
+  // To'lash dialogida bo'lib to'lash (bir qismi naqd, qismi karta...)
+  const [paySplitOn, setPaySplitOn] = useState(false)
+  const [paySplitRows, setPaySplitRows] = useState<
+    Array<{ amount: string; method: string }>
+  >([
+    { amount: "", method: "CASH" },
+    { amount: "", method: "CARD" },
+  ])
 
   const openPay = (s: ShopSale) => {
     setPayTarget(s)
     setPayError(null)
+    setPaySplitOn(false)
+    setPaySplitRows([
+      { amount: "", method: "CASH" },
+      { amount: "", method: "CARD" },
+    ])
     setPayModal(true)
   }
 
@@ -395,6 +458,51 @@ export const ShopPage = () => {
       const updated = await paySale.mutateAsync({ id: payTarget.id, payment_method: m })
       setPayModal(false)
       // To'lov cheki — chek rejimi yoqiq bo'lsa
+      if (receiptOn && updated) void doPrintReceipt(updated)
+    } catch (e) {
+      setPayError(apiErrorMessage(e))
+    }
+  }
+
+  const updatePaySplitRow = (
+    i: number,
+    patch: Partial<{ amount: string; method: string }>
+  ) =>
+    setPaySplitRows((rows) =>
+      rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r))
+    )
+
+  const fillPaySplitRemaining = (i: number) => {
+    const total = Number(payTarget?.total_amount || 0)
+    const others = paySplitRows.reduce(
+      (s, r, idx) => (idx === i ? s : s + (Number(r.amount) || 0)),
+      0
+    )
+    updatePaySplitRow(i, { amount: String(Math.max(Math.round(total - others), 0)) })
+  }
+
+  // Bo'lib to'lash bilan qabul qilish — bo'laklar jami summaga teng bo'lishi shart
+  const doPaySplit = async () => {
+    if (!payTarget) return
+    const parts = paySplitRows
+      .map((r) => ({ amount: Number(r.amount) || 0, payment_method: r.method }))
+      .filter((p) => p.amount > 0)
+    const sum = parts.reduce((s, p) => s + p.amount, 0)
+    const total = Number(payTarget.total_amount || 0)
+    if (!parts.length || Math.abs(sum - total) > 0.01) {
+      setPayError(
+        `Bo'laklar jami (${fmt(sum)}) summaga (${fmt(total)}) teng bo'lishi kerak`
+      )
+      return
+    }
+    setPayError(null)
+    try {
+      const updated = await paySale.mutateAsync({
+        id: payTarget.id,
+        payment_method: parts[0].payment_method,
+        payments: parts,
+      })
+      setPayModal(false)
       if (receiptOn && updated) void doPrintReceipt(updated)
     } catch (e) {
       setPayError(apiErrorMessage(e))
@@ -1017,22 +1125,113 @@ export const ShopPage = () => {
               </div>
 
               {saleMode === "DIRECT" ? (
-                <div className="grid grid-cols-3 gap-1.5">
-                  {PAYMENT_METHODS.map((m) => (
-                    <button
-                      key={m.key}
-                      onClick={() => setMethod(m.key)}
-                      className={cn(
-                        "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs font-medium transition-colors",
-                        method === m.key
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      <m.icon size={15} />
-                      {m.label}
-                    </button>
-                  ))}
+                <div className="space-y-2">
+                  {!splitMode ? (
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {PAYMENT_METHODS.map((m) => (
+                        <button
+                          key={m.key}
+                          onClick={() => setMethod(m.key)}
+                          className={cn(
+                            "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs font-medium transition-colors",
+                            method === m.key
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          <m.icon size={15} />
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 rounded-lg border border-border bg-muted/40 p-2">
+                      {splitRows.map((row, i) => (
+                        <div key={i} className="flex items-center gap-1.5">
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="Summa"
+                            value={row.amount}
+                            onChange={(e) =>
+                              updateSplitRow(i, { amount: e.target.value })
+                            }
+                            className="h-9 flex-1 bg-background"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => fillSplitRemaining(i)}
+                            title="Qolgan summani shu qatorga yozish"
+                            className="flex-shrink-0 rounded-md border border-border bg-background px-1.5 py-1.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
+                          >
+                            Qoldiq
+                          </button>
+                          <select
+                            value={row.method}
+                            onChange={(e) =>
+                              updateSplitRow(i, { method: e.target.value })
+                            }
+                            className="flex h-9 flex-shrink-0 items-center rounded-md border border-input bg-background px-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            {PAYMENT_METHODS.map((m) => (
+                              <option key={m.key} value={m.key}>
+                                {m.label}
+                              </option>
+                            ))}
+                          </select>
+                          {splitRows.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSplitRows((rows) =>
+                                  rows.filter((_, idx) => idx !== i)
+                                )
+                              }
+                              className="flex-shrink-0 text-muted-foreground hover:text-red-600"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between">
+                        {splitRows.length < 3 ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSplitRows((rows) => [
+                                ...rows,
+                                { amount: "", method: "TRANSFER" },
+                              ])
+                            }
+                            className="text-[11px] font-medium text-primary hover:underline"
+                          >
+                            + Yana usul qo'shish
+                          </button>
+                        ) : (
+                          <span />
+                        )}
+                        <span
+                          className={cn(
+                            "text-[11px] font-semibold tabular-nums",
+                            splitMatches ? "text-emerald-600" : "text-red-600"
+                          )}
+                        >
+                          {fmt(splitSum)} / {fmt(cartTotal)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Oddiy ⟷ bo'lib to'lash almashtirgichi */}
+                  <button
+                    type="button"
+                    onClick={() => setSplitMode((v) => !v)}
+                    className="text-[11px] font-medium text-primary hover:underline"
+                  >
+                    {splitMode
+                      ? "← Oddiy to'lovga qaytish"
+                      : "Bo'lib to'lash (naqd + karta + o'tkazma)"}
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-1.5">
@@ -1290,9 +1489,17 @@ export const ShopPage = () => {
                 <div>
                   <p className="text-xs text-muted-foreground">To'lov usuli</p>
                   <p className="mt-0.5 font-medium">
-                    {detailSale.payment_method
-                      ? METHOD_LABELS[detailSale.payment_method] || detailSale.payment_method
-                      : "—"}
+                    {detailSale.payments && detailSale.payments.length > 0
+                      ? detailSale.payments
+                          .map(
+                            (p) =>
+                              `${METHOD_LABELS[p.payment_method] || p.payment_method} ${fmt(p.amount)}`
+                          )
+                          .join(" + ")
+                      : detailSale.payment_method
+                        ? METHOD_LABELS[detailSale.payment_method] ||
+                          detailSale.payment_method
+                        : "—"}
                   </p>
                 </div>
                 <div>
@@ -1501,19 +1708,106 @@ export const ShopPage = () => {
               Summa:{" "}
               <b className="text-foreground">{fmt(payTarget?.total_amount || 0)} So'm</b>
             </p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {PAYMENT_METHODS.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => doPay(m.key)}
+            {!paySplitOn ? (
+              <div className="grid grid-cols-3 gap-1.5">
+                {PAYMENT_METHODS.map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={() => doPay(m.key)}
+                    disabled={paySale.isPending}
+                    className="flex flex-col items-center gap-1 rounded-lg border border-border px-2 py-3 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+                  >
+                    <m.icon size={16} />
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1.5 rounded-lg border border-border bg-muted/40 p-2">
+                {paySplitRows.map((row, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="Summa"
+                      value={row.amount}
+                      onChange={(e) =>
+                        updatePaySplitRow(i, { amount: e.target.value })
+                      }
+                      className="h-9 flex-1 bg-background"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fillPaySplitRemaining(i)}
+                      title="Qolgan summani shu qatorga yozish"
+                      className="flex-shrink-0 rounded-md border border-border bg-background px-1.5 py-1.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
+                    >
+                      Qoldiq
+                    </button>
+                    <select
+                      value={row.method}
+                      onChange={(e) =>
+                        updatePaySplitRow(i, { method: e.target.value })
+                      }
+                      className="flex h-9 flex-shrink-0 items-center rounded-md border border-input bg-background px-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m.key} value={m.key}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    {paySplitRows.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaySplitRows((rows) =>
+                            rows.filter((_, idx) => idx !== i)
+                          )
+                        }
+                        className="flex-shrink-0 text-muted-foreground hover:text-red-600"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {paySplitRows.length < 3 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaySplitRows((rows) => [
+                        ...rows,
+                        { amount: "", method: "TRANSFER" },
+                      ])
+                    }
+                    className="text-[11px] font-medium text-primary hover:underline"
+                  >
+                    + Yana usul qo'shish
+                  </button>
+                )}
+                <Button
+                  size="sm"
+                  className="w-full gap-1.5"
                   disabled={paySale.isPending}
-                  className="flex flex-col items-center gap-1 rounded-lg border border-border px-2 py-3 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+                  onClick={doPaySplit}
                 >
-                  <m.icon size={16} />
-                  {m.label}
-                </button>
-              ))}
-            </div>
+                  {paySale.isPending && (
+                    <Loader2 size={14} className="animate-spin" />
+                  )}
+                  To'lovni qabul qilish
+                </Button>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setPaySplitOn((v) => !v)}
+              className="text-[11px] font-medium text-primary hover:underline"
+            >
+              {paySplitOn
+                ? "← Bitta usul bilan to'lash"
+                : "Bo'lib to'lash (naqd + karta + o'tkazma)"}
+            </button>
             {payError && <p className="text-sm font-medium text-destructive">{payError}</p>}
           </div>
         </DialogContent>
