@@ -19,7 +19,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useScanSettings, type ScanMode } from "../api/scanSettings"
-import { parseVisualDocument } from "./visualDocParser"
+import {
+  parseVisualDocument,
+  mergeVisualResults,
+  type VisualParseResult,
+} from "./visualDocParser"
 
 /** Auto rejimda MRZ uchun necha urinish beriladi — keyin vizualga o'tiladi */
 const AUTO_MRZ_ATTEMPTS = 6
@@ -165,17 +169,21 @@ function cleanField(s?: string | null): string | undefined {
    - "binary": kontrast cho'zish + Otsu binarizatsiyasi (tekis yorug'likda eng aniq)
    - "gray": faqat kontrast cho'zilgan kulrang (yaltirash/soya bo'lganda yaxshiroq)
    Jonli siklda rejimlar navbatlashadi — turli sharoitda tezroq natija chiqadi */
-type PrepMode = "binary" | "gray"
+/* "adaptive" — LOKAL chegara (integral tasvir bilan): hujjat yuzasidagi
+   yozuvlar uchun eng ishonchli. Global Otsu yaltirash, soya yoki gilyosh
+   naqsh bo'lgan joyda butun bo'lakni qoraytirib/oqartirib yuboradi. */
+type PrepMode = "binary" | "gray" | "adaptive"
 
 function preprocessCrop(
   src: HTMLCanvasElement | HTMLVideoElement,
   crop: { sx: number; sy: number; sw: number; sh: number },
-  mode: PrepMode
+  mode: PrepMode,
+  // Vizual matn MRZ'dan kichikroq bosiladi — u yerda kattaroq nishon beriladi
+  targetW = 1600
 ): HTMLCanvasElement {
   // Passportning 44 belgili qatorlari uchun ham yetarli aniqlik: ~36px/belgi.
   // KATTA kadrlar KICHRAYTIRILADI ham (0.25x gacha) — yuqori aniqlikdagi
   // kamerada OCR bir xil o'lchamda ishlaydi, tezlik barqaror bo'ladi
-  const targetW = 1600
   const scale = Math.min(Math.max(targetW / crop.sw, 0.25), 4)
   const out = document.createElement("canvas")
   out.width = Math.round(crop.sw * scale)
@@ -233,6 +241,46 @@ function preprocessCrop(
   if (mode === "gray") {
     for (let i = 0, j = 0; i < d.length; i += 4, j++) {
       d[i] = d[i + 1] = d[i + 2] = stretched[j]
+    }
+  } else if (mode === "adaptive") {
+    /* LOKAL chegara (Bradley-Roth usuli, integral tasvir bilan O(n)):
+       har piksel o'z atrofidagi (w×w) oyna o'rtachasi bilan solishtiriladi.
+       Notekis yorug'lik, yaltirash va soya bo'lgan hujjatlarda global
+       Otsu'dan ancha aniq — yozuvlar yo'qolib ketmaydi. */
+    const W = out.width
+    const H = out.height
+    // Integral tasvir (prefix sum) — (W+1)×(H+1)
+    const integral = new Float64Array((W + 1) * (H + 1))
+    for (let y = 0; y < H; y++) {
+      let rowSum = 0
+      for (let x = 0; x < W; x++) {
+        rowSum += stretched[y * W + x]
+        integral[(y + 1) * (W + 1) + (x + 1)] =
+          integral[y * (W + 1) + (x + 1)] + rowSum
+      }
+    }
+    // Oyna o'lchami — kenglikning ~1/16 qismi (belgi balandligiga yaqin)
+    const half = Math.max(6, Math.round(W / 32))
+    // Matn fon o'rtachasidan shu foizga qorong'i bo'lsa — qora deb olinadi
+    const T = 0.86
+    for (let y = 0; y < H; y++) {
+      const y1 = Math.max(0, y - half)
+      const y2 = Math.min(H - 1, y + half)
+      for (let x = 0; x < W; x++) {
+        const x1 = Math.max(0, x - half)
+        const x2 = Math.min(W - 1, x + half)
+        const count = (x2 - x1 + 1) * (y2 - y1 + 1)
+        const sum =
+          integral[(y2 + 1) * (W + 1) + (x2 + 1)] -
+          integral[y1 * (W + 1) + (x2 + 1)] -
+          integral[(y2 + 1) * (W + 1) + x1] +
+          integral[y1 * (W + 1) + x1]
+        const mean = sum / count
+        const idx = y * W + x
+        const v = stretched[idx] < mean * T ? 0 : 255
+        const p = idx * 4
+        d[p] = d[p + 1] = d[p + 2] = v
+      }
     }
   } else {
     // Otsu: sinflararo dispersiyani maksimallashtiruvchi chegara
@@ -499,6 +547,67 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     return best
   }
 
+  /* VIZUAL o'qish — bitta manbadan (video kadri yoki rasm) bir necha
+     variant sinaladi va natijalar BIRLASHTIRILADI:
+       • butun hujjat maydoni (yorliq + qiymat juftliklari to'liq ko'rinadi);
+       • matn zonasi (o'ng ~62%) — surat kesib tashlanadi, matn kattaroq
+         piksellarda tushadi va OCR ancha aniq o'qiydi;
+       • tasvirni tayyorlashning ikki usuli navbatlashadi (adaptiv/kulrang).
+     Har variant natijasi ovoz beradi — bitta o'tishdagi OCR xatosi
+     boshqasi bilan to'g'rilanadi. */
+  const scanVisualFrom = async (
+    source: HTMLVideoElement | HTMLCanvasElement,
+    region: Region,
+    t: DocType,
+    attempt: number
+  ): Promise<VisualParseResult | null> => {
+    const worker = await getWorker("visual")
+    const isVideo = source instanceof HTMLVideoElement
+    // Videoda ramka ichidagi qism kesiladi; yuklangan rasmda butun tasvir
+    const full = isVideo
+      ? containerToSource(source.videoWidth, source.videoHeight, region)
+      : { sx: 0, sy: 0, sw: source.width, sh: source.height }
+    if (full.sw < 60 || full.sh < 40) return null
+
+    // Matn zonasi: O'zbek ID kartasi va passportida surat CHAP tomonda,
+    // yozuvlar o'ngda joylashadi
+    const textZone = {
+      sx: Math.round(full.sx + full.sw * 0.34),
+      sy: full.sy,
+      sw: Math.round(full.sw * 0.66),
+      sh: full.sh,
+    }
+
+    // Kadrlar orasida usullar navbatlashadi — turli yorug'likda ishonchli
+    const primary: PrepMode = attempt % 2 === 0 ? "adaptive" : "gray"
+    const secondary: PrepMode = attempt % 2 === 0 ? "gray" : "adaptive"
+    const passes: Array<{ crop: typeof full; mode: PrepMode; width: number }> = [
+      { crop: textZone, mode: primary, width: 2200 },
+      { crop: full, mode: primary, width: 2000 },
+      { crop: textZone, mode: secondary, width: 2200 },
+    ]
+
+    const results: VisualParseResult[] = []
+    for (const pass of passes) {
+      if (pass.crop.sw < 40) continue
+      const prepared = preprocessCrop(source, pass.crop, pass.mode, pass.width)
+      const { data } = await worker.recognize(prepared)
+      const parsed = parseVisualDocument(data.text || "", t)
+      if (parsed) results.push(parsed)
+      // Bitta o'tishda kuchli natija chiqsa — qolganini kutmaymiz (tezlik)
+      if (parsed && parsed.score >= 12) break
+    }
+    if (!results.length) return null
+    const merged = mergeVisualResults(results)
+    if (!merged) return results[0]
+    // Bir manbada bir necha o'tish kelishgani — qo'shimcha ishonch
+    return {
+      doc: merged.doc,
+      score: merged.score + merged.agreement,
+      fieldScores: results[0].fieldScores,
+    }
+  }
+
   // Video kadrida MRZ'ni izlash. Tezlik uchun odatda FAQAT MRZ zonasi
   // skanerlaniladi (kichik — tez); har 3-urinishda butun ramka ham tekshiriladi
   // (hujjat ramkaga noto'g'ri joylangan holatlar uchun). Preprocessing rejimi
@@ -516,16 +625,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       scanModeRef.current === "visual" ||
       (scanModeRef.current === "auto" && attempt >= AUTO_MRZ_ATTEMPTS)
     if (useVisual) {
-      const worker = await getWorker("visual")
-      const crop = containerToSource(video.videoWidth, video.videoHeight, frameRegion(t))
-      if (crop.sw < 50 || crop.sh < 20) return null
-      // Vizual matn uchun kulrang ko'proq mos (binarizatsiya nozik shriftni yeydi)
-      const prepared = preprocessCrop(video, crop, attempt % 3 === 2 ? "binary" : "gray")
-      const { data } = await worker.recognize(prepared)
-      const item = parseVisualDocument(data.text || "", t)
+      const item = await scanVisualFrom(video, frameRegion(t), t, attempt)
       if (!item) return null
-      // Vizualda nazorat raqami yo'q — yuqori ball "strong" o'rnini bosadi
-      return { ...item, strong: item.score >= 9 }
+      // Vizualda nazorat raqami yo'q — bir kadr ichida ikki mustaqil manba
+      // (JSHSHIR + yorliqli maydonlar) mos kelsa "strong" hisoblanadi
+      return { doc: item.doc, score: item.score, strong: item.score >= 11 }
     }
 
     // --- MRZ rejimi (avvalgidek) ---
@@ -583,16 +687,17 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       if (mode === "mrz") return null
     }
 
-    // Vizual urinish (visual va auto rejimlarida)
-    const worker = await getWorker("visual")
-    let bestVisual: { doc: ScannedDoc; score: number } | null = null
-    for (const prep of ["gray", "binary"] as PrepMode[]) {
-      const prepared = preprocessCrop(canvas, full, prep)
-      const { data } = await worker.recognize(prepared)
-      const item = parseVisualDocument(data.text || "", docTypeRef.current)
-      if (item && (!bestVisual || item.score > bestVisual.score)) bestVisual = item
+    // Vizual urinish (visual va auto rejimlarida) — ko'p o'tishli, ovoz berish
+    // bilan; ikki xil tayyorlash usuli natijalari birlashtiriladi
+    const results: VisualParseResult[] = []
+    for (const attempt of [0, 1]) {
+      const item = await scanVisualFrom(canvas, frameRegion(docTypeRef.current), docTypeRef.current, attempt)
+      if (item) results.push(item)
+      if (item && item.score >= 14) break
     }
-    return bestVisual?.doc ?? null
+    if (!results.length) return null
+    const merged = mergeVisualResults(results)
+    return merged?.doc ?? results[0].doc
   }
 
   const onFound = (doc: ScannedDoc) => {
@@ -613,6 +718,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     let attempt = 0
     let bestSeen: { doc: ScannedDoc; score: number } | null = null
     let lastKey = ""
+    // Vizual usulda KADRLAR BO'YICHA ovoz berish: har kadr natijasi
+    // to'planadi, maydonlar eng ko'p takrorlangan qiymat bilan tasdiqlanadi
+    const visualVotes: VisualParseResult[] = []
     try {
       // Rejimga mos profil bilan oldindan isitiladi (birinchi kadr tez bo'lsin)
       await getWorker(scanModeRef.current === "visual" ? "visual" : "mrz")
@@ -638,25 +746,50 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           attempt++
           setAttempts(attempt)
           if (item && liveActiveRef.current) {
-            // Konsensus kaliti: vizual rejimda hujjat raqami bo'lmasligi ham
-            // mumkin, shuning uchun ism-familiya ham kalitga kiradi
-            const key = [
-              item.doc.documentNumber,
-              item.doc.birthDate,
-              item.doc.lastName,
-              item.doc.firstName,
-            ].join("|")
-            const consensus =
-              key === lastKey &&
-              !!(item.doc.documentNumber || (item.doc.lastName && item.doc.birthDate))
-            lastKey = key
-            if (!bestSeen || item.score > bestSeen.score) {
-              bestSeen = { doc: item.doc, score: item.score }
-            }
-            if (item.strong || consensus || (attempt >= 8 && bestSeen.score >= 5)) {
-              busyRef.current = false
-              onFound(item.strong || consensus ? item.doc : bestSeen.doc)
-              return
+            if (method === "visual") {
+              /* VIZUAL: bitta kadrga ishonilmaydi — natijalar to'planib,
+                 maydon bo'yicha ovoz beriladi. Ikki kadr bir xil qiymatni
+                 bergan maydon tasdiqlangan hisoblanadi. */
+              visualVotes.push({
+                doc: item.doc,
+                score: item.score,
+                fieldScores: {},
+              })
+              const merged = mergeVisualResults(visualVotes)
+              if (merged) {
+                const enough =
+                  // Ikki mustaqil kadr asosiy maydonlarda kelishdi
+                  merged.agreement >= 2 ||
+                  // Yoki bitta kadrda juda kuchli natija (JSHSHIR + ism + sana)
+                  item.strong ||
+                  // Yoki uzoq urinishdan keyin yig'ilgan eng yaxshi natija
+                  (attempt >= 10 && merged.score >= 8)
+                if (enough) {
+                  busyRef.current = false
+                  onFound(merged.doc)
+                  return
+                }
+              }
+            } else {
+              // MRZ: nazorat raqamlari bor — avvalgi qoidalar o'zgarishsiz
+              const key = [
+                item.doc.documentNumber,
+                item.doc.birthDate,
+                item.doc.lastName,
+                item.doc.firstName,
+              ].join("|")
+              const consensus =
+                key === lastKey &&
+                !!(item.doc.documentNumber || (item.doc.lastName && item.doc.birthDate))
+              lastKey = key
+              if (!bestSeen || item.score > bestSeen.score) {
+                bestSeen = { doc: item.doc, score: item.score }
+              }
+              if (item.strong || consensus || (attempt >= 8 && bestSeen.score >= 5)) {
+                busyRef.current = false
+                onFound(item.strong || consensus ? item.doc : bestSeen.doc)
+                return
+              }
             }
           }
         } catch {
