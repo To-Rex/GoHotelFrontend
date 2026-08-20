@@ -18,6 +18,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useScanSettings, type ScanMode } from "../api/scanSettings"
+import { parseVisualDocument } from "./visualDocParser"
+
+/** Auto rejimda MRZ uchun necha urinish beriladi — keyin vizualga o'tiladi */
+const AUTO_MRZ_ATTEMPTS = 6
 
 /**
  * Passport / ID karta skaneri.
@@ -267,8 +272,46 @@ function preprocessCrop(
    yopib-ochilganda qayta yuklab o'tirmaydi, skan darhol boshlanadi. */
 let sharedWorker: Promise<any> | null = null
 let onOcrProgress: ((p: number) => void) | null = null
+/** Worker'dagi joriy OCR profili — kerak bo'lgandagina almashtiriladi */
+let workerProfile: OcrProfile | null = null
 
-async function getSharedWorker(): Promise<any> {
+/** MRZ — faqat mashina zonasi; VISUAL — hujjat old tomonidagi oddiy matn */
+type OcrProfile = "mrz" | "visual"
+
+async function applyProfile(worker: any, profile: OcrProfile) {
+  if (workerProfile === profile) return
+  const Tesseract = await import("tesseract.js")
+  if (profile === "mrz") {
+    // MRZ faqat shu belgilar to'plamidan iborat; PSM 6 — yaxlit matn bloki.
+    // Lug'atlar o'chirilgan (MRZ so'z emas), invert-urinish ham o'chirilgan.
+    await worker.setParameters({
+      tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
+      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+      tessedit_do_invert: "0",
+      load_system_dawg: "0",
+      load_freq_dawg: "0",
+      user_defined_dpi: "300",
+      preserve_interword_spaces: "1",
+    } as any)
+  } else {
+    // Vizual: yorliqlar va qiymatlar turli o'lchamda, sahifa bo'ylab tarqoq —
+    // SPARSE_TEXT mos keladi; belgilar to'plami kengaytirilgan (sana ajratgichlari,
+    // apostrof, tire), lug'at yoqilgan (ism-familiya so'z shaklida bo'ladi)
+    await worker.setParameters({
+      tessedit_char_whitelist:
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,-/ '`",
+      tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+      tessedit_do_invert: "0",
+      load_system_dawg: "1",
+      load_freq_dawg: "1",
+      user_defined_dpi: "300",
+      preserve_interword_spaces: "1",
+    } as any)
+  }
+  workerProfile = profile
+}
+
+async function getSharedWorker(profile: OcrProfile = "mrz"): Promise<any> {
   if (!sharedWorker) {
     sharedWorker = (async () => {
       const Tesseract = await import("tesseract.js")
@@ -282,17 +325,7 @@ async function getSharedWorker(): Promise<any> {
           }
         },
       })
-      // MRZ faqat shu belgilar to'plamidan iborat; PSM 6 — yaxlit matn bloki.
-      // Lug'atlar o'chirilgan (MRZ so'z emas), invert-urinish ham o'chirilgan.
-      await worker.setParameters({
-        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
-        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
-        tessedit_do_invert: "0",
-        load_system_dawg: "0",
-        load_freq_dawg: "0",
-        user_defined_dpi: "300",
-        preserve_interword_spaces: "1",
-      } as any)
+      workerProfile = null
       return worker
     })().catch((e) => {
       // Yaratish xatosida keyingi urinish yangidan boshlaydi
@@ -300,7 +333,9 @@ async function getSharedWorker(): Promise<any> {
       throw e
     })
   }
-  return sharedWorker
+  const worker = await sharedWorker
+  await applyProfile(worker, profile)
+  return worker
 }
 
 export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScannerProps) {
@@ -312,6 +347,17 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [result, setResult] = useState<ScannedDoc | null>(null)
+
+  // Mehmonxona sozlamasidagi skaner rejimi (mrz / visual / auto)
+  const { data: scanSettings } = useScanSettings()
+  const scanMode: ScanMode = scanSettings?.mode ?? "auto"
+  // Jonli sikl ichida joriy qiymat kerak — ref orqali uzatiladi
+  const scanModeRef = useRef<ScanMode>(scanMode)
+  useEffect(() => {
+    scanModeRef.current = scanMode
+  }, [scanMode])
+  // Jonli skanda hozir qaysi usul ishlayotgani (foydalanuvchiga ko'rsatiladi)
+  const [activeMethod, setActiveMethod] = useState<"mrz" | "visual">("mrz")
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -362,8 +408,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     }
   }, [])
 
-  const getWorker = async () => {
-    const worker = await getSharedWorker()
+  // profile — "mrz" (mashina zonasi) yoki "visual" (hujjat yuzasidagi yozuvlar)
+  const getWorker = async (profile: OcrProfile = "mrz") => {
+    const worker = await getSharedWorker(profile)
     setOcrReady(true)
     return worker
   }
@@ -460,9 +507,29 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     video: HTMLVideoElement,
     attempt: number
   ): Promise<{ doc: ScannedDoc; score: number; strong: boolean } | null> => {
-    const worker = await getWorker()
     const t = docTypeRef.current
     const mode: PrepMode = attempt % 2 === 0 ? "binary" : "gray"
+
+    // --- VIZUAL rejim: hujjatning butun old tomonidagi yozuvlar o'qiladi ---
+    // (auto rejimda MRZ bir necha urinishdan keyin topilmasa shu yo'lga o'tiladi)
+    const useVisual =
+      scanModeRef.current === "visual" ||
+      (scanModeRef.current === "auto" && attempt >= AUTO_MRZ_ATTEMPTS)
+    if (useVisual) {
+      const worker = await getWorker("visual")
+      const crop = containerToSource(video.videoWidth, video.videoHeight, frameRegion(t))
+      if (crop.sw < 50 || crop.sh < 20) return null
+      // Vizual matn uchun kulrang ko'proq mos (binarizatsiya nozik shriftni yeydi)
+      const prepared = preprocessCrop(video, crop, attempt % 3 === 2 ? "binary" : "gray")
+      const { data } = await worker.recognize(prepared)
+      const item = parseVisualDocument(data.text || "", t)
+      if (!item) return null
+      // Vizualda nazorat raqami yo'q — yuqori ball "strong" o'rnini bosadi
+      return { ...item, strong: item.score >= 9 }
+    }
+
+    // --- MRZ rejimi (avvalgidek) ---
+    const worker = await getWorker("mrz")
     // To'liq ramka skani katta va sekin — faqat har 4-urinishda (hujjat
     // ramkaga noto'g'ri joylangan holatlar uchun zaxira yo'l)
     const regions = attempt % 4 === 3 ? [mrzRegion(t), frameRegion(t)] : [mrzRegion(t)]
@@ -484,24 +551,48 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   // Yuklangan rasmda izlash: pastki qism va to'liq rasm, ikkala preprocessing
   // rejimida — eng yuqori baholi natija olinadi (strong bo'lsa darhol)
   const scanImageCanvas = async (canvas: HTMLCanvasElement): Promise<ScannedDoc | null> => {
-    const worker = await getWorker()
-    const crops = [
-      { sx: 0, sy: Math.floor(canvas.height * 0.5), sw: canvas.width, sh: Math.ceil(canvas.height * 0.5) },
-      { sx: 0, sy: 0, sw: canvas.width, sh: canvas.height },
-    ]
-    let best: { doc: ScannedDoc; score: number } | null = null
-    for (const crop of crops) {
-      for (const mode of ["binary", "gray"] as PrepMode[]) {
-        const prepared = preprocessCrop(canvas, crop, mode)
-        const { data } = await worker.recognize(prepared)
-        const item = await tryParseMrz(data.text || "")
-        if (item) {
-          if (item.strong) return item.doc
-          if (!best || item.score > best.score) best = item
+    const full = { sx: 0, sy: 0, sw: canvas.width, sh: canvas.height }
+    const mode = scanModeRef.current
+
+    // MRZ urinishi (mrz va auto rejimlarida)
+    if (mode !== "visual") {
+      const worker = await getWorker("mrz")
+      const crops = [
+        {
+          sx: 0,
+          sy: Math.floor(canvas.height * 0.5),
+          sw: canvas.width,
+          sh: Math.ceil(canvas.height * 0.5),
+        },
+        full,
+      ]
+      let best: { doc: ScannedDoc; score: number } | null = null
+      for (const crop of crops) {
+        for (const prep of ["binary", "gray"] as PrepMode[]) {
+          const prepared = preprocessCrop(canvas, crop, prep)
+          const { data } = await worker.recognize(prepared)
+          const item = await tryParseMrz(data.text || "")
+          if (item) {
+            if (item.strong) return item.doc
+            if (!best || item.score > best.score) best = item
+          }
         }
       }
+      if (best) return best.doc
+      // "mrz" rejimida vizualga o'tilmaydi — natija yo'q
+      if (mode === "mrz") return null
     }
-    return best?.doc ?? null
+
+    // Vizual urinish (visual va auto rejimlarida)
+    const worker = await getWorker("visual")
+    let bestVisual: { doc: ScannedDoc; score: number } | null = null
+    for (const prep of ["gray", "binary"] as PrepMode[]) {
+      const prepared = preprocessCrop(canvas, full, prep)
+      const { data } = await worker.recognize(prepared)
+      const item = parseVisualDocument(data.text || "", docTypeRef.current)
+      if (item && (!bestVisual || item.score > bestVisual.score)) bestVisual = item
+    }
+    return bestVisual?.doc ?? null
   }
 
   const onFound = (doc: ScannedDoc) => {
@@ -523,22 +614,41 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     let bestSeen: { doc: ScannedDoc; score: number } | null = null
     let lastKey = ""
     try {
-      await getWorker()
+      // Rejimga mos profil bilan oldindan isitiladi (birinchi kadr tez bo'lsin)
+      await getWorker(scanModeRef.current === "visual" ? "visual" : "mrz")
     } catch {
       liveActiveRef.current = false
       return
     }
+    setActiveMethod(scanModeRef.current === "visual" ? "visual" : "mrz")
     while (liveActiveRef.current) {
       const video = videoRef.current
       if (video && video.videoWidth > 0 && !busyRef.current) {
         busyRef.current = true
         try {
+          // Auto rejimda MRZ topilmasa vizual usulga o'tiladi — holat
+          // ko'rsatkichi buni foydalanuvchiga bildiradi
+          const method: "mrz" | "visual" =
+            scanModeRef.current === "visual" ||
+            (scanModeRef.current === "auto" && attempt >= AUTO_MRZ_ATTEMPTS)
+              ? "visual"
+              : "mrz"
+          setActiveMethod(method)
           const item = await scanVideoFrame(video, attempt)
           attempt++
           setAttempts(attempt)
           if (item && liveActiveRef.current) {
-            const key = `${item.doc.documentNumber}|${item.doc.birthDate}`
-            const consensus = key === lastKey && !!item.doc.documentNumber
+            // Konsensus kaliti: vizual rejimda hujjat raqami bo'lmasligi ham
+            // mumkin, shuning uchun ism-familiya ham kalitga kiradi
+            const key = [
+              item.doc.documentNumber,
+              item.doc.birthDate,
+              item.doc.lastName,
+              item.doc.firstName,
+            ].join("|")
+            const consensus =
+              key === lastKey &&
+              !!(item.doc.documentNumber || (item.doc.lastName && item.doc.birthDate))
             lastKey = key
             if (!bestSeen || item.score > bestSeen.score) {
               bestSeen = { doc: item.doc, score: item.score }
@@ -623,9 +733,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       const doc = await scanImageCanvas(canvas)
       if (doc) return onFound(doc)
       setErrorMsg(
-        docType === "ID_CARD"
-          ? "MRZ o'qilmadi. ID kartaning ORQA tomonidagi 3 qatorli zona ramkada ravshan ko'rinsin."
-          : "MRZ o'qilmadi. Passport pastidagi 2 qatorli zona ramkada ravshan ko'rinsin."
+        scanMode === "visual"
+          ? "Yozuvlar o'qilmadi. Hujjat ramkaga to'liq sig'sin, yorug'lik tekis va yaltirashsiz bo'lsin."
+          : docType === "ID_CARD"
+            ? "Hujjat o'qilmadi. ID kartaning ORQA tomonidagi 3 qatorli zona ramkada ravshan ko'rinsin."
+            : "Hujjat o'qilmadi. Passport pastidagi 2 qatorli zona ramkada ravshan ko'rinsin."
       )
       setPhase("error")
     } catch {
@@ -649,7 +761,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       const doc = await scanImageCanvas(canvas)
       if (doc) return onFound(doc)
       setErrorMsg(
-        "Rasmda MRZ qatorlari topilmadi — hujjatning MRZ zonasi to'liq va ravshan tushgan rasmni tanlang."
+        scanMode === "visual"
+          ? "Rasmdan ma'lumot o'qilmadi — hujjat yozuvlari to'liq va ravshan tushgan rasmni tanlang."
+          : "Rasmda MRZ qatorlari topilmadi — hujjatning MRZ zonasi to'liq va ravshan tushgan rasmni tanlang."
       )
       setPhase("error")
     } catch {
@@ -702,7 +816,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 </span>
                 <span className="text-sm font-semibold">ID karta</span>
                 <span className="text-center text-[11px] leading-snug text-muted-foreground">
-                  Orqa tomoni skanerlaniladi (3 qatorli MRZ)
+                  {scanMode === "visual"
+                    ? "Old tomondagi yozuvlar o'qiladi"
+                    : "Orqa tomoni skanerlaniladi (3 qatorli MRZ)"}
                 </span>
               </button>
               <button
@@ -715,10 +831,29 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 </span>
                 <span className="text-sm font-semibold">Passport</span>
                 <span className="text-center text-[11px] leading-snug text-muted-foreground">
-                  Ma'lumotlar sahifasi skanerlaniladi (2 qatorli MRZ)
+                  {scanMode === "visual"
+                    ? "Ma'lumotlar sahifasidagi yozuvlar o'qiladi"
+                    : "Ma'lumotlar sahifasi skanerlaniladi (2 qatorli MRZ)"}
                 </span>
               </button>
             </div>
+            {/* Joriy rejim — sozlamalarda administrator tanlaydi */}
+            <p className="rounded-lg bg-muted/60 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+              <b className="text-foreground">
+                {scanMode === "mrz"
+                  ? "MRZ rejimi"
+                  : scanMode === "visual"
+                    ? "Vizual rejim"
+                    : "Avtomatik rejim"}
+              </b>
+              {" — "}
+              {scanMode === "mrz"
+                ? "hujjatning mashina o'qiydigan (MRZ) zonasi o'qiladi: eng tez va aniq."
+                : scanMode === "visual"
+                  ? "hujjat yuzasidagi yozuvlar o'qiladi (MRZ yo'q yoki o'chgan hujjatlar uchun)."
+                  : "avval MRZ, topilmasa hujjat yuzasidagi yozuvlar o'qiladi."}
+              {" Rejimni sozlamalardan o'zgartirish mumkin."}
+            </p>
           </div>
         )}
 
@@ -742,22 +877,26 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                   bottom: `${(1 - frame.bottom) * 100}%`,
                 }}
               />
-              {/* MRZ zonasi — hujjat pastidagi o'qiladigan qatorlar */}
-              <div
-                className="pointer-events-none absolute rounded-md border-2 border-dashed border-amber-300/90"
-                style={{
-                  left: `${mrz.left * 100}%`,
-                  right: `${(1 - mrz.right) * 100}%`,
-                  top: `${mrz.top * 100}%`,
-                  bottom: `${(1 - mrz.bottom) * 100}%`,
-                }}
-              />
-              {/* Jonli holat indikatori */}
+              {/* MRZ zonasi — faqat MRZ o'qilayotganda ko'rsatiladi
+                  (vizual usulda butun ramka o'qiladi) */}
+              {activeMethod === "mrz" && (
+                <div
+                  className="pointer-events-none absolute rounded-md border-2 border-dashed border-amber-300/90"
+                  style={{
+                    left: `${mrz.left * 100}%`,
+                    right: `${(1 - mrz.right) * 100}%`,
+                    top: `${mrz.top * 100}%`,
+                    bottom: `${(1 - mrz.bottom) * 100}%`,
+                  }}
+                />
+              )}
+              {/* Jonli holat indikatori — qaysi usul ishlayotgani bilan */}
               <div className="pointer-events-none absolute left-2 top-2 flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white">
                 {ocrReady ? (
                   <>
                     <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                    Avtomatik o'qilmoqda{attempts > 0 ? ` · ${attempts}` : ""}...
+                    {activeMethod === "visual" ? "Yozuvlar" : "MRZ"} o'qilmoqda
+                    {attempts > 0 ? ` · ${attempts}` : ""}...
                   </>
                 ) : (
                   <>
@@ -776,7 +915,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 {docType === "ID_CARD" ? "ID karta" : "Passport"}
               </button>
               <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-[11px] font-medium text-white/90">
-                {DOC_SPECS[docType].hint}
+                {activeMethod === "visual"
+                  ? docType === "ID_CARD"
+                    ? "ID kartaning yozuvli tomonini ramkaga joylang"
+                    : "Passportning ma'lumotlar sahifasini ramkaga joylang"
+                  : DOC_SPECS[docType].hint}
               </p>
             </div>
             {cameraError && (
@@ -797,9 +940,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
               </Button>
             </div>
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Hujjatni ramkaga to'liq joylab, bir necha soniya qimirlatmay turing —
-              sariq punktir zonadagi MRZ qatorlari avtomatik o'qiladi. Ma'lumotlar
-              faqat shu qurilmada qayta ishlanadi, hech qayerga yuborilmaydi.
+              {activeMethod === "visual"
+                ? "Hujjatni ramkaga to'liq joylab, bir necha soniya qimirlatmay turing — yozuvlar avtomatik o'qiladi. Yorug'lik tekis bo'lsa aniqlik yuqori bo'ladi."
+                : "Hujjatni ramkaga to'liq joylab, bir necha soniya qimirlatmay turing — sariq punktir zonadagi MRZ qatorlari avtomatik o'qiladi."}
+              {" Ma'lumotlar faqat shu qurilmada qayta ishlanadi, hech qayerga yuborilmaydi."}
             </p>
           </div>
         )}

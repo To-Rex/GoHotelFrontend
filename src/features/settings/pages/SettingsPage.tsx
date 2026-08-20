@@ -21,6 +21,7 @@ import {
   Search,
   RefreshCw,
   Receipt,
+  ScanLine,
   type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
@@ -33,6 +34,11 @@ import {
   useEditWindowSettings,
   useSaveEditWindowSettings,
 } from "@/features/reservations/api/reservations"
+import {
+  useScanSettings,
+  useSaveScanSettings,
+  type ScanMode,
+} from "@/features/guests/api/scanSettings"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -249,6 +255,29 @@ export const SettingsPage = () => {
     }
   }
 
+  // --- Hujjat skaneri rejimi (MRZ / vizual / avtomatik) ---
+  const { data: scanSettings } = useScanSettings()
+  const saveScanMutation = useSaveScanSettings()
+  const [scanMode, setScanMode] = useState<ScanMode>("auto")
+  const [scanSaved, setScanSaved] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (scanSettings?.mode) setScanMode(scanSettings.mode)
+  }, [scanSettings])
+
+  const onSaveScan = async () => {
+    setScanError(null)
+    setScanSaved(false)
+    try {
+      await saveScanMutation.mutateAsync(scanMode)
+      setScanSaved(true)
+      window.setTimeout(() => setScanSaved(false), 3000)
+    } catch (e) {
+      setScanError(apiErrorMessage(e))
+    }
+  }
+
   const [scope, setScope] = useState<"operational" | "full">("operational")
   const [confirmText, setConfirmText] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -370,6 +399,7 @@ export const SettingsPage = () => {
     { href: "#tprints", label: "Chek printeri", dot: "bg-slate-500" },
     { href: "#booking-edit", label: "Bron tahriri", dot: "bg-sky-500" },
     { href: "#auto-complete", label: "Avto-yakunlash", dot: "bg-primary-600" },
+    { href: "#scanner", label: "Hujjat skaneri", dot: "bg-sky-500" },
     { href: "#receipt", label: "Chek dizayni", dot: "bg-emerald-500" },
     { href: "#reset", label: "Tozalash", dot: "bg-red-500" },
   ]
@@ -710,6 +740,69 @@ export const SettingsPage = () => {
               pending={saveHkMutation.isPending}
               saved={hkSaved}
               error={hkError}
+            />
+          </SettingCard>
+
+          {/* Hujjat skaneri rejimi */}
+          <SettingCard
+            id="scanner"
+            icon={ScanLine}
+            iconClass="bg-sky-50 text-sky-600"
+            title="Hujjat skaneri"
+            desc="Passport va ID kartadan ma'lumot olish usuli. MRZ — hujjatning mashina o'qiydigan zonasi (eng aniq); Vizual — hujjat yuzasidagi yozuvlar (MRZ yo'q yoki o'chgan hujjatlar uchun)."
+          >
+            <div className="grid gap-2.5">
+              {(
+                [
+                  {
+                    key: "auto" as const,
+                    title: "Avtomatik (tavsiya etiladi)",
+                    text: "Avval MRZ o'qiladi — topilmasa hujjat yuzasidagi yozuvlarga o'tadi. Har qanday hujjat bilan ishlaydi.",
+                  },
+                  {
+                    key: "mrz" as const,
+                    title: "Faqat MRZ",
+                    text: "Faqat mashina o'qiydigan zona. Eng tez va eng aniq: nazorat raqamlari bilan tekshiriladi, xato o'qish formaga tushmaydi.",
+                  },
+                  {
+                    key: "visual" as const,
+                    title: "Faqat vizual",
+                    text: "Hujjat yuzasidagi yozuvlar o'qiladi. MRZ zonasi yo'q yoki shikastlangan hujjatlar uchun; aniqligi yorug'likka bog'liq.",
+                  },
+                ]
+              ).map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => setScanMode(m.key)}
+                  className={cn(
+                    "relative rounded-xl border p-3.5 text-left transition-all",
+                    scanMode === m.key
+                      ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                      : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                  )}
+                >
+                  {scanMode === m.key && (
+                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary-600" />
+                  )}
+                  <p className="pr-6 text-sm font-semibold text-gray-900">
+                    {m.title}
+                  </p>
+                  <p className="mt-1 text-xs leading-snug text-gray-600">
+                    {m.text}
+                  </p>
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-gray-400">
+              Har ikkala usulda ham hujjat ma'lumotlari faqat xodim
+              qurilmasining o'zida qayta ishlanadi — hech qayerga yuborilmaydi.
+            </p>
+            <SaveRow
+              onSave={onSaveScan}
+              pending={saveScanMutation.isPending}
+              saved={scanSaved}
+              error={scanError}
             />
           </SettingCard>
 
