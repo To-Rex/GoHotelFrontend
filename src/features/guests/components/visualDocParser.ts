@@ -160,11 +160,121 @@ const norm = (s: string): string =>
     .replace(/\s+/g, " ")
     .trim()
 
-/** Qatorda shu maydon yorlig'i bormi */
-const hasLabel = (line: string, variants: string[]): boolean => {
-  const n = norm(line)
-  return variants.some((v) => n.includes(norm(v)))
+/** Barcha maydonlarning yorliq variantlari (eng uzunidan boshlab) —
+ *  "OTASINING ISMI" har doim "ISMI"dan oldin tekshirilishi shart, aks holda
+ *  otasining ismi ism deb olinadi. */
+type FieldKey = keyof typeof LABELS
+
+const ALL_LABELS: Array<{ field: FieldKey; label: string; norm: string }> =
+  Object.entries(LABELS)
+    .flatMap(([field, variants]) =>
+      variants.map((label) => ({
+        field: field as FieldKey,
+        label,
+        norm: norm(label),
+      }))
+    )
+    .sort((a, b) => b.norm.length - a.norm.length)
+
+/**
+ * Levenshtein masofasi (maxDist dan oshsa erta to'xtaydi).
+ * OCR yorliqni buzib o'qiganda ("SURNANE", "FAMlLlYASI", "G1VEN NAMES")
+ * yorliqni baribir tanish uchun kerak.
+ */
+function editDistance(a: string, b: string, maxDist: number): number {
+  if (Math.abs(a.length - b.length) > maxDist) return maxDist + 1
+  const prev = new Array(b.length + 1)
+  const cur = new Array(b.length + 1)
+  for (let j = 0; j <= b.length; j++) prev[j] = j
+  for (let i = 1; i <= a.length; i++) {
+    cur[0] = i
+    let rowMin = cur[0]
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
+      if (cur[j] < rowMin) rowMin = cur[j]
+    }
+    if (rowMin > maxDist) return maxDist + 1
+    for (let j = 0; j <= b.length; j++) prev[j] = cur[j]
+  }
+  return prev[b.length]
 }
+
+/** Yorliq uzunligiga qarab ruxsat etilgan xato soni (qisqa so'zlarda 0) */
+const allowedTypos = (len: number): number =>
+  len >= 10 ? 2 : len >= 5 ? 1 : 0
+
+/**
+ * Matn bo'lagi qaysi maydonning yorlig'i — aniq yoki TAXMINIY moslik bilan.
+ * Eng uzun yorliqlar birinchi tekshiriladi (ALL_LABELS shunday tartiblangan),
+ * shuning uchun "OTASINING ISMI" har doim "ISMI"dan ustun keladi.
+ */
+function matchLabelChunk(chunkNorm: string): FieldKey | null {
+  if (!chunkNorm) return null
+  for (const l of ALL_LABELS) {
+    if (l.norm === chunkNorm) return l.field
+  }
+  for (const l of ALL_LABELS) {
+    const tol = allowedTypos(l.norm.length)
+    if (!tol) continue
+    if (Math.abs(l.norm.length - chunkNorm.length) > tol) continue
+    if (editDistance(l.norm, chunkNorm, tol) <= tol) return l.field
+  }
+  return null
+}
+
+/** Matn bo'lagi qaysidir yorliqning O'ZI (yoki uning bir qismi)mi */
+const isLabelText = (s: string): boolean => {
+  const n = norm(s)
+  if (!n) return false
+  if (ALL_LABELS.some((l) => n === l.norm || n.includes(l.norm))) return true
+  // Buzib o'qilgan yorliq ham qiymat sifatida qabul qilinmasligi kerak
+  const words = n.split(" ").filter(Boolean)
+  for (let span = Math.min(4, words.length); span >= 1; span--) {
+    for (let i = 0; i + span <= words.length; i++) {
+      if (matchLabelChunk(words.slice(i, i + span).join(" "))) return true
+    }
+  }
+  return false
+}
+
+/**
+ * Qatordagi maydon yorliqlarini aniqlaydi — ENG UZUN moslik ustun bo'ladi
+ * va topilgan bo'lak "band" qilinadi.
+ *
+ * Bu juda muhim: "OTASINING ISMI / PATRONYMIC" ichida "ISMI" (ism yorlig'i)
+ * ham bor. Band qilinmasa, bu qator ham otasining ismi, ham ism yorlig'i
+ * deb hisoblanadi va ism maydoniga otasining ismi yozilib qoladi.
+ */
+function scanLineLabels(line: string): {
+  fields: FieldKey[]
+  /** Yorliqqa tegishli bo'lmagan so'zlar (asl ko'rinishida) */
+  rest: string[]
+} {
+  const raw = line.split(/\s+/).filter(Boolean)
+  // Har so'zning normal shakli (tinish belgilarisiz) — solishtirish uchun
+  const normed = raw.map((w) => norm(w.replace(/[/|:.\-–—]/g, " ")).trim())
+  const used = new Array(raw.length).fill(false)
+  const fields: FieldKey[] = []
+  // Uzun oynalardan boshlab: "OTASINING ISMI" topilsa, undagi "ISMI" band
+  // bo'ladi va ism yorlig'i sifatida qayta sanalmaydi
+  for (let span = Math.min(5, raw.length); span >= 1; span--) {
+    for (let i = 0; i + span <= raw.length; i++) {
+      if (used.slice(i, i + span).some(Boolean)) continue
+      const chunk = normed.slice(i, i + span).filter(Boolean).join(" ")
+      const field = matchLabelChunk(chunk)
+      if (!field) continue
+      for (let k = i; k < i + span; k++) used[k] = true
+      if (!fields.includes(field)) fields.push(field)
+    }
+  }
+  const rest = raw
+    .map((w, i) => (used[i] ? "" : w.replace(/^[\s:/|.\-–—]+|[\s:/|.\-–—]+$/g, "")))
+    .filter(Boolean)
+  return { fields, rest }
+}
+
+const labelsInLine = (line: string): FieldKey[] => scanLineLabels(line).fields
 
 /** OCR raqamlarda adashadigan harflar — FAQAT raqam kutilgan joyda */
 const DIGIT_FIX: Record<string, string> = {
@@ -275,11 +385,11 @@ function looksLikeName(line: string): boolean {
   if (!/^[A-Za-zА-Яа-яЁёʻʼ''`\- ]+$/.test(v)) return false
   const n = norm(v)
   if (!n || n.length < 2) return false
-  if (STOP_WORDS.includes(n)) return false
-  // Yorliqning o'zi bo'lmasin
-  for (const variants of Object.values(LABELS)) {
-    if (variants.some((label) => norm(label) === n)) return false
-  }
+  // Har bir so'z stop-so'z ro'yxatida bo'lmasin (sarlavhalar, jins, millat)
+  if (n.split(" ").every((w) => STOP_WORDS.includes(w))) return false
+  // YORLIQNING O'ZI yoki uning bir qismi bo'lmasin. Bu eng muhim tekshiruv:
+  // "ISMI GIVEN NAMES" kabi yorliq matni ism sifatida yozilib qolmasin
+  if (isLabelText(v)) return false
   // Kamida 2 ta harfli so'z bo'lishi kerak, uzun raqamli axlat emas
   return /[A-Za-zА-Яа-я]{2,}/.test(v)
 }
@@ -293,29 +403,47 @@ function looksLikeName(line: string): boolean {
  */
 function valueAfterLabel(
   lines: string[],
-  variants: string[],
+  field: FieldKey,
   accept: (v: string) => boolean
 ): { value: string; lineIndex: number } | undefined {
   for (let i = 0; i < lines.length; i++) {
-    if (!hasLabel(lines[i], variants)) continue
-    // 1) shu qatorning o'zida yorliqdan keyin qolgan qism
-    let rest = lines[i]
-    for (const v of variants) {
-      const re = new RegExp(v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi")
-      rest = rest.replace(re, " ")
-    }
-    rest = rest.replace(/[/|:.\-–—]/g, " ").replace(/\s+/g, " ").trim()
+    // Yorliq ANIQ yoki taxminiy moslik bilan aniqlanadi; "OTASINING ISMI"
+    // ichidagi "ISMI" band qilingani uchun ism yorlig'i deb olinmaydi
+    const scan = scanLineLabels(lines[i])
+    if (!scan.fields.includes(field)) continue
+    // 1) shu qatorda yorliq so'zlaridan keyin qolgan matn ("Ismi / Given
+    // names: BEKZOD" → "BEKZOD")
+    const rest = scan.rest.join(" ").trim()
     if (rest && accept(rest)) return { value: rest, lineIndex: i }
-    // 2-3) keyingi qatorlar
+    // 2) keyingi qatorlar. DIQQAT: keyingi qator ham YORLIQ bo'lsa — hujjat
+    // ikki ustunli tartibda o'qilgan degani; matn ko'rinishida qaysi qiymat
+    // qaysi yorliqqa tegishli ekanini aniqlab bo'lmaydi, shuning uchun
+    // to'xtaymiz (noto'g'ri qiymatdan ko'ra bo'sh maydon afzal —
+    // koordinatali parser bu holatni to'g'ri hal qiladi)
     for (let j = i + 1; j <= Math.min(i + 2, lines.length - 1); j++) {
       const cand = lines[j].trim()
-      if (cand && accept(cand)) return { value: cand, lineIndex: j }
+      if (!cand) continue
+      if (isLabelText(cand)) return undefined
+      if (accept(cand)) return { value: cand, lineIndex: j }
     }
   }
   return undefined
 }
 
+/** Qatorda BIR NECHTA har xil maydon yorlig'i bormi (ikki ustunli sarlavha) */
+const hasMultipleLabels = (line: string): boolean => labelsInLine(line).length > 1
+
 /* --------------------------------------------------------------- parser */
+
+/** Ichki yordamchilar — birlik testlari uchun ochilgan (UI ishlatmaydi) */
+export const __testHelpers = {
+  norm,
+  isLabelText,
+  labelsInLine,
+  looksLikeName,
+  parseDate,
+  validatePinfl,
+}
 
 export interface VisualParseResult {
   doc: ScannedDoc
@@ -352,7 +480,7 @@ export function parseVisualDocument(
 
   /* --- JSHSHIR (PINFL): eng ishonchli maydon, o'z ichki tekshiruvi bor --- */
   let pinfl: string | undefined
-  const labelled = valueAfterLabel(lines, LABELS.personalNumber, (v) => {
+  const labelled = valueAfterLabel(lines, "personalNumber", (v) => {
     const d = toDigits(v)
     return d.length === 14 && validatePinfl(d)
   })
@@ -371,7 +499,7 @@ export function parseVisualDocument(
   if (pinfl) set("personalNumber", pinfl, 4)
 
   /* --- Hujjat raqami: AA1234567 (2 harf + 7 raqam) --- */
-  const docLabelled = valueAfterLabel(lines, LABELS.documentNumber, (v) => {
+  const docLabelled = valueAfterLabel(lines, "documentNumber", (v) => {
     const c = v.replace(/[\s.\-]/g, "")
     return /^[A-Z0-9]{9}$/i.test(c)
   })
@@ -392,11 +520,7 @@ export function parseVisualDocument(
   if (docNo) set("documentNumber", docNo, 4)
 
   /* --- Sanalar: yorliq bo'yicha, bo'lmasa mantiq bo'yicha --- */
-  const birthLabelled = valueAfterLabel(
-    lines,
-    LABELS.birthDate,
-    (v) => !!parseDate(v)
-  )
+  const birthLabelled = valueAfterLabel(lines, "birthDate", (v) => !!parseDate(v))
   if (birthLabelled) {
     const parsed = parseDate(birthLabelled.value)
     if (parsed) set("birthDate", parsed, 4)
@@ -427,24 +551,22 @@ export function parseVisualDocument(
     if (all.length) set("birthDate", all[0], 2)
   }
 
-  /* --- Familiya, ism (va otasining ismi — ism bilan birga saqlanmaydi) --- */
-  const last = valueAfterLabel(lines, LABELS.lastName, looksLikeName)
-  if (last) set("lastName", titleCase(last.value), 3)
-  const first = valueAfterLabel(lines, LABELS.firstName, looksLikeName)
-  if (first) set("firstName", titleCase(first.value), 3)
-
-  // Yorliqlar o'qilmagan bo'lsa: MRZ-siz hujjatlarda ism-familiya odatda
-  // ketma-ket ikki qatorda, katta harflarda va sarlavhalardan keyin turadi
-  if (!doc.lastName || !doc.firstName) {
-    const nameLines = lines.filter(
-      (l) => looksLikeName(l) && l === l.toUpperCase() && l.length >= 3
-    )
-    if (!doc.lastName && nameLines[0]) {
-      set("lastName", titleCase(nameLines[0]), 1)
-    }
-    if (!doc.firstName && nameLines[1]) {
-      set("firstName", titleCase(nameLines[1]), 1)
-    }
+  /* --- Familiya va ism ---
+     Ikki ustunli sarlavha ("FAMILIYASI/SURNAME   ISMI/GIVEN NAMES") matn
+     ko'rinishida qaysi qiymat qaysi ustunga tegishli ekanini yashiradi —
+     bunday holatda ism/familiya UMUMAN olinmaydi (koordinatali parser
+     bu holatni to'g'ri o'qiydi; noto'g'ri to'ldirishdan ko'ra bo'sh afzal). */
+  const columnHeader = lines.some((l) => {
+    if (!hasMultipleLabels(l)) return false
+    const fields = labelsInLine(l)
+    return fields.includes("lastName") || fields.includes("firstName")
+  })
+  if (!columnHeader) {
+    const last = valueAfterLabel(lines, "lastName", looksLikeName)
+    if (last) set("lastName", titleCase(last.value), 3)
+    const first = valueAfterLabel(lines, "firstName", looksLikeName)
+    // Ism maydonida ikki so'z bo'lsa (ism + otasining ismi) — faqat birinchisi
+    if (first) set("firstName", titleCase(first.value.split(/\s+/)[0]), 3)
   }
 
   /* --- Fuqarolik --- */
@@ -460,6 +582,311 @@ export function parseVisualDocument(
   /* --- Yakuniy qaror ---
      Kamida bitta kuchli identifikator (JSHSHIR yoki hujjat raqami) yoki
      to'liq ism+familiya+sana bo'lishi shart — aks holda natija emas. */
+  const strongId = !!doc.personalNumber || !!doc.documentNumber
+  const fullName = !!doc.firstName && !!doc.lastName
+  if (!strongId && !(fullName && doc.birthDate)) return null
+  if (score < 4) return null
+  return { doc, score, fieldScores }
+}
+
+/* ================================================================
+   LAYOUT PARSER — so'zlarning KOORDINATALARI bo'yicha o'qish.
+
+   O'zbek ID kartasi va pasportida maydonlar IKKI USTUNDA joylashadi:
+
+     FAMILIYASI / SURNAME        ISMI / GIVEN NAMES
+     TOSHMATOV                   JASUR
+
+   Matnni qator-qator o'qiganda ustunlar aralashib ketadi va yorliqning
+   o'zi qiymat sifatida olinib qolishi mumkin. Shuning uchun har so'zning
+   ekrandagi o'rni (bbox) ishlatiladi: qiymat — yorliqning AYNAN OSTIDA
+   (yoki o'ng yonida) turgan, yorliq bo'lmagan matn.
+   ================================================================ */
+
+export interface WordBox {
+  text: string
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+  conf: number
+}
+
+interface LineBox {
+  words: WordBox[]
+  text: string
+  y0: number
+  y1: number
+  x0: number
+  x1: number
+}
+
+/** So'zlarni vizual qatorlarga guruhlaydi (y bo'yicha, keyin x bo'yicha) */
+function groupIntoLines(words: WordBox[]): LineBox[] {
+  const usable = words.filter((w) => w.text.trim() && w.conf >= 30)
+  if (!usable.length) return []
+  const heights = usable.map((w) => w.y1 - w.y0).sort((a, b) => a - b)
+  const medianH = heights[Math.floor(heights.length / 2)] || 10
+  const tol = Math.max(4, medianH * 0.6)
+
+  const sorted = [...usable].sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0)
+  const lines: LineBox[] = []
+  for (const w of sorted) {
+    const cy = (w.y0 + w.y1) / 2
+    const line = lines.find((l) => Math.abs((l.y0 + l.y1) / 2 - cy) <= tol)
+    if (line) {
+      line.words.push(w)
+      line.y0 = Math.min(line.y0, w.y0)
+      line.y1 = Math.max(line.y1, w.y1)
+      line.x0 = Math.min(line.x0, w.x0)
+      line.x1 = Math.max(line.x1, w.x1)
+    } else {
+      lines.push({
+        words: [w],
+        text: "",
+        y0: w.y0,
+        y1: w.y1,
+        x0: w.x0,
+        x1: w.x1,
+      })
+    }
+  }
+  for (const l of lines) {
+    l.words.sort((a, b) => a.x0 - b.x0)
+    l.text = l.words.map((w) => w.text).join(" ")
+  }
+  return lines.sort((a, b) => a.y0 - b.y0)
+}
+
+/** Qatordan topilgan yorliq: qaysi maydon va qayerda joylashgan */
+interface LabelHit {
+  field: FieldKey
+  lineIndex: number
+  x0: number
+  x1: number
+  /** Yorliqdan keyin shu qatorda qolgan so'zlar */
+  after: WordBox[]
+}
+
+/**
+ * Qatorlardagi barcha yorliqlarni topadi. Bir qatorda ikki ustun yorlig'i
+ * ham bo'lishi mumkin ("FAMILIYASI/SURNAME    ISMI/GIVEN NAMES") — ikkalasi
+ * ham alohida topiladi. Eng UZUN yorliq ustun: "OTASINING ISMI" hech qachon
+ * "ISMI" deb talqin qilinmaydi.
+ */
+function findLabels(lines: LineBox[]): LabelHit[] {
+  const hits: LabelHit[] = []
+  lines.forEach((line, lineIndex) => {
+    const used = new Array(line.words.length).fill(false)
+    // Uzun yorliqlardan boshlab: 5 so'zlik oynadan 1 so'zlikkacha
+    for (let span = 5; span >= 1; span--) {
+      for (let i = 0; i + span <= line.words.length; i++) {
+        if (used.slice(i, i + span).some(Boolean)) continue
+        const chunk = line.words.slice(i, i + span)
+        const chunkNorm = norm(chunk.map((w) => w.text).join(" "))
+        if (!chunkNorm) continue
+        // Aniq yoki taxminiy moslik (OCR yorliqni buzib o'qigan bo'lishi mumkin)
+        const field = matchLabelChunk(chunkNorm)
+        if (!field) continue
+        for (let k = i; k < i + span; k++) used[k] = true
+        hits.push({
+          field,
+          lineIndex,
+          x0: chunk[0].x0,
+          x1: chunk[chunk.length - 1].x1,
+          after: line.words.slice(i + span),
+        })
+      }
+    }
+  })
+  return hits
+}
+
+/** Ikki oraliq gorizontal kesishadimi (ustunni aniqlash uchun) */
+const overlapsX = (
+  a0: number,
+  a1: number,
+  b0: number,
+  b1: number,
+  slack: number
+): boolean => a0 - slack <= b1 && b0 - slack <= a1
+
+/**
+ * Yorliq uchun qiymat qidiradi:
+ *   1) shu qatorda yorliqdan keyin (yorliq bo'lmagan so'zlar);
+ *   2) pastdagi 3 qatorda — yorliq ustuni bilan gorizontal kesishadigan,
+ *      yorliq bo'lmagan so'zlar (ikki ustunli tartib shu bilan hal bo'ladi).
+ */
+function valueForLabel(
+  lines: LineBox[],
+  hit: LabelHit,
+  accept: (v: string) => boolean
+): string | undefined {
+  // 1) Yorliq bilan bir qatorda, o'ng tomonida
+  if (hit.after.length) {
+    // Yorliqdan keyin BOSHQA yorliq boshlansa — u yerda to'xtaymiz
+    const tail: WordBox[] = []
+    for (const w of hit.after) {
+      if (isLabelText(w.text)) break
+      tail.push(w)
+    }
+    const candidate = tail
+      .map((w) => w.text)
+      .join(" ")
+      .replace(/^[\s:/|.\-–—]+/, "")
+      .trim()
+    if (candidate && accept(candidate)) return candidate
+  }
+
+  // 2) Pastdagi qatorlarda, shu ustun ostida
+  const width = Math.max(hit.x1 - hit.x0, 40)
+  const slack = width * 0.35
+  for (let li = hit.lineIndex + 1; li <= hit.lineIndex + 3 && li < lines.length; li++) {
+    const line = lines[li]
+    const inColumn = line.words.filter((w) =>
+      overlapsX(hit.x0, hit.x1, w.x0, w.x1, slack)
+    )
+    if (!inColumn.length) continue
+    // Ustun ostida yana yorliq turgan bo'lsa — bu boshqa maydon, to'xtaymiz
+    const chunkText = inColumn.map((w) => w.text).join(" ").trim()
+    if (isLabelText(chunkText)) return undefined
+    if (accept(chunkText)) return chunkText
+    // Bitta so'z ham mos kelishi mumkin (masalan sana raqamlari ajralib ketsa)
+    for (const w of inColumn) {
+      if (accept(w.text)) return w.text
+    }
+  }
+  return undefined
+}
+
+/**
+ * ASOSIY vizual o'qish — so'z koordinatalari bilan.
+ * Matn asosidagi parser (parseVisualDocument) zaxira sifatida qoladi.
+ */
+export function parseVisualLayout(
+  words: WordBox[],
+  docType: "PASSPORT" | "ID_CARD"
+): VisualParseResult | null {
+  const lines = groupIntoLines(words)
+  if (lines.length < 2) return null
+  const hits = findLabels(lines)
+  const flatText = lines.map((l) => l.text).join("\n")
+  const upper = flatText.toUpperCase()
+
+  const doc: ScannedDoc = { documentType: docType }
+  const fieldScores: Partial<Record<keyof ScannedDoc, number>> = {}
+  let score = 0
+  const set = <K extends keyof ScannedDoc>(
+    key: K,
+    value: ScannedDoc[K],
+    weight: number
+  ) => {
+    doc[key] = value
+    fieldScores[key] = weight
+    score += weight
+  }
+
+  const hitFor = (field: FieldKey) => hits.filter((h) => h.field === field)
+
+  // --- Familiya / ism: yorliq ostidagi (yoki yonidagi) matn ---
+  for (const h of hitFor("lastName")) {
+    const v = valueForLabel(lines, h, looksLikeName)
+    if (v) {
+      set("lastName", titleCase(v), 4)
+      break
+    }
+  }
+  for (const h of hitFor("firstName")) {
+    const v = valueForLabel(lines, h, looksLikeName)
+    if (v) {
+      // Faqat birinchi so'z — "JASUR AKMALOVICH" bo'lsa otasining ismi tushmaydi
+      set("firstName", titleCase(v.split(/\s+/)[0]), 4)
+      break
+    }
+  }
+
+  // --- Tug'ilgan sana ---
+  for (const h of hitFor("birthDate")) {
+    const v = valueForLabel(lines, h, (s) => !!parseDate(s))
+    if (v) {
+      const parsed = parseDate(v)
+      if (parsed) {
+        set("birthDate", parsed, 4)
+        break
+      }
+    }
+  }
+
+  // --- JSHSHIR (PINFL) ---
+  let pinfl: string | undefined
+  for (const h of hitFor("personalNumber")) {
+    const v = valueForLabel(lines, h, (s) => {
+      const d = toDigits(s.replace(/\s/g, ""))
+      return d.length === 14 && validatePinfl(d)
+    })
+    if (v) {
+      pinfl = toDigits(v.replace(/\s/g, ""))
+      break
+    }
+  }
+  if (!pinfl) {
+    for (const m of upper.matchAll(/\b[\dOQDIULTZEASGBP]{14}\b/g)) {
+      const d = toDigits(m[0])
+      if (validatePinfl(d)) {
+        pinfl = d
+        break
+      }
+    }
+  }
+  if (pinfl) {
+    set("personalNumber", pinfl, 4)
+    const fromPinfl = birthDateFromPinfl(pinfl)
+    if (fromPinfl) {
+      if (!doc.birthDate) set("birthDate", fromPinfl, 4)
+      else if (doc.birthDate === fromPinfl) {
+        fieldScores.birthDate = (fieldScores.birthDate ?? 0) + 3
+        score += 3
+      } else set("birthDate", fromPinfl, 4)
+    }
+  }
+
+  // --- Hujjat raqami ---
+  let docNo: string | undefined
+  for (const h of hitFor("documentNumber")) {
+    const v = valueForLabel(lines, h, (s) => {
+      const c = s.replace(/[\s.\-]/g, "")
+      return c.length === 9 && /^[A-Z0-9]{9}$/i.test(c)
+    })
+    if (v) {
+      const c = v.replace(/[\s.\-]/g, "").toUpperCase()
+      const prefix = toLetters(c.slice(0, 2))
+      const digits = toDigits(c.slice(2))
+      if (prefix.length === 2 && digits.length === 7) {
+        docNo = prefix + digits
+        break
+      }
+    }
+  }
+  if (!docNo) {
+    for (const m of upper.matchAll(/\b([A-Z]{2}\s?\d{7})\b/g)) {
+      const c = m[1].replace(/\s/g, "")
+      const prefix = toLetters(c.slice(0, 2))
+      const digits = toDigits(c.slice(2))
+      if (prefix.length === 2 && digits.length === 7) {
+        docNo = prefix + digits
+        break
+      }
+    }
+  }
+  if (docNo) set("documentNumber", docNo, 4)
+
+  // --- Fuqarolik ---
+  const natMatch = upper.match(
+    /\b(UZB|RUS|KAZ|KGZ|TJK|TKM|AZE|UKR|TUR|USA|GBR|DEU|CHN|IND|KOR|AFG|PAK)\b/
+  )
+  if (natMatch) doc.nationality = natMatch[1]
+  else if (/O.?ZBEK|UZBEK|УЗБЕК/.test(upper)) doc.nationality = "UZB"
+
   const strongId = !!doc.personalNumber || !!doc.documentNumber
   const fullName = !!doc.firstName && !!doc.lastName
   if (!strongId && !(fullName && doc.birthDate)) return null

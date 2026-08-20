@@ -21,9 +21,35 @@ import {
 import { useScanSettings, type ScanMode } from "../api/scanSettings"
 import {
   parseVisualDocument,
+  parseVisualLayout,
   mergeVisualResults,
   type VisualParseResult,
+  type WordBox,
 } from "./visualDocParser"
+
+/** Tesseract natijasidan so'zlarni koordinatalari bilan ajratib oladi */
+function wordsFromResult(data: any): WordBox[] {
+  const out: WordBox[] = []
+  for (const block of data?.blocks ?? []) {
+    for (const para of block?.paragraphs ?? []) {
+      for (const line of para?.lines ?? []) {
+        for (const w of line?.words ?? []) {
+          const b = w?.bbox
+          if (!b || !w.text) continue
+          out.push({
+            text: w.text,
+            x0: b.x0,
+            y0: b.y0,
+            x1: b.x1,
+            y1: b.y1,
+            conf: w.confidence ?? 0,
+          })
+        }
+      }
+    }
+  }
+  return out
+}
 
 /** Auto rejimda MRZ uchun necha urinish beriladi — keyin vizualga o'tiladi */
 const AUTO_MRZ_ATTEMPTS = 6
@@ -591,8 +617,15 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     for (const pass of passes) {
       if (pass.crop.sw < 40) continue
       const prepared = preprocessCrop(source, pass.crop, pass.mode, pass.width)
-      const { data } = await worker.recognize(prepared)
-      const parsed = parseVisualDocument(data.text || "", t)
+      // blocks: true — so'zlarning koordinatalari kerak (layout parser uchun)
+      const { data } = await worker.recognize(prepared, {}, {
+        text: true,
+        blocks: true,
+      } as any)
+      // ASOSIY yo'l: koordinatalar bo'yicha (ikki ustunli tartibni to'g'ri
+      // o'qiydi, yorliqni qiymat deb olmaydi). Bo'lmasa — matn bo'yicha zaxira
+      const layout = parseVisualLayout(wordsFromResult(data), t)
+      const parsed = layout ?? parseVisualDocument(data.text || "", t)
       if (parsed) results.push(parsed)
       // Bitta o'tishda kuchli natija chiqsa — qolganini kutmaymiz (tezlik)
       if (parsed && parsed.score >= 12) break
