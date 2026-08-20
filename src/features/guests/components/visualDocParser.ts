@@ -362,6 +362,92 @@ function validatePinfl(digits: string): boolean {
   return dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12
 }
 
+/**
+ * Matn bo'lagidan JSHSHIR (14 raqam) nomzodlarini topadi.
+ *
+ * OCR raqamlarni deyarli har doim GURUHLAB o'qiydi ("3150 3900 0100 15"),
+ * ba'zan harf bilan adashtiradi ("3I5O..."). Shuning uchun bo'shliq va
+ * tinish belgilari tashlanadi, harflar raqamga o'giriladi, so'ng 14
+ * uzunlikdagi barcha oynalar ichki tuzilma bo'yicha tekshiriladi.
+ */
+/**
+ * Qatorni raqam qidirishga tayyorlaydi: SOF HARFLI so'zlar (yorliqlar —
+ * "JSHSHIR", "PASPORT RAQAMI") ajratgichga aylantiriladi, raqamli bo'laklar
+ * esa qo'shni so'zlar bilan birikadi ("AA 765 4321" → "AA7654321").
+ *
+ * Busiz yorliq harflari raqamga o'girilib, soxta JSHSHIR yasab qo'yardi.
+ */
+/** Qisqa yorliq belgilari — hujjat raqami prefiksi bilan adashmasin */
+const SHORT_LABEL_TOKENS = ["NO", "NR", "ID", "PN", "SR", "N"]
+
+function alnumTokens(line: string): string {
+  return line
+    .split(/\s+/)
+    .map((w) => {
+      const alnum = w.replace(/[^0-9A-Za-z]/g, "").toUpperCase()
+      if (!alnum) return " "
+      const digits = (alnum.match(/\d/g) || []).length
+      // "No", "ID" kabi qisqartmalar qo'shni raqamga yopishib ketmasin
+      if (digits === 0 && SHORT_LABEL_TOKENS.includes(alnum)) return " "
+      // Sof harfli uzun so'z — yorliq, ajratgich bo'ladi. 1-2 harfli bo'lak
+      // (hujjat raqami prefiksi "AA") saqlanadi
+      if (digits === 0 && alnum.length > 2) return " "
+      // Asosan harfli aralash so'z ham yorliq bo'lishi mumkin
+      if (digits > 0 && digits / alnum.length < 0.34 && alnum.length > 4) return " "
+      return alnum
+    })
+    .join("")
+}
+
+function findPinflIn(text: string): string[] {
+  const found: string[] = []
+  for (const rawLine of text.split(/\r?\n/)) {
+    // Yorliq so'zlari tashlangan, raqamli bo'laklar birikkan matn
+    for (const group of alnumTokens(rawLine).split(" ")) {
+      const compact = toDigits(group)
+      if (compact.length < 14) continue
+      for (let i = 0; i + 14 <= compact.length; i++) {
+        const cand = compact.slice(i, i + 14)
+        if (validatePinfl(cand) && !found.includes(cand)) found.push(cand)
+      }
+    }
+  }
+  return found
+}
+
+/**
+ * Hujjat raqami: 2 harf + 7 raqam (AA1234567).
+ * OCR uni "AA 1234567", "AA123 4567" yoki "A A 1 2 3 4 5 6 7" ko'rinishida
+ * berishi mumkin — bo'shliqlar tashlanib, harf/raqam qismlari alohida
+ * to'g'rilanadi.
+ */
+function findDocNumberIn(text: string): string[] {
+  const found: string[] = []
+  for (const rawLine of text.split(/\r?\n/)) {
+    for (const compact of alnumTokens(rawLine).split(" ")) {
+    if (compact.length < 9) continue
+    for (let i = 0; i + 9 <= compact.length; i++) {
+      const chunk = compact.slice(i, i + 9)
+      const rawPrefix = chunk.slice(0, 2)
+      const rawDigits = chunk.slice(2)
+      const prefix = toLetters(rawPrefix)
+      const digits = toDigits(rawDigits)
+      if (prefix.length !== 2 || digits.length !== 7) continue
+      // Prefiksda kamida BITTA asl harf bo'lishi shart — aks holda uzun
+      // raqamlar ketma-ketligidan ("...010010047") soxta raqam yasaladi
+      if (!/[A-Z]/.test(rawPrefix)) continue
+      // Raqam qismining ko'pchiligi ASL raqam bo'lsin — yorliq harflari
+      // ("PASSPORT No" → "NO") qo'shni raqamlar bilan birikib ketmasin
+      const realDigits = (rawDigits.match(/\d/g) || []).length
+      if (realDigits < 6) continue
+      const value = prefix + digits
+      if (!found.includes(value)) found.push(value)
+    }
+    }
+  }
+  return found
+}
+
 /** JSHSHIR ichidagi tug'ilgan sana (asr birinchi belgidan aniqlanadi) */
 function birthDateFromPinfl(digits: string): string | undefined {
   if (!validatePinfl(digits)) return undefined
@@ -435,6 +521,17 @@ const hasMultipleLabels = (line: string): boolean => labelsInLine(line).length >
 
 /* --------------------------------------------------------------- parser */
 
+/** Raqamli matndan JSHSHIR/hujjat raqamini ajratish (qayta o'qish uchun) */
+export const extractPinfl = (text: string): string | undefined =>
+  findPinflIn(text)[0]
+
+export const extractDocNumber = (text: string): string | undefined =>
+  findDocNumberIn(text)[0]
+
+/** JSHSHIR'dan tug'ilgan sana (skaner qayta o'qigach ishlatadi) */
+export const pinflBirthDate = (pinfl: string): string | undefined =>
+  birthDateFromPinfl(pinfl)
+
 /** Ichki yordamchilar — birlik testlari uchun ochilgan (UI ishlatmaydi) */
 export const __testHelpers = {
   norm,
@@ -443,6 +540,16 @@ export const __testHelpers = {
   looksLikeName,
   parseDate,
   validatePinfl,
+  findPinflIn,
+  findDocNumberIn,
+}
+
+/** Tasvirdagi to'rtburchak soha (qayta o'qish uchun) */
+export interface RegionBox {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
 }
 
 export interface VisualParseResult {
@@ -450,6 +557,15 @@ export interface VisualParseResult {
   score: number
   /** Har maydon alohida baho bilan — kadrlar bo'yicha ovoz berish uchun */
   fieldScores: Partial<Record<keyof ScannedDoc, number>>
+  /**
+   * Raqamli maydonlar sohalari (yorliq ostidagi hudud). Skaner shu
+   * sohalarni FAQAT RAQAM whitelist bilan qayta o'qib, past sifatli
+   * suratlarda ham JSHSHIR va hujjat raqamini aniq oladi.
+   */
+  numericRegions?: {
+    personalNumber?: RegionBox
+    documentNumber?: RegionBox
+  }
 }
 
 export function parseVisualDocument(
@@ -480,43 +596,30 @@ export function parseVisualDocument(
 
   /* --- JSHSHIR (PINFL): eng ishonchli maydon, o'z ichki tekshiruvi bor --- */
   let pinfl: string | undefined
-  const labelled = valueAfterLabel(lines, "personalNumber", (v) => {
-    const d = toDigits(v)
-    return d.length === 14 && validatePinfl(d)
-  })
+  // Yorliq ostidagi qiymat (bo'shliq bilan guruhlangan bo'lsa ham)
+  const labelled = valueAfterLabel(
+    lines,
+    "personalNumber",
+    (v) => findPinflIn(v).length > 0
+  )
   if (labelled) {
-    pinfl = toDigits(labelled.value)
-  } else {
-    // Yorliqsiz: matndagi barcha 14 raqamli ketma-ketliklarni sinaymiz
-    for (const m of upper.matchAll(/\b[\dOQDIULTZEASGBP]{14}\b/g)) {
-      const d = toDigits(m[0])
-      if (validatePinfl(d)) {
-        pinfl = d
-        break
-      }
-    }
+    pinfl = findPinflIn(labelled.value)[0]
+  }
+  if (!pinfl) {
+    // Yorliqsiz: butun matnda qidiramiz
+    pinfl = findPinflIn(flat)[0]
   }
   if (pinfl) set("personalNumber", pinfl, 4)
 
   /* --- Hujjat raqami: AA1234567 (2 harf + 7 raqam) --- */
-  const docLabelled = valueAfterLabel(lines, "documentNumber", (v) => {
-    const c = v.replace(/[\s.\-]/g, "")
-    return /^[A-Z0-9]{9}$/i.test(c)
-  })
+  const docLabelled = valueAfterLabel(
+    lines,
+    "documentNumber",
+    (v) => findDocNumberIn(v).length > 0
+  )
   let docNo: string | undefined
-  const candidates: string[] = []
-  if (docLabelled) candidates.push(docLabelled.value.replace(/[\s.\-]/g, ""))
-  for (const m of upper.matchAll(/\b([A-Z]{2}\s?\d{7})\b/g)) candidates.push(m[1])
-  for (const c of candidates) {
-    const cleaned = c.replace(/\s/g, "").toUpperCase()
-    if (cleaned.length !== 9) continue
-    const prefix = toLetters(cleaned.slice(0, 2))
-    const digits = toDigits(cleaned.slice(2))
-    if (prefix.length === 2 && digits.length === 7) {
-      docNo = prefix + digits
-      break
-    }
-  }
+  if (docLabelled) docNo = findDocNumberIn(docLabelled.value)[0]
+  if (!docNo) docNo = findDocNumberIn(flat)[0]
   if (docNo) set("documentNumber", docNo, 4)
 
   /* --- Sanalar: yorliq bo'yicha, bo'lmasa mantiq bo'yicha --- */
@@ -820,24 +923,13 @@ export function parseVisualLayout(
   // --- JSHSHIR (PINFL) ---
   let pinfl: string | undefined
   for (const h of hitFor("personalNumber")) {
-    const v = valueForLabel(lines, h, (s) => {
-      const d = toDigits(s.replace(/\s/g, ""))
-      return d.length === 14 && validatePinfl(d)
-    })
+    const v = valueForLabel(lines, h, (s) => findPinflIn(s).length > 0)
     if (v) {
-      pinfl = toDigits(v.replace(/\s/g, ""))
+      pinfl = findPinflIn(v)[0]
       break
     }
   }
-  if (!pinfl) {
-    for (const m of upper.matchAll(/\b[\dOQDIULTZEASGBP]{14}\b/g)) {
-      const d = toDigits(m[0])
-      if (validatePinfl(d)) {
-        pinfl = d
-        break
-      }
-    }
-  }
+  if (!pinfl) pinfl = findPinflIn(flatText)[0]
   if (pinfl) {
     set("personalNumber", pinfl, 4)
     const fromPinfl = birthDateFromPinfl(pinfl)
@@ -853,31 +945,13 @@ export function parseVisualLayout(
   // --- Hujjat raqami ---
   let docNo: string | undefined
   for (const h of hitFor("documentNumber")) {
-    const v = valueForLabel(lines, h, (s) => {
-      const c = s.replace(/[\s.\-]/g, "")
-      return c.length === 9 && /^[A-Z0-9]{9}$/i.test(c)
-    })
+    const v = valueForLabel(lines, h, (s) => findDocNumberIn(s).length > 0)
     if (v) {
-      const c = v.replace(/[\s.\-]/g, "").toUpperCase()
-      const prefix = toLetters(c.slice(0, 2))
-      const digits = toDigits(c.slice(2))
-      if (prefix.length === 2 && digits.length === 7) {
-        docNo = prefix + digits
-        break
-      }
+      docNo = findDocNumberIn(v)[0]
+      break
     }
   }
-  if (!docNo) {
-    for (const m of upper.matchAll(/\b([A-Z]{2}\s?\d{7})\b/g)) {
-      const c = m[1].replace(/\s/g, "")
-      const prefix = toLetters(c.slice(0, 2))
-      const digits = toDigits(c.slice(2))
-      if (prefix.length === 2 && digits.length === 7) {
-        docNo = prefix + digits
-        break
-      }
-    }
-  }
+  if (!docNo) docNo = findDocNumberIn(flatText)[0]
   if (docNo) set("documentNumber", docNo, 4)
 
   // --- Fuqarolik ---
@@ -887,11 +961,37 @@ export function parseVisualLayout(
   if (natMatch) doc.nationality = natMatch[1]
   else if (/O.?ZBEK|UZBEK|УЗБЕК/.test(upper)) doc.nationality = "UZB"
 
+  /* --- Raqamli maydonlar sohalari: yorliq ostidagi hudud.
+     Skaner ularni faqat-raqam rejimida qayta o'qiydi (past sifatda ham
+     JSHSHIR/hujjat raqami aniq chiqishi uchun). --- */
+  const regionUnder = (field: FieldKey): RegionBox | undefined => {
+    const h = hits.find((x) => x.field === field)
+    if (!h) return undefined
+    const width = Math.max(h.x1 - h.x0, 60)
+    const lineH = Math.max(lines[h.lineIndex].y1 - lines[h.lineIndex].y0, 12)
+    const top = lines[h.lineIndex].y0
+    return {
+      // Yorliq ustuni + ozroq zaxira (qiymat kengroq yozilgan bo'lishi mumkin)
+      x0: Math.max(0, h.x0 - width * 0.12),
+      x1: h.x1 + width * 0.55,
+      // Yorliq qatoridan boshlab pastga 2.6 qator (yorliq + qiymat)
+      y0: Math.max(0, top - lineH * 0.25),
+      y1: top + lineH * 2.8,
+    }
+  }
+  const numericRegions = {
+    personalNumber: regionUnder("personalNumber"),
+    documentNumber: regionUnder("documentNumber"),
+  }
+
   const strongId = !!doc.personalNumber || !!doc.documentNumber
   const fullName = !!doc.firstName && !!doc.lastName
-  if (!strongId && !(fullName && doc.birthDate)) return null
-  if (score < 4) return null
-  return { doc, score, fieldScores }
+  // Raqamli sohalar topilgan bo'lsa, natija bo'sh bo'lsa ham qaytaramiz —
+  // skaner ularni qayta o'qib maydonlarni to'ldirishi mumkin
+  const hasRegions = !!numericRegions.personalNumber || !!numericRegions.documentNumber
+  if (!strongId && !(fullName && doc.birthDate) && !hasRegions) return null
+  if (score < 4 && !hasRegions) return null
+  return { doc, score, fieldScores, numericRegions }
 }
 
 /**

@@ -23,8 +23,12 @@ import {
   parseVisualDocument,
   parseVisualLayout,
   mergeVisualResults,
+  extractPinfl,
+  extractDocNumber,
+  pinflBirthDate,
   type VisualParseResult,
   type WordBox,
+  type RegionBox,
 } from "./visualDocParser"
 
 /** Tesseract natijasidan so'zlarni koordinatalari bilan ajratib oladi */
@@ -221,13 +225,44 @@ function preprocessCrop(
 
   const img = ctx.getImageData(0, 0, out.width, out.height)
   const d = img.data
+  const W = out.width
+  const H = out.height
   const gray = new Uint8ClampedArray(d.length / 4)
-  const hist = new Uint32Array(256)
   for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-    const g = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000
-    gray[j] = g
-    hist[Math.round(g)]++
+    gray[j] = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000
   }
+
+  /* O'TKIRLASHTIRISH (unsharp mask) — kattalashtirilgan yoki fokusdan
+     chiqqan suratda harflar chekkasi yoyilib ketadi; 3×3 o'rtacha bilan
+     ayirma qo'shilsa, chekkalar tiklanadi va OCR sezilarli aniqroq o'qiydi.
+     Faqat kattalashtirilgan (scale > 1.1) tasvirda qo'llanadi. */
+  if (scale > 1.1 && W > 8 && H > 8) {
+    const blurred = new Uint8ClampedArray(gray.length)
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        let sum = 0
+        let count = 0
+        for (let dy = -1; dy <= 1; dy++) {
+          const yy = y + dy
+          if (yy < 0 || yy >= H) continue
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx
+            if (xx < 0 || xx >= W) continue
+            sum += gray[yy * W + xx]
+            count++
+          }
+        }
+        blurred[y * W + x] = sum / count
+      }
+    }
+    const amount = 0.9
+    for (let j = 0; j < gray.length; j++) {
+      gray[j] = Math.max(0, Math.min(255, gray[j] + amount * (gray[j] - blurred[j])))
+    }
+  }
+
+  const hist = new Uint32Array(256)
+  for (let j = 0; j < gray.length; j++) hist[Math.round(gray[j])]++
 
   // Kontrast cho'zish: 2% va 98% percentillar orasini to'liq diapazonga yoyish
   const total = gray.length
@@ -349,8 +384,9 @@ let onOcrProgress: ((p: number) => void) | null = null
 /** Worker'dagi joriy OCR profili — kerak bo'lgandagina almashtiriladi */
 let workerProfile: OcrProfile | null = null
 
-/** MRZ — faqat mashina zonasi; VISUAL — hujjat old tomonidagi oddiy matn */
-type OcrProfile = "mrz" | "visual"
+/** MRZ — mashina zonasi; VISUAL — hujjat yuzasidagi matn;
+ *  DIGITS — faqat raqamlar (JSHSHIR va hujjat raqamini aniq o'qish uchun) */
+type OcrProfile = "mrz" | "visual" | "digits"
 
 async function applyProfile(worker: any, profile: OcrProfile) {
   if (workerProfile === profile) return
@@ -361,6 +397,19 @@ async function applyProfile(worker: any, profile: OcrProfile) {
     await worker.setParameters({
       tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
       tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+      tessedit_do_invert: "0",
+      load_system_dawg: "0",
+      load_freq_dawg: "0",
+      user_defined_dpi: "300",
+      preserve_interword_spaces: "1",
+    } as any)
+  } else if (profile === "digits") {
+    // FAQAT RAQAM (va hujjat raqami prefiksi uchun bosh harflar). Tor belgilar
+    // to'plami OCR'ni raqamlarga "majburlaydi" — past sifatli suratlarda ham
+    // JSHSHIR/seriya-raqam ancha aniq o'qiladi
+    await worker.setParameters({
+      tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ",
+      tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
       tessedit_do_invert: "0",
       load_system_dawg: "0",
       load_freq_dawg: "0",
@@ -632,13 +681,64 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     }
     if (!results.length) return null
     const merged = mergeVisualResults(results)
-    if (!merged) return results[0]
-    // Bir manbada bir necha o'tish kelishgani — qo'shimcha ishonch
-    return {
-      doc: merged.doc,
-      score: merged.score + merged.agreement,
-      fieldScores: results[0].fieldScores,
+    let best: VisualParseResult = merged
+      ? {
+          doc: merged.doc,
+          score: merged.score + merged.agreement,
+          fieldScores: results[0].fieldScores,
+          numericRegions: results[0].numericRegions,
+        }
+      : results[0]
+
+    /* RAQAMLI MAYDONLARNI QAYTA O'QISH.
+       JSHSHIR va hujjat raqami — eng ko'p adashiladigan joy: OCR raqamlarni
+       harf deb o'qiydi yoki guruhlab bo'ladi. Yorliq ostidagi kichik soha
+       FAQAT RAQAM rejimida qayta o'qilsa, past sifatli suratda ham aniq
+       chiqadi. Bu — professional skanerlardagi "targeted re-OCR" usuli. */
+    const regions = results.find((r) => r.numericRegions)?.numericRegions
+    if (regions && (!best.doc.personalNumber || !best.doc.documentNumber)) {
+      const digitWorker = await getWorker("digits")
+      // Sohalar tayyorlangan tasvir koordinatasida — asl manbaga qaytaramiz
+      const basePass = passes[0]
+      const scale = Math.min(Math.max(basePass.width / basePass.crop.sw, 0.25), 4)
+      const toSource = (r: RegionBox) => ({
+        sx: Math.round(basePass.crop.sx + r.x0 / scale),
+        sy: Math.round(basePass.crop.sy + r.y0 / scale),
+        sw: Math.max(20, Math.round((r.x1 - r.x0) / scale)),
+        sh: Math.max(12, Math.round((r.y1 - r.y0) / scale)),
+      })
+
+      if (!best.doc.personalNumber && regions.personalNumber) {
+        const crop = toSource(regions.personalNumber)
+        // Kichik soha — juda katta kattalashtirish mumkin (aniqlik uchun)
+        for (const mode of ["adaptive", "gray"] as PrepMode[]) {
+          const prepared = preprocessCrop(source, crop, mode, 1400)
+          const { data } = await digitWorker.recognize(prepared)
+          const found = extractPinfl(data.text || "")
+          if (found) {
+            best.doc.personalNumber = found
+            best.score += 4
+            const bd = pinflBirthDate(found)
+            if (bd && !best.doc.birthDate) best.doc.birthDate = bd
+            break
+          }
+        }
+      }
+      if (!best.doc.documentNumber && regions.documentNumber) {
+        const crop = toSource(regions.documentNumber)
+        for (const mode of ["adaptive", "gray"] as PrepMode[]) {
+          const prepared = preprocessCrop(source, crop, mode, 1400)
+          const { data } = await digitWorker.recognize(prepared)
+          const found = extractDocNumber(data.text || "")
+          if (found) {
+            best.doc.documentNumber = found
+            best.score += 4
+            break
+          }
+        }
+      }
     }
+    return best
   }
 
   // Video kadrida MRZ'ni izlash. Tezlik uchun odatda FAQAT MRZ zonasi
