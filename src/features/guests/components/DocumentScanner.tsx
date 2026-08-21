@@ -56,7 +56,7 @@ interface DocumentScannerProps {
 
 type Phase = "select" | "camera" | "processing" | "flip" | "result" | "error"
 type ActiveMethod = "mrz" | "visual"
-type OcrProfile = "mrz" | "digitsLatin" | "digitsCyrillic" | "visualLatin" | "visualCyrillic"
+type OcrProfile = "mrz" | "mrzLatin" | "digitsLatin" | "digitsCyrillic" | "visualLatin" | "visualCyrillic"
 type PrepMode = "binary" | "gray" | "adaptive"
 
 const DOC_SPECS: Record<DocumentType, { aspect: number; widthFrac: number; mrzFrac: number }> = {
@@ -66,6 +66,9 @@ const DOC_SPECS: Record<DocumentType, { aspect: number; widthFrac: number; mrzFr
 
 const OCR_LANGUAGES: Record<OcrProfile, string> = {
   mrz: "eng",
+  // ID-card front OCR already loads this group.  Reuse it for its MRZ back
+  // rather than paying a worker reinitialization during the flip transition.
+  mrzLatin: "eng+uzb",
   // Keep the number-only pass in the already loaded visual language group.
   // Reinitializing Tesseract back to plain English on every frame was one of
   // the main causes of slow ID-front scanning.
@@ -93,7 +96,7 @@ function queueWorker<T>(job: () => Promise<T>): Promise<T> {
 async function applyOcrProfile(worker: any, profile: OcrProfile) {
   if (workerProfile === profile) return
   const Tesseract = await import("tesseract.js")
-  if (profile === "mrz") {
+  if (profile === "mrz" || profile === "mrzLatin") {
     await worker.setParameters({
       tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
       tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
@@ -163,12 +166,20 @@ async function getWorker(profile: OcrProfile): Promise<any> {
   return worker
 }
 
-async function recognize(profile: OcrProfile, canvas: HTMLCanvasElement, blocks = false): Promise<any> {
+async function recognize(
+  profile: OcrProfile,
+  canvas: HTMLCanvasElement,
+  blocks = false,
+  rotateAuto = false
+): Promise<any> {
   return queueWorker(async () => {
     const worker = await getWorker(profile)
     const { data } = await worker.recognize(
       canvas,
-      { rotateAuto: true },
+      // The live camera guide keeps documents landscape.  Skipping automatic
+      // orientation detection on that fast path removes an expensive extra
+      // OCR operation; uploaded MRZ images are explicitly rotated below.
+      rotateAuto ? { rotateAuto: true } : {},
       blocks ? ({ text: true, blocks: true } as any) : ({ text: true } as any)
     )
     return data
@@ -415,20 +426,33 @@ async function scanVisualDocument(
   canvas: HTMLCanvasElement,
   type: DocumentType,
   side: DocumentSide,
-  frameId: string
+  frameId: string,
+  fastLive = false
 ): Promise<RecognitionResult | null> {
   const accumulator = new FieldAccumulator(type)
   let pinflContext = false
   const textZone = cropCanvas(canvas, canvas.width * 0.18, 0, canvas.width * 0.82, canvas.height)
-  const passes: Array<{ canvas: HTMLCanvasElement; mode: PrepMode; width: number }> = [
+  const fullPasses: Array<{ canvas: HTMLCanvasElement; mode: PrepMode; width: number }> = [
     { canvas, mode: "adaptive", width: 1900 },
     { canvas: textZone, mode: "gray", width: 2000 },
   ]
+  // This is intentionally narrow: a well-aligned live card gets one OCR
+  // pass first.  No field is auto-applied from it; independent camera-frame
+  // consensus is still required.  Failed fast passes fall back to the full
+  // multi-language routine on the next retry.
+  const fastPasses: Array<{ canvas: HTMLCanvasElement; mode: PrepMode; width: number }> = [
+    { canvas: textZone, mode: "adaptive", width: 1600 },
+  ]
 
-  const readProfile = async (profile: "visualLatin" | "visualCyrillic", digitsProfile: "digitsLatin" | "digitsCyrillic") => {
+  const readProfile = async (
+    profile: "visualLatin" | "visualCyrillic",
+    digitsProfile: "digitsLatin" | "digitsCyrillic",
+    passes: Array<{ canvas: HTMLCanvasElement; mode: PrepMode; width: number }>,
+    includeNumericPass: boolean
+  ) => {
     for (const pass of passes) {
       const prepared = prepareForOcr(pass.canvas, pass.mode, pass.width)
-      const data = await recognize(profile, prepared, true)
+      const data = await recognize(profile, prepared, true, !fastLive)
       const text = data.text || ""
       const layout = parseVisualLayout(wordsFromResult(data), type)
       const parsedText = parseVisualDocument(text, type)
@@ -444,21 +468,25 @@ async function scanVisualDocument(
     // avoiding the old bug where a region from one crop was applied to another.
     // It keeps the active language group, so it does not reinitialize the OCR
     // worker between each live-camera frame.
-    const numericCrop = cropCanvas(canvas, 0, canvas.height * 0.38, canvas.width, canvas.height * 0.62)
-    const numericData = await recognize(digitsProfile, prepareForOcr(numericCrop, "adaptive", 1700, true))
-    const numericText = numericData.text || ""
-    const pinfl = extractPinfl(numericText)
-    if (pinfl && pinflContext) accumulator.addField("personalNumber", pinfl, 4, frameId)
-    const documentNumber = extractDocNumber(numericText)
-    if (documentNumber) accumulator.addField("documentNumber", documentNumber, 3, frameId)
+    if (includeNumericPass) {
+      const numericCrop = cropCanvas(canvas, 0, canvas.height * 0.38, canvas.width, canvas.height * 0.62)
+      const numericData = await recognize(digitsProfile, prepareForOcr(numericCrop, "adaptive", 1700, true))
+      const numericText = numericData.text || ""
+      const pinfl = extractPinfl(numericText)
+      if (pinfl && pinflContext) accumulator.addField("personalNumber", pinfl, 4, frameId)
+      const documentNumber = extractDocNumber(numericText)
+      if (documentNumber) accumulator.addField("documentNumber", documentNumber, 3, frameId)
+    }
   }
 
   // Uzbekistan's current cards predominantly have Latin labels.  Only switch
   // to the Cyrillic model if the fast local-language pass did not obtain the
   // minimum useful fields; that avoids an expensive language reload on every
   // ordinary card.
-  await readProfile("visualLatin", "digitsLatin")
-  if (!accumulator.isComplete()) await readProfile("visualCyrillic", "digitsCyrillic")
+  await readProfile("visualLatin", "digitsLatin", fastLive ? fastPasses : fullPasses, !fastLive)
+  if (!fastLive && !accumulator.isComplete()) {
+    await readProfile("visualCyrillic", "digitsCyrillic", fullPasses, true)
+  }
 
   return visualResultFromAccumulator(accumulator, type, pinflContext, side)
 }
@@ -475,13 +503,32 @@ function mrzCrops(canvas: HTMLCanvasElement, type: DocumentType) {
 async function scanMrzDocument(
   canvas: HTMLCanvasElement,
   type: DocumentType,
-  includePortraitOrientations: boolean
+  includePortraitOrientations: boolean,
+  fastLive = false
 ): Promise<RecognitionResult | null> {
   let best: RecognitionResult | null = null
-  for (const oriented of orientationCandidates(canvas, includePortraitOrientations)) {
-    for (const crop of mrzCrops(oriented.canvas, type)) {
-      for (const mode of ["binary", "gray"] as PrepMode[]) {
-        const data = await recognize("mrz", prepareForOcr(crop, mode, 1900, true))
+  // Do not clone the upright canvas.  The full recovery path creates only
+  // additional rotations after the original orientation has failed.
+  const orientations = fastLive
+    ? [{ angle: 0 as const, canvas }]
+    : [
+        { angle: 0 as const, canvas },
+        ...orientationCandidates(canvas, includePortraitOrientations).filter((candidate) => candidate.angle !== 0),
+      ]
+  const profile: OcrProfile = type === "ID_CARD" ? "mrzLatin" : "mrz"
+  for (const oriented of orientations) {
+    const crops = fastLive ? mrzCrops(oriented.canvas, type).slice(0, 1) : mrzCrops(oriented.canvas, type)
+    // A guided, crisp live frame almost always resolves with its primary
+    // binary MRZ crop.  Keep gray/overlap/orientation recovery for the full
+    // path after two quick frames miss, rather than serializing four OCR jobs
+    // per live frame.
+    const modes = (fastLive ? ["binary"] : ["binary", "gray"]) as PrepMode[]
+    for (const crop of crops) {
+      for (const mode of modes) {
+        const data = await recognize(
+          profile,
+          prepareForOcr(crop, mode, fastLive ? 1600 : 1900, !fastLive)
+        )
         const result = parseMrzText(data.text || "", type)
         if (!result) continue
         if (result.verified) return result
@@ -522,25 +569,54 @@ async function recognizeDocument(
   type: DocumentType,
   side: DocumentSide,
   mode: ScanMode,
-  includePortraitOrientations: boolean
+  includePortraitOrientations: boolean,
+  fastLive = false
 ): Promise<ScanOutcome> {
+  const targetQuality = (canvas: HTMLCanvasElement, imageQuality?: ImageQuality) => {
+    const focusCrop =
+      side === "front"
+        ? cropCanvas(canvas, canvas.width * 0.18, 0, canvas.width * 0.82, canvas.height)
+        : mrzCrops(canvas, type)[0]
+    const focusQuality = assessImageQuality(focusCrop)
+    return focusQuality.usable ? imageQuality ?? assessImageQuality(canvas) : focusQuality
+  }
+
+  if (fastLive) {
+    const quality = targetQuality(source)
+    // Most live captures are already inside the on-screen card guide.  Try a
+    // single landscape MRZ/text pass before loading OpenCV, QR and recovery
+    // OCR.  The caller only uses this for the first two attempts; a missed or
+    // crooked document automatically falls through to the full path later.
+    if (!quality.usable) return { recognition: null, quality, rectified: false, qrConfirmed: false }
+    if (side !== "front" && mode !== "visual") {
+      const mrz = await scanMrzDocument(source, type, false, true)
+      return {
+        recognition: mrz?.verified ? mrz : null,
+        quality,
+        rectified: false,
+        qrConfirmed: false,
+      }
+    }
+    const visual = await scanVisualDocument(source, type, side, `fast-${Date.now()}`, true)
+    return { recognition: visual, quality, rectified: false, qrConfirmed: false }
+  }
+
   const normalized = await rectifyDocument(source, type)
   // The target zone must itself be sharp.  A crisp table/background cannot
   // make a blurry MRZ or ID field safe to auto-fill.
-  const focusCrop =
-    side === "front"
-      ? cropCanvas(normalized.canvas, normalized.canvas.width * 0.18, 0, normalized.canvas.width * 0.82, normalized.canvas.height)
-      : mrzCrops(normalized.canvas, type)[0]
-  const focusQuality = assessImageQuality(focusCrop)
-  const quality = focusQuality.usable ? normalized.quality : focusQuality
+  const quality = targetQuality(normalized.canvas, normalized.quality)
   let mrz: RecognitionResult | null = null
   let visual: RecognitionResult | null = null
-  const qrPromise = type === "ID_CARD" && side === "back" ? decodeIdCardQr(normalized.canvas) : Promise.resolve(undefined)
 
   if (side !== "front" && mode !== "visual") {
     mrz = await scanMrzDocument(normalized.canvas, type, includePortraitOrientations)
     if (mrz?.verified || mode === "mrz") {
-      const qrConfirmed = qrCorroboratesDocument(await qrPromise, mrz?.doc)
+      // QR is supplementary evidence, never a source of booking data.  Do it
+      // only after a usable MRZ exists so failed camera frames do not spend
+      // time decoding a QR code.
+      const qrPayload =
+        mrz && type === "ID_CARD" && side === "back" ? await decodeIdCardQr(normalized.canvas) : undefined
+      const qrConfirmed = qrCorroboratesDocument(qrPayload, mrz?.doc)
       if (mrz && qrConfirmed) mrz.doc.qrConfirmed = true
       if (mrz && !quality.usable) {
         mrz.doc.warnings = [...(mrz.doc.warnings ?? []), "MRZ zonasi yetarlicha tiniq emas — qayta oling yoki tekshirib tasdiqlang"]
@@ -553,7 +629,11 @@ async function recognizeDocument(
     visual = await scanVisualDocument(normalized.canvas, type, side, `single-${Date.now()}`)
   }
   const recognition = visual && (!mrz || visual.score >= mrz.score || !mrz.doc.documentNumber) ? visual : mrz
-  const qrConfirmed = qrCorroboratesDocument(await qrPromise, recognition?.doc)
+  const qrPayload =
+    recognition?.source === "mrz" && type === "ID_CARD" && side === "back"
+      ? await decodeIdCardQr(normalized.canvas)
+      : undefined
+  const qrConfirmed = qrCorroboratesDocument(qrPayload, recognition?.doc)
   if (recognition && qrConfirmed) recognition.doc.qrConfirmed = true
   if (recognition && !quality.usable) {
     recognition.doc.warnings = [
@@ -632,6 +712,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const scanModeRef = useRef<ScanMode>(scanMode)
   const frontDocRef = useRef<ScannedDoc | undefined>(undefined)
   const bestFrameRef = useRef<QualityFrame<HTMLCanvasElement> | null>(null)
+  const lastQualityUpdateAtRef = useRef(0)
+  const lastProgressRenderRef = useRef(-1)
 
   useEffect(() => {
     docTypeRef.current = docType
@@ -644,7 +726,13 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   }, [scanMode])
   useEffect(() => {
     const listener = (value: number) => {
-      if (value >= 0) setProgress(value)
+      if (value < 0) return
+      // OCR emits many tiny progress changes.  Rendering each one competes
+      // with the camera preview on mobile, while 5% steps remain responsive.
+      if (value === 0 || value === 100 || Math.abs(value - lastProgressRenderRef.current) >= 5) {
+        lastProgressRenderRef.current = value
+        setProgress(value)
+      }
     }
     ocrProgressListener = listener
     return () => {
@@ -670,8 +758,12 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
-          width: { ideal: 3840 },
-          height: { ideal: 2160 },
+          // OCR consumes a 1680px camera crop.  Requesting 4K here caused
+          // needless downscaling, slower autofocus and extra thermal load on
+          // phones without adding readable MRZ detail.
+          width: { ideal: 2560 },
+          height: { ideal: 1440 },
+          frameRate: { ideal: 30, max: 30 },
         },
         audio: false,
       })
@@ -741,15 +833,21 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     [stopCamera]
   )
 
-  const scanCanvas = useCallback(async (source: HTMLCanvasElement, includePortraitOrientations: boolean) => {
+  const scanCanvas = useCallback(async (
+    source: HTMLCanvasElement,
+    includePortraitOrientations: boolean,
+    fastLive = false
+  ) => {
     setProgress(0)
     const outcome = await recognizeDocument(
       source,
       docTypeRef.current,
       sideRef.current,
       scanModeRef.current,
-      includePortraitOrientations
+      includePortraitOrientations,
+      fastLive
     )
+    lastQualityUpdateAtRef.current = Date.now()
     setQuality(outcome.quality)
     return outcome
   }, [])
@@ -758,13 +856,21 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     if (liveActiveRef.current) return
     liveActiveRef.current = true
     let attempt = 0
-    let qualityStreak = 0
     let lastRecognitionAt = 0
+    let lastHighQualityFrameAt = 0
     const frameConsensus = new FieldAccumulator(docTypeRef.current)
     const mrzVotes = new Map<string, { count: number; lastAt: number; doc: ScannedDoc }>()
     let burst: QualityFrame<HTMLCanvasElement>[] = []
     try {
-      await queueWorker(async () => getWorker(sideRef.current === "front" ? "visualLatin" : "mrz"))
+      await queueWorker(async () =>
+        getWorker(
+          sideRef.current === "front"
+            ? "visualLatin"
+            : docTypeRef.current === "ID_CARD"
+              ? "mrzLatin"
+              : "mrz"
+        )
+      )
     } catch {
       setCameraError("OCR moduli yuklanmadi. Internet/ilova keshi holatini tekshiring yoki rasm yuklang")
       liveActiveRef.current = false
@@ -776,51 +882,72 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         await new Promise((resolve) => window.setTimeout(resolve, 120))
         continue
       }
-      // Keep a short burst and OCR the sharpest frame, rather than whichever
-      // frame happened to arrive at the recognition interval.
-      const preview = videoFrameCanvas(video, 1920)
+      // Focus/exposure can be measured on a small probe.  Allocating a 1920px
+      // canvas every 140ms was a major mobile bottleneck, so retain full-ish
+      // OCR frames only after a probe says the view is usable.
+      const preview = videoFrameCanvas(video, 720)
       const previewQuality = assessImageQuality(preview)
-      setQuality(previewQuality)
       const now = Date.now()
+      if (!previewQuality.usable || now - lastQualityUpdateAtRef.current >= 220) {
+        lastQualityUpdateAtRef.current = now
+        setQuality(previewQuality)
+      }
       if (previewQuality.usable) {
-        burst = [...burst, { value: preview, quality: previewQuality, capturedAt: now }].slice(-4)
-        bestFrameRef.current = selectBestQualityFrame(burst) ?? null
-        qualityStreak++
+        if (now - lastHighQualityFrameAt >= 180) {
+          const ocrFrame = videoFrameCanvas(video, 1680)
+          burst = [...burst, { value: ocrFrame, quality: previewQuality, capturedAt: now }].slice(-2)
+          bestFrameRef.current = selectBestQualityFrame(burst) ?? null
+          lastHighQualityFrameAt = now
+        }
       } else {
-        qualityStreak = 0
         burst = []
         bestFrameRef.current = null
       }
-      if (qualityStreak < 3 || now - lastRecognitionAt < 650) {
+      if (burst.length < 2 || now - lastRecognitionAt < 380) {
         await new Promise((resolve) => window.setTimeout(resolve, 140))
         continue
       }
       busyRef.current = true
       lastRecognitionAt = now
-      const bestFrame = selectBestQualityFrame(burst)?.value ?? preview
+      const bestFrame = selectBestQualityFrame(burst)
+      const companionFrame = bestFrame ? burst.find((frame) => frame !== bestFrame) : undefined
+      // The two buffered captures are already at least 180ms apart.  When the
+      // first cheap guided-frame pass finds data, OCR the companion immediately
+      // rather than making the user wait for another camera burst just to get
+      // the mandatory second MRZ/frame-consensus vote.
+      const fastPathForBatch = attempt < 2
+      const framesToRecognize = bestFrame
+        ? [bestFrame, ...(fastPathForBatch && companionFrame ? [companionFrame] : [])]
+        : []
       burst = []
       const currentSide = sideRef.current
       const method: ActiveMethod = currentSide === "front" || scanModeRef.current === "visual" ? "visual" : "mrz"
       setActiveMethod(method)
       try {
-        const outcome = await scanCanvas(bestFrame, false)
-        attempt++
-        setAttempts(attempt)
-        const candidate = outcome.recognition
-        if (candidate && liveActiveRef.current) {
+        for (const frame of framesToRecognize) {
+          // Two inexpensive guided-frame attempts give the common UZB document
+          // path a near-immediate result.  The next attempt restores full
+          // rectification and recovery OCR if the first passes do not agree.
+          const outcome = await scanCanvas(frame.value, false, fastPathForBatch)
+          attempt++
+          setAttempts(attempt)
+          const candidate = outcome.recognition
+          if (!candidate || !liveActiveRef.current) break
+
           if (candidate.verified) {
             // A valid check digit from one blurred frame is strong evidence but
             // not enough for zero-wrong-auto-fill policy.  Two fresh frames
             // must yield the exact same complete MRZ payload.
             const key = outcome.quality.usable ? verifiedMrzKey(candidate.doc) : undefined
             if (key) {
+              const observedAt = frame.capturedAt
               for (const [voteKey, vote] of mrzVotes) {
-                if (now - vote.lastAt > 5000) mrzVotes.delete(voteKey)
+                if (Date.now() - vote.lastAt > 5000) mrzVotes.delete(voteKey)
               }
               const previous = mrzVotes.get(key)
-              const distinctFrame = !previous || now - previous.lastAt >= 180
+              const distinctFrame = !previous || Math.abs(observedAt - previous.lastAt) >= 180
               const vote = distinctFrame
-                ? { count: (previous?.count ?? 0) + 1, lastAt: now, doc: candidate.doc }
+                ? { count: (previous?.count ?? 0) + 1, lastAt: Math.max(previous?.lastAt ?? 0, observedAt), doc: candidate.doc }
                 : previous
               if (vote) {
                 mrzVotes.set(key, vote)
@@ -879,9 +1006,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setVisualFilled(0)
     setMrzMatches(0)
     bestFrameRef.current = null
-    // Warm only the compact English worker; extra language models load when
-    // the visual mode is actually needed.
-    void queueWorker(async () => getWorker("mrz")).catch(() => {})
+    // Do not warm a fixed language here: choosing an ID front after an
+    // English-only warm-up used to force an immediate second language load.
+    // The selected flow warms its own profile below.
     return stopCamera
   }, [open, stopCamera])
 
@@ -912,6 +1039,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setVisualFilled(0)
     setMrzMatches(0)
     bestFrameRef.current = null
+    void queueWorker(async () => getWorker(nextSide === "front" ? "visualLatin" : "mrz")).catch(() => {})
     setPhase("camera")
   }
 
@@ -992,6 +1120,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setVisualFilled(0)
     setMrzMatches(0)
     bestFrameRef.current = null
+    void queueWorker(async () => getWorker("mrzLatin")).catch(() => {})
     setPhase("camera")
   }
 

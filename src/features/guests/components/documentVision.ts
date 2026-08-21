@@ -90,7 +90,10 @@ export function rotateCanvas(source: HTMLCanvasElement, degrees: 0 | 90 | 180 | 
 
 export function orientationCandidates(source: HTMLCanvasElement, includePortrait: boolean) {
   const degrees: Array<0 | 90 | 180 | 270> = includePortrait ? [0, 180, 90, 270] : [0, 180]
-  return degrees.map((angle) => ({ angle, canvas: rotateCanvas(source, angle) }))
+  // The upright source is already a valid candidate.  Avoid cloning a large
+  // camera canvas just to return it unchanged; all consumers treat candidates
+  // as read-only.
+  return degrees.map((angle) => ({ angle, canvas: angle === 0 ? source : rotateCanvas(source, angle) }))
 }
 
 /**
@@ -261,8 +264,18 @@ export async function rectifyDocument(
   source: HTMLCanvasElement,
   type: DocumentType
 ): Promise<RectifiedDocument> {
-  const fallback = cloneCanvas(source)
-  const fallbackQuality = assessImageQuality(fallback)
+  // Most well-framed recovery scans are rectified successfully.  Keep the
+  // clone/quality fallback lazy so that success does not allocate and measure
+  // a second full-resolution canvas first.
+  let fallback: HTMLCanvasElement | null = null
+  let fallbackQuality: ImageQuality | null = null
+  const fallbackResult = (): RectifiedDocument => {
+    if (!fallback) {
+      fallback = cloneCanvas(source)
+      fallbackQuality = assessImageQuality(fallback)
+    }
+    return { canvas: fallback, rectified: false, quality: fallbackQuality! }
+  }
   try {
     const cv = await getOpenCv()
     const src = cv.imread(source)
@@ -311,11 +324,11 @@ export async function rectifyDocument(
           approx.delete()
         }
       }
-      if (!best || best.score < 0.33) return { canvas: fallback, rectified: false, quality: fallbackQuality }
+      if (!best || best.score < 0.33) return fallbackResult()
 
       const points = best.points.map((point) => ({ x: point.x / scale, y: point.y / scale }))
       const sourcePoints = orderPoints(points)
-      if (!sourcePoints) return { canvas: fallback, rectified: false, quality: fallbackQuality }
+      if (!sourcePoints) return fallbackResult()
       const width = Math.min(
         2400,
         Math.max(
@@ -363,6 +376,6 @@ export async function rectifyDocument(
     }
   } catch {
     // The scanner remains functional on browsers where WebAssembly CV cannot load.
-    return { canvas: fallback, rectified: false, quality: fallbackQuality }
+    return fallbackResult()
   }
 }
