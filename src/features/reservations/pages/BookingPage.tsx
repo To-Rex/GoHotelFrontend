@@ -463,7 +463,9 @@ export function BookingPage() {
     if (doc.birthDate) setValue("new_guest_birth_date", doc.birthDate, { shouldDirty: true })
     if (doc.documentNumber)
       setValue("new_guest_passport_number", sanitizePassport(doc.documentNumber))
-    if (doc.personalNumber)
+    // International MRZ optional data is not automatically a JSHSHIR.  The
+    // scanner sets this flag only for Uzbekistan-specific PINFL evidence.
+    if (doc.personalNumber && doc.pinflVerified)
       setValue("new_guest_id_document_number", doc.personalNumber)
     if (doc.documentType) setValue("new_guest_id_document_type", doc.documentType)
     if (doc.nationality) {
@@ -481,7 +483,7 @@ export function BookingPage() {
     const norm = (s?: string | null) =>
       (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
     const pass = norm(doc.documentNumber)
-    const personal = norm(doc.personalNumber)
+    const personal = doc.pinflVerified ? norm(doc.personalNumber) : ""
     const found = (guests as any[]).find(
       (g) =>
         (pass.length >= 5 && norm(g.passport_number) === pass) ||

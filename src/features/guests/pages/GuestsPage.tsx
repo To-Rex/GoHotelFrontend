@@ -111,7 +111,7 @@ export const GuestsPage = () => {
       if (doc.lastName) next.last_name = doc.lastName;
       if (doc.birthDate) next.birth_date = doc.birthDate;
       if (doc.documentNumber) next.passport_number = sanitizePassport(doc.documentNumber);
-      if (doc.personalNumber) next.id_document_number = doc.personalNumber;
+      if (doc.personalNumber && doc.pinflVerified) next.id_document_number = doc.personalNumber;
       if (doc.documentType) next.id_document_type = doc.documentType;
       if (doc.nationality) {
         const mapped = MRZ_COUNTRY[doc.nationality];
@@ -134,7 +134,7 @@ export const GuestsPage = () => {
     const norm = (s?: string | null) =>
       (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     const pass = norm(doc.documentNumber);
-    const personal = norm(doc.personalNumber);
+    const personal = doc.pinflVerified ? norm(doc.personalNumber) : "";
     for (const g of guests || []) {
       if (pass.length >= 5 && norm(g.passport_number) === pass) return g;
       if (personal.length >= 8 && norm(g.id_document_number) === personal) return g;

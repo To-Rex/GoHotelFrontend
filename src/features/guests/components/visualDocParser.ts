@@ -14,7 +14,7 @@
  * ishonch bahosi bilan chiqadi, bir necha kadr natijalari ovoz berish
  * (voting) bilan birlashtiriladi — chaqiruvchi shu bahoga qarab qaror qiladi.
  */
-import type { ScannedDoc } from "./DocumentScanner"
+import type { ScannedDoc } from "./documentScannerTypes"
 
 /* ------------------------------------------------------------- yorliqlar */
 
@@ -1016,29 +1016,40 @@ const CORE_FIELDS: (keyof ScannedDoc)[] = [
 ]
 
 export class FieldAccumulator {
-  private votes = new Map<string, Map<string, number>>()
+  private votes = new Map<string, Map<string, { weight: number; sources: Set<string> }>>()
   private docType: "PASSPORT" | "ID_CARD"
+  private sequence = 0
 
   constructor(docType: "PASSPORT" | "ID_CARD") {
     this.docType = docType
   }
 
-  /** Bitta maydon qiymatini ovoz bilan qo'shadi */
-  addField(field: keyof ScannedDoc, value: string | undefined, weight = 1) {
+  /**
+   * Bitta maydon qiymatini qo'shadi. `weight` OCR confidence, `sourceId` esa
+   * mustaqil kadr/passage identifikatori. Ular ataylab alohida saqlanadi:
+   * bitta OCR passage confidence=4 bo'lgani uni to'rtta mustaqil tasdiq qilib
+   * qo'ymasligi kerak.
+   */
+  addField(field: keyof ScannedDoc, value: string | undefined, weight = 1, sourceId?: string) {
     if (!value) return
     const key = String(field)
-    const bucket = this.votes.get(key) ?? new Map<string, number>()
-    bucket.set(value, (bucket.get(value) ?? 0) + weight)
+    const bucket = this.votes.get(key) ?? new Map<string, { weight: number; sources: Set<string> }>()
+    const source = sourceId ?? `source-${++this.sequence}`
+    const current = bucket.get(value) ?? { weight: 0, sources: new Set<string>() }
+    current.weight += weight
+    current.sources.add(source)
+    bucket.set(value, current)
     this.votes.set(key, bucket)
   }
 
   /** Parser natijasidagi barcha maydonlarni qo'shadi */
-  add(result: VisualParseResult | null) {
+  add(result: VisualParseResult | null, sourceId?: string) {
     if (!result) return
+    const source = sourceId ?? `source-${++this.sequence}`
     for (const field of [...CORE_FIELDS, "nationality" as keyof ScannedDoc]) {
       const value = result.doc[field]
       if (typeof value === "string" && value) {
-        this.addField(field, value, result.fieldScores[field] ?? 1)
+        this.addField(field, value, result.fieldScores[field] ?? 1, source)
       }
     }
   }
@@ -1047,11 +1058,23 @@ export class FieldAccumulator {
   best(field: keyof ScannedDoc): string | undefined {
     const bucket = this.votes.get(String(field))
     if (!bucket || !bucket.size) return undefined
-    return [...bucket.entries()].sort((a, b) => b[1] - a[1])[0][0]
+    return [...bucket.entries()].sort(
+      (a, b) => b[1].sources.size - a[1].sources.size || b[1].weight - a[1].weight
+    )[0][0]
   }
 
   has(field: keyof ScannedDoc): boolean {
     return !!this.best(field)
+  }
+
+  /** Nechta mustaqil kadr/passage aynan shu qiymatni berdi. */
+  sourceCount(field: keyof ScannedDoc, value = this.best(field)): number {
+    if (!value) return 0
+    return this.votes.get(String(field))?.get(value)?.sources.size ?? 0
+  }
+
+  isConfirmed(field: keyof ScannedDoc, minimumSources = 2): boolean {
+    return this.sourceCount(field) >= minimumSources
   }
 
   /** To'plangan maydonlardan hujjat */
@@ -1073,10 +1096,7 @@ export class FieldAccumulator {
   get agreedCount(): number {
     let n = 0
     for (const field of CORE_FIELDS) {
-      const bucket = this.votes.get(String(field))
-      if (!bucket) continue
-      const top = [...bucket.values()].sort((a, b) => b - a)[0] ?? 0
-      if (top >= 2) n++
+      if (this.isConfirmed(field)) n++
     }
     return n
   }
@@ -1086,6 +1106,13 @@ export class FieldAccumulator {
     const hasName = this.has("firstName") && this.has("lastName")
     const hasId = this.has("personalNumber") || this.has("documentNumber")
     return hasName && hasId && this.has("birthDate")
+  }
+
+  /** Auto-accept uchun maydonlar ikki mustaqil sifatli kadrda tasdiqlangan. */
+  isConfirmedComplete(): boolean {
+    const hasName = this.isConfirmed("firstName") && this.isConfirmed("lastName")
+    const hasId = this.isConfirmed("personalNumber") || this.isConfirmed("documentNumber")
+    return hasName && hasId && this.isConfirmed("birthDate")
   }
 
   /** Foydalanuvchiga ko'rsatish uchun: qaysi maydonlar yetishmayapti */

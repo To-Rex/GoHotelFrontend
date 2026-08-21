@@ -44,8 +44,9 @@ export default defineConfig(({ mode }) => {
           navigateFallbackDenylist: [/^\/api/],
           // gz — OCR til fayli (eng.traineddata.gz): skaner offline'da ham ishlashi uchun
           globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,gz}'],
-          // Katta chunk'lar (tesseract, recharts) ham precache ga sig'ishi uchun
-          maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+          // OpenCV document-edge/perspective modulini ham offline saqlash uchun.
+          // U lazy chunk bo'lib faqat skaner ochilganda yuklanadi.
+          maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
         },
       })
     ],
