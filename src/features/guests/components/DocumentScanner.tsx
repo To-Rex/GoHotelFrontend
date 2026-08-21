@@ -26,6 +26,7 @@ import {
   extractPinfl,
   extractDocNumber,
   pinflBirthDate,
+  FieldAccumulator,
   type VisualParseResult,
   type WordBox,
   type RegionBox,
@@ -481,6 +482,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   }, [scanMode])
   // Jonli skanda hozir qaysi usul ishlayotgani (foydalanuvchiga ko'rsatiladi)
   const [activeMethod, setActiveMethod] = useState<"mrz" | "visual">("mrz")
+  /** Vizual skanda kadrlar bo'ylab to'planadigan maydonlar */
+  const visualAccRef = useRef<FieldAccumulator | null>(null)
+  /** Hozircha to'lgan maydonlar soni — foydalanuvchiga ko'rsatiladi */
+  const [visualFilled, setVisualFilled] = useState(0)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -634,8 +639,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     source: HTMLVideoElement | HTMLCanvasElement,
     region: Region,
     t: DocType,
-    attempt: number
+    attempt: number,
+    /** Kadrlar bo'ylab davom etadigan yig'uvchi (berilmasa — bir martalik) */
+    accumulator?: FieldAccumulator
   ): Promise<VisualParseResult | null> => {
+    const acc = accumulator ?? new FieldAccumulator(t)
     const worker = await getWorker("visual")
     const isVideo = source instanceof HTMLVideoElement
     // Videoda ramka ichidagi qism kesiladi; yuklangan rasmda butun tasvir
@@ -662,9 +670,15 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       { crop: textZone, mode: secondary, width: 2200 },
     ]
 
-    const results: VisualParseResult[] = []
+    /* HAR O'TISH natijasi AKKUMULYATORGA qo'shiladi (almashtirilmaydi!).
+       Ilgari birinchi "kuchli" natijada to'xtardik — natijada ism topilsa
+       raqam qidirilmay qolar, yoki aksincha. Endi barcha o'tishlar bajariladi
+       va har maydon o'z manbasidan yig'iladi. */
+    let regions: VisualParseResult["numericRegions"] | undefined
     for (const pass of passes) {
       if (pass.crop.sw < 40) continue
+      // Barcha asosiy maydonlar to'lgan bo'lsa — qolgan o'tish shart emas
+      if (acc.isComplete()) break
       const prepared = preprocessCrop(source, pass.crop, pass.mode, pass.width)
       // blocks: true — so'zlarning koordinatalari kerak (layout parser uchun)
       const { data } = await worker.recognize(prepared, {}, {
@@ -675,28 +689,34 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       // o'qiydi, yorliqni qiymat deb olmaydi). Bo'lmasa — matn bo'yicha zaxira
       const layout = parseVisualLayout(wordsFromResult(data), t)
       const parsed = layout ?? parseVisualDocument(data.text || "", t)
-      if (parsed) results.push(parsed)
-      // Bitta o'tishda kuchli natija chiqsa — qolganini kutmaymiz (tezlik)
-      if (parsed && parsed.score >= 12) break
-    }
-    if (!results.length) return null
-    const merged = mergeVisualResults(results)
-    let best: VisualParseResult = merged
-      ? {
-          doc: merged.doc,
-          score: merged.score + merged.agreement,
-          fieldScores: results[0].fieldScores,
-          numericRegions: results[0].numericRegions,
+      acc.add(parsed)
+      // Matndan to'g'ridan-to'g'ri raqam qidirish (parser o'tkazib yuborgan
+      // bo'lsa ham) — bu maydonlar mustaqil to'planadi
+      if (!acc.has("personalNumber")) {
+        const p = extractPinfl(data.text || "")
+        if (p) {
+          acc.addField("personalNumber", p, 2)
+          const bd = pinflBirthDate(p)
+          if (bd) acc.addField("birthDate", bd, 2)
         }
-      : results[0]
+      }
+      if (!acc.has("documentNumber")) {
+        const dn = extractDocNumber(data.text || "")
+        if (dn) acc.addField("documentNumber", dn, 2)
+      }
+      if (parsed?.numericRegions && !regions) regions = parsed.numericRegions
+      // Yorliq sohalari topilmasa, keyingi o'tishda ham qidiriladi
+      if (layout?.numericRegions && !regions) regions = layout.numericRegions
+    }
 
-    /* RAQAMLI MAYDONLARNI QAYTA O'QISH.
-       JSHSHIR va hujjat raqami — eng ko'p adashiladigan joy: OCR raqamlarni
+    /* YETISHMAGAN RAQAMLI MAYDONLARNI MAQSADLI QAYTA O'QISH.
+       JSHSHIR va hujjat raqami — eng ko'p adashiladigan joy: OCR raqamni
        harf deb o'qiydi yoki guruhlab bo'ladi. Yorliq ostidagi kichik soha
        FAQAT RAQAM rejimida qayta o'qilsa, past sifatli suratda ham aniq
        chiqadi. Bu — professional skanerlardagi "targeted re-OCR" usuli. */
-    const regions = results.find((r) => r.numericRegions)?.numericRegions
-    if (regions && (!best.doc.personalNumber || !best.doc.documentNumber)) {
+    const needPinfl = !acc.has("personalNumber") && !!regions?.personalNumber
+    const needDocNo = !acc.has("documentNumber") && !!regions?.documentNumber
+    if (regions && (needPinfl || needDocNo)) {
       const digitWorker = await getWorker("digits")
       // Sohalar tayyorlangan tasvir koordinatasida — asl manbaga qaytaramiz
       const basePass = passes[0]
@@ -708,7 +728,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         sh: Math.max(12, Math.round((r.y1 - r.y0) / scale)),
       })
 
-      if (!best.doc.personalNumber && regions.personalNumber) {
+      if (needPinfl && regions.personalNumber) {
         const crop = toSource(regions.personalNumber)
         // Kichik soha — juda katta kattalashtirish mumkin (aniqlik uchun)
         for (const mode of ["adaptive", "gray"] as PrepMode[]) {
@@ -716,29 +736,35 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           const { data } = await digitWorker.recognize(prepared)
           const found = extractPinfl(data.text || "")
           if (found) {
-            best.doc.personalNumber = found
-            best.score += 4
+            acc.addField("personalNumber", found, 3)
             const bd = pinflBirthDate(found)
-            if (bd && !best.doc.birthDate) best.doc.birthDate = bd
+            if (bd) acc.addField("birthDate", bd, 3)
             break
           }
         }
       }
-      if (!best.doc.documentNumber && regions.documentNumber) {
+      if (needDocNo && regions.documentNumber) {
         const crop = toSource(regions.documentNumber)
         for (const mode of ["adaptive", "gray"] as PrepMode[]) {
           const prepared = preprocessCrop(source, crop, mode, 1400)
           const { data } = await digitWorker.recognize(prepared)
           const found = extractDocNumber(data.text || "")
           if (found) {
-            best.doc.documentNumber = found
-            best.score += 4
+            acc.addField("documentNumber", found, 3)
             break
           }
         }
       }
     }
-    return best
+
+    if (!acc.filledCount) return null
+    return {
+      doc: acc.doc,
+      // Ball: to'lgan maydonlar + tasdiqlanganlari (ikki manba kelishgani)
+      score: acc.filledCount * 3 + acc.agreedCount * 2,
+      fieldScores: {},
+      numericRegions: regions,
+    }
   }
 
   // Video kadrida MRZ'ni izlash. Tezlik uchun odatda FAQAT MRZ zonasi
@@ -758,11 +784,19 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       scanModeRef.current === "visual" ||
       (scanModeRef.current === "auto" && attempt >= AUTO_MRZ_ATTEMPTS)
     if (useVisual) {
-      const item = await scanVisualFrom(video, frameRegion(t), t, attempt)
+      // Akkumulyator KADRLAR BO'YLAB saqlanadi: bir kadrda ism, boshqasida
+      // raqam o'qilsa ham natija to'planib boradi
+      const item = await scanVisualFrom(
+        video,
+        frameRegion(t),
+        t,
+        attempt,
+        visualAccRef.current ?? undefined
+      )
       if (!item) return null
-      // Vizualda nazorat raqami yo'q — bir kadr ichida ikki mustaqil manba
-      // (JSHSHIR + yorliqli maydonlar) mos kelsa "strong" hisoblanadi
-      return { doc: item.doc, score: item.score, strong: item.score >= 11 }
+      // Barcha asosiy maydonlar to'lgan bo'lsa — darhol qabul
+      const complete = visualAccRef.current?.isComplete() ?? false
+      return { doc: item.doc, score: item.score, strong: complete }
     }
 
     // --- MRZ rejimi (avvalgidek) ---
@@ -851,9 +885,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     let attempt = 0
     let bestSeen: { doc: ScannedDoc; score: number } | null = null
     let lastKey = ""
-    // Vizual usulda KADRLAR BO'YICHA ovoz berish: har kadr natijasi
-    // to'planadi, maydonlar eng ko'p takrorlangan qiymat bilan tasdiqlanadi
-    const visualVotes: VisualParseResult[] = []
+    // Vizual usulda maydonlar KADRLAR BO'YLAB to'planadi — har kadr o'z
+    // hissasini qo'shadi, hech qachon oldingi natija almashtirilmaydi
+    visualAccRef.current = new FieldAccumulator(docTypeRef.current)
+    setVisualFilled(0)
     try {
       // Rejimga mos profil bilan oldindan isitiladi (birinchi kadr tez bo'lsin)
       await getWorker(scanModeRef.current === "visual" ? "visual" : "mrz")
@@ -880,26 +915,24 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           setAttempts(attempt)
           if (item && liveActiveRef.current) {
             if (method === "visual") {
-              /* VIZUAL: bitta kadrga ishonilmaydi — natijalar to'planib,
-                 maydon bo'yicha ovoz beriladi. Ikki kadr bir xil qiymatni
-                 bergan maydon tasdiqlangan hisoblanadi. */
-              visualVotes.push({
-                doc: item.doc,
-                score: item.score,
-                fieldScores: {},
-              })
-              const merged = mergeVisualResults(visualVotes)
-              if (merged) {
+              /* VIZUAL: maydonlar KADRLAR BO'YLAB to'planadi (akkumulyator).
+                 Bir kadrda ism, boshqasida raqam o'qilsa ham — ikkalasi
+                 ham saqlanadi va natija to'liq bo'lguncha yig'iladi. */
+              const acc = visualAccRef.current
+              if (acc) {
+                setVisualFilled(acc.filledCount)
                 const enough =
-                  // Ikki mustaqil kadr asosiy maydonlarda kelishdi
-                  merged.agreement >= 2 ||
-                  // Yoki bitta kadrda juda kuchli natija (JSHSHIR + ism + sana)
-                  item.strong ||
-                  // Yoki uzoq urinishdan keyin yig'ilgan eng yaxshi natija
-                  (attempt >= 10 && merged.score >= 8)
+                  // Barcha asosiy maydonlar to'ldi (ism+familiya+sana+raqam)
+                  acc.isComplete() ||
+                  // Yoki uzoq urinishdan keyin: ism va bitta identifikator bor
+                  (attempt >= 10 &&
+                    acc.filledCount >= 3 &&
+                    (acc.has("personalNumber") || acc.has("documentNumber"))) ||
+                  // Yoki juda uzoq urinishdan keyin — nima yig'ilgan bo'lsa
+                  (attempt >= 18 && acc.filledCount >= 2)
                 if (enough) {
                   busyRef.current = false
-                  onFound(merged.doc)
+                  onFound(acc.doc)
                   return
                 }
               }
@@ -1162,7 +1195,12 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                   <>
                     <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
                     {activeMethod === "visual" ? "Yozuvlar" : "MRZ"} o'qilmoqda
-                    {attempts > 0 ? ` · ${attempts}` : ""}...
+                    {activeMethod === "visual" && visualFilled > 0
+                      ? ` · ${visualFilled}/5 maydon`
+                      : attempts > 0
+                        ? ` · ${attempts}`
+                        : ""}
+                    ...
                   </>
                 ) : (
                   <>

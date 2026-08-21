@@ -994,6 +994,106 @@ export function parseVisualLayout(
   return { doc, score, fieldScores, numericRegions }
 }
 
+/* ================================================================
+   MAYDON AKKUMULYATORI
+
+   Muhim tamoyil: har maydon MUSTAQIL to'planadi va hech qachon
+   "almashtirilmaydi". Bitta o'tish ism-familiyani yaxshi o'qiydi
+   (matn rejimi), boshqasi raqamlarni (raqam rejimi) — ilgari keyingi
+   natija oldingisini bosib yuborar va "ism chiqsa raqam yo'q, raqam
+   chiqsa ism yo'q" holati kelib chiqardi.
+
+   Har qiymat ovoz to'playdi: qancha ko'p manba (o'tish yoki kadr) bir
+   xil qiymatni bersa, u shuncha ishonchli.
+   ================================================================ */
+
+const CORE_FIELDS: (keyof ScannedDoc)[] = [
+  "firstName",
+  "lastName",
+  "birthDate",
+  "documentNumber",
+  "personalNumber",
+]
+
+export class FieldAccumulator {
+  private votes = new Map<string, Map<string, number>>()
+  private docType: "PASSPORT" | "ID_CARD"
+
+  constructor(docType: "PASSPORT" | "ID_CARD") {
+    this.docType = docType
+  }
+
+  /** Bitta maydon qiymatini ovoz bilan qo'shadi */
+  addField(field: keyof ScannedDoc, value: string | undefined, weight = 1) {
+    if (!value) return
+    const key = String(field)
+    const bucket = this.votes.get(key) ?? new Map<string, number>()
+    bucket.set(value, (bucket.get(value) ?? 0) + weight)
+    this.votes.set(key, bucket)
+  }
+
+  /** Parser natijasidagi barcha maydonlarni qo'shadi */
+  add(result: VisualParseResult | null) {
+    if (!result) return
+    for (const field of [...CORE_FIELDS, "nationality" as keyof ScannedDoc]) {
+      const value = result.doc[field]
+      if (typeof value === "string" && value) {
+        this.addField(field, value, result.fieldScores[field] ?? 1)
+      }
+    }
+  }
+
+  /** Shu maydon uchun eng ko'p ovoz olgan qiymat */
+  best(field: keyof ScannedDoc): string | undefined {
+    const bucket = this.votes.get(String(field))
+    if (!bucket || !bucket.size) return undefined
+    return [...bucket.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  }
+
+  has(field: keyof ScannedDoc): boolean {
+    return !!this.best(field)
+  }
+
+  /** To'plangan maydonlardan hujjat */
+  get doc(): ScannedDoc {
+    const doc: ScannedDoc = { documentType: this.docType }
+    for (const field of [...CORE_FIELDS, "nationality" as keyof ScannedDoc]) {
+      const value = this.best(field)
+      if (value) (doc as any)[field] = value
+    }
+    return doc
+  }
+
+  /** To'lgan asosiy maydonlar soni */
+  get filledCount(): number {
+    return CORE_FIELDS.filter((f) => this.has(f)).length
+  }
+
+  /** Kamida ikki manba tasdiqlagan maydonlar soni */
+  get agreedCount(): number {
+    let n = 0
+    for (const field of CORE_FIELDS) {
+      const bucket = this.votes.get(String(field))
+      if (!bucket) continue
+      const top = [...bucket.values()].sort((a, b) => b - a)[0] ?? 0
+      if (top >= 2) n++
+    }
+    return n
+  }
+
+  /** Hujjat to'liq o'qilgan deb hisoblanadimi */
+  isComplete(): boolean {
+    const hasName = this.has("firstName") && this.has("lastName")
+    const hasId = this.has("personalNumber") || this.has("documentNumber")
+    return hasName && hasId && this.has("birthDate")
+  }
+
+  /** Foydalanuvchiga ko'rsatish uchun: qaysi maydonlar yetishmayapti */
+  get missing(): (keyof ScannedDoc)[] {
+    return CORE_FIELDS.filter((f) => !this.has(f))
+  }
+}
+
 /**
  * Bir necha kadr natijalarini birlashtiradi: har maydon uchun eng ko'p
  * uchragan (va eng yuqori bahoga ega) qiymat tanlanadi.
