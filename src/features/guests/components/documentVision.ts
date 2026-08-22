@@ -59,21 +59,27 @@ export function cropCanvas(
   return canvas
 }
 
-/** Mirrors the 4:3 object-cover viewport the scanner displays to the user. */
-export function videoFrameCanvas(video: HTMLVideoElement, maximumWidth = 1920) {
+/** The exact 4:3 object-cover area the scanner shows the operator. */
+function visibleRect(video: HTMLVideoElement) {
   const sourceW = video.videoWidth
   const sourceH = video.videoHeight
   const targetAspect = 4 / 3
   const sourceAspect = sourceW / sourceH
-  let visibleW = sourceW
-  let visibleH = sourceH
-  if (sourceAspect > targetAspect) visibleW = sourceH * targetAspect
-  else if (sourceAspect < targetAspect) visibleH = sourceW / targetAspect
-  const sx = (sourceW - visibleW) / 2
-  const sy = (sourceH - visibleH) / 2
-  const scale = Math.min(1, maximumWidth / visibleW)
-  const canvas = createCanvas(visibleW * scale, visibleH * scale)
-  canvas.getContext("2d")!.drawImage(video, sx, sy, visibleW, visibleH, 0, 0, canvas.width, canvas.height)
+  let width = sourceW
+  let height = sourceH
+  if (sourceAspect > targetAspect) width = sourceH * targetAspect
+  else if (sourceAspect < targetAspect) height = sourceW / targetAspect
+  return { x: (sourceW - width) / 2, y: (sourceH - height) / 2, width, height }
+}
+
+/** Mirrors the 4:3 object-cover viewport the scanner displays to the user. */
+export function videoFrameCanvas(video: HTMLVideoElement, maximumWidth = 1920) {
+  const rect = visibleRect(video)
+  const scale = Math.min(1, maximumWidth / rect.width)
+  const canvas = createCanvas(rect.width * scale, rect.height * scale)
+  canvas
+    .getContext("2d")!
+    .drawImage(video, rect.x, rect.y, rect.width, rect.height, 0, 0, canvas.width, canvas.height)
   return canvas
 }
 
@@ -96,21 +102,13 @@ export function orientationCandidates(source: HTMLCanvasElement, includePortrait
   return degrees.map((angle) => ({ angle, canvas: angle === 0 ? source : rotateCanvas(source, angle) }))
 }
 
-/**
- * Fast image-quality check.  It deliberately rejects unfocused and badly
- * exposed frames before expensive OCR starts, while merely warning about glare
- * (a white identity card must not itself be considered glare).
- */
-export function assessImageQuality(source: HTMLCanvasElement): ImageQuality {
-  const maxSide = 360
-  const ratio = Math.min(1, maxSide / Math.max(source.width, source.height))
-  const probe = createCanvas(source.width * ratio, source.height * ratio)
-  const ctx = probe.getContext("2d", { willReadFrequently: true })!
-  ctx.drawImage(source, 0, 0, probe.width, probe.height)
-  const pixels = ctx.getImageData(0, 0, probe.width, probe.height).data
-  const width = probe.width
-  const height = probe.height
-  const gray = new Float32Array(width * height)
+interface LuminanceStats {
+  sum: number
+  sumSq: number
+  clipped: number
+}
+
+function fillGray(pixels: Uint8ClampedArray, gray: Float32Array): LuminanceStats {
   let sum = 0
   let sumSq = 0
   let clipped = 0
@@ -121,11 +119,45 @@ export function assessImageQuality(source: HTMLCanvasElement): ImageQuality {
     sumSq += value * value
     if (pixels[i] > 250 && pixels[i + 1] > 250 && pixels[i + 2] > 250) clipped++
   }
-  const count = gray.length || 1
-  const brightness = sum / count
-  const contrast = Math.sqrt(Math.max(0, sumSq / count - brightness * brightness))
+  return { sum, sumSq, clipped }
+}
 
-  // Variance of the Laplacian is a reliable, inexpensive focus measure.
+/**
+ * Grayscale conversion limited to a rectangle.  The live probe only ever
+ * analyses the capture guide, so converting the surrounding desk was a third of
+ * the per-frame pixel work spent on pixels nothing reads.  Exposure statistics
+ * come out of the same rectangle, which also stops a dark background from
+ * reporting a well-lit document as underexposed.
+ */
+function fillGrayRegion(
+  pixels: Uint8ClampedArray,
+  gray: Float32Array,
+  width: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number
+): LuminanceStats {
+  let sum = 0
+  let sumSq = 0
+  let clipped = 0
+  for (let y = y0; y < y1; y++) {
+    const rowOffset = y * width
+    for (let x = x0; x < x1; x++) {
+      const p = rowOffset + x
+      const i = p * 4
+      const value = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114
+      gray[p] = value
+      sum += value
+      sumSq += value * value
+      if (pixels[i] > 250 && pixels[i + 1] > 250 && pixels[i + 2] > 250) clipped++
+    }
+  }
+  return { sum, sumSq, clipped }
+}
+
+/** Variance of the Laplacian is a reliable, inexpensive focus measure. */
+function laplacianSharpness(gray: Float32Array, width: number, height: number) {
   let laplacianSum = 0
   let laplacianSq = 0
   let laplacianCount = 0
@@ -139,10 +171,15 @@ export function assessImageQuality(source: HTMLCanvasElement): ImageQuality {
       laplacianCount++
     }
   }
-  const sharpness = Math.sqrt(
+  return Math.sqrt(
     Math.max(0, laplacianSq / Math.max(1, laplacianCount) - (laplacianSum / Math.max(1, laplacianCount)) ** 2)
   )
-  const glare = clipped / count
+}
+
+function qualityFromStats(stats: LuminanceStats, count: number, sharpness: number): ImageQuality {
+  const brightness = stats.sum / count
+  const contrast = Math.sqrt(Math.max(0, stats.sumSq / count - brightness * brightness))
+  const glare = stats.clipped / count
 
   const sharpScore = Math.min(1, sharpness / 18)
   const contrastScore = Math.min(1, contrast / 42)
@@ -157,6 +194,224 @@ export function assessImageQuality(source: HTMLCanvasElement): ImageQuality {
   else if (contrast < 18) hint = "Kontrast past — soyani kamaytiring"
 
   return { score, sharpness, brightness, contrast, glare, usable: score >= 0.48, hint }
+}
+
+/**
+ * Fast image-quality check.  It deliberately rejects unfocused and badly
+ * exposed frames before expensive OCR starts, while merely warning about glare
+ * (a white identity card must not itself be considered glare).
+ */
+export function assessImageQuality(source: HTMLCanvasElement): ImageQuality {
+  const maxSide = 360
+  const ratio = Math.min(1, maxSide / Math.max(source.width, source.height))
+  const probe = createCanvas(source.width * ratio, source.height * ratio)
+  const ctx = probe.getContext("2d", { willReadFrequently: true })!
+  ctx.drawImage(source, 0, 0, probe.width, probe.height)
+  const pixels = ctx.getImageData(0, 0, probe.width, probe.height).data
+  const gray = new Float32Array(probe.width * probe.height)
+  const stats = fillGray(pixels, gray)
+  const sharpness = laplacianSharpness(gray, probe.width, probe.height)
+  return qualityFromStats(stats, gray.length || 1, sharpness)
+}
+
+/* ------------------------------------------------ live auto-shutter probe */
+
+/** On-screen capture guide, expressed as fractions of the 4:3 viewport. */
+export interface GuideRegion {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
+export interface DocumentPresence {
+  /** A document-like printed surface fills the guide. */
+  present: boolean
+  /** 0..1 — how much of the guide the printed structure spans. */
+  coverage: number
+  /** 0..1 — edge density inside the guide. */
+  detail: number
+  /** Mean absolute luminance change against the previous probe (0..255). */
+  motion: number
+  /** The document has stopped moving, so a capture will not be smeared. */
+  steady: boolean
+}
+
+export interface FrameProbe {
+  quality: ImageQuality
+  document: DocumentPresence
+  /** Retained so the next probe can measure motion against this frame. */
+  gray: Float32Array
+  width: number
+  height: number
+}
+
+/**
+ * A gradient step this size separates print from paper grain and sensor noise
+ * while still firing on the low-contrast grey text of a worn ID card.
+ */
+const EDGE_THRESHOLD = 18
+
+/** The guide is scored as a GRID x GRID board of occupancy cells. */
+const GRID = 12
+
+/**
+ * Measures focus, document presence and motion inside the guide in one pass.
+ *
+ * The three share their pixel reads exactly: a Laplacian needs a pixel and its
+ * four neighbours, and so does the gradient used for edge density, so splitting
+ * them into separate loops read the same five values three times over. On a
+ * phone this loop runs several times a second, and that redundancy was the
+ * whole reason a live preview stuttered.
+ *
+ * Occupancy is scored per grid cell rather than per pixel row, because the
+ * blank paper between two lines of text is a whole empty row — a row-by-row
+ * projection would score a perfectly framed card as half covered.  A cell-based
+ * score still separates a card from a single dark object, which lights up only
+ * the few cells it physically covers.  Detecting the print rather than the card
+ * outline matters because the outline disappears when a white card is laid on a
+ * white desk, while its portrait and text never do.
+ */
+interface GuideBounds {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+}
+
+/** Guide rectangle in probe pixels, always leaving a one-pixel gradient margin. */
+function guideBounds(width: number, height: number, guide: GuideRegion): GuideBounds {
+  return {
+    x0: Math.max(1, Math.round(guide.left * width)),
+    x1: Math.min(width - 2, Math.round(guide.right * width)),
+    y0: Math.max(1, Math.round(guide.top * height)),
+    y1: Math.min(height - 2, Math.round(guide.bottom * height)),
+  }
+}
+
+function analyzeGuide(
+  gray: Float32Array,
+  width: number,
+  bounds: GuideBounds,
+  previousGray: Float32Array | null
+): { document: DocumentPresence; sharpness: number } {
+  const { x0, x1, y0, y1 } = bounds
+  const boxWidth = x1 - x0
+  const boxHeight = y1 - y0
+  if (boxWidth < GRID * 2 || boxHeight < GRID * 2) {
+    return {
+      document: { present: false, coverage: 0, detail: 0, motion: 255, steady: false },
+      sharpness: 0,
+    }
+  }
+
+  const cells = new Uint16Array(GRID * GRID)
+  let detailed = 0
+  let laplacianSum = 0
+  let laplacianSq = 0
+  let difference = 0
+  for (let y = y0; y < y1; y++) {
+    const rowOffset = y * width
+    const cellRow = Math.min(GRID - 1, Math.floor(((y - y0) * GRID) / boxHeight)) * GRID
+    for (let x = x0; x < x1; x++) {
+      const index = rowOffset + x
+      const left = gray[index - 1]
+      const right = gray[index + 1]
+      const up = gray[index - width]
+      const down = gray[index + width]
+
+      const laplacian = 4 * gray[index] - left - right - up - down
+      laplacianSum += laplacian
+      laplacianSq += laplacian * laplacian
+
+      if (Math.abs(right - left) + Math.abs(down - up) >= EDGE_THRESHOLD) {
+        detailed++
+        cells[cellRow + Math.min(GRID - 1, Math.floor(((x - x0) * GRID) / boxWidth))]++
+      }
+      if (previousGray) difference += Math.abs(gray[index] - previousGray[index])
+    }
+  }
+
+  const samples = boxWidth * boxHeight
+  const detail = detailed / samples
+  const cellFloor = Math.max(3, (samples / (GRID * GRID)) * 0.012)
+  let occupied = 0
+  for (let i = 0; i < cells.length; i++) if (cells[i] >= cellFloor) occupied++
+  const coverage = occupied / cells.length
+  const motion = previousGray ? difference / samples : 255
+
+  return {
+    document: {
+      present: detail >= 0.02 && coverage >= 0.45,
+      coverage,
+      detail,
+      motion,
+      steady: motion <= 5,
+    },
+    // Focus is judged on the guide alone.  Averaging in a plain background
+    // dragged the variance down and made the scanner call a sharp card blurry.
+    sharpness: Math.sqrt(Math.max(0, laplacianSq / samples - (laplacianSum / samples) ** 2)),
+  }
+}
+
+const PROBE_WIDTH = 320
+let probeCanvas: HTMLCanvasElement | null = null
+let probeGrayA: Float32Array | null = null
+let probeGrayB: Float32Array | null = null
+let probeUsesB = false
+
+/**
+ * One small canvas read per live tick answers three questions at once: is the
+ * frame sharp enough, is a document actually in the guide, and has it stopped
+ * moving.  Measuring these separately used to allocate two canvases and read
+ * pixels twice every tick, which was the largest main-thread cost of the live
+ * scanner on phones.
+ */
+export function probeVideoFrame(
+  video: HTMLVideoElement,
+  guide: GuideRegion,
+  previous?: FrameProbe | null
+): FrameProbe {
+  const rect = visibleRect(video)
+  const scale = Math.min(1, PROBE_WIDTH / rect.width)
+  const width = Math.max(1, Math.round(rect.width * scale))
+  const height = Math.max(1, Math.round(rect.height * scale))
+  if (!probeCanvas || probeCanvas.width !== width || probeCanvas.height !== height) {
+    probeCanvas = createCanvas(width, height)
+    probeGrayA = null
+    probeGrayB = null
+  }
+  const ctx = probeCanvas.getContext("2d", { willReadFrequently: true })!
+  ctx.drawImage(video, rect.x, rect.y, rect.width, rect.height, 0, 0, width, height)
+  const pixels = ctx.getImageData(0, 0, width, height).data
+
+  const count = width * height
+  if (!probeGrayA || probeGrayA.length !== count) {
+    probeGrayA = new Float32Array(count)
+    probeGrayB = new Float32Array(count)
+  }
+  // Two buffers alternate so measuring motion never reads a buffer that this
+  // call is in the middle of overwriting.
+  probeUsesB = !probeUsesB
+  const gray = (probeUsesB ? probeGrayB : probeGrayA)!
+  const previousGray =
+    previous && previous.width === width && previous.height === height && previous.gray !== gray
+      ? previous.gray
+      : null
+
+  const bounds = guideBounds(width, height, guide)
+  // Gradients read one pixel beyond the guide, so the converted band is one
+  // pixel wider than the analysed rectangle on every side.
+  const stats = fillGrayRegion(pixels, gray, width, bounds.x0 - 1, bounds.y0 - 1, bounds.x1 + 2, bounds.y1 + 2)
+  const analysis = analyzeGuide(gray, width, bounds, previousGray)
+  const statsCount = Math.max(1, (bounds.x1 + 3 - bounds.x0) * (bounds.y1 + 3 - bounds.y0))
+  return {
+    quality: qualityFromStats(stats, statsCount, analysis.sharpness),
+    document: analysis.document,
+    gray,
+    width,
+    height,
+  }
 }
 
 /**

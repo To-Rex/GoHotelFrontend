@@ -28,9 +28,11 @@ import {
   cropCanvas,
   decodeIdCardQr,
   orientationCandidates,
+  probeVideoFrame,
   rectifyDocument,
   selectBestQualityFrame,
   videoFrameCanvas,
+  type FrameProbe,
   type ImageQuality,
   type QualityFrame,
 } from "./documentVision"
@@ -56,7 +58,14 @@ interface DocumentScannerProps {
 
 type Phase = "select" | "camera" | "processing" | "flip" | "result" | "error"
 type ActiveMethod = "mrz" | "visual"
-type OcrProfile = "mrz" | "mrzLatin" | "digitsLatin" | "digitsCyrillic" | "visualLatin" | "visualCyrillic"
+type OcrProfile =
+  | "mrz"
+  | "mrzLatin"
+  | "digitsLatin"
+  | "digitsCyrillic"
+  | "visualFast"
+  | "visualLatin"
+  | "visualCyrillic"
 type PrepMode = "binary" | "gray" | "adaptive"
 
 const DOC_SPECS: Record<DocumentType, { aspect: number; widthFrac: number; mrzFrac: number }> = {
@@ -64,23 +73,60 @@ const DOC_SPECS: Record<DocumentType, { aspect: number; widthFrac: number; mrzFr
   PASSPORT: { aspect: 125 / 88, widthFrac: 0.86, mrzFrac: 0.38 },
 }
 
+/**
+ * Live-frame geometry.  A card filling the guide of a 1560px frame lands at
+ * roughly 16 pixels per millimetre, which puts ID-card body text at the ~33px
+ * x-height Tesseract reads best.  The pass widths below then match the crops
+ * they receive, so the fast path resamples nothing: capturing larger and
+ * rescaling afterwards cost time without adding a single readable character.
+ */
+const LIVE_FRAME_WIDTH = 1560
+const FAST_TEXT_WIDTH = 1280
+const FAST_MRZ_WIDTH = 1500
+
+/**
+ * Live frames always take the cheap guided path.  Running full rectification
+ * per frame — OpenCV edge detection plus four OCR passes — costs seconds each
+ * and froze the preview; escalation happens once, through the automatic
+ * capture below, instead of on every frame.
+ */
+const AUTO_CAPTURE_AFTER_MS = 6000
+/** Hard deadline: capture even when the live passes have read nothing at all. */
+const AUTO_CAPTURE_DEADLINE_MS = 10000
+
+// Every Latin profile shares one language group on purpose.  Tesseract runs its
+// LSTM once per loaded language, so adding "uzb" to a live-camera pass doubled
+// its cost without adding characters: MRZ, card numbers and the Uzbek Latin
+// alphabet are all ASCII.  "uzb" is kept only for the slower recovery pass,
+// where its dictionary genuinely helps ambiguous words.
 const OCR_LANGUAGES: Record<OcrProfile, string> = {
   mrz: "eng",
-  // ID-card front OCR already loads this group.  Reuse it for its MRZ back
-  // rather than paying a worker reinitialization during the flip transition.
-  mrzLatin: "eng+uzb",
-  // Keep the number-only pass in the already loaded visual language group.
-  // Reinitializing Tesseract back to plain English on every frame was one of
-  // the main causes of slow ID-front scanning.
-  digitsLatin: "eng+uzb",
+  mrzLatin: "eng",
+  digitsLatin: "eng",
   digitsCyrillic: "rus+uzb_cyrl",
+  visualFast: "eng",
   visualLatin: "eng+uzb",
   visualCyrillic: "rus+uzb_cyrl",
 }
 
-let sharedWorker: Promise<any> | null = null
-let workerLanguages: string | null = null
-let workerProfile: OcrProfile | null = null
+interface PooledWorker {
+  worker: any
+  profile: OcrProfile | null
+}
+
+interface WorkerSlot {
+  pooled: Promise<PooledWorker>
+  usedAt: number
+}
+
+/**
+ * One worker per language group, instead of one worker that reinitializes.
+ * Switching an ID card between its front (text) and back (MRZ) used to reload
+ * a language model mid-scan, which cost seconds; a pool makes that switch free
+ * and lets the scanner warm the common English model the moment it opens.
+ */
+const workerPool = new Map<string, WorkerSlot>()
+const MAX_POOLED_WORKERS = 3
 let ocrProgressListener: ((progress: number) => void) | null = null
 let workerQueue: Promise<void> = Promise.resolve()
 
@@ -93,8 +139,29 @@ function queueWorker<T>(job: () => Promise<T>): Promise<T> {
   return next
 }
 
-async function applyOcrProfile(worker: any, profile: OcrProfile) {
-  if (workerProfile === profile) return
+/** Frees the least recently used model once the pool exceeds its cap. */
+function evictWorkers(keep: string) {
+  while (workerPool.size > MAX_POOLED_WORKERS) {
+    let victimKey: string | null = null
+    let victimUsedAt = Number.POSITIVE_INFINITY
+    for (const [languages, slot] of workerPool) {
+      if (languages === keep) continue
+      if (slot.usedAt < victimUsedAt) {
+        victimUsedAt = slot.usedAt
+        victimKey = languages
+      }
+    }
+    if (!victimKey) return
+    const victim = workerPool.get(victimKey)!
+    workerPool.delete(victimKey)
+    // All OCR runs through a single queue, so no evicted worker is mid-job.
+    void victim.pooled.then((entry) => entry.worker.terminate?.()).catch(() => undefined)
+  }
+}
+
+async function applyOcrProfile(entry: PooledWorker, profile: OcrProfile) {
+  if (entry.profile === profile) return
+  const worker = entry.worker
   const Tesseract = await import("tesseract.js")
   if (profile === "mrz" || profile === "mrzLatin") {
     await worker.setParameters({
@@ -127,13 +194,14 @@ async function applyOcrProfile(worker: any, profile: OcrProfile) {
       preserve_interword_spaces: "1",
     } as any)
   }
-  workerProfile = profile
+  entry.profile = profile
 }
 
 async function getWorker(profile: OcrProfile): Promise<any> {
   const languages = OCR_LANGUAGES[profile]
-  if (!sharedWorker) {
-    sharedWorker = (async () => {
+  let slot = workerPool.get(languages)
+  if (!slot) {
+    const pooled = (async (): Promise<PooledWorker> => {
       const Tesseract = await import("tesseract.js")
       const worker = await Tesseract.createWorker(languages, 1, {
         workerPath: "/ocr/worker.min.js",
@@ -146,24 +214,19 @@ async function getWorker(profile: OcrProfile): Promise<any> {
         },
         errorHandler: () => ocrProgressListener?.(-1),
       })
-      workerLanguages = languages
-      workerProfile = null
-      return worker
-    })().catch((error) => {
-      sharedWorker = null
-      workerLanguages = null
-      workerProfile = null
-      throw error
+      return { worker, profile: null }
+    })()
+    pooled.catch(() => {
+      if (workerPool.get(languages)?.pooled === pooled) workerPool.delete(languages)
     })
+    slot = { pooled, usedAt: Date.now() }
+    workerPool.set(languages, slot)
+    evictWorkers(languages)
   }
-  const worker = await sharedWorker
-  if (workerLanguages !== languages) {
-    await worker.reinitialize(languages, 1)
-    workerLanguages = languages
-    workerProfile = null
-  }
-  await applyOcrProfile(worker, profile)
-  return worker
+  slot.usedAt = Date.now()
+  const entry = await slot.pooled
+  await applyOcrProfile(entry, profile)
+  return entry.worker
 }
 
 async function recognize(
@@ -241,6 +304,28 @@ function otsuThreshold(histogram: Uint32Array, total: number) {
 }
 
 /**
+ * Scratch buffers for OCR preprocessing.  A 1300px card frame needs several
+ * megabytes of intermediate arrays; allocating them per camera frame made the
+ * garbage collector, not the OCR, the limiting factor of the live scanner.
+ * Every buffer is consumed synchronously inside prepareForOcr, so a single
+ * shared set is safe.
+ */
+const scratch: {
+  gray: Uint8ClampedArray | null
+  stretched: Uint8ClampedArray | null
+  sharpened: Uint8ClampedArray | null
+  integral: Uint32Array | null
+} = { gray: null, stretched: null, sharpened: null, integral: null }
+
+function scratchBytes(key: "gray" | "stretched" | "sharpened", size: number) {
+  const existing = scratch[key]
+  if (existing && existing.length >= size) return existing
+  const created = new Uint8ClampedArray(size)
+  scratch[key] = created
+  return created
+}
+
+/**
  * Contrast stretch + safe edge enhancement + adaptive/global binarisation.
  * This can recover medium low-contrast text but never fabricates characters;
  * heavily blurred frames are still rejected by the camera quality gate.
@@ -254,14 +339,14 @@ function prepareForOcr(source: HTMLCanvasElement, mode: PrepMode, targetWidth: n
   context.drawImage(source, 0, 0, canvas.width, canvas.height)
   const image = context.getImageData(0, 0, canvas.width, canvas.height)
   const pixels = image.data
-  const gray = new Uint8ClampedArray(canvas.width * canvas.height)
+  const total = canvas.width * canvas.height
+  const gray = scratchBytes("gray", total)
   const histogram = new Uint32Array(256)
   for (let index = 0, pixel = 0; index < pixels.length; index += 4, pixel++) {
     const value = Math.round((pixels[index] * 299 + pixels[index + 1] * 587 + pixels[index + 2] * 114) / 1000)
     gray[pixel] = value
     histogram[value]++
   }
-  const total = gray.length
   let low = 0
   let high = 255
   let running = 0
@@ -281,7 +366,7 @@ function prepareForOcr(source: HTMLCanvasElement, mode: PrepMode, targetWidth: n
     }
   }
   const range = Math.max(1, high - low)
-  const stretched = new Uint8ClampedArray(total)
+  const stretched = scratchBytes("stretched", total)
   for (let index = 0; index < total; index++) {
     const value = Math.max(0, Math.min(255, Math.round(((gray[index] - low) * 255) / range)))
     stretched[index] = value
@@ -289,7 +374,8 @@ function prepareForOcr(source: HTMLCanvasElement, mode: PrepMode, targetWidth: n
 
   let enhanced = stretched
   if (sharpenEdges && canvas.width > 2 && canvas.height > 2) {
-    const sharpened = stretched.slice()
+    const sharpened = scratchBytes("sharpened", total)
+    sharpened.set(stretched.subarray(0, total))
     const amount = 0.58
     for (let y = 1; y < canvas.height - 1; y++) {
       for (let x = 1; x < canvas.width - 1; x++) {
@@ -303,7 +389,7 @@ function prepareForOcr(source: HTMLCanvasElement, mode: PrepMode, targetWidth: n
   }
 
   const enhancedHistogram = new Uint32Array(256)
-  for (const value of enhanced) enhancedHistogram[value]++
+  for (let index = 0; index < total; index++) enhancedHistogram[enhanced[index]]++
 
   if (mode === "gray") {
     for (let index = 0, pixel = 0; index < pixels.length; index += 4, pixel++) {
@@ -312,7 +398,18 @@ function prepareForOcr(source: HTMLCanvasElement, mode: PrepMode, targetWidth: n
   } else if (mode === "adaptive") {
     const width = canvas.width
     const height = canvas.height
-    const integral = new Float64Array((width + 1) * (height + 1))
+    // Integer sums stay exact here (total * 255 stays far below 2^32) while
+    // halving the memory a Float64 integral image needed.
+    const cells = (width + 1) * (height + 1)
+    let integral = scratch.integral
+    if (!integral || integral.length < cells) {
+      integral = new Uint32Array(cells)
+      scratch.integral = integral
+    }
+    // Only the zero row and column are read without being written below, so a
+    // reused buffer needs its border cleared rather than a full-array fill.
+    for (let x = 0; x <= width; x++) integral[x] = 0
+    for (let y = 0; y <= height; y++) integral[y * (width + 1)] = 0
     for (let y = 0; y < height; y++) {
       let row = 0
       for (let x = 0; x < width; x++) {
@@ -436,16 +533,18 @@ async function scanVisualDocument(
     { canvas, mode: "adaptive", width: 1900 },
     { canvas: textZone, mode: "gray", width: 2000 },
   ]
-  // This is intentionally narrow: a well-aligned live card gets one OCR
-  // pass first.  No field is auto-applied from it; independent camera-frame
-  // consensus is still required.  Failed fast passes fall back to the full
-  // multi-language routine on the next retry.
+  // This is intentionally narrow: a well-aligned live card gets one OCR pass
+  // first.  It stays in grayscale because Tesseract binarises internally, and
+  // the adaptive threshold — an integral image over two megapixels — was by far
+  // the most expensive step of a live frame.  No field is auto-applied from
+  // this pass; independent camera-frame consensus is still required, and a
+  // failed fast pass falls back to the full multi-language routine on retry.
   const fastPasses: Array<{ canvas: HTMLCanvasElement; mode: PrepMode; width: number }> = [
-    { canvas: textZone, mode: "adaptive", width: 1600 },
+    { canvas: textZone, mode: "gray", width: FAST_TEXT_WIDTH },
   ]
 
   const readProfile = async (
-    profile: "visualLatin" | "visualCyrillic",
+    profile: "visualFast" | "visualLatin" | "visualCyrillic",
     digitsProfile: "digitsLatin" | "digitsCyrillic",
     passes: Array<{ canvas: HTMLCanvasElement; mode: PrepMode; width: number }>,
     includeNumericPass: boolean
@@ -483,9 +582,13 @@ async function scanVisualDocument(
   // to the Cyrillic model if the fast local-language pass did not obtain the
   // minimum useful fields; that avoids an expensive language reload on every
   // ordinary card.
-  await readProfile("visualLatin", "digitsLatin", fastLive ? fastPasses : fullPasses, !fastLive)
-  if (!fastLive && !accumulator.isComplete()) {
-    await readProfile("visualCyrillic", "digitsCyrillic", fullPasses, true)
+  if (fastLive) {
+    await readProfile("visualFast", "digitsLatin", fastPasses, false)
+  } else {
+    await readProfile("visualLatin", "digitsLatin", fullPasses, true)
+    if (!accumulator.isComplete()) {
+      await readProfile("visualCyrillic", "digitsCyrillic", fullPasses, true)
+    }
   }
 
   return visualResultFromAccumulator(accumulator, type, pinflContext, side)
@@ -527,7 +630,7 @@ async function scanMrzDocument(
       for (const mode of modes) {
         const data = await recognize(
           profile,
-          prepareForOcr(crop, mode, fastLive ? 1600 : 1900, !fastLive)
+          prepareForOcr(crop, mode, fastLive ? FAST_MRZ_WIDTH : 1900, !fastLive)
         )
         const result = parseMrzText(data.text || "", type)
         if (!result) continue
@@ -570,7 +673,8 @@ async function recognizeDocument(
   side: DocumentSide,
   mode: ScanMode,
   includePortraitOrientations: boolean,
-  fastLive = false
+  fastLive = false,
+  measuredQuality?: ImageQuality
 ): Promise<ScanOutcome> {
   const targetQuality = (canvas: HTMLCanvasElement, imageQuality?: ImageQuality) => {
     const focusCrop =
@@ -582,20 +686,22 @@ async function recognizeDocument(
   }
 
   if (fastLive) {
-    const quality = targetQuality(source)
-    // Most live captures are already inside the on-screen card guide.  Try a
-    // single landscape MRZ/text pass before loading OpenCV, QR and recovery
-    // OCR.  The caller only uses this for the first two attempts; a missed or
-    // crooked document automatically falls through to the full path later.
+    // The live loop already measured this frame.  Re-deriving whole-frame
+    // quality here only repeated work; the zone-specific check below is the
+    // part that actually guards MRZ and text sharpness, so it is kept.
+    const quality = targetQuality(source, measuredQuality)
+    // Most live captures are already inside the on-screen card guide, so a
+    // single landscape MRZ/text pass runs before OpenCV, QR and recovery OCR.
+    // A missed or crooked document falls through to the full path later.
     if (!quality.usable) return { recognition: null, quality, rectified: false, qrConfirmed: false }
     if (side !== "front" && mode !== "visual") {
       const mrz = await scanMrzDocument(source, type, false, true)
-      return {
-        recognition: mrz?.verified ? mrz : null,
-        quality,
-        rectified: false,
-        qrConfirmed: false,
-      }
+      if (mrz?.verified) return { recognition: mrz, quality, rectified: false, qrConfirmed: false }
+      // An MRZ that will not verify used to return nothing frame after frame,
+      // leaving a passport with a worn or shadowed code stuck until the
+      // fallback timer.  In automatic mode the printed page is read instead —
+      // an unverified MRZ costs the same wait either way.
+      if (mode === "mrz") return { recognition: null, quality, rectified: false, qrConfirmed: false }
     }
     const visual = await scanVisualDocument(source, type, side, `fast-${Date.now()}`, true)
     return { recognition: visual, quality, rectified: false, qrConfirmed: false }
@@ -693,6 +799,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const [progress, setProgress] = useState(0)
   const [attempts, setAttempts] = useState(0)
   const [quality, setQuality] = useState<ImageQuality | null>(null)
+  const [docDetected, setDocDetected] = useState(false)
   const [visualFilled, setVisualFilled] = useState(0)
   const [mrzMatches, setMrzMatches] = useState(0)
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -738,6 +845,15 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     return () => {
       if (ocrProgressListener === listener) ocrProgressListener = null
     }
+  }, [])
+
+  /** Clears every per-attempt indicator before a fresh camera pass. */
+  const resetLiveState = useCallback(() => {
+    setAttempts(0)
+    setVisualFilled(0)
+    setMrzMatches(0)
+    setDocDetected(false)
+    bestFrameRef.current = null
   }, [])
 
   const stopCamera = useCallback(() => {
@@ -836,7 +952,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const scanCanvas = useCallback(async (
     source: HTMLCanvasElement,
     includePortraitOrientations: boolean,
-    fastLive = false
+    fastLive = false,
+    measuredQuality?: ImageQuality
   ) => {
     setProgress(0)
     const outcome = await recognizeDocument(
@@ -845,31 +962,74 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       sideRef.current,
       scanModeRef.current,
       includePortraitOrientations,
-      fastLive
+      fastLive,
+      measuredQuality
     )
     lastQualityUpdateAtRef.current = Date.now()
     setQuality(outcome.quality)
     return outcome
   }, [])
 
+  /**
+   * Runs the full recognition pipeline on one frame and shows the outcome for
+   * review.  Both the shutter button and the automatic capture use it, so a
+   * self-taken photo behaves exactly like a tapped one — it never fills the
+   * booking form on its own.
+   */
+  const finishWithFrame = useCallback(
+    async (frame: HTMLCanvasElement, note: string, fallbackDoc?: ScannedDoc) => {
+      liveActiveRef.current = false
+      // Do not leave a hidden camera stream running while a still image is
+      // processed or an error/review screen is displayed.
+      stopCamera()
+      busyRef.current = true
+      setPhase("processing")
+      try {
+        const outcome = await scanCanvas(frame, false)
+        const recognition = outcome.recognition
+        if (recognition) {
+          completeSide({
+            ...recognition.doc,
+            requiresReview: true,
+            warnings: [...(recognition.doc.warnings ?? []), note],
+          })
+          return
+        }
+        if (fallbackDoc) {
+          completeSide({ ...fallbackDoc, requiresReview: true, verified: false })
+          return
+        }
+        setErrorMsg(
+          sideRef.current === "front"
+            ? "Old tomondagi yozuvlar o‘qilmadi. Hujjatni tekis, ravshan va yaltirashsiz suratga oling."
+            : "MRZ ishonchli o‘qilmadi. Hujjatning pastki qatorlari to‘liq, fokusda va yaltirashsiz bo‘lsin."
+        )
+        setPhase("error")
+      } catch {
+        setErrorMsg("Skanerlashda xatolik yuz berdi. Qayta urinib ko‘ring yoki rasm yuklang.")
+        setPhase("error")
+      } finally {
+        busyRef.current = false
+      }
+    },
+    [completeSide, scanCanvas, stopCamera]
+  )
+
   const runLiveLoop = useCallback(async () => {
     if (liveActiveRef.current) return
     liveActiveRef.current = true
     let attempt = 0
-    let lastRecognitionAt = 0
-    let lastHighQualityFrameAt = 0
+    let lastCaptureAt = 0
+    let steadyTicks = 0
+    let probe: FrameProbe | null = null
+    const startedAt = Date.now()
     const frameConsensus = new FieldAccumulator(docTypeRef.current)
     const mrzVotes = new Map<string, { count: number; lastAt: number; doc: ScannedDoc }>()
-    let burst: QualityFrame<HTMLCanvasElement>[] = []
     try {
+      // Every Latin flow shares the English model, so warming it here costs
+      // nothing later — the ID front/back switch no longer reloads a model.
       await queueWorker(async () =>
-        getWorker(
-          sideRef.current === "front"
-            ? "visualLatin"
-            : docTypeRef.current === "ID_CARD"
-              ? "mrzLatin"
-              : "mrz"
-        )
+        getWorker(sideRef.current === "front" ? "visualFast" : docTypeRef.current === "ID_CARD" ? "mrzLatin" : "mrz")
       )
     } catch {
       setCameraError("OCR moduli yuklanmadi. Internet/ilova keshi holatini tekshiring yoki rasm yuklang")
@@ -879,75 +1039,94 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     while (liveActiveRef.current) {
       const video = videoRef.current
       if (!video || video.videoWidth < 100 || busyRef.current) {
-        await new Promise((resolve) => window.setTimeout(resolve, 120))
+        await new Promise((resolve) => window.setTimeout(resolve, 90))
         continue
       }
-      // Focus/exposure can be measured on a small probe.  Allocating a 1920px
-      // canvas every 140ms was a major mobile bottleneck, so retain full-ish
-      // OCR frames only after a probe says the view is usable.
-      const preview = videoFrameCanvas(video, 720)
-      const previewQuality = assessImageQuality(preview)
+      // One small pixel read per tick yields focus, document presence and
+      // motion together.  Previously each tick built a 720px preview canvas and
+      // then a second 360px canvas inside the quality check.
+      probe = probeVideoFrame(video, frameRegion(docTypeRef.current), probe)
       const now = Date.now()
-      if (!previewQuality.usable || now - lastQualityUpdateAtRef.current >= 220) {
+      const detected = probe.quality.usable && probe.document.present
+      if (now - lastQualityUpdateAtRef.current >= 200) {
         lastQualityUpdateAtRef.current = now
-        setQuality(previewQuality)
+        setQuality(probe.quality)
+        setDocDetected(detected)
       }
-      if (previewQuality.usable) {
-        if (now - lastHighQualityFrameAt >= 180) {
-          const ocrFrame = videoFrameCanvas(video, 1680)
-          burst = [...burst, { value: ocrFrame, quality: previewQuality, capturedAt: now }].slice(-2)
-          bestFrameRef.current = selectBestQualityFrame(burst) ?? null
-          lastHighQualityFrameAt = now
+      steadyTicks = probe.document.steady ? steadyTicks + 1 : 0
+
+      // The shutter fires by itself the moment a document is in the guide and
+      // has stopped moving.  When detection stays uncertain — a pale card on a
+      // pale desk — a slower unconditional attempt still keeps scanning alive.
+      const readyToShoot =
+        probe.quality.usable &&
+        steadyTicks >= 2 &&
+        now - lastCaptureAt >= (detected ? 240 : 1800)
+      if (!readyToShoot) {
+        // The live passes are deliberately cheap, so they can stall on a
+        // crooked or dim document.  Rather than spinning until the operator
+        // gives up, the scanner takes the shot itself and puts the full
+        // pipeline — rectification, every language, numeric re-reads — on the
+        // best frame it has kept.
+        const elapsed = now - startedAt
+        const hasPartialRead = frameConsensus.filledCount >= 2 || mrzVotes.size > 0
+        if (
+          bestFrameRef.current &&
+          attempt >= 2 &&
+          (elapsed >= AUTO_CAPTURE_DEADLINE_MS || (hasPartialRead && elapsed >= AUTO_CAPTURE_AFTER_MS))
+        ) {
+          const partial: ScannedDoc = {
+            ...frameConsensus.doc,
+            documentType: docTypeRef.current,
+            source: "visual",
+            scannedSides: [sideRef.current],
+            warnings: ["Avtomatik olingan kadr — maydonlarni tekshiring"],
+          }
+          await finishWithFrame(
+            bestFrameRef.current.value,
+            "Skaner kadrni o‘zi oldi — natijani tekshirib tasdiqlang",
+            hasPartialRead ? partial : undefined
+          )
+          return
         }
-      } else {
-        burst = []
-        bestFrameRef.current = null
-      }
-      if (burst.length < 2 || now - lastRecognitionAt < 380) {
-        await new Promise((resolve) => window.setTimeout(resolve, 140))
+        await new Promise((resolve) => window.setTimeout(resolve, 80))
         continue
       }
+
       busyRef.current = true
-      lastRecognitionAt = now
-      const bestFrame = selectBestQualityFrame(burst)
-      const companionFrame = bestFrame ? burst.find((frame) => frame !== bestFrame) : undefined
-      // The two buffered captures are already at least 180ms apart.  When the
-      // first cheap guided-frame pass finds data, OCR the companion immediately
-      // rather than making the user wait for another camera burst just to get
-      // the mandatory second MRZ/frame-consensus vote.
-      const fastPathForBatch = attempt < 2
-      const framesToRecognize = bestFrame
-        ? [bestFrame, ...(fastPathForBatch && companionFrame ? [companionFrame] : [])]
-        : []
-      burst = []
+      lastCaptureAt = now
+      const frame: QualityFrame<HTMLCanvasElement> = {
+        value: videoFrameCanvas(video, LIVE_FRAME_WIDTH),
+        quality: probe.quality,
+        capturedAt: now,
+      }
+      bestFrameRef.current = selectBestQualityFrame([frame, bestFrameRef.current].filter(Boolean) as QualityFrame<HTMLCanvasElement>[]) ?? frame
       const currentSide = sideRef.current
       const method: ActiveMethod = currentSide === "front" || scanModeRef.current === "visual" ? "visual" : "mrz"
       setActiveMethod(method)
       try {
-        for (const frame of framesToRecognize) {
-          // Two inexpensive guided-frame attempts give the common UZB document
-          // path a near-immediate result.  The next attempt restores full
-          // rectification and recovery OCR if the first passes do not agree.
-          const outcome = await scanCanvas(frame.value, false, fastPathForBatch)
-          attempt++
-          setAttempts(attempt)
-          const candidate = outcome.recognition
-          if (!candidate || !liveActiveRef.current) break
-
+        const outcome = await scanCanvas(frame.value, false, true, probe.quality)
+        attempt++
+        setAttempts(attempt)
+        const candidate = outcome.recognition
+        if (candidate && liveActiveRef.current) {
           if (candidate.verified) {
             // A valid check digit from one blurred frame is strong evidence but
             // not enough for zero-wrong-auto-fill policy.  Two fresh frames
             // must yield the exact same complete MRZ payload.
             const key = outcome.quality.usable ? verifiedMrzKey(candidate.doc) : undefined
             if (key) {
-              const observedAt = frame.capturedAt
               for (const [voteKey, vote] of mrzVotes) {
                 if (Date.now() - vote.lastAt > 5000) mrzVotes.delete(voteKey)
               }
               const previous = mrzVotes.get(key)
-              const distinctFrame = !previous || Math.abs(observedAt - previous.lastAt) >= 180
+              const distinctFrame = !previous || Math.abs(frame.capturedAt - previous.lastAt) >= 180
               const vote = distinctFrame
-                ? { count: (previous?.count ?? 0) + 1, lastAt: Math.max(previous?.lastAt ?? 0, observedAt), doc: candidate.doc }
+                ? {
+                    count: (previous?.count ?? 0) + 1,
+                    lastAt: Math.max(previous?.lastAt ?? 0, frame.capturedAt),
+                    doc: candidate.doc,
+                  }
                 : previous
               if (vote) {
                 mrzVotes.set(key, vote)
@@ -965,7 +1144,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
             addDocToAccumulator(frameConsensus, candidate.doc, `frame-${attempt}`)
             setVisualFilled(frameConsensus.filledCount)
             if (frameConsensus.isConfirmedComplete()) {
-              const doc: ScannedDoc = {
+              completeSide({
                 ...frameConsensus.doc,
                 documentType: docTypeRef.current,
                 source: candidate.source,
@@ -975,8 +1154,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 requiresReview: true,
                 scannedSides: [sideRef.current],
                 warnings: ["Ikki mustaqil kadr mos keldi — formaga qo‘llashdan oldin tekshiring"],
-              }
-              completeSide(doc)
+              })
               return
             }
           }
@@ -986,9 +1164,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       } finally {
         busyRef.current = false
       }
-      await new Promise((resolve) => window.setTimeout(resolve, 140))
+      await new Promise((resolve) => window.setTimeout(resolve, 60))
     }
-  }, [completeSide, scanCanvas])
+  }, [completeSide, finishWithFrame, scanCanvas])
 
   useEffect(() => {
     if (!open) {
@@ -1002,15 +1180,13 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setErrorMsg(null)
     setCameraError(null)
     setQuality(null)
-    setAttempts(0)
-    setVisualFilled(0)
-    setMrzMatches(0)
-    bestFrameRef.current = null
-    // Do not warm a fixed language here: choosing an ID front after an
-    // English-only warm-up used to force an immediate second language load.
-    // The selected flow warms its own profile below.
+    resetLiveState()
+    // Every fast path — ID front, ID back and passport MRZ — reads Latin, so
+    // one English model serves all of them.  Loading it while the operator is
+    // still choosing a document type takes the model boot off the scan path.
+    void queueWorker(async () => getWorker("visualFast")).catch(() => {})
     return stopCamera
-  }, [open, stopCamera])
+  }, [open, resetLiveState, stopCamera])
 
   useEffect(() => {
     if (!open || phase !== "camera") {
@@ -1035,11 +1211,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setSide(nextSide)
     sideRef.current = nextSide
     setActiveMethod(nextSide === "front" || scanMode === "visual" ? "visual" : "mrz")
-    setAttempts(0)
-    setVisualFilled(0)
-    setMrzMatches(0)
-    bestFrameRef.current = null
-    void queueWorker(async () => getWorker(nextSide === "front" ? "visualLatin" : "mrz")).catch(() => {})
+    resetLiveState()
+    void queueWorker(async () => getWorker(nextSide === "front" ? "visualFast" : "mrz")).catch(() => {})
     setPhase("camera")
   }
 
@@ -1047,37 +1220,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     const video = videoRef.current
     if (!video?.videoWidth || busyRef.current) return
     const frame = bestFrameRef.current?.value ?? videoFrameCanvas(video, 2400)
-    liveActiveRef.current = false
-    // Do not leave a hidden camera stream running while a still image is
-    // processed or an error/review screen is displayed.
-    stopCamera()
-    busyRef.current = true
-    setPhase("processing")
-    try {
-      const outcome = await scanCanvas(frame, false)
-      if (!outcome.recognition) {
-        setErrorMsg(
-          sideRef.current === "front"
-            ? "Old tomondagi yozuvlar o‘qilmadi. Hujjatni tekis, ravshan va yaltirashsiz suratga oling."
-            : "MRZ ishonchli o‘qilmadi. Hujjatning pastki qatorlari to‘liq, fokusda va yaltirashsiz bo‘lsin."
-        )
-        setPhase("error")
-        return
-      }
-      const doc = outcome.recognition.verified
-        ? {
-            ...outcome.recognition.doc,
-            requiresReview: true,
-            warnings: [...(outcome.recognition.doc.warnings ?? []), "Qo‘lda olingan bitta kadr — natijani tekshirib tasdiqlang"],
-          }
-        : outcome.recognition.doc
-      completeSide(doc)
-    } catch {
-      setErrorMsg("Skanerlashda xatolik yuz berdi. Qayta urinib ko‘ring yoki rasm yuklang.")
-      setPhase("error")
-    } finally {
-      busyRef.current = false
-    }
+    await finishWithFrame(frame, "Qo‘lda olingan bitta kadr — natijani tekshirib tasdiqlang")
   }
 
   const onFileSelected = async (file: File | null) => {
@@ -1116,10 +1259,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setSide(nextSide)
     sideRef.current = nextSide
     setActiveMethod(scanMode === "visual" ? "visual" : "mrz")
-    setAttempts(0)
-    setVisualFilled(0)
-    setMrzMatches(0)
-    bestFrameRef.current = null
+    resetLiveState()
     void queueWorker(async () => getWorker("mrzLatin")).catch(() => {})
     setPhase("camera")
   }
@@ -1196,7 +1336,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
             <div className="relative overflow-hidden rounded-xl bg-black">
               <video ref={videoRef} autoPlay playsInline muted className="aspect-[4/3] w-full object-cover" />
               <div
-                className="pointer-events-none absolute rounded-xl border-2 border-emerald-400/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]"
+                className={`pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] transition-colors ${
+                  docDetected ? "border-4 border-emerald-400" : "border-2 border-dashed border-white/70"
+                }`}
                 style={{
                   left: `${frame.left * 100}%`,
                   right: `${(1 - frame.right) * 100}%`,
@@ -1215,8 +1357,16 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                   }}
                 />
               )}
-              <div className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-medium text-white">
-                {activeMethod === "mrz" ? "MRZ tekshirilmoqda" : "Yozuvlar o‘qilmoqda"}
+              <div
+                className={`pointer-events-none absolute left-2 top-2 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white ${
+                  docDetected ? "bg-emerald-600/90" : "bg-black/65"
+                }`}
+              >
+                {docDetected
+                  ? activeMethod === "mrz"
+                    ? "Hujjat aniqlandi · MRZ o‘qilmoqda"
+                    : "Hujjat aniqlandi · o‘qilmoqda"
+                  : "Hujjat qidirilmoqda…"}
                 {attempts > 0 ? ` · ${attempts}` : ""}
                 {activeMethod === "mrz" && mrzMatches > 0 ? ` · ${mrzMatches}/2 tasdiq` : ""}
                 {activeMethod === "visual" && visualFilled ? ` · ${visualFilled}/5` : ""}
@@ -1248,14 +1398,14 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
             )}
             <div className="grid grid-cols-2 gap-2">
               <Button onClick={capture} disabled={Boolean(cameraError) || quality?.usable === false} className="gap-2">
-                <Camera size={16} /> Suratga olish
+                <Camera size={16} /> Hozir olish
               </Button>
               <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">
                 <ImageUp size={16} /> Rasm yuklash
               </Button>
             </div>
             <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-              <span>OCR faqat sifatli, barqaror kadrlarda boshlanadi.</span>
+              <span>Hujjat ramkada turganda skaner o‘zi suratga oladi — tugmani bosish shart emas.</span>
               {torchSupported && (
                 <button type="button" onClick={() => void toggleTorch()} className="font-medium text-primary hover:underline">
                   {torchOn ? "Chiroqni o‘chirish" : "Chiroqni yoqish"}
@@ -1290,10 +1440,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
               <Button
                 variant="outline"
                 onClick={() => {
-                  setAttempts(0)
-                  setVisualFilled(0)
-                  setMrzMatches(0)
-                  bestFrameRef.current = null
+                  resetLiveState()
                   setPhase("camera")
                 }}
                 className="gap-2"
@@ -1339,11 +1486,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
               <Button
                 variant="outline"
                 onClick={() => {
+                  resetLiveState()
                   setPhase("camera")
-                  setAttempts(0)
-                  setVisualFilled(0)
-                  setMrzMatches(0)
-                  bestFrameRef.current = null
                 }}
                 className="gap-2"
               >
@@ -1365,10 +1509,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
               <Button
                 variant="outline"
                 onClick={() => {
-                  setAttempts(0)
-                  setVisualFilled(0)
-                  setMrzMatches(0)
-                  bestFrameRef.current = null
+                  resetLiveState()
                   setPhase("camera")
                 }}
                 className="gap-2"
