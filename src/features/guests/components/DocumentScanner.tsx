@@ -1019,10 +1019,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     if (liveActiveRef.current) return
     liveActiveRef.current = true
     let attempt = 0
-    let lastCaptureAt = 0
     let steadyTicks = 0
     let probe: FrameProbe | null = null
     const startedAt = Date.now()
+    let lastCaptureAt = startedAt
     const frameConsensus = new FieldAccumulator(docTypeRef.current)
     const mrzVotes = new Map<string, { count: number; lastAt: number; doc: ScannedDoc }>()
     try {
@@ -1053,15 +1053,19 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         setQuality(probe.quality)
         setDocDetected(detected)
       }
-      steadyTicks = probe.document.steady ? steadyTicks + 1 : 0
+      // A hand-held card never goes perfectly still, so demanding stillness
+      // outright can leave the shutter waiting forever.  The requirement is
+      // strict while a sharp frame is still plausible and then relaxes: a
+      // slightly smeared read that OCR can reject beats never reading at all.
+      const waited = now - lastCaptureAt
+      const motionAllowance = waited > 3000 ? Number.POSITIVE_INFINITY : waited > 1500 ? 12 : 5
+      steadyTicks = probe.document.motion <= motionAllowance ? steadyTicks + 1 : 0
 
       // The shutter fires by itself the moment a document is in the guide and
       // has stopped moving.  When detection stays uncertain — a pale card on a
       // pale desk — a slower unconditional attempt still keeps scanning alive.
       const readyToShoot =
-        probe.quality.usable &&
-        steadyTicks >= 2 &&
-        now - lastCaptureAt >= (detected ? 240 : 1800)
+        probe.quality.usable && steadyTicks >= 2 && waited >= (detected ? 240 : 1800)
       if (!readyToShoot) {
         // The live passes are deliberately cheap, so they can stall on a
         // crooked or dim document.  Rather than spinning until the operator
