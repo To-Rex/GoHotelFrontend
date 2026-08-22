@@ -21,6 +21,15 @@ export type ScannedField =
   | "personalNumber"
   | "nationality"
 
+/** Bitta tekshiruv natijasi (serverdan keladi). */
+export interface DocumentCheck {
+  key: string
+  label: string
+  /** ok — tasdiqlandi; warn — e'tibor talab qiladi; fail — hujjat tasdiqlanmaydi */
+  status: "ok" | "warn" | "fail"
+  detail?: string
+}
+
 export interface ScannedDoc {
   firstName?: string
   lastName?: string
@@ -47,6 +56,11 @@ export interface ScannedDoc {
   fieldConfidence?: Partial<Record<ScannedField, number>>
   /** Natija qayerda hisoblangan: serverdagi PP-OCR yoki qurilmadagi OCR. */
   engine?: "server" | "device"
+  /**
+   * Serverda bajarilgan nomli tekshiruvlar. Yagona "ishonavering" bayrog'i
+   * o'rniga xodim aynan nima tasdiqlanganini va nima shubhali ekanini ko'radi.
+   */
+  checks?: DocumentCheck[]
   /** Faqat serverdan: MRZ'dagi muddat va jins (formani to'ldirmaydi). */
   expiryDate?: string
   sex?: "M" | "F"

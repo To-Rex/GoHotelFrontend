@@ -1,29 +1,26 @@
 import { api } from "@/lib/api"
-import type { DocumentSide, DocumentType, ScannedDoc } from "../components/documentScannerTypes"
+import type { DocumentType, ScannedDoc } from "../components/documentScannerTypes"
 
 /**
- * Hujjatni SERVERDA o'qish.
+ * Hujjatni SERVERDA o'qish va tekshirish.
  *
- * Telefon brauzerida OCR bitta yadroda WebAssembly'da ishlaydi va zaif
- * qurilmada sezilarli sekin; server esa PP-OCR modellarini to'liq CPU'da
- * yuritadi va MRZ nazorat raqamlarini tekshiradi. Shuning uchun qurilma faqat
- * hujjatni ko'rish va suratga olish bilan shug'ullanadi — tanish serverga
- * beriladi.
+ * ID kartaning ikkala tomoni BITTA so'rovda yuboriladi. Bu qulaylik uchun
+ * emas: server faqat shundagina old tomondagi bosma ma'lumotni orqa tomondagi
+ * MRZ bilan solishtira oladi, ikkala tomon bitta hujjatga tegishli ekanini
+ * tekshira oladi va nazorat raqami bo'yicha tiklangan belgini mustaqil
+ * tasdiqlay oladi. Passport uchun bitta sahifa yetarli — unda MRZ ham, bosma
+ * maydonlar ham bor.
  *
- * Javob shakli qurilmadagi OCR bilan bir xil (`ScannedDoc`), shuning uchun
- * skaner ikkala manbani ham bir xil ishlaydi. Server javob bermasa yoki
- * dvigatel o'rnatilmagan bo'lsa (503), chaqiruvchi qurilmadagi OCR'ga
- * qaytadi — foydalanuvchi uchun farqi bilinmaydi.
- *
- * Rasm serverda SAQLANMAYDI: faqat xotirada o'qiladi.
+ * Rasm serverda SAQLANMAYDI: xotirada o'qiladi va javob bilan yo'qoladi.
  */
 
-/** Kadr sifati va hajmi orasidagi muvozanat — ~150-300 KB JPEG. */
-const JPEG_QUALITY = 0.86
+/** Sifat va hajm orasidagi muvozanat — ~200-400 KB JPEG. */
+const JPEG_QUALITY = 0.88
 
+/** Server ishlamayapti — chaqiruvchi qurilmadagi OCR'ga qaytishi kerak. */
 export class ServerScanUnavailable extends Error {}
 
-function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
+export function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("Kadrni JPEG'ga aylantirib bo'lmadi"))),
@@ -33,32 +30,44 @@ function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
   })
 }
 
+export interface DocumentShots {
+  /** ID kartaning old tomoni yoki passportning ma'lumotlar sahifasi */
+  front: HTMLCanvasElement
+  /** Faqat ID karta uchun — MRZ joylashgan orqa tomon */
+  back?: HTMLCanvasElement
+}
+
 export async function scanDocumentOnServer(
-  canvas: HTMLCanvasElement,
+  shots: DocumentShots,
   documentType: DocumentType,
-  side: DocumentSide,
   signal?: AbortSignal
 ): Promise<ScannedDoc> {
-  const blob = await canvasToJpeg(canvas)
   const form = new FormData()
-  form.append("file", blob, "document.jpg")
   form.append("document_type", documentType)
-  form.append("side", side)
+  try {
+    form.append("front", await canvasToJpeg(shots.front), "front.jpg")
+    if (shots.back) form.append("back", await canvasToJpeg(shots.back), "back.jpg")
+  } catch {
+    // Kanvasni kodlab bo'lmadi — bu serverning aybi emas, lekin serverga
+    // yuboradigan narsa ham yo'q, shuning uchun qurilmadagi yo'lga o'tamiz.
+    throw new ServerScanUnavailable("Rasmni tayyorlab bo'lmadi")
+  }
   try {
     const { data } = await api.post<ScannedDoc>("/guests/scan-document", form, {
       // Content-Type ni axios FormData chegarasi bilan o'zi qo'ysin
       headers: { "Content-Type": undefined as unknown as string },
-      timeout: 20000,
+      timeout: 30000,
       signal,
     })
     return data
   } catch (error: any) {
-    // 503 — serverda dvigatel yo'q; tarmoq xatosi — aloqa yo'q. Ikkalasida ham
-    // qurilmadagi OCR'ga qaytish kerak, boshqa xatolarda esa qaytmaydi
-    // (masalan 422 "rasmda yozuv yo'q" — bu keyingi kadrda hal bo'ladi).
-    const status = error?.response?.status
-    if (status === 503 || status === 404 || !error?.response) {
-      throw new ServerScanUnavailable(error?.message || "Server skaneri mavjud emas")
+    const status = error?.response?.status as number | undefined
+    // Serverdagi HAR QANDAY nosozlik (503, 500, 502, marshrut yo'q) va
+    // tarmoq uzilishi — qurilmadagi OCR'ga o'tish sababi. Faqat 4xx
+    // (masalan "rasmda yozuv topilmadi") server ishlayotganini bildiradi,
+    // ya'ni dvigatelni almashtirishning hojati yo'q.
+    if (status === undefined || status >= 500 || status === 404) {
+      throw new ServerScanUnavailable(error?.message || "Server skaneri javob bermadi")
     }
     throw error
   }

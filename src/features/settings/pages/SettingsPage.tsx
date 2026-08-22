@@ -752,7 +752,7 @@ export const SettingsPage = () => {
             icon={ScanLine}
             iconClass="bg-sky-50 text-sky-600"
             title="Hujjat skaneri"
-            desc="Passport va ID kartadan ma'lumot olish usuli. MRZ — hujjatning mashina o'qiydigan zonasi (eng aniq); Vizual — hujjat yuzasidagi yozuvlar (MRZ yo'q yoki o'chgan hujjatlar uchun)."
+            desc="Passport va ID kartadan ma'lumot olish usuli. Quyidagi rejim faqat QURILMADA o'qishga taalluqli: serverda o'qilganda MRZ ham, hujjat yuzasidagi yozuvlar ham har doim o'qilib, bir-biriga solishtiriladi."
           >
             <div className="grid gap-2.5">
               {(
