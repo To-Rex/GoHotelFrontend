@@ -855,6 +855,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const serverPreferredRef = useRef(serverPreferred)
   /** Server javob bermadi — shu sessiyada boshqa urinmaymiz. */
   const serverDownRef = useRef(false)
+  /** Dialog yopilganda uchayotgan so'rovni uzish uchun. */
+  const scanAbortRef = useRef<AbortController | null>(null)
   const frontDocRef = useRef<ScannedDoc | undefined>(undefined)
   const bestFrameRef = useRef<QualityFrame<HTMLCanvasElement> | null>(null)
   const lastQualityUpdateAtRef = useRef(0)
@@ -899,6 +901,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
   const stopCamera = useCallback(() => {
     liveActiveRef.current = false
+    // Uchayotgan server so'rovini uzamiz: dialog yopilgach uning javobi
+    // hech kimga kerak emas, lekin u tarmoqni yigirma soniya band qilib turadi.
+    scanAbortRef.current?.abort()
+    scanAbortRef.current = null
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
     setTorchOn(false)
@@ -1029,12 +1035,23 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       if (serverPreferredRef.current && !serverDownRef.current) {
         setProgress(0)
         const measuredQuality = quality ?? assessImageQuality(frame)
+        const controller = new AbortController()
+        scanAbortRef.current = controller
         try {
-          const doc = await scanDocumentOnServer(frame, docTypeRef.current, sideRef.current)
+          const doc = await scanDocumentOnServer(
+            frame,
+            docTypeRef.current,
+            sideRef.current,
+            controller.signal
+          )
           lastQualityUpdateAtRef.current = Date.now()
           setQuality(measuredQuality)
           return serverOutcome(doc, measuredQuality)
         } catch (error) {
+          if (controller.signal.aborted) {
+            // Dialog yopildi — natija hech kimga kerak emas
+            return { recognition: null, quality: measuredQuality, rectified: false, qrConfirmed: false }
+          }
           if (error instanceof ServerScanUnavailable) {
             serverDownRef.current = true
             setServerFellBack(true)
@@ -1043,6 +1060,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
             // keyingi kadr yaxshiroq bo'lishi mumkin, dvigatelni almashtirmaymiz.
             return { recognition: null, quality: measuredQuality, rectified: false, qrConfirmed: false }
           }
+        } finally {
+          if (scanAbortRef.current === controller) scanAbortRef.current = null
         }
       }
       return scanCanvas(frame, includePortraitOrientations, fastLive, quality)
@@ -1534,9 +1553,14 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         {phase === "processing" && (
           <div className="flex flex-col items-center gap-3 py-10">
             <Loader2 size={32} className="animate-spin text-primary" />
-            <p className="text-sm font-medium">Hujjat tekshirilmoqda… {progress > 0 ? `${progress}%` : ""}</p>
+            <p className="text-sm font-medium">
+              Hujjat tekshirilmoqda…{" "}
+              {serverPreferred && !serverFellBack ? "" : progress > 0 ? `${progress}%` : ""}
+            </p>
             <p className="text-center text-xs text-muted-foreground">
-              Perspektiva, fokus va MRZ nazorat raqamlari tekshiriladi.
+              {serverPreferred && !serverFellBack
+                ? "Kadr serverga yuborildi — MRZ nazorat raqamlari tekshirilmoqda."
+                : "Perspektiva, fokus va MRZ nazorat raqamlari tekshiriladi."}
             </p>
           </div>
         )}
