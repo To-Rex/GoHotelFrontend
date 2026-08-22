@@ -14,29 +14,25 @@ import type { DocumentType, ScannedDoc } from "../components/documentScannerType
  * Rasm serverda SAQLANMAYDI: xotirada o'qiladi va javob bilan yo'qoladi.
  */
 
-/** Sifat va hajm orasidagi muvozanat — ~200-400 KB JPEG. */
-const JPEG_QUALITY = 0.88
+/** Sifat va hajm orasidagi muvozanat — ~150-300 KB JPEG. */
+export const JPEG_QUALITY = 0.86
 
 /** Server ishlamayapti — chaqiruvchi qurilmadagi OCR'ga qaytishi kerak. */
 export class ServerScanUnavailable extends Error {}
 
-export function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Kadrni JPEG'ga aylantirib bo'lmadi"))),
-      "image/jpeg",
-      JPEG_QUALITY
-    )
-  })
-}
-
 export interface DocumentShots {
   /** ID kartaning old tomoni yoki passportning ma'lumotlar sahifasi */
-  front: HTMLCanvasElement
+  front: Blob
   /** Faqat ID karta uchun — MRZ joylashgan orqa tomon */
-  back?: HTMLCanvasElement
+  back?: Blob
 }
 
+/**
+ * Kadrlar ALLAQACHON JPEG holida keladi: ular suratga olingan payt bir marta
+ * kodlangan va o'sha bloblar ham ko'rinish uchun, ham yuborish uchun
+ * ishlatiladi. Shu sababli "Yuborish" bosilganda kodlashni kutish yo'q —
+ * ilgari har kadr ikki marta (ko'rinish va yuklash uchun) kodlanardi.
+ */
 export async function scanDocumentOnServer(
   shots: DocumentShots,
   documentType: DocumentType,
@@ -44,14 +40,8 @@ export async function scanDocumentOnServer(
 ): Promise<ScannedDoc> {
   const form = new FormData()
   form.append("document_type", documentType)
-  try {
-    form.append("front", await canvasToJpeg(shots.front), "front.jpg")
-    if (shots.back) form.append("back", await canvasToJpeg(shots.back), "back.jpg")
-  } catch {
-    // Kanvasni kodlab bo'lmadi — bu serverning aybi emas, lekin serverga
-    // yuboradigan narsa ham yo'q, shuning uchun qurilmadagi yo'lga o'tamiz.
-    throw new ServerScanUnavailable("Rasmni tayyorlab bo'lmadi")
-  }
+  form.append("front", shots.front, "front.jpg")
+  if (shots.back) form.append("back", shots.back, "back.jpg")
   try {
     const { data } = await api.post<ScannedDoc>("/guests/scan-document", form, {
       // Content-Type ni axios FormData chegarasi bilan o'zi qo'ysin

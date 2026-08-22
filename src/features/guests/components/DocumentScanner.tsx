@@ -8,6 +8,7 @@ import {
   Camera,
   CheckCircle2,
   CreditCard,
+  Flashlight,
   ImageUp,
   Loader2,
   RefreshCw,
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { apiErrorMessage } from "@/lib/apiError"
 import { useScanSettings, type ScanMode } from "../api/scanSettings"
-import { ServerScanUnavailable, scanDocumentOnServer } from "../api/documentScan"
+import { JPEG_QUALITY, ServerScanUnavailable, scanDocumentOnServer } from "../api/documentScan"
 import {
   extractDocNumber,
   extractPinfl,
@@ -741,6 +742,10 @@ type Phase = "select" | "capture" | "sending" | "result" | "error"
 
 interface Shot {
   canvas: HTMLCanvasElement
+  /** Yuborishga tayyor JPEG. Kadr bir marta kodlanadi: ko'rinish ham, yuklash
+   *  ham shu bitta blobdan foydalanadi, shuning uchun "Yuborish" bosilganda
+   *  kutish qolmaydi. */
+  blob: Blob
   url: string
 }
 
@@ -750,8 +755,12 @@ const DOC_SIDES: Record<DocumentType, DocumentSide[]> = {
   PASSPORT: ["passport"],
 }
 
-/** Yuboriladigan kadr kengligi: matn tanish uchun yetarli, tarmoq uchun yengil. */
-const CAPTURE_WIDTH = 1700
+/**
+ * Yuboriladigan kadr kengligi. Ramkani to'ldirgan karta bu yerda millimetriga
+ * ~17 pikselni beradi — tanish modeli uchun kerakligidan ko'ra ko'proq, lekin
+ * kattaroq kadr aniqlik qo'shmay, kodlash va yuklashni sekinlashtiradi.
+ */
+const CAPTURE_WIDTH = 1500
 
 const SIDE_TITLES: Record<DocumentSide, string> = {
   front: "ID kartaning old tomoni",
@@ -851,8 +860,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
-          width: { ideal: 2560 },
-          height: { ideal: 1440 },
+          // 1080p kadr CAPTURE_WIDTH uchun yetarli va telefonda 1440p ga
+          // qaraganda sezilarli tez ochiladi — kamera kutish vaqti shu yerda
+          // eng ko'p seziladi.
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
           frameRate: { ideal: 30, max: 30 },
         },
         audio: false,
@@ -900,6 +912,12 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     if (guideActiveRef.current) return
     guideActiveRef.current = true
     let probe: FrameProbe | null = null
+    // Ko'rinishga faqat shu ikkitasi ta'sir qiladi. Ular o'zgarmaganda holat
+    // ham yangilanmaydi: aks holda sekundiga sakkiz marta butun dialog qayta
+    // chizilardi va kamera ko'rinishi aynan shundan sekinlashardi.
+    let lastDetected: boolean | null = null
+    let lastHint: string | null = null
+    let lastUsable: boolean | null = null
     while (guideActiveRef.current) {
       const video = videoRef.current
       if (!video || video.videoWidth < 100) {
@@ -907,8 +925,16 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         continue
       }
       probe = probeVideoFrame(video, frameRegion(docTypeRef.current), probe)
-      setQuality(probe.quality)
-      setDocDetected(probe.quality.usable && probe.document.present)
+      const detected = probe.quality.usable && probe.document.present
+      if (detected !== lastDetected) {
+        lastDetected = detected
+        setDocDetected(detected)
+      }
+      if (probe.quality.usable !== lastUsable || probe.quality.hint !== lastHint) {
+        lastUsable = probe.quality.usable
+        lastHint = probe.quality.hint
+        setQuality(probe.quality)
+      }
       await new Promise((resolve) => window.setTimeout(resolve, 120))
     }
   }, [])
@@ -978,12 +1004,12 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         // hali ishlatilayotgan havola bekor qilinib qo'yilardi.
         const previous = shotsRef.current[side]
         if (previous) URL.revokeObjectURL(previous.url)
-        const shot: Shot = { canvas, url: URL.createObjectURL(blob) }
+        const shot: Shot = { canvas, blob, url: URL.createObjectURL(blob) }
         shotsRef.current = { ...shotsRef.current, [side]: shot }
         setShots(shotsRef.current)
       },
       "image/jpeg",
-      0.7
+      JPEG_QUALITY
     )
   }, [])
 
@@ -1050,7 +1076,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
   const submit = async () => {
     const frontSide = DOC_SIDES[docType][0]
-    const front = shots[frontSide]?.canvas
+    const front = shots[frontSide]?.blob
     if (!front) return
     setErrorMsg(null)
     setProgress(0)
@@ -1061,7 +1087,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       scanAbortRef.current = controller
       try {
         const doc = await scanDocumentOnServer(
-          { front, back: docType === "ID_CARD" ? shots.back?.canvas : undefined },
+          { front, back: docType === "ID_CARD" ? shots.back?.blob : undefined },
           docType,
           controller.signal
         )
@@ -1253,12 +1279,49 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                   >
                     {docDetected ? "Tayyor — suratga oling" : "Hujjatni ramkaga joylang"}
                   </div>
-                  <p className="pointer-events-none absolute inset-x-2 bottom-1 text-center text-[11px] font-medium text-white/95">
+                  <p className="pointer-events-none absolute inset-x-2 bottom-12 text-center text-[11px] font-medium text-white/95">
                     {SIDE_HINTS[currentSide]}
                   </p>
-                </div>
 
-                <DocumentCaptureGuide documentType={docType} side={currentSide} active quality={quality} />
+                  {/* Zatvor tasvirning O'ZIDA turadi: xodim hujjatni ramkaga
+                      joylab turib, ko'zini kadrdan uzmasdan bosadi. Tugma
+                      pastda, maslahatlar ortida bo'lganda har safar pastga
+                      qarash kerak bo'lardi. */}
+                  <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Rasm yuklash"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
+                    >
+                      <ImageUp size={18} />
+                    </button>
+                    <Button
+                      onClick={capture}
+                      disabled={Boolean(cameraError)}
+                      size="lg"
+                      className={`h-12 flex-1 gap-2 text-base shadow-lg transition-colors ${
+                        docDetected ? "bg-emerald-600 hover:bg-emerald-700" : ""
+                      }`}
+                    >
+                      <Camera size={20} /> Suratga olish
+                    </Button>
+                    {torchSupported ? (
+                      <button
+                        type="button"
+                        onClick={() => void toggleTorch()}
+                        title={torchOn ? "Chiroqni o‘chirish" : "Chiroqni yoqish"}
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full backdrop-blur transition-colors ${
+                          torchOn ? "bg-amber-400 text-gray-900" : "bg-white/15 text-white hover:bg-white/25"
+                        }`}
+                      >
+                        <Flashlight size={18} />
+                      </button>
+                    ) : (
+                      <span className="h-11 w-11 shrink-0" />
+                    )}
+                  </div>
+                </div>
 
                 {quality && !quality.usable && (
                   <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -1271,23 +1334,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                   </p>
                 )}
 
-                <Button onClick={capture} disabled={Boolean(cameraError)} size="lg" className="w-full gap-2">
-                  <Camera size={18} /> Suratga olish
-                </Button>
-                <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
-                  >
-                    <ImageUp size={13} /> Rasm yuklash
-                  </button>
-                  {torchSupported && (
-                    <button type="button" onClick={() => void toggleTorch()} className="font-medium text-primary hover:underline">
-                      {torchOn ? "Chiroqni o‘chirish" : "Chiroqni yoqish"}
-                    </button>
-                  )}
-                </div>
+                <DocumentCaptureGuide documentType={docType} side={currentSide} active quality={quality} />
               </>
             )}
 
