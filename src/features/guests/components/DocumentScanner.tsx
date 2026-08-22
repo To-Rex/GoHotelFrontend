@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useScanSettings, type ScanMode } from "../api/scanSettings"
+import { ServerScanUnavailable, scanDocumentOnServer } from "../api/documentScan"
 import {
   extractDocNumber,
   extractPinfl,
@@ -649,6 +650,38 @@ interface ScanOutcome {
   qrConfirmed: boolean
 }
 
+const CORE_FIELDS: ScannedField[] = [
+  "firstName",
+  "lastName",
+  "birthDate",
+  "documentNumber",
+  "personalNumber",
+]
+
+const filledCoreFields = (doc: ScannedDoc) =>
+  CORE_FIELDS.filter((field) => typeof doc[field] === "string" && doc[field]).length
+
+/**
+ * Server javobini mahalliy OCR bilan bir xil shaklga keltiradi, shunda skaner
+ * ikkala manbani ham bir yo'l bilan ishlaydi.
+ */
+function serverOutcome(doc: ScannedDoc, quality: ImageQuality): ScanOutcome {
+  const filled = filledCoreFields(doc)
+  if (!filled) return { recognition: null, quality, rectified: true, qrConfirmed: false }
+  return {
+    recognition: {
+      doc,
+      score: filled * 12 + (doc.verified ? 40 : 0),
+      verified: Boolean(doc.verified),
+      requiresReview: doc.requiresReview !== false,
+      source: doc.source ?? "visual",
+    },
+    quality,
+    rectified: true,
+    qrConfirmed: Boolean(doc.qrConfirmed),
+  }
+}
+
 function qrCorroboratesDocument(payload: string | undefined, doc: ScannedDoc | undefined) {
   if (!payload || !doc) return false
   const compactPayload = payload.toUpperCase().replace(/[^A-Z0-9]/g, "")
@@ -806,8 +839,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [torchSupported, setTorchSupported] = useState(false)
   const [torchOn, setTorchOn] = useState(false)
+  const [serverFellBack, setServerFellBack] = useState(false)
   const { data: scanSettings } = useScanSettings()
   const scanMode: ScanMode = scanSettings?.mode ?? "auto"
+  const serverPreferred = scanSettings?.engine !== "device" && Boolean(scanSettings?.serverAvailable)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -817,6 +852,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const docTypeRef = useRef<DocumentType>(docType)
   const sideRef = useRef<DocumentSide>(side)
   const scanModeRef = useRef<ScanMode>(scanMode)
+  const serverPreferredRef = useRef(serverPreferred)
+  /** Server javob bermadi — shu sessiyada boshqa urinmaymiz. */
+  const serverDownRef = useRef(false)
   const frontDocRef = useRef<ScannedDoc | undefined>(undefined)
   const bestFrameRef = useRef<QualityFrame<HTMLCanvasElement> | null>(null)
   const lastQualityUpdateAtRef = useRef(0)
@@ -831,6 +869,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   useEffect(() => {
     scanModeRef.current = scanMode
   }, [scanMode])
+  useEffect(() => {
+    serverPreferredRef.current = serverPreferred
+  }, [serverPreferred])
   useEffect(() => {
     const listener = (value: number) => {
       if (value < 0) return
@@ -971,6 +1012,45 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   }, [])
 
   /**
+   * Kadrni tanish: iloji bo'lsa serverda, aks holda qurilmada.
+   *
+   * Server yo'li qurilmani umuman band qilmaydi — telefon faqat kadrni JPEG
+   * qilib yuboradi. Server javob bermasa (dvigatel yo'q yoki aloqa uzilgan),
+   * shu sessiya davomida qurilmadagi OCR'ga o'tamiz va qayta urinmaymiz,
+   * aks holda har kadr tarmoq kutishiga sarflanib skaner sekinlashadi.
+   */
+  const recognizeFrame = useCallback(
+    async (
+      frame: HTMLCanvasElement,
+      quality: ImageQuality | undefined,
+      fastLive: boolean,
+      includePortraitOrientations = false
+    ) => {
+      if (serverPreferredRef.current && !serverDownRef.current) {
+        setProgress(0)
+        const measuredQuality = quality ?? assessImageQuality(frame)
+        try {
+          const doc = await scanDocumentOnServer(frame, docTypeRef.current, sideRef.current)
+          lastQualityUpdateAtRef.current = Date.now()
+          setQuality(measuredQuality)
+          return serverOutcome(doc, measuredQuality)
+        } catch (error) {
+          if (error instanceof ServerScanUnavailable) {
+            serverDownRef.current = true
+            setServerFellBack(true)
+          } else {
+            // Serverda shu kadrdan natija chiqmadi (masalan yozuv topilmadi) —
+            // keyingi kadr yaxshiroq bo'lishi mumkin, dvigatelni almashtirmaymiz.
+            return { recognition: null, quality: measuredQuality, rectified: false, qrConfirmed: false }
+          }
+        }
+      }
+      return scanCanvas(frame, includePortraitOrientations, fastLive, quality)
+    },
+    [scanCanvas]
+  )
+
+  /**
    * Runs the full recognition pipeline on one frame and shows the outcome for
    * review.  Both the shutter button and the automatic capture use it, so a
    * self-taken photo behaves exactly like a tapped one — it never fills the
@@ -985,7 +1065,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       busyRef.current = true
       setPhase("processing")
       try {
-        const outcome = await scanCanvas(frame, false)
+        const outcome = await recognizeFrame(frame, bestFrameRef.current?.quality, false)
         const recognition = outcome.recognition
         if (recognition) {
           completeSide({
@@ -1012,7 +1092,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         busyRef.current = false
       }
     },
-    [completeSide, scanCanvas, stopCamera]
+    [completeSide, recognizeFrame, stopCamera]
   )
 
   const runLiveLoop = useCallback(async () => {
@@ -1025,16 +1105,18 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     let lastCaptureAt = startedAt
     const frameConsensus = new FieldAccumulator(docTypeRef.current)
     const mrzVotes = new Map<string, { count: number; lastAt: number; doc: ScannedDoc }>()
-    try {
-      // Every Latin flow shares the English model, so warming it here costs
-      // nothing later — the ID front/back switch no longer reloads a model.
-      await queueWorker(async () =>
-        getWorker(sideRef.current === "front" ? "visualFast" : docTypeRef.current === "ID_CARD" ? "mrzLatin" : "mrz")
-      )
-    } catch {
-      setCameraError("OCR moduli yuklanmadi. Internet/ilova keshi holatini tekshiring yoki rasm yuklang")
-      liveActiveRef.current = false
-      return
+    if (!serverPreferredRef.current || serverDownRef.current) {
+      try {
+        // Every Latin flow shares the English model, so warming it here costs
+        // nothing later — the ID front/back switch no longer reloads a model.
+        await queueWorker(async () =>
+          getWorker(sideRef.current === "front" ? "visualFast" : docTypeRef.current === "ID_CARD" ? "mrzLatin" : "mrz")
+        )
+      } catch {
+        setCameraError("OCR moduli yuklanmadi. Internet/ilova keshi holatini tekshiring yoki rasm yuklang")
+        liveActiveRef.current = false
+        return
+      }
     }
     while (liveActiveRef.current) {
       const video = videoRef.current
@@ -1109,11 +1191,27 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       const method: ActiveMethod = currentSide === "front" || scanModeRef.current === "visual" ? "visual" : "mrz"
       setActiveMethod(method)
       try {
-        const outcome = await scanCanvas(frame.value, false, true, probe.quality)
+        const outcome = await recognizeFrame(frame.value, probe.quality, true)
         attempt++
         setAttempts(attempt)
         const candidate = outcome.recognition
-        if (candidate && liveActiveRef.current) {
+        const fromServer = candidate?.doc.engine === "server"
+        if (candidate && liveActiveRef.current && fromServer) {
+          // Serverdagi natija allaqachon to'liq quvurdan o'tgan: MRZ nazorat
+          // raqamlari tekshirilgan, taxminiy tuzatish bosma tomon bilan
+          // solishtirilgan. Shuning uchun bu yerda ikkinchi kadr kutilmaydi —
+          // aks holda har skan ortiqcha bir marta serverga borib kelardi.
+          if (candidate.verified) {
+            completeSide(candidate.doc)
+            return
+          }
+          if (filledCoreFields(candidate.doc) >= 3) {
+            // Tasdiqlanmagan natija baribir ko'rib chiqish ekraniga tushadi,
+            // ya'ni hech narsa tekshiruvsiz formaga yozilmaydi.
+            completeSide(candidate.doc)
+            return
+          }
+        } else if (candidate && liveActiveRef.current) {
           if (candidate.verified) {
             // A valid check digit from one blurred frame is strong evidence but
             // not enough for zero-wrong-auto-fill policy.  Two fresh frames
@@ -1170,7 +1268,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       }
       await new Promise((resolve) => window.setTimeout(resolve, 60))
     }
-  }, [completeSide, finishWithFrame, scanCanvas])
+  }, [completeSide, finishWithFrame, recognizeFrame])
 
   useEffect(() => {
     if (!open) {
@@ -1184,13 +1282,19 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setErrorMsg(null)
     setCameraError(null)
     setQuality(null)
+    setServerFellBack(false)
+    serverDownRef.current = false
     resetLiveState()
-    // Every fast path — ID front, ID back and passport MRZ — reads Latin, so
-    // one English model serves all of them.  Loading it while the operator is
-    // still choosing a document type takes the model boot off the scan path.
-    void queueWorker(async () => getWorker("visualFast")).catch(() => {})
+    // Server dvigateli ishlaganda brauzerdagi OCR umuman kerak emas — uning
+    // ~15 MB model fayllarini yuklash mobil trafik va xotirani bekorga yeydi.
+    if (!serverPreferred) {
+      // Every fast path — ID front, ID back and passport MRZ — reads Latin, so
+      // one English model serves all of them.  Loading it while the operator is
+      // still choosing a document type takes the model boot off the scan path.
+      void queueWorker(async () => getWorker("visualFast")).catch(() => {})
+    }
     return stopCamera
-  }, [open, resetLiveState, stopCamera])
+  }, [open, resetLiveState, serverPreferred, stopCamera])
 
   useEffect(() => {
     if (!open || phase !== "camera") {
@@ -1216,7 +1320,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     sideRef.current = nextSide
     setActiveMethod(nextSide === "front" || scanMode === "visual" ? "visual" : "mrz")
     resetLiveState()
-    void queueWorker(async () => getWorker(nextSide === "front" ? "visualFast" : "mrz")).catch(() => {})
+    if (!serverPreferred) {
+      void queueWorker(async () => getWorker(nextSide === "front" ? "visualFast" : "mrz")).catch(() => {})
+    }
     setPhase("camera")
   }
 
@@ -1238,7 +1344,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       const canvas = createCanvas(bitmap.width, bitmap.height)
       canvas.getContext("2d")!.drawImage(bitmap, 0, 0)
       bitmap.close?.()
-      const outcome = await scanCanvas(canvas, true)
+      const outcome = await recognizeFrame(canvas, undefined, false, true)
       if (!outcome.recognition) {
         setErrorMsg("Rasmda ishonchli hujjat ma’lumoti topilmadi. To‘liq, ravshan va yaltirashsiz rasm tanlang.")
         setPhase("error")
@@ -1264,7 +1370,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     sideRef.current = nextSide
     setActiveMethod(scanMode === "visual" ? "visual" : "mrz")
     resetLiveState()
-    void queueWorker(async () => getWorker("mrzLatin")).catch(() => {})
+    if (!serverPreferred) {
+      void queueWorker(async () => getWorker("mrzLatin")).catch(() => {})
+    }
     setPhase("camera")
   }
 
@@ -1409,7 +1517,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
               </Button>
             </div>
             <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-              <span>Hujjat ramkada turganda skaner o‘zi suratga oladi — tugmani bosish shart emas.</span>
+              <span>
+                Hujjat ramkada turganda skaner o‘zi suratga oladi — tugmani bosish shart emas.
+                {serverPreferred && !serverFellBack ? " Tanish serverda bajariladi." : ""}
+                {serverFellBack ? " Server javob bermadi — qurilmada o‘qilmoqda." : ""}
+              </span>
               {torchSupported && (
                 <button type="button" onClick={() => void toggleTorch()} className="font-medium text-primary hover:underline">
                   {torchOn ? "Chiroqni o‘chirish" : "Chiroqni yoqish"}

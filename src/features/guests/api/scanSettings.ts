@@ -8,11 +8,25 @@ import { api } from '@/lib/api';
 
 export type ScanMode = 'mrz' | 'visual' | 'auto';
 
+/* OCR qayerda bajariladi.
+   server — serverdagi PP-OCR: telefonni band qilmaydi, sezilarli tez va aniq;
+            aloqa uzilsa yoki server dvigateli yo'q bo'lsa qurilmadagi OCR'ga
+            avtomatik qaytadi
+   device — faqat brauzerda: hujjat rasmi qurilmadan umuman chiqmaydi */
+export type ScanEngine = 'server' | 'device';
+
 export interface ScanSettings {
   mode: ScanMode;
+  engine: ScanEngine;
+  /** Serverda OCR dvigateli o'rnatilganmi (faqat o'qish uchun) */
+  serverAvailable: boolean;
 }
 
-export const DEFAULT_SCAN_SETTINGS: ScanSettings = { mode: 'auto' };
+export const DEFAULT_SCAN_SETTINGS: ScanSettings = {
+  mode: 'auto',
+  engine: 'server',
+  serverAvailable: false,
+};
 
 export const useScanSettings = () =>
   useQuery({
@@ -28,8 +42,8 @@ export const useScanSettings = () =>
 export const useSaveScanSettings = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (mode: ScanMode) => {
-      const { data } = await api.put<ScanSettings>('/guests/scan-settings', { mode });
+    mutationFn: async (payload: { mode: ScanMode; engine: ScanEngine }) => {
+      const { data } = await api.put<ScanSettings>('/guests/scan-settings', payload);
       return data;
     },
     onSuccess: (data) =>

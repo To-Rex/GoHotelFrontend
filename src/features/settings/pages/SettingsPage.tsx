@@ -38,6 +38,7 @@ import {
   useScanSettings,
   useSaveScanSettings,
   type ScanMode,
+  type ScanEngine,
 } from "@/features/guests/api/scanSettings"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
@@ -259,18 +260,20 @@ export const SettingsPage = () => {
   const { data: scanSettings } = useScanSettings()
   const saveScanMutation = useSaveScanSettings()
   const [scanMode, setScanMode] = useState<ScanMode>("auto")
+  const [scanEngine, setScanEngine] = useState<ScanEngine>("server")
   const [scanSaved, setScanSaved] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
 
   useEffect(() => {
     if (scanSettings?.mode) setScanMode(scanSettings.mode)
+    if (scanSettings?.engine) setScanEngine(scanSettings.engine)
   }, [scanSettings])
 
   const onSaveScan = async () => {
     setScanError(null)
     setScanSaved(false)
     try {
-      await saveScanMutation.mutateAsync(scanMode)
+      await saveScanMutation.mutateAsync({ mode: scanMode, engine: scanEngine })
       setScanSaved(true)
       window.setTimeout(() => setScanSaved(false), 3000)
     } catch (e) {
@@ -794,9 +797,57 @@ export const SettingsPage = () => {
                 </button>
               ))}
             </div>
+
+            <p className="mt-5 mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              O'qish qayerda bajariladi
+            </p>
+            <div className="grid gap-2.5">
+              {(
+                [
+                  {
+                    key: "server" as const,
+                    title: "Serverda (tavsiya etiladi)",
+                    text: "Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Rasm serverda saqlanmaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi.",
+                  },
+                  {
+                    key: "device" as const,
+                    title: "Qurilmada",
+                    text: "Hujjat rasmi qurilmadan umuman chiqmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi.",
+                  },
+                ]
+              ).map((m) => {
+                const unavailable = m.key === "server" && !scanSettings?.serverAvailable
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    disabled={unavailable}
+                    onClick={() => setScanEngine(m.key)}
+                    className={cn(
+                      "relative rounded-xl border p-3.5 text-left transition-all",
+                      unavailable && "cursor-not-allowed opacity-55",
+                      scanEngine === m.key && !unavailable
+                        ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                        : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                    )}
+                  >
+                    {scanEngine === m.key && !unavailable && (
+                      <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary-600" />
+                    )}
+                    <p className="pr-6 text-sm font-semibold text-gray-900">{m.title}</p>
+                    <p className="mt-1 text-xs leading-snug text-gray-600">{m.text}</p>
+                    {unavailable && (
+                      <p className="mt-1.5 text-xs font-medium text-amber-700">
+                        Bu serverda o'qish moduli o'rnatilmagan — hozircha faqat qurilmada ishlaydi.
+                      </p>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
             <p className="mt-3 text-xs leading-relaxed text-gray-400">
-              Har ikkala usulda ham hujjat ma'lumotlari faqat xodim
-              qurilmasining o'zida qayta ishlanadi — hech qayerga yuborilmaydi.
+              Qaysi usul tanlangan bo'lsa ham, hujjat rasmi hech qaerda saqlanmaydi:
+              serverda faqat xotirada o'qiladi va javob qaytgach yo'qoladi.
             </p>
             <SaveRow
               onSave={onSaveScan}

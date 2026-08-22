@@ -45,6 +45,11 @@ export interface ScannedDoc {
   scannedSides?: DocumentSide[]
   warnings?: string[]
   fieldConfidence?: Partial<Record<ScannedField, number>>
+  /** Natija qayerda hisoblangan: serverdagi PP-OCR yoki qurilmadagi OCR. */
+  engine?: "server" | "device"
+  /** Faqat serverdan: MRZ'dagi muddat va jins (formani to'ldirmaydi). */
+  expiryDate?: string
+  sex?: "M" | "F"
 }
 
 export interface RecognitionResult {
