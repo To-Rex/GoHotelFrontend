@@ -58,10 +58,13 @@ export const AcceptedShiftReport = () => {
   // Sessiya oynasi (sana oralig'i server filtrlari uchun)
   const winFrom = acc?.started_at ? format(new Date(acc.started_at), "yyyy-MM-dd") : ""
   const winTo = acc?.ended_at ? format(new Date(acc.ended_at), "yyyy-MM-dd") : winFrom
+  // Qabul qilingan smena bo'lmasa so'rov umuman yuborilmaydi: ilgari bo'sh
+  // sana bilan ketib, butun ro'yxatni tortib olardi
+  const hasAccepted = Boolean(acc?.started_at)
 
   const { data: reservations = [] } = useReservations()
-  const { data: expenses = [] } = useExpenses(winFrom, winTo)
-  const { data: shopSales = [] } = useShopSales(winFrom, winTo)
+  const { data: expenses = [] } = useExpenses(winFrom, winTo, hasAccepted)
+  const { data: shopSales = [] } = useShopSales(winFrom, winTo, { enabled: hasAccepted })
   const { data: guests = [] } = useGuests()
   const { data: rooms = [] } = useRooms()
 
@@ -121,15 +124,26 @@ export const AcceptedShiftReport = () => {
   const activeRes = prevReservations.filter((r) => r.status !== "CANCELLED")
   const resTotal = activeRes.reduce((s, r) => s + Number(r.total_amount || 0), 0)
   const expTotal = prevExpenses.reduce((s, e) => s + Number(e.amount || 0), 0)
-  const shopTotal = prevShopSales.reduce((s, x) => s + Number(x.total_amount || 0), 0)
+  // Do'kon PULI faqat TO'LANGAN savdolardan: bronga yozilgan (hali to'lanmagan)
+  // savdo kassaga tushmagan, uni tushum deb ko'rsatish smenani topshirishda
+  // yo'q pulni talab qilishga olib keladi
+  const paidShop = prevShopSales.filter((x) => x.status === "PAID")
+  const shopTotal = paidShop.reduce((s, x) => s + Number(x.total_amount || 0), 0)
+  const shopPending = prevShopSales.length - paidShop.length
 
   const stats = [
     {
       icon: CalendarCheck,
       accent: "bg-blue-50 text-blue-600",
       label: "Bronlar",
-      value: `${activeRes.length} ta`,
-      sub: `${fmt(resTotal)} so'm`,
+      // Ro'yxatda bekor qilinganlar ham ko'rinadi, shuning uchun kartochka
+      // ham umumiy sonni ko'rsatadi — aks holda bitta so'z ikki xil raqamni
+      // bildirardi
+      value: `${prevReservations.length} ta`,
+      sub:
+        prevReservations.length === activeRes.length
+          ? `${fmt(resTotal)} so'm`
+          : `${fmt(resTotal)} so'm · ${prevReservations.length - activeRes.length} ta bekor`,
     },
     {
       icon: TrendingDown,
@@ -142,8 +156,11 @@ export const AcceptedShiftReport = () => {
       icon: Store,
       accent: "bg-violet-50 text-violet-600",
       label: "Do'kon savdolari",
-      value: `${prevShopSales.length} ta`,
-      sub: `${fmt(shopTotal)} so'm`,
+      value: `${paidShop.length} ta`,
+      sub:
+        shopPending > 0
+          ? `${fmt(shopTotal)} so'm · bronda ${shopPending} ta`
+          : `${fmt(shopTotal)} so'm`,
     },
     {
       icon: Wallet,

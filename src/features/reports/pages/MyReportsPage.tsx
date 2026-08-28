@@ -7,16 +7,14 @@ import {
   TrendingDown,
   Banknote,
   Store,
+  AlertCircle,
 } from "lucide-react"
-import { useReservations } from "@/features/reservations/api/reservations"
-import { useExpenses } from "@/features/expenses/api/expenses"
 import { useShopSales, type ShopSale } from "@/features/shop/api/shop"
-import { useGuests } from "@/features/guests/api/guests"
-import { useRooms } from "@/features/rooms/api/rooms"
+import { useMyReport } from "../api/myReport"
 import { useAuthStore } from "@/store/auth"
+import { apiErrorMessage } from "@/lib/apiError"
 import { ShiftPanel } from "@/features/shifts/components/ShiftPanel"
 import { AcceptedShiftReport } from "@/features/shifts/components/AcceptedShiftReport"
-import type { Reservation, Expense } from "@/types/api"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -30,9 +28,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
-/* Shaxsiy hisobot: joriy xodim O'ZI yaratgan bronlar va O'ZI kiritgan
-   xarajatlar. Ma'lumotlar mavjud API'lardan olinadi va created_by bo'yicha
-   mijoz tomonda filtrlash qilinadi — boshqa sahifalarga ta'sir yo'q. */
+/* Shaxsiy hisobot: joriy xodimning tanlangan kunlardagi ishi.
+
+   Barcha ko'rsatkichlar SERVERDA hisoblanadi (`/reports/my-summary`). Ilgari
+   sahifa butun mehmonxonaning eng yangi 500 ta bronini yuklab, brauzerda
+   filtrlar edi — bunda 500 tadan keyingi yozuvlar jimgina tushib qolar,
+   "bugun" har bo'limda boshqa ma'noni bildirar, eng muhimi pul bronni KIM
+   YARATGANIGA qarab yozilardi. Endi pul to'lovning o'zidan olinadi, ya'ni
+   kassa hisobidagi ta'rif bilan bir xil. */
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Kutilmoqda",
@@ -57,6 +60,8 @@ const fmt = (n: number) => Number(n || 0).toLocaleString()
 export const MyReportsPage = () => {
   const user = useAuthStore((s) => s.user)
 
+  // Sana har renderda qayta hisoblanadi: sahifa yarim tundan o'tib ochiq
+  // qolsa ham "Bugun" haqiqiy bugunni bildiradi
   const todayStr = format(new Date(), "yyyy-MM-dd")
   const [dateFrom, setDateFrom] = useState(todayStr)
   const [dateTo, setDateTo] = useState(todayStr)
@@ -77,57 +82,47 @@ export const MyReportsPage = () => {
     },
   ]
 
-  const { data: reservations = [], isLoading: resLoading } = useReservations()
-  const { data: expenses = [], isLoading: expLoading } = useExpenses(dateFrom, dateTo)
-  const { data: shopSales = [] } = useShopSales(dateFrom, dateTo)
-  const { data: guests = [] } = useGuests()
-  const { data: rooms = [] } = useRooms()
+  // Barcha ko'rsatkichlar shu bitta so'rovdan — serverda hisoblangan
+  const {
+    data: report,
+    isLoading,
+    error: reportError,
+  } = useMyReport(dateFrom, dateTo)
 
-  const guestName = (id: string) => {
-    const g = (guests as any[]).find((x) => x.id === id)
-    return g ? `${g.first_name ?? ""} ${g.last_name ?? ""}`.trim() : "—"
-  }
-  const roomNumber = (id: string) => {
-    const r = (rooms as any[]).find((x) => x.id === id)
-    return r ? r.room_number : "—"
-  }
-
-  // O'zim yaratgan bronlar — bron QAYD ETILGAN sana (created_at) oraliqda bo'lsa
-  const myReservations = useMemo(() => {
-    if (!user?.id) return [] as Reservation[]
-    return (reservations as Reservation[])
-      .filter((r) => r.created_by === user.id)
-      .filter((r) => {
-        const d = format(new Date(r.created_at), "yyyy-MM-dd")
-        return d >= dateFrom && d <= dateTo
-      })
-      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
-  }, [reservations, user?.id, dateFrom, dateTo])
-
-  // O'zim kiritgan xarajatlar (sana bo'yicha server filtrlagan)
-  const myExpenses = useMemo(() => {
-    if (!user?.id) return [] as Expense[]
-    return (expenses as Expense[]).filter((e) => e.created_by === user.id)
-  }, [expenses, user?.id])
-
-  // O'zim qilgan do'kon sotuvlari (sotuv vaqti bo'yicha, server filtrlagan)
+  // Do'kon jadvali: sotuv QAYD ETILGAN vaqt bo'yicha, chunki bronga yozilgan
+  // (hali to'lanmagan) sotuvlar ham ro'yxatda ko'rinishi kerak. Kartochkadagi
+  // PUL esa serverdan keladi va u to'langan vaqt bo'yicha hisoblanadi.
+  const { data: shopSales = [], error: shopError } = useShopSales(dateFrom, dateTo)
   const myShopSales = useMemo(() => {
     if (!user?.id) return [] as ShopSale[]
     return (shopSales as ShopSale[]).filter((s) => s.created_by === user.id)
   }, [shopSales, user?.id])
 
-  // Bekor qilinganlar pulga hisoblanmaydi
-  const activeRes = myReservations.filter((r) => r.status !== "CANCELLED")
-  const resTotal = activeRes.reduce((s, r) => s + Number(r.total_amount || 0), 0)
-  const resPaid = activeRes.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
-  const cancelledCount = myReservations.length - activeRes.length
-  const expTotal = myExpenses.reduce((s, e) => s + Number(e.amount || 0), 0)
-  const shopTotal = myShopSales.reduce((s, x) => s + Number(x.total_amount || 0), 0)
-  const shopPendingTotal = myShopSales
-    .filter((x) => x.status === "PENDING")
-    .reduce((s, x) => s + Number(x.total_amount || 0), 0)
+  const myReservations = report?.reservations.items ?? []
+  const myExpenses = report?.expenses.items ?? []
 
-  const isLoading = resLoading || expLoading
+  const resCount = report?.reservations.count ?? 0
+  const cancelledCount = report?.reservations.cancelled_count ?? 0
+  const resTotal = report?.reservations.total_amount ?? 0
+  // Xodim HAQIQATDA qabul qilgan pul (qaytarimlar allaqachon ayirilgan)
+  const collected = report?.payments.total ?? 0
+  const collectedCash = report?.payments.by_method.cash ?? 0
+  const refunds = report?.payments.refunds ?? 0
+  const shopTotal = report?.shop.total ?? 0
+  const shopCount = report?.shop.count ?? 0
+  const shopPendingTotal = report?.shop.unpaid_total ?? 0
+  const shopPendingCount = report?.shop.unpaid_count ?? 0
+  const expTotal = report?.expenses.total ?? 0
+  const expCount = report?.expenses.count ?? 0
+
+  const loadError = reportError || shopError
+
+  // Yuklanayotganda ko'rsatkichlar NOL emas, "—" bo'ladi: nol ham haqiqiy
+  // qiymat, uni yuklanish holatidan ajratib bo'lmasa xodim "hech narsa
+  // qilmabman" degan xulosaga keladi
+  const stat = (value: number) => (isLoading ? "—" : fmt(value))
+  const count = (value: number) => (isLoading ? "—" : String(value))
+
 
   return (
     <div className="space-y-5">
@@ -190,13 +185,21 @@ export const MyReportsPage = () => {
         </div>
       </div>
 
+      {/* Ma'lumot kelmasa — nol emas, sabab ko'rsatiladi */}
+      {loadError && (
+        <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          Hisobotni yuklab bo'lmadi: {apiErrorMessage(loadError)}
+        </p>
+      )}
+
       {/* Ko'rsatkichlar */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarCheck size={15} /> Yaratgan bronlarim
           </div>
-          <p className="mt-1 text-2xl font-bold">{myReservations.length} ta</p>
+          <p className="mt-1 text-2xl font-bold">{count(resCount)} ta</p>
           {cancelledCount > 0 && (
             <p className="mt-0.5 text-xs text-muted-foreground">
               shundan {cancelledCount} tasi bekor qilingan
@@ -207,31 +210,38 @@ export const MyReportsPage = () => {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Wallet size={15} /> Bronlar summasi
           </div>
-          <p className="mt-1 text-2xl font-bold">{fmt(resTotal)} So'm</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">bekor qilinganlarsiz</p>
+          <p className="mt-1 text-2xl font-bold">{stat(resTotal)} So'm</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            bekor qilinganlarsiz · bu shartnoma qiymati, pul emas
+          </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Banknote size={15} /> Qabul qilingan to'lovlar
+            <Banknote size={15} /> Qabul qilgan to'lovlarim
           </div>
-          <p className="mt-1 text-2xl font-bold text-emerald-600">{fmt(resPaid)} So'm</p>
+          <p className="mt-1 text-2xl font-bold text-emerald-600">{stat(collected)} So'm</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            naqd {fmt(collectedCash)}
+            {refunds > 0 && ` · qaytarilgan ${fmt(refunds)}`}
+          </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Store size={15} /> Do'kon sotuvlarim
           </div>
-          <p className="mt-1 text-2xl font-bold text-violet-600">{fmt(shopTotal)} So'm</p>
+          <p className="mt-1 text-2xl font-bold text-violet-600">{stat(shopTotal)} So'm</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {myShopSales.length} ta sotuv
-            {shopPendingTotal > 0 && ` · bronda: ${fmt(shopPendingTotal)}`}
+            {shopCount} ta to'langan
+            {shopPendingCount > 0 &&
+              ` · bronda ${shopPendingCount} ta: ${fmt(shopPendingTotal)}`}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <TrendingDown size={15} /> Xarajatlarim
           </div>
-          <p className="mt-1 text-2xl font-bold text-red-600">{fmt(expTotal)} So'm</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{myExpenses.length} ta yozuv</p>
+          <p className="mt-1 text-2xl font-bold text-red-600">{stat(expTotal)} So'm</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{expCount} ta yozuv</p>
         </div>
       </div>
 
@@ -246,7 +256,7 @@ export const MyReportsPage = () => {
           <div className="rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h2 className="text-sm font-semibold">Mening bronlarim</h2>
-              <span className="text-xs text-muted-foreground">{myReservations.length} ta</span>
+              <span className="text-xs text-muted-foreground">{resCount} ta</span>
             </div>
             {myReservations.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -264,7 +274,7 @@ export const MyReportsPage = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">
-                            {guestName(r.guest_id)}
+                            {r.guest_name || "—"}
                           </p>
                           <p className="mt-0.5 text-[11px] text-muted-foreground">
                             {r.reservation_number} ·{" "}
@@ -283,7 +293,7 @@ export const MyReportsPage = () => {
                       <div className="mt-2.5 flex items-end justify-between gap-2 border-t border-border pt-2">
                         <span className="text-sm">
                           <span className="text-muted-foreground">Xona: </span>
-                          <span className="font-medium">{roomNumber(r.room_id)}</span>
+                          <span className="font-medium">{r.room_number || "—"}</span>
                         </span>
                         <div className="text-right">
                           <p
@@ -327,9 +337,9 @@ export const MyReportsPage = () => {
                           {r.reservation_number}
                         </TableCell>
                         <TableCell className="max-w-[180px] truncate text-sm font-medium">
-                          {guestName(r.guest_id)}
+                          {r.guest_name || "—"}
                         </TableCell>
-                        <TableCell className="text-sm">{roomNumber(r.room_id)}</TableCell>
+                        <TableCell className="text-sm">{r.room_number || "—"}</TableCell>
                         <TableCell>
                           <span
                             className={cn(
@@ -465,7 +475,7 @@ export const MyReportsPage = () => {
           <div className="rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h2 className="text-sm font-semibold">Mening xarajatlarim</h2>
-              <span className="text-xs text-muted-foreground">{myExpenses.length} ta</span>
+              <span className="text-xs text-muted-foreground">{expCount} ta</span>
             </div>
             {myExpenses.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">

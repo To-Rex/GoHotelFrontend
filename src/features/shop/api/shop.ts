@@ -59,6 +59,8 @@ export interface ShopSalesOptions {
   /** Sana filtri qaysi maydonga qo'llanadi: sotuv vaqti yoki to'lov vaqti */
   dateBy?: 'created' | 'paid';
   status?: 'PAID' | 'PENDING';
+  /** Kerak bo'lmaganda so'rov umuman yuborilmasin (masalan sana hali ma'lum emas) */
+  enabled?: boolean;
 }
 
 export const useShopProducts = (includeInactive = false) => {
@@ -91,6 +93,7 @@ export const useShopSales = (
       });
       return Array.isArray(data) ? data : [];
     },
+    enabled: opts.enabled ?? true,
   });
 };
 
