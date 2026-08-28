@@ -243,11 +243,15 @@ export const isCashStaff = (user: User | null): boolean =>
 export const shiftRestriction = (
   user: User | null,
   state: ShiftState | undefined
-): "work_ended" | "blocked" | "cut_due" | null => {
+): "work_ended" | "blocked" | "cut_due" | "no_shift" | null => {
   if (!isCashStaff(user)) return null;
   if (!state || state.mode !== "cash") return null;
   // Boshqa xodimning yopilmagan smenasi — men hali sessiya ochmagan bo'lsam
   if (!state.my_session && state.blocking_session) return "blocked";
+  // Smena umuman ochilmagan. Kassa hisobi xodimning sessiyasiga bog'langan:
+  // sessiyasiz kiritilgan tushum hech kimning kassasiga tushmaydi va smena
+  // topshirishda pul "yo'q joydan" paydo bo'ladi.
+  if (!state.my_session) return "no_shift";
   if (isCutDue(state)) return "cut_due";
   if (isWorkEnded(user) && !state.my_session?.continue_after_end) return "work_ended";
   return null;

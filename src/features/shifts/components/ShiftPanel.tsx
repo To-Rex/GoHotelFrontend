@@ -282,7 +282,8 @@ export const ShiftPanel = () => {
             <div>
               <p className="font-bold text-gray-900">Smena ochilmagan</p>
               <p className="text-sm text-gray-500">
-                Ishni boshlash uchun smenani oching — kassa 0 so'mdan boshlanadi.
+                Smena ochilmaguncha bron va to'lov qabul qilib bo'lmaydi — tushum
+                hech kimning kassasiga tushmaydi. Kassa 0 so'mdan boshlanadi.
               </p>
             </div>
           </div>
