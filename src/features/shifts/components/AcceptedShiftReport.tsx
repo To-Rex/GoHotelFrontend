@@ -1,8 +1,9 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { format } from "date-fns"
 import {
   ArrowRightLeft,
   CalendarCheck,
+  ChevronDown,
   TrendingDown,
   Store,
   Wallet,
@@ -43,6 +44,48 @@ const STATUS_STYLES: Record<string, string> = {
   CHECKED_OUT: "bg-slate-100 text-slate-600",
   CANCELLED: "bg-red-100 text-red-600",
   NO_SHOW: "bg-orange-100 text-orange-600",
+}
+
+/* Yig'iluvchi ro'yxat: sarlavha bosilganda ochiladi/yopiladi.
+
+   Qabul qilingan smena hisoboti sahifa boshida turadi va o'z ostidagi asosiy
+   hisobotni pastga surib yuboradi. Ro'yxatlar odatda kerak emas — muhimi
+   kartochkalardagi jamlar — shuning uchun ular YOPIQ holatda boshlanadi va
+   faqat so'ralganda ochiladi. */
+function CollapsibleList({
+  title,
+  count,
+  children,
+}: {
+  title: string
+  count: number
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="overflow-hidden rounded-xl border">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center justify-between gap-2 bg-gray-50/70 px-3 py-2.5 text-left text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100",
+          open && "border-b"
+        )}
+      >
+        <span>
+          {title} ({count} ta)
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+      {open && children}
+    </div>
+  )
 }
 
 /* Qabul qilingan smena hisoboti — /my-reports da ALOHIDA bo'lim.
@@ -254,10 +297,10 @@ export const AcceptedShiftReport = () => {
 
         {/* Avvalgi xodim bronlari */}
         {prevReservations.length > 0 && (
-          <div className="rounded-xl border overflow-hidden">
-            <p className="border-b bg-gray-50/70 px-3 py-2 text-xs font-semibold text-gray-600">
-              Smena davomidagi bronlar ({prevReservations.length} ta)
-            </p>
+          <CollapsibleList
+            title="Smena davomidagi bronlar"
+            count={prevReservations.length}
+          >
             {/* MOBIL: bronlar ixcham karta ko'rinishida (jadval planshet/desktopda) */}
             <div className="space-y-2.5 p-2.5 md:hidden">
               {prevReservations.map((r) => (
@@ -333,15 +376,15 @@ export const AcceptedShiftReport = () => {
                 </TableBody>
               </Table>
             </div>
-          </div>
+          </CollapsibleList>
         )}
 
         {/* Avvalgi xodim xarajatlari */}
         {prevExpenses.length > 0 && (
-          <div className="rounded-xl border overflow-hidden">
-            <p className="border-b bg-gray-50/70 px-3 py-2 text-xs font-semibold text-gray-600">
-              Smena davomidagi xarajatlar ({prevExpenses.length} ta)
-            </p>
+          <CollapsibleList
+            title="Smena davomidagi xarajatlar"
+            count={prevExpenses.length}
+          >
             {/* MOBIL: xarajatlar ixcham karta ko'rinishida (jadval planshet/desktopda) */}
             <div className="space-y-2.5 p-2.5 md:hidden">
               {prevExpenses.map((e) => (
@@ -385,7 +428,7 @@ export const AcceptedShiftReport = () => {
                 </TableBody>
               </Table>
             </div>
-          </div>
+          </CollapsibleList>
         )}
 
         {prevReservations.length === 0 &&
