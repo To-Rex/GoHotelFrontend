@@ -8,7 +8,7 @@ import {
   useShiftState,
   shiftRestriction,
   isCashStaff,
-  SHIFT_ALLOWED_ROUTES,
+  allowedRoutesFor,
   SHIFT_REDIRECT_ROUTE,
 } from "@/features/shifts/api/shifts";
 import { api } from "@/lib/api";
@@ -80,7 +80,7 @@ export const MainLayout = () => {
   // kunlik kassa kesimi kelgan yoki oldingi smena topshirilmagan — faqat
   // kassa, hisobot va xarajatlar sahifalari ochiq qoladi.
   const restriction = shiftRestriction(user, shiftState);
-  if (restriction && !SHIFT_ALLOWED_ROUTES.includes(pathname)) {
+  if (restriction && !allowedRoutesFor(restriction).includes(pathname)) {
     // Kassa sahifasiga — smenani ochish/topshirish tugmalari o'sha yerda
     return <Navigate to={SHIFT_REDIRECT_ROUTE} replace />;
   }

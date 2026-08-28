@@ -240,10 +240,33 @@ export const isCashStaff = (user: User | null): boolean =>
   (user.permissions || []).some((p) => CASH_PERMS.includes(p));
 
 /** Xodim uchun sahifalar cheklanganmi va sababi. */
+export type ShiftRestriction =
+  | "work_ended"
+  | "blocked"
+  | "cut_due"
+  | "no_shift"
+  | "handover";
+
 /** Smena cheklovi paytida ochiq qoladigan sahifalar.
  *  Yon menyu ham, marshrut qo'riqchisi ham SHU ro'yxatga tayanadi — ikki joyda
  *  alohida yozilsa, ular bir-biriga zid bo'lib qolardi. */
 export const SHIFT_ALLOWED_ROUTES = ["/cash-reports", "/my-reports", "/expenses"];
+
+/** Faol smenasi YO'Q xodimga ochiq qoladigan sahifalar.
+ *
+ *  Xarajat ham kassadan chiqadi va sessiyaga yoziladi. Faol sessiya bo'lmasa,
+ *  u hech qaysi smenaga tushmaydi — topshirilgan sessiyaning oynasi allaqachon
+ *  yopilgan. Shuning uchun bunday holatda faqat kassa va hisobot qoladi. */
+export const SHIFT_ALLOWED_ROUTES_NO_SESSION = ["/cash-reports", "/my-reports"];
+
+/** Cheklov turiga qarab ochiq qoladigan sahifalar.
+ *  `cut_due` va `work_ended` da xodimning FAOL sessiyasi bor — u ishlashda
+ *  davom etishi yoki kassani topshirishi mumkin, shuning uchun xarajat ham
+ *  o'z sessiyasiga yoziladi va ochiq qoladi. */
+export const allowedRoutesFor = (restriction: ShiftRestriction | null): string[] =>
+  restriction === "cut_due" || restriction === "work_ended"
+    ? SHIFT_ALLOWED_ROUTES
+    : SHIFT_ALLOWED_ROUTES_NO_SESSION;
 
 /** Cheklov paytida qaysi sahifaga yo'naltiriladi.
  *  Smenani ochish tugmasi shu sahifada — boshqasiga yuborilsa, xodim
@@ -253,7 +276,7 @@ export const SHIFT_REDIRECT_ROUTE = "/cash-reports";
 export const shiftRestriction = (
   user: User | null,
   state: ShiftState | undefined
-): "work_ended" | "blocked" | "cut_due" | "no_shift" | null => {
+): ShiftRestriction | null => {
   if (!isCashStaff(user)) return null;
   if (!state || state.mode !== "cash") return null;
   // Boshqa xodimning yopilmagan smenasi — men hali sessiya ochmagan bo'lsam
@@ -262,6 +285,10 @@ export const shiftRestriction = (
   // sessiyasiz kiritilgan tushum hech kimning kassasiga tushmaydi va smena
   // topshirishda pul "yo'q joydan" paydo bo'ladi.
   if (!state.my_session) return "no_shift";
+  // Smena tugallangan, keyingi xodim qabul qilishini kutmoqda. Sessiya oynasi
+  // yopilgan, ya'ni bu paytda kiritilgan tushum hech qaysi smenaga tushmaydi —
+  // xuddi smena umuman ochilmagandagidek.
+  if (state.my_session.status !== "ACTIVE") return "handover";
   if (isCutDue(state)) return "cut_due";
   if (isWorkEnded(user) && !state.my_session?.continue_after_end) return "work_ended";
   return null;

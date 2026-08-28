@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   shiftRestriction,
+  allowedRoutesFor,
   SHIFT_ALLOWED_ROUTES,
   SHIFT_REDIRECT_ROUTE,
   type ShiftState,
@@ -125,5 +126,56 @@ describe("cheklov paytidagi yo'naltirish", () => {
   it("xarajatlar va shaxsiy hisobot ham ochiq qoladi", () => {
     expect(SHIFT_ALLOWED_ROUTES).toContain("/expenses")
     expect(SHIFT_ALLOWED_ROUTES).toContain("/my-reports")
+  })
+})
+
+describe("smena tugallangan, qabul kutilmoqda", () => {
+  const handedOver = {
+    ...activeSession,
+    status: "PENDING_HANDOVER",
+  } as ShiftState["my_session"]
+
+  it("topshirilgan smenada ish cheklanadi", () => {
+    // Sessiya oynasi yopilgan: bu paytdagi tushum hech qaysi smenaga
+    // tushmaydi, shuning uchun bron qilish ochiq qolmasligi kerak
+    expect(
+      shiftRestriction(reception, cashMode({ my_session: handedOver }))
+    ).toBe("handover")
+  })
+
+  it("faqat kassa va shaxsiy hisobot ochiq qoladi", () => {
+    const open = allowedRoutesFor("handover")
+    expect(open).toEqual(["/cash-reports", "/my-reports"])
+    expect(open).not.toContain("/booking")
+    // Xarajat ham kassadan chiqadi — yozadigan sessiya yo'q
+    expect(open).not.toContain("/expenses")
+  })
+
+  it("smena qayta ochilgach cheklov yo'qoladi", () => {
+    expect(
+      shiftRestriction(reception, cashMode({ my_session: activeSession }))
+    ).toBeNull()
+  })
+})
+
+describe("faol sessiyasi bor cheklovlar", () => {
+  it("kassa kesimi va ish vaqti tugashida xarajat ochiq qoladi", () => {
+    // Bu holatlarda xodimning FAOL sessiyasi bor — xarajat o'shanga yoziladi
+    for (const reason of ["cut_due", "work_ended"] as const) {
+      expect(allowedRoutesFor(reason)).toEqual(SHIFT_ALLOWED_ROUTES)
+      expect(allowedRoutesFor(reason)).toContain("/expenses")
+    }
+  })
+
+  it("har qanday cheklovda yo`naltiriladigan sahifa ochiq", () => {
+    for (const reason of [
+      "no_shift",
+      "blocked",
+      "handover",
+      "cut_due",
+      "work_ended",
+    ] as const) {
+      expect(allowedRoutesFor(reason)).toContain(SHIFT_REDIRECT_ROUTE)
+    }
   })
 })

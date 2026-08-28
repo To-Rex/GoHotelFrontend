@@ -33,7 +33,7 @@ import {
   useShiftState,
   shiftRestriction,
   isCashStaff,
-  SHIFT_ALLOWED_ROUTES,
+  allowedRoutesFor,
 } from "@/features/shifts/api/shifts";
 import { useStaffMessages } from "@/features/messages/api/messages";
 
@@ -47,7 +47,8 @@ export const Sidebar = () => {
   // ko'rinib turar, lekin bosilganda jimgina qaytarib yuborilardi — xodim
   // nima uchun o'ta olmayotganini tushunmasdi.
   const { data: shiftState } = useShiftState(!!user && isCashStaff(user));
-  const restricted = Boolean(shiftRestriction(user, shiftState));
+  const restriction = shiftRestriction(user, shiftState);
+  const openRoutes = allowedRoutesFor(restriction);
 
   // Ochiq xabar/so'rovlar soni — Xabarlar bandida qizil belgi bo'lib turadi
   const { data: staffMessages = [] } = useStaffMessages(60_000);
@@ -85,7 +86,7 @@ export const Sidebar = () => {
   // Foydalanuvchining ruxsatlariga mos sahifalargina ko'rsatiladi. Smena
   // cheklovi bo'lsa, ochiq qolgan sahifalardan boshqasi ko'rsatilmaydi.
   const allowed = (href: string) =>
-    canRoute(href) && (!restricted || SHIFT_ALLOWED_ROUTES.includes(href));
+    canRoute(href) && (!restriction || openRoutes.includes(href));
   const links = allLinks.filter((l) => allowed(l.href));
   const adminLinks = managementLinks.filter((l) => allowed(l.href));
 
