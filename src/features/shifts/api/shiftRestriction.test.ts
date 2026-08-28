@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { shiftRestriction, type ShiftState } from "./shifts"
+import {
+  shiftRestriction,
+  SHIFT_ALLOWED_ROUTES,
+  SHIFT_REDIRECT_ROUTE,
+  type ShiftState,
+} from "./shifts"
 import type { User } from "@/store/auth"
 
 /* Smena cheklovi kimga va qachon qo'llanadi.
@@ -101,5 +106,24 @@ describe("cheklov tegmaydigan xodimlar", () => {
 
   it("tizimga kirmagan foydalanuvchi", () => {
     expect(shiftRestriction(null, cashMode())).toBeNull()
+  })
+})
+
+describe("cheklov paytidagi yo'naltirish", () => {
+  it("yo'naltiriladigan sahifaning o'zi ochiq bo'lishi shart", () => {
+    // Aks holda: cheklangan xodim kassa sahifasiga yuboriladi, u yerda yana
+    // cheklov ishlaydi va yana o'sha yerga yuboriladi — cheksiz aylanish
+    expect(SHIFT_ALLOWED_ROUTES).toContain(SHIFT_REDIRECT_ROUTE)
+  })
+
+  it("smenani ochish sahifasi ochiq ro'yxatda", () => {
+    // Smenani ochish tugmasi shu sahifada — u yopilsa, xodim cheklovdan
+    // chiqishning yo'lini topa olmaydi
+    expect(SHIFT_ALLOWED_ROUTES).toContain("/cash-reports")
+  })
+
+  it("xarajatlar va shaxsiy hisobot ham ochiq qoladi", () => {
+    expect(SHIFT_ALLOWED_ROUTES).toContain("/expenses")
+    expect(SHIFT_ALLOWED_ROUTES).toContain("/my-reports")
   })
 })

@@ -9,6 +9,7 @@ import {
   shiftRestriction,
   isCashStaff,
   SHIFT_ALLOWED_ROUTES,
+  SHIFT_REDIRECT_ROUTE,
 } from "@/features/shifts/api/shifts";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -75,11 +76,13 @@ export const MainLayout = () => {
     return <Navigate to={firstAllowedRoute()} replace />;
   }
 
-  // Smena cheklovi: ish vaqti tugagan (davom etilmagan), kunlik kassa kesimi
-  // kelgan yoki oldingi smena topshirilmagan — faqat hisobot va xarajatlar.
+  // Smena cheklovi: smena ochilmagan, ish vaqti tugagan (davom etilmagan),
+  // kunlik kassa kesimi kelgan yoki oldingi smena topshirilmagan — faqat
+  // kassa, hisobot va xarajatlar sahifalari ochiq qoladi.
   const restriction = shiftRestriction(user, shiftState);
   if (restriction && !SHIFT_ALLOWED_ROUTES.includes(pathname)) {
-    return <Navigate to="/my-reports" replace />;
+    // Kassa sahifasiga — smenani ochish/topshirish tugmalari o'sha yerda
+    return <Navigate to={SHIFT_REDIRECT_ROUTE} replace />;
   }
 
   const fullBleed = FULL_BLEED_ROUTES.includes(pathname);

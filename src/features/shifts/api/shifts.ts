@@ -243,7 +243,12 @@ export const isCashStaff = (user: User | null): boolean =>
 /** Smena cheklovi paytida ochiq qoladigan sahifalar.
  *  Yon menyu ham, marshrut qo'riqchisi ham SHU ro'yxatga tayanadi — ikki joyda
  *  alohida yozilsa, ular bir-biriga zid bo'lib qolardi. */
-export const SHIFT_ALLOWED_ROUTES = ["/my-reports", "/expenses"];
+export const SHIFT_ALLOWED_ROUTES = ["/cash-reports", "/my-reports", "/expenses"];
+
+/** Cheklov paytida qaysi sahifaga yo'naltiriladi.
+ *  Smenani ochish tugmasi shu sahifada — boshqasiga yuborilsa, xodim
+ *  cheklovdan chiqishning yo'lini topa olmay qoladi. */
+export const SHIFT_REDIRECT_ROUTE = "/cash-reports";
 
 export const shiftRestriction = (
   user: User | null,

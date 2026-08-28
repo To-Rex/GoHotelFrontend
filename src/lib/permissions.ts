@@ -29,6 +29,17 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   // Shaxsiy hisobot — xodim o'zi yaratgan bronlar va xarajatlarini ko'radi.
   // Bron yarata oladigan har bir xodimga (qabulxona, menejer) ochiq
   "/my-reports": ["reservation.create", "reservation.view"],
+  // Kassa hisobotlari — smena ochish/topshirish.
+  //
+  // Ro'yxat isCashStaff() ni TO'LIQ qamrab olishi SHART: smena ochilmagan
+  // xodim shu sahifaga yo'naltiriladi, u yerga esa kira olmasa — yo'naltirish
+  // aylanib qoladi. Shuning uchun faqat finance.payment.create ega kassir ham
+  // shu yerda bo'lishi kerak.
+  "/cash-reports": [
+    "reservation.create",
+    "reservation.view",
+    "finance.payment.create",
+  ],
   // --- Boshqaruv bo'limlari (admin/menejer) ---
   // ADMIN/SUPER_ADMIN isAdmin bypass orqali doim ko'radi; xodim (menejer)
   // esa quyidagi ruxsatlardan kamida bittasiga ega bo'lsa ko'radi.

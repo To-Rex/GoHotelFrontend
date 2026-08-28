@@ -13,8 +13,6 @@ import { useShopSales, type ShopSale } from "@/features/shop/api/shop"
 import { useMyReport } from "../api/myReport"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
-import { ShiftPanel } from "@/features/shifts/components/ShiftPanel"
-import { AcceptedShiftReport } from "@/features/shifts/components/AcceptedShiftReport"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -126,13 +124,6 @@ export const MyReportsPage = () => {
 
   return (
     <div className="space-y-5">
-      {/* Smena va kassa paneli (faqat kassali rejimda ko'rinadi) */}
-      <ShiftPanel />
-
-      {/* Qabul qilingan smena hisoboti — ALOHIDA bo'lim (avvalgi xodim
-          hisobida, joriy xodim summalariga qo'shilmaydi) */}
-      <AcceptedShiftReport />
-
       {/* Sarlavha */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
