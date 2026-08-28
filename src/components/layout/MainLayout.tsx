@@ -4,7 +4,12 @@ import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { useAuthStore } from "@/store/auth";
 import { usePermissions } from "@/lib/permissions";
-import { useShiftState, shiftRestriction, isCashStaff } from "@/features/shifts/api/shifts";
+import {
+  useShiftState,
+  shiftRestriction,
+  isCashStaff,
+  SHIFT_ALLOWED_ROUTES,
+} from "@/features/shifts/api/shifts";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useSeo } from "@/lib/seo";
@@ -17,7 +22,7 @@ const FULL_BLEED_ROUTES = ["/booking"];
 // markazlash (max-w) cheklovi yo'q — kontent butun bo'sh joyni egallaydi.
 
 // Smena cheklovi paytida ochiq qoladigan sahifalar
-const SHIFT_ALLOWED_ROUTES = ["/my-reports", "/expenses"];
+
 
 export const MainLayout = () => {
   const { isAuthenticated, setUser, user } = useAuthStore();

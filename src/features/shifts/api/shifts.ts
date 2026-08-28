@@ -240,6 +240,11 @@ export const isCashStaff = (user: User | null): boolean =>
   (user.permissions || []).some((p) => CASH_PERMS.includes(p));
 
 /** Xodim uchun sahifalar cheklanganmi va sababi. */
+/** Smena cheklovi paytida ochiq qoladigan sahifalar.
+ *  Yon menyu ham, marshrut qo'riqchisi ham SHU ro'yxatga tayanadi — ikki joyda
+ *  alohida yozilsa, ular bir-biriga zid bo'lib qolardi. */
+export const SHIFT_ALLOWED_ROUTES = ["/my-reports", "/expenses"];
+
 export const shiftRestriction = (
   user: User | null,
   state: ShiftState | undefined

@@ -28,6 +28,12 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { usePermissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth";
+import {
+  useShiftState,
+  shiftRestriction,
+  isCashStaff,
+  SHIFT_ALLOWED_ROUTES,
+} from "@/features/shifts/api/shifts";
 import { useStaffMessages } from "@/features/messages/api/messages";
 
 export const Sidebar = () => {
@@ -35,6 +41,12 @@ export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const { canRoute } = usePermissions();
   const user = useAuthStore((s) => s.user);
+
+  // Smena cheklovi paytida ochiq qoladigan sahifalar. Ilgari qolgan havolalar
+  // ko'rinib turar, lekin bosilganda jimgina qaytarib yuborilardi — xodim
+  // nima uchun o'ta olmayotganini tushunmasdi.
+  const { data: shiftState } = useShiftState(!!user && isCashStaff(user));
+  const restricted = Boolean(shiftRestriction(user, shiftState));
 
   // Ochiq xabar/so'rovlar soni — Xabarlar bandida qizil belgi bo'lib turadi
   const { data: staffMessages = [] } = useStaffMessages(60_000);
@@ -68,9 +80,12 @@ export const Sidebar = () => {
     { name: "Ruxsatnomalar", href: "/permissions", icon: ShieldCheck },
   ];
 
-  // Foydalanuvchining ruxsatlariga mos sahifalargina ko'rsatiladi.
-  const links = allLinks.filter((l) => canRoute(l.href));
-  const adminLinks = managementLinks.filter((l) => canRoute(l.href));
+  // Foydalanuvchining ruxsatlariga mos sahifalargina ko'rsatiladi. Smena
+  // cheklovi bo'lsa, ochiq qolgan sahifalardan boshqasi ko'rsatilmaydi.
+  const allowed = (href: string) =>
+    canRoute(href) && (!restricted || SHIFT_ALLOWED_ROUTES.includes(href));
+  const links = allLinks.filter((l) => allowed(l.href));
+  const adminLinks = managementLinks.filter((l) => allowed(l.href));
 
   const initials = user
     ? `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase() || "?"
