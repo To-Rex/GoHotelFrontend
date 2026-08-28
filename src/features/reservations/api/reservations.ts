@@ -31,6 +31,10 @@ export const useCreateReservation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      // Bron/hisob-faktura pul harakatiga olib keladi — smenani
+      // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
+      // hisobi qayta olinsin
+      queryClient.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
     },
   });
 };
@@ -49,6 +53,10 @@ export const useUpdateReservation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      // Bron/hisob-faktura pul harakatiga olib keladi — smenani
+      // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
+      // hisobi qayta olinsin
+      queryClient.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
     },
   });
 };
@@ -85,6 +93,10 @@ export const useRequestCheckout = () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       queryClient.invalidateQueries({ queryKey: ['housekeepingTasks'] });
+      // Bron/hisob-faktura pul harakatiga olib keladi — smenani
+      // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
+      // hisobi qayta olinsin
+      queryClient.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
     },
   });
 };
@@ -106,6 +118,10 @@ export const useCheckInReservation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      // Bron/hisob-faktura pul harakatiga olib keladi — smenani
+      // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
+      // hisobi qayta olinsin
+      queryClient.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
     },
   });
 };
@@ -125,6 +141,10 @@ export const useMoveRoom = () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      // Bron/hisob-faktura pul harakatiga olib keladi — smenani
+      // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
+      // hisobi qayta olinsin
+      queryClient.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
     },
   });
 };
@@ -157,6 +177,10 @@ export const useSettleReservation = () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      // Bron/hisob-faktura pul harakatiga olib keladi — smenani
+      // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
+      // hisobi qayta olinsin
+      queryClient.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
     },
   });
 };
@@ -189,6 +213,7 @@ export const useSaveEditWindowSettings = () => {
       );
       return data;
     },
+    // Bu sozlama saqlash — pul harakati emas, kassa hisobi tegilmaydi
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ['reservationEditWindow'] }),
   });
@@ -212,6 +237,10 @@ export const useCancelReservation = () => {
       // Bekor qilinganda bog'liq hisob-faktura ham VOID bo'ladi —
       // Moliya bo'limi darhol yangilanishi uchun keshni tozalaymiz
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      // Bron/hisob-faktura pul harakatiga olib keladi — smenani
+      // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
+      // hisobi qayta olinsin
+      queryClient.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
     },
   });
 };

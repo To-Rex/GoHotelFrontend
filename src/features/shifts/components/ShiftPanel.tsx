@@ -61,25 +61,35 @@ export const ShiftPanel = () => {
   // Sanash dialogi: "cash" — kassani topshirish, "end" — smenani tugallash
   const [countDialog, setCountDialog] = useState<"cash" | "end" | null>(null)
   // Dialog ochilganda kassada bo'lishi kerak bo'lgan summa (tarkibi bilan)
-  const { data: expectedData } = useExpectedCash(!!countDialog)
+  const { data: expectedData, isFetching: expectedFetching } = useExpectedCash(!!countDialog)
   const [counted, setCounted] = useState("")
   const [notes, setNotes] = useState("")
   const [countError, setCountError] = useState<string | null>(null)
   // Dialog ochilganda kutilgan summa maydonga AVTOMATIK yozib qo'yiladi —
-  // xodim istasa o'zgartiradi. Har ochilishda bir marta to'ldiriladi,
-  // keyin qo'lda kiritilgan qiymat ustun turadi
-  const prefilledRef = useRef(false)
+  // xodim istasa o'zgartiradi.
+  //
+  // Bu yerda ikkita nozik shart bor:
+  //
+  // 1. KESHDAGI eski qiymatda qotib qolmaslik. Dialog ochilganda so'rov
+  //    keshdagi summani darhol qaytaradi va yangisini fonda oladi. Ilgari
+  //    to'ldirish "bir marta bajarildi" deb qulflanardi, ya'ni u eski
+  //    qiymatga tushib qolar, keyin kelgan yangi hisob e'tiborsiz qolardi —
+  //    yangi bron qilingandan keyin dialog eski summani ko'rsatardi va faqat
+  //    sahifa yangilangandan keyin to'g'rilanardi. Endi hisob har yangilanganda
+  //    maydon ham yangilanadi, shuning uchun kesh qiymati bilan darhol
+  //    to'ldirsak ham u yangisi kelishi bilan almashadi.
+  // 2. Xodim kiritgan qiymatni bosib ketmaslik: u bir marta tahrirlagach,
+  //    hisob yangilansa ham maydonga tegilmaydi.
+  const editedRef = useRef(false)
   useEffect(() => {
     if (!countDialog) {
-      prefilledRef.current = false
+      editedRef.current = false
       return
     }
-    if (!prefilledRef.current && expectedData) {
-      const v = Math.max(0, Math.round(Number(expectedData.expected_cash || 0)))
-      setCounted(String(v))
-      setCountError(null)
-      prefilledRef.current = true
-    }
+    if (editedRef.current || !expectedData) return
+    const v = Math.max(0, Math.round(Number(expectedData.expected_cash || 0)))
+    setCounted(String(v))
+    setCountError(null)
   }, [countDialog, expectedData])
   // Yopilgandan keyingi hisobot (kutilgan/sanalgan/farq)
   const [report, setReport] = useState<ShiftSession | null>(null)
@@ -447,9 +457,18 @@ export const ShiftPanel = () => {
           <div className="space-y-3 py-2">
             {/* Kassada bo'lishi kerak bo'lgan summa — tarkibi bilan */}
             {expectedData && (
-              <div className="rounded-xl border border-primary-100 bg-primary-50/60 px-3.5 py-2.5">
-                <p className="text-xs font-medium text-gray-500">
+              <div
+                className={cn(
+                  "rounded-xl border border-primary-100 bg-primary-50/60 px-3.5 py-2.5 transition-opacity",
+                  // Fonda yangi hisob olinayotganda raqam eskirgan bo'lishi
+                  // mumkin — buni yashirmaymiz, aks holda xodim eski summani
+                  // haqiqiy deb o'qib qoladi
+                  expectedFetching && "opacity-60"
+                )}
+              >
+                <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
                   Kassada bo'lishi kerak
+                  {expectedFetching && <Loader2 className="h-3 w-3 animate-spin" />}
                 </p>
                 <p className="text-xl font-bold tabular-nums text-primary-700">
                   {fmtMoney(expectedData.expected_cash)} so'm
@@ -474,7 +493,11 @@ export const ShiftPanel = () => {
                 type="number"
                 min={0}
                 value={counted}
-                onChange={(e) => setCounted(e.target.value)}
+                onChange={(e) => {
+                  // Shu paytdan boshlab avtomatik to'ldirish maydonga tegmaydi
+                  editedRef.current = true
+                  setCounted(e.target.value)
+                }}
                 placeholder="Masalan: 1 250 000"
                 autoFocus
               />

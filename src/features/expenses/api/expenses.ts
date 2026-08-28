@@ -40,7 +40,11 @@ export const useCreateExpense = () => {
       });
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      // Naqd xarajat kassadan chiqadi — kutilgan summa qayta hisoblansin
+      qc.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
+    },
   });
 };
 
@@ -52,6 +56,10 @@ export const useDeleteExpense = () => {
         params: hotelId ? { hotel_id: hotelId } : {},
       });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      // Naqd xarajat kassadan chiqadi — kutilgan summa qayta hisoblansin
+      qc.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
+    },
   });
 };
