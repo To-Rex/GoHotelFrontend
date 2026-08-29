@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react"
-import { ChevronDown, ChevronUp, Loader2, CheckCircle2, RotateCcw } from "lucide-react"
+import {
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  CheckCircle2,
+  RotateCcw,
+  GripVertical,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { apiErrorMessage } from "@/lib/apiError"
 import { cn } from "@/lib/utils"
@@ -24,11 +31,37 @@ const Group = ({
   title,
   items,
   onMove,
+  onReorder,
 }: {
   title: string
   items: NavLink[]
   onMove: (index: number, direction: -1 | 1) => void
-}) => (
+  onReorder: (from: number, to: number) => void
+}) => {
+  /* Sudrash holati SHU guruhga tegishli — shuning uchun bandni bir
+     guruhdan ikkinchisiga sudrab bo'lmaydi. Menyuda guruhlar orasida
+     "Administratsiya" sarlavhasi turadi, ya'ni bunday ko'chirishning
+     ma'nosi ham yo'q. */
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [overIndex, setOverIndex] = useState<number | null>(null)
+
+  const handleDragOver = (event: React.DragEvent, index: number) => {
+    // preventDefault bo'lmasa brauzer tashlashga ruxsat bermaydi
+    event.preventDefault()
+    event.dataTransfer.dropEffect = "move"
+    setOverIndex(index)
+    if (dragIndex === null || dragIndex === index) return
+    // Jonli ko'chirish: band kursor ostidagi joyga darhol o'tadi
+    onReorder(dragIndex, index)
+    setDragIndex(index)
+  }
+
+  const endDrag = () => {
+    setDragIndex(null)
+    setOverIndex(null)
+  }
+
+  return (
   <div>
     <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
       {title}
@@ -37,8 +70,30 @@ const Group = ({
       {items.map((link, index) => (
         <li
           key={link.href}
-          className="flex items-center gap-3 bg-white px-3 py-2 transition-colors hover:bg-gray-50"
+          draggable
+          onDragStart={(event) => {
+            setDragIndex(index)
+            event.dataTransfer.effectAllowed = "move"
+            // Firefox sudrashni faqat ma'lumot berilgandagina boshlaydi
+            event.dataTransfer.setData("text/plain", link.href)
+          }}
+          onDragOver={(event) => handleDragOver(event, index)}
+          onDrop={(event) => {
+            event.preventDefault()
+            endDrag()
+          }}
+          onDragEnd={endDrag}
+          title="Ushlab surib joyini o'zgartiring"
+          className={cn(
+            "flex cursor-grab items-center gap-3 bg-white px-3 py-2 transition-colors active:cursor-grabbing",
+            dragIndex === index
+              ? "opacity-50 ring-2 ring-inset ring-primary-300"
+              : overIndex === index && dragIndex !== null
+                ? "bg-primary-50/60"
+                : "hover:bg-gray-50"
+          )}
         >
+          <GripVertical size={15} className="flex-shrink-0 text-gray-300" aria-hidden />
           <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
             <link.icon size={15} />
           </span>
@@ -79,7 +134,8 @@ const Group = ({
       ))}
     </ul>
   </div>
-)
+  )
+}
 
 export const NavOrderCard = () => {
   const { data: navOrder } = useNavOrder()
@@ -117,6 +173,25 @@ export const NavOrderCard = () => {
     setSaved(false)
   }
 
+  /* Sudrab ko'chirish: band `from` dan olinib `to` ga qo'yiladi va
+     oradagilar suriladi — o'q tugmalaridagi kabi joy almashish emas. */
+  const reorder = (
+    list: NavLink[],
+    setList: (v: NavLink[]) => void,
+    from: number,
+    to: number
+  ) => {
+    if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) {
+      return
+    }
+    const next = [...list]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    dirtyRef.current = true
+    setList(next)
+    setSaved(false)
+  }
+
   const resetOrder = () => {
     // Standart tartibga qaytarish ham o'zgarish — saqlanmaguncha turadi
     dirtyRef.current = true
@@ -147,11 +222,13 @@ export const NavOrderCard = () => {
           title="Asosiy sahifalar"
           items={main}
           onMove={(i, d) => move(main, setMain, i, d)}
+          onReorder={(from, to) => reorder(main, setMain, from, to)}
         />
         <Group
           title="Administratsiya"
           items={admin}
           onMove={(i, d) => move(admin, setAdmin, i, d)}
+          onReorder={(from, to) => reorder(admin, setAdmin, from, to)}
         />
       </div>
 
