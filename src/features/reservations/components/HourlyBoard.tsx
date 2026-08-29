@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { format, addDays, parseISO } from "date-fns"
 import { ChevronLeft, ChevronRight, ChevronDown, Clock, Plus, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { DEBT_BAR_CLASS, debtHint, debtLevelOf } from "../lib/booking"
 
 const DAY_MINUTES = 24 * 60
 // Bitta soat ustunining kengligi (px) — lenta gorizontal aylantiriladi,
@@ -757,13 +758,16 @@ export function HourlyBoard({
                                 key={`${iv.res.id}-${i}`}
                                 className={cn(
                                   "absolute top-2 bottom-2 rounded-lg flex flex-col justify-center px-2 cursor-pointer overflow-hidden hover:brightness-95 transition-all",
-                                  statusColors[iv.res.status] || statusColors.PENDING
+                                  statusColors[iv.res.status] || statusColors.PENDING,
+                                  // Qarz bo'lsa qizil: chiqib ketgan va
+                                  // to'lamagan bron butunlay qizil bo'ladi
+                                  DEBT_BAR_CLASS[debtLevelOf(iv.res)]
                                 )}
                                 style={{ left: `${pos.left}%`, width: `${pos.width}%` }}
                                 onClick={() => onReservationClick(iv.res)}
                                 title={`${getGuestName(iv.res)} · ${
                                   iv.daily ? "Kunlik bron" : pos.label
-                                }`}
+                                }${debtHint(iv.res)}`}
                               >
                                 <span className="text-[11px] font-bold leading-tight truncate">
                                   {iv.daily ? "Kunlik bron" : pos.label}

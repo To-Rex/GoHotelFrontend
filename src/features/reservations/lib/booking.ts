@@ -266,3 +266,45 @@ export const companionSlots = (adults: number): number =>
  */
 export const missingCompanions = (adults: number, chosen: number): number =>
   Math.max(companionSlots(adults) - Math.max(chosen, 0), 0)
+
+/* --------------------------------------------------- qarz ko'rsatkichi -- */
+
+/** Bron bo'yicha to'lanmagan qoldiq (bekor qilinganda 0). */
+export function reservationDebt(r: any): number {
+  if (!r || r.status === "CANCELLED") return 0
+  return Math.max(Number(r.total_amount || 0) - Number(r.paid_amount || 0), 0)
+}
+
+/**
+ * Qarz darajasi.
+ *
+ * `partial` — mehmon hali shu yerda, pul keyin olinishi mumkin.
+ * `overdue` — mehmon chiqib ketgan, pul esa olinmagan: eng jiddiy holat,
+ * chunki uni endi eslatib olish qiyin.
+ */
+export type DebtLevel = "none" | "partial" | "overdue"
+
+export function debtLevelOf(r: any): DebtLevel {
+  if (reservationDebt(r) <= 0) return "none"
+  return r.status === "CHECKED_OUT" ? "overdue" : "partial"
+}
+
+/** Bron chizig'iga qo'shiladigan sinflar (holat rangi ustiga). */
+export const DEBT_BAR_CLASS: Record<DebtLevel, string> = {
+  none: "",
+  // Qarz bor, lekin mehmon hali chiqmagan — holat rangi qoladi, ustiga
+  // qizil halqa tushadi: bron turini ham, qarzni ham bir vaqtda ko'rsatadi
+  partial: "ring-2 ring-inset ring-red-500",
+  // Chiqib ketgan va to'lamagan — butunlay qizil (tailwind-merge holat
+  // rangini almashtiradi)
+  overdue: "bg-red-600 text-white ring-2 ring-inset ring-red-800",
+}
+
+/** Sichqoncha ostidagi izohga qo'shiladigan matn. */
+export function debtHint(r: any): string {
+  const debt = reservationDebt(r)
+  if (debt <= 0) return ""
+  const label =
+    debtLevelOf(r) === "overdue" ? "Chiqib ketgan, to'lanmagan" : "Qarz"
+  return ` · ${label}: ${debt.toLocaleString()} so'm`
+}

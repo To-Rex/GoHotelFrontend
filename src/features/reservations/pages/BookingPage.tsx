@@ -61,8 +61,11 @@ import {
   resolveBookingType,
 } from "@/features/settings/api/bookingDefaults"
 import {
+  DEBT_BAR_CLASS,
   PAYMENT_METHOD_OPTIONS,
   addDaysStr,
+  debtHint,
+  debtLevelOf,
   bookingErrorMessage as apiErrorMessage,
   busyIntervalsFor,
   dayDiff,
@@ -1143,8 +1146,12 @@ export function BookingPage() {
                                 ? (endDayIdx + 1) * DAY_WIDTH - 8
                                 : calendarWidth - 8
 
-                        const colorClass =
-                          statusColors[res.status] || statusColors.PENDING
+                        // Qarz bo'lsa chiziqqa qizil qo'shiladi: to'lanmagan
+                        // bron kalendarda ko'rinib turishi kerak
+                        const colorClass = cn(
+                          statusColors[res.status] || statusColors.PENDING,
+                          DEBT_BAR_CLASS[debtLevelOf(res)]
+                        )
 
                         // Bir kunda bir nechta soatlik bron bo'lsa — ingichka chiziqlar
                         // o'rniga bitta "N ta bron" belgisi ko'rsatamiz (bosilsa ro'yxat).
@@ -2107,8 +2114,10 @@ export function BookingPage() {
                   <span
                     className={cn(
                       "text-[10px] font-medium px-2 py-0.5 rounded-full",
-                      statusColors[r.status] || statusColors.PENDING
+                      statusColors[r.status] || statusColors.PENDING,
+                      DEBT_BAR_CLASS[debtLevelOf(r)]
                     )}
+                    title={debtHint(r).replace(/^ · /, "")}
                   >
                     {statusLabels[r.status] || r.status}
                   </span>

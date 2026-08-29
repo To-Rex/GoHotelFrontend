@@ -1,14 +1,18 @@
 import { describe, it, expect } from "vitest"
 import {
+  DEBT_BAR_CLASS,
   HOURLY_TURNOVER_MIN,
   busyIntervalsFor,
   companionSlots,
   dayIsBlocked,
+  debtHint,
+  debtLevelOf,
   findFreeSlot,
   firstFreeDate,
   minToTime,
   missingCompanions,
   nextBookingStart,
+  reservationDebt,
   timeToMin,
 } from "./booking"
 
@@ -236,5 +240,62 @@ describe("hamrohlar hisobi", () => {
     expect(companionSlots(NaN)).toBe(0)
     expect(missingCompanions(NaN, 0)).toBe(0)
     expect(missingCompanions(3, -1)).toBe(2)
+  })
+})
+
+describe("qarz ko'rsatkichi", () => {
+  const res = (extra: any = {}) => ({
+    status: "CONFIRMED",
+    total_amount: 500000,
+    paid_amount: 500000,
+    ...extra,
+  })
+
+  it("to'liq to'langan bronda qarz yo'q", () => {
+    expect(reservationDebt(res())).toBe(0)
+    expect(debtLevelOf(res())).toBe("none")
+    expect(DEBT_BAR_CLASS[debtLevelOf(res())]).toBe("")
+  })
+
+  it("qisman to'langan bron qarzli", () => {
+    const r = res({ paid_amount: 200000 })
+    expect(reservationDebt(r)).toBe(300000)
+    expect(debtLevelOf(r)).toBe("partial")
+  })
+
+  it("mehmon chiqib ketgan va to'lamagan — eng jiddiy holat", () => {
+    const r = res({ status: "CHECKED_OUT", paid_amount: 0 })
+    expect(debtLevelOf(r)).toBe("overdue")
+    // Butunlay qizil: holat rangi almashtiriladi
+    expect(DEBT_BAR_CLASS.overdue).toContain("bg-red-600")
+  })
+
+  it("chiqib ketgan, lekin to'lagan bron qizarmaydi", () => {
+    expect(debtLevelOf(res({ status: "CHECKED_OUT" }))).toBe("none")
+  })
+
+  it("bekor qilingan bronda qarz hisoblanmaydi", () => {
+    // Hisob-faktura ham bekor qilinadi — bu pul talab qilinmaydi
+    const r = res({ status: "CANCELLED", paid_amount: 0 })
+    expect(reservationDebt(r)).toBe(0)
+    expect(debtLevelOf(r)).toBe("none")
+  })
+
+  it("ortiqcha to'langan bron qarzli hisoblanmaydi", () => {
+    expect(reservationDebt(res({ paid_amount: 900000 }))).toBe(0)
+  })
+
+  it("qarzli bron holat rangini saqlaydi, ustiga qizil halqa oladi", () => {
+    // Kirgan mehmon yashil bo'lib qoladi — bron turi ham ko'rinishi kerak
+    expect(DEBT_BAR_CLASS.partial).toContain("ring-red-500")
+    expect(DEBT_BAR_CLASS.partial).not.toContain("bg-")
+  })
+
+  it("izoh summani aytadi", () => {
+    expect(debtHint(res({ paid_amount: 200000 }))).toContain("Qarz")
+    expect(debtHint(res({ status: "CHECKED_OUT", paid_amount: 0 }))).toContain(
+      "Chiqib ketgan"
+    )
+    expect(debtHint(res())).toBe("")
   })
 })
