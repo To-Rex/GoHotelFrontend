@@ -5,12 +5,14 @@ import {
   CalendarCheck,
   Wallet,
   TrendingDown,
+  TrendingUp,
+  Scale,
   Banknote,
   Store,
   AlertCircle,
 } from "lucide-react"
 import { useShopSales, type ShopSale } from "@/features/shop/api/shop"
-import { useMyReport } from "../api/myReport"
+import { useMyReport, METHOD_COLUMNS } from "../api/myReport"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Input } from "@/components/ui/input"
@@ -112,6 +114,11 @@ export const MyReportsPage = () => {
   const shopPendingCount = report?.shop.unpaid_count ?? 0
   const expTotal = report?.expenses.total ?? 0
   const expCount = report?.expenses.count ?? 0
+  // Jami tushum va sof natija serverda hisoblanadi va shu yerda qayta
+  // hisoblanmaydi: ta'rif bitta joyda turishi kerak
+  const incomeTotal = report?.income.total ?? 0
+  const netTotal = report?.net.total ?? 0
+  const netCash = report?.net_cash ?? 0
 
   const loadError = reportError || shopError
 
@@ -185,7 +192,7 @@ export const MyReportsPage = () => {
       )}
 
       {/* Ko'rsatkichlar */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarCheck size={15} /> Yaratgan bronlarim
@@ -234,6 +241,151 @@ export const MyReportsPage = () => {
           <p className="mt-1 text-2xl font-bold text-red-600">{stat(expTotal)} So'm</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{expCount} ta yozuv</p>
         </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <TrendingUp size={15} /> Jami tushum
+          </div>
+          <p className="mt-1 text-2xl font-bold text-emerald-600">
+            {stat(incomeTotal)} So'm
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            to'lovlar + do'kon · naqd qoldiq {fmt(netCash)}
+          </p>
+        </div>
+        {/* Sof natija: musbat bo'lsa foyda, manfiy bo'lsa zarar */}
+        <div
+          className={cn(
+            "rounded-xl border p-4",
+            netTotal < 0
+              ? "border-red-200 bg-red-50/60"
+              : "border-emerald-200 bg-emerald-50/50"
+          )}
+        >
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Scale size={15} /> {netTotal < 0 ? "Zarar" : "Sof foyda"}
+          </div>
+          <p
+            className={cn(
+              "mt-1 text-2xl font-bold",
+              netTotal < 0 ? "text-red-600" : "text-emerald-700"
+            )}
+          >
+            {stat(Math.abs(netTotal))} So'm
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">tushum − xarajat</p>
+        </div>
+      </div>
+
+      {/* To'lov turlari bo'yicha to'liq tafsilot */}
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold">To'lov turlari bo'yicha</h2>
+          <span className="text-xs text-muted-foreground">
+            qaytarimlar tushumdan ayirilgan
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/40 text-left">
+                <th className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  To'lov turi
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Bron to'lovlari
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Do'kon
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Jami tushum
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Xarajat
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sof
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {METHOD_COLUMNS.map((col) => {
+                const pay = report?.payments.by_method[col.key] ?? 0
+                const shop = report?.shop.by_method[col.key] ?? 0
+                const income = report?.income.by_method[col.key] ?? 0
+                const expense = report?.expenses.by_method[col.key] ?? 0
+                const net = report?.net.by_method[col.key] ?? 0
+                // Harakat bo'lmagan tur ro'yxatni uzaytirmaydi
+                const empty = !pay && !shop && !income && !expense && !net
+                if (empty && !isLoading) return null
+                return (
+                  <tr key={col.key}>
+                    <td className="px-4 py-2 font-medium">{col.label}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{stat(pay)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{stat(shop)}</td>
+                    <td className="px-4 py-2 text-right font-semibold tabular-nums text-emerald-600">
+                      {stat(income)}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-red-600">
+                      {expense ? stat(expense) : "—"}
+                    </td>
+                    <td
+                      className={cn(
+                        "px-4 py-2 text-right font-semibold tabular-nums",
+                        net < 0 ? "text-red-600" : "text-foreground"
+                      )}
+                    >
+                      {stat(net)}
+                    </td>
+                  </tr>
+                )
+              })}
+              {!isLoading && incomeTotal === 0 && expTotal === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-sm text-muted-foreground"
+                  >
+                    Tanlangan davrda pul harakati bo'lmagan
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-border bg-muted/30 font-semibold">
+                <td className="px-4 py-2">Jami</td>
+                <td className="px-4 py-2 text-right tabular-nums">{stat(collected)}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{stat(shopTotal)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-emerald-600">
+                  {stat(incomeTotal)}
+                </td>
+                <td className="px-4 py-2 text-right tabular-nums text-red-600">
+                  {stat(expTotal)}
+                </td>
+                <td
+                  className={cn(
+                    "px-4 py-2 text-right tabular-nums",
+                    netTotal < 0 ? "text-red-600" : "text-emerald-700"
+                  )}
+                >
+                  {stat(netTotal)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {refunds > 0 && (
+          <p className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+            Davr ichida {fmt(refunds)} so'm qaytarilgan — u yuqoridagi tushumdan
+            allaqachon ayirilgan.
+          </p>
+        )}
+        {shopPendingCount > 0 && (
+          <p className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+            To'lanmagan {shopPendingCount} ta do'kon savdosi ({fmt(shopPendingTotal)} so'm)
+            tushumga kirmagan — pul hali olinmagan.
+          </p>
+        )}
       </div>
 
       {isLoading ? (

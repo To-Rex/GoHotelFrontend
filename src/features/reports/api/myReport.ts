@@ -15,12 +15,26 @@ import { api } from "@/lib/api"
  * bo'yicha belgilanadi.
  */
 
+/** Hisobot ustunlari — server bilan bir xil guruhlash.
+ *
+ *  Bazadagi kodlar (CREDIT_CARD, BANK_TRANSFER, ONLINE...) shu ustunlarga
+ *  yig'iladi; tanilmagani "other" da qoladi va yo'qolib ketmaydi. */
 export interface MethodBreakdown {
   cash: number
   card: number
   transfer: number
+  online: number
   other: number
 }
+
+/** Ustunlar tartibi va nomlari — sahifada shu tartibda ko'rsatiladi */
+export const METHOD_COLUMNS: Array<{ key: keyof MethodBreakdown; label: string }> = [
+  { key: "cash", label: "Naqd" },
+  { key: "card", label: "Karta" },
+  { key: "transfer", label: "O'tkazma" },
+  { key: "online", label: "Onlayn" },
+  { key: "other", label: "Boshqa" },
+]
 
 export interface MyReportReservationRow {
   id: string
@@ -75,6 +89,18 @@ export interface MyReportSummary {
     total: number
     by_method: MethodBreakdown
     items: MyReportExpenseRow[]
+  }
+  /** Jami tushum: bron to'lovlari + do'kon savdosi (qaytarimlar ayirilgan) */
+  income: {
+    total: number
+    by_method: MethodBreakdown
+  }
+  /** Sof natija: tushumdan xarajat ayirilgan. Musbat — foyda, manfiy — zarar */
+  net: {
+    total: number
+    profit: number
+    loss: number
+    by_method: MethodBreakdown
   }
   /** Kassaga tushgan sof naqd: naqd to'lovlar + do'kon naqdi − naqd xarajatlar */
   net_cash: number
