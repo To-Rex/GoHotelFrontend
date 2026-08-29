@@ -179,3 +179,43 @@ describe("faol sessiyasi bor cheklovlar", () => {
     }
   })
 })
+
+describe("kunlik kassa kesimi majburiymi", () => {
+  // Kesim "o'tgan" bo'lishi uchun: kesim 00:00 (bugun albatta o'tgan) va
+  // sessiya kechagi kundan ochiq
+  const yesterday = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+  const overdue = (required?: boolean) =>
+    ({
+      ...cashMode({
+        my_session: { ...activeSession, started_at: yesterday } as never,
+      }),
+      day_close: "00:00",
+      ...(required === undefined ? {} : { day_close_required: required }),
+    }) as ShiftState
+
+  it("majburiy bo'lsa ish to'xtaydi", () => {
+    expect(shiftRestriction(reception, overdue(true))).toBe("cut_due")
+  })
+
+  it("o'chirilgan bo'lsa ish davom etadi", () => {
+    // Eslatma kassa panelida ko'rsatiladi, lekin sahifalar yopilmaydi
+    expect(shiftRestriction(reception, overdue(false))).toBeNull()
+  })
+
+  it("maydon yo'q bo'lsa majburiy deb qabul qilinadi", () => {
+    // Eski javob yoki keshdagi holat serverdagi standart bilan bir xil
+    // ishlashi kerak — aks holda cheklov jimgina yo'qolib qolardi
+    expect(shiftRestriction(reception, overdue(undefined))).toBe("cut_due")
+  })
+
+  it("kesim o'chirilgan bo'lsa ham boshqa cheklovlar ishlaydi", () => {
+    // Smena topshirilgan bo'lsa, kesim sozlamasidan qat'i nazar bloklanadi
+    const handedOver = {
+      ...cashMode({
+        my_session: { ...activeSession, status: "PENDING_HANDOVER" } as never,
+      }),
+      day_close_required: false,
+    } as ShiftState
+    expect(shiftRestriction(reception, handedOver)).toBe("handover")
+  })
+})

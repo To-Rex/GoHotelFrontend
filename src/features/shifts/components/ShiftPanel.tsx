@@ -117,6 +117,8 @@ export const ShiftPanel = () => {
   const blocking = state.blocking_session
   const workEnded = isWorkEnded(user)
   const cutDue = isCutDue(state)
+  // Kesim majburiymi (sozlamadan). Eski javobda maydon bo'lmasa — majburiy.
+  const cutRequired = state.day_close_required !== false
   // Kassa bilan ishlaydigan xodim (resepshn/kassir) — smena ochadi/topshiradi;
   // menejer/admin esa blokni majburiy yopish uchun banner ko'radi
   const cashStaff = isCashStaff(user)
@@ -378,9 +380,26 @@ export const ShiftPanel = () => {
           </div>
 
           {cutDue && (
-            <p className="mt-3 rounded-xl bg-amber-100/80 px-3 py-2 text-sm font-medium text-amber-800">
-              Kunlik kassa kesimi vaqti keldi ({state.day_close}) — kassani
-              topshiring. Ishni davom ettirsangiz yangi kassa 0 dan ochiladi.
+            <p
+              className={cn(
+                "mt-3 rounded-xl px-3 py-2 text-sm font-medium",
+                cutRequired
+                  ? "bg-amber-100/80 text-amber-800"
+                  : "bg-sky-50 text-sky-800"
+              )}
+            >
+              Kunlik kassa kesimi vaqti keldi ({state.day_close}) —{" "}
+              {cutRequired ? (
+                <>
+                  kassani topshiring. Topshirilmaguncha bron va to'lov
+                  qabul qilib bo'lmaydi; topshirgach yangi kassa 0 dan ochiladi.
+                </>
+              ) : (
+                <>
+                  kassani topshirish tavsiya etiladi. Ishni davom ettirishingiz
+                  mumkin, lekin topshirilmagan pul kassada yig'ilib boraveradi.
+                </>
+              )}
             </p>
           )}
           {workEnded && !my.continue_after_end && !cutDue && (

@@ -54,6 +54,7 @@ import {
 } from "@/lib/tprints"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -207,6 +208,7 @@ export const SettingsPage = () => {
   const saveShiftMutation = useSaveShiftSettings()
   const [shiftMode, setShiftMode] = useState<"simple" | "cash">("simple")
   const [dayClose, setDayClose] = useState("00:00")
+  const [dayCloseRequired, setDayCloseRequired] = useState(true)
   const [shiftSaved, setShiftSaved] = useState(false)
   const [shiftError, setShiftError] = useState<string | null>(null)
 
@@ -214,6 +216,7 @@ export const SettingsPage = () => {
     if (shiftSettings) {
       setShiftMode(shiftSettings.mode)
       setDayClose(shiftSettings.day_close)
+      setDayCloseRequired(shiftSettings.day_close_required !== false)
     }
   }, [shiftSettings])
 
@@ -221,7 +224,11 @@ export const SettingsPage = () => {
     setShiftError(null)
     setShiftSaved(false)
     try {
-      await saveShiftMutation.mutateAsync({ mode: shiftMode, day_close: dayClose })
+      await saveShiftMutation.mutateAsync({
+        mode: shiftMode,
+        day_close: dayClose,
+        day_close_required: dayCloseRequired,
+      })
       setShiftSaved(true)
       window.setTimeout(() => setShiftSaved(false), 3000)
     } catch (e) {
@@ -513,9 +520,28 @@ export const SettingsPage = () => {
                 ))}
               </div>
               <p className="mt-2 text-xs text-gray-400">
-                Shu vaqtda ochiq kassalar topshirilishi shart bo'ladi. Tungi
-                smena kesilib qolmasligi uchun ertalabki soat (06:00) qulay.
+                Tungi smena kesilib qolmasligi uchun ertalabki soat (06:00)
+                qulay.
               </p>
+
+              {/* Kesim majburiymi — ish to'xtaydimi yoki faqat eslatiladimi */}
+              <label className="mt-3 flex cursor-pointer items-start gap-2.5 border-t border-gray-200 pt-3">
+                <Checkbox
+                  checked={dayCloseRequired}
+                  onCheckedChange={(v) => setDayCloseRequired(v === true)}
+                  className="mt-0.5"
+                />
+                <span className="text-sm">
+                  <b className="font-medium text-gray-900">
+                    Kesim vaqtida kassa topshirish majburiy
+                  </b>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                    {dayCloseRequired
+                      ? "Kesim vaqti kelgach xodim kassani topshirmaguncha bron va to'lov qabul qila olmaydi — faqat kassa va hisobot sahifalari ochiq qoladi."
+                      : "Xodim ishlashda davom etaveradi, kassa hisobotlari sahifasida esa eslatma turadi. Diqqat: topshirilmagan pul kassada yig'ilib boradi va har kungi farqni kuzatish qiyinlashadi."}
+                  </span>
+                </span>
+              </label>
             </div>
           )}
 

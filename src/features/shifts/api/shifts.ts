@@ -7,6 +7,10 @@ import type { User } from "@/store/auth";
 export interface ShiftSettings {
   mode: "simple" | "cash";
   day_close: string; // "HH:MM"
+  /** Kesim vaqtida kassa topshirish majburiymi.
+   *  true  — topshirilmaguncha ishlab bo'lmaydi
+   *  false — faqat eslatiladi, ish davom etaveradi */
+  day_close_required: boolean;
 }
 
 // Sanalgan summa tuzatilishi (audit yozuvi) — eski qiymat saqlanadi
@@ -295,7 +299,11 @@ export const shiftRestriction = (
   // yopilgan, ya'ni bu paytda kiritilgan tushum hech qaysi smenaga tushmaydi —
   // xuddi smena umuman ochilmagandagidek.
   if (state.my_session.status !== "ACTIVE") return "handover";
-  if (isCutDue(state)) return "cut_due";
+  // Kesim MAJBURIY bo'lsagina ishni to'sadi. O'chirilgan bo'lsa faqat
+  // eslatma ko'rsatiladi (kassa panelida) — bu yerda cheklov qaytmaydi.
+  // `!== false`: eski javobda maydon bo'lmasa, majburiy deb qabul qilinadi —
+  // serverdagi standart bilan bir xil.
+  if (state.day_close_required !== false && isCutDue(state)) return "cut_due";
   if (isWorkEnded(user) && !state.my_session?.continue_after_end) return "work_ended";
   return null;
 };
