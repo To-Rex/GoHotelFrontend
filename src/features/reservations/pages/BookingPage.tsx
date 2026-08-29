@@ -63,6 +63,7 @@ import {
 import { NATIONALITIES, DEFAULT_NATIONALITY } from "@/features/guests/constants"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
+import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
 import { useAuthStore } from "@/store/auth"
 import { usePermissions } from "@/lib/permissions"
 
@@ -3601,6 +3602,15 @@ export function BookingPage() {
                         <span />
                       )}
                       <div className="flex items-center gap-2">
+                        {/* Chek — istalgan bron uchun, jumladan eskilari uchun ham */}
+                        <ReservationReceiptButton
+                          reservation={res}
+                          guestName={getGuestName(res)}
+                          roomNumber={roomObj?.room_number}
+                          roomType={
+                            roomTypesData.find((t: any) => t.id === roomObj?.room_type_id)?.name
+                          }
+                        />
                         <Button variant="outline" onClick={closeManageModal}>
                           Yopish
                         </Button>

@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { useReservations } from "../api/reservations"
 import { useGuests } from "@/features/guests/api/guests"
+import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
 import { useRooms, useFloors } from "@/features/rooms/api/rooms"
 import {
   Table,
@@ -674,12 +675,13 @@ export const ReservationsPage = () => {
               <TableHead>Holati</TableHead>
               <TableHead>To'lov</TableHead>
               {sortHead("amount", "Summa", true)}
+              <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {sorted.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12">
+                <TableCell colSpan={8} className="py-12">
                   <div className="flex flex-col items-center gap-2 text-gray-400">
                     <CalendarCheck className="h-8 w-8" />
                     <p className="text-sm">
@@ -810,6 +812,16 @@ export const ReservationsPage = () => {
                             To'landi: {fmt(res.paid_amount)}
                           </p>
                         )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {/* Chek — arxivdagi bronlar uchun ham; bron ma'lumotidan
+                          quriladi, shuning uchun qo'shimcha yozuv talab qilmaydi */}
+                      <ReservationReceiptButton
+                        reservation={res}
+                        compact
+                        guestName={guest?.name || null}
+                        roomNumber={roomMap[res.room_id]}
+                      />
                     </TableCell>
                   </TableRow>
                 )

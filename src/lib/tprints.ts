@@ -307,3 +307,195 @@ export const printSampleReceipt = async (
   }
   return printShopReceipt(sample, hotelName, null, design)
 }
+
+/* ------------------------------------------------------------ bron cheki */
+
+/** Bron cheki uchun kerakli ma'lumot.
+ *
+ *  Ataylab minimal: eski bronlarda ham shu maydonlar mavjud, shuning uchun
+ *  chek istalgan bron uchun — bugungisi ham, arxivdagisi ham — chiqadi. */
+export interface ReservationReceiptData {
+  reservation_number: string
+  guest_name?: string | null
+  room_number?: string | null
+  room_type?: string | null
+  check_in: string
+  check_out: string
+  /** Sutkalar (yoki soatlik bronda soatlar) soni */
+  nights?: number | null
+  booking_type?: string | null
+  adults?: number | null
+  children?: number | null
+  total_amount: number
+  paid_amount: number
+  discount_amount?: number | null
+  /** Bronga yozilgan xizmatlar/qo'shimchalar */
+  services?: Array<{ name: string; quantity?: number | null; amount: number }>
+  created_at?: string | null
+  created_by_name?: string | null
+  status?: string | null
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: "Kutilmoqda",
+  CONFIRMED: "Tasdiqlangan",
+  CHECKED_IN: "Kirilgan",
+  CHECKED_OUT: "Chiqilgan",
+  CANCELLED: "Bekor qilingan",
+  NO_SHOW: "Kelmagan",
+}
+
+const money = (n: number) => Number(n || 0).toLocaleString()
+
+const buildReservationElements = (
+  data: ReservationReceiptData,
+  hotelName: string,
+  design: ReceiptSettings
+): any[] => {
+  const when = data.created_at ? new Date(data.created_at) : new Date()
+  const elements: any[] = [
+    { type: "title", value: design.title.trim() || hotelName || "GoHotel", size: 2 },
+  ]
+  // Do'kon cheki uchun yozilgan quyi sarlavha bronda o'rinsiz — bu yerda
+  // hujjatning o'z nomi turadi, qolgan dizayn esa umumiy
+  elements.push({ type: "text", value: "Yashash uchun chek", align: "center" })
+  if (design.header_note.trim()) {
+    elements.push({ type: "text", value: design.header_note.trim(), align: "center" })
+  }
+  elements.push(
+    { type: "line" },
+    { type: "row", left: "Sana:", right: format(when, "dd.MM.yyyy HH:mm") },
+    { type: "row", left: "Bron:", right: data.reservation_number }
+  )
+  if (design.show_seller && data.created_by_name) {
+    elements.push({ type: "row", left: "Qabul qildi:", right: data.created_by_name })
+  }
+  if (design.show_guest && data.guest_name) {
+    elements.push({ type: "row", left: "Mehmon:", right: data.guest_name })
+  }
+  if (data.room_number) {
+    elements.push({
+      type: "row",
+      left: "Xona:",
+      right: data.room_type ? `${data.room_number} · ${data.room_type}` : data.room_number,
+    })
+  }
+  const guests = [
+    data.adults ? `${data.adults} kattalar` : "",
+    data.children ? `${data.children} bolalar` : "",
+  ]
+    .filter(Boolean)
+    .join(", ")
+  if (guests) {
+    elements.push({ type: "row", left: "Mehmonlar:", right: guests })
+  }
+  elements.push({ type: "line", style: "dashed" })
+
+  const hourly = (data.booking_type || "").toUpperCase() === "HOURLY"
+  elements.push(
+    { type: "row", left: "Kirish:", right: data.check_in },
+    { type: "row", left: "Chiqish:", right: data.check_out }
+  )
+  if (data.nights) {
+    elements.push({
+      type: "row",
+      left: hourly ? "Soat:" : "Sutka:",
+      right: String(data.nights),
+    })
+  }
+
+  if (data.services && data.services.length > 0) {
+    elements.push(
+      { type: "line", style: "dashed" },
+      {
+        type: "table",
+        headers: ["Xizmat", "Soni", "Summa"],
+        widths: [3, 1, 2],
+        aligns: ["left", "center", "right"],
+        rows: data.services.map((s) => [
+          s.name,
+          s.quantity ? String(s.quantity) : "1",
+          money(s.amount),
+        ]),
+      }
+    )
+  }
+
+  elements.push({ type: "line" })
+  if (data.discount_amount && data.discount_amount > 0) {
+    elements.push({ type: "row", left: "Chegirma:", right: `−${money(data.discount_amount)}` })
+  }
+  elements.push({
+    type: "row",
+    left: "JAMI:",
+    right: `${money(data.total_amount)} So'm`,
+    bold: true,
+    size: 2,
+  })
+  elements.push({ type: "row", left: "To'langan:", right: `${money(data.paid_amount)} So'm` })
+
+  // Qoldiq har doim ko'rsatiladi: mehmon nima to'lagani va nima qolganini
+  // chekdan ko'rishi kerak. Ortiqcha to'lov ham yashirilmaydi.
+  const balance = Number(data.total_amount || 0) - Number(data.paid_amount || 0)
+  if (balance > 0) {
+    elements.push({
+      type: "row",
+      left: "Qoldiq:",
+      right: `${money(balance)} So'm`,
+      bold: true,
+    })
+  } else if (balance < 0) {
+    elements.push({
+      type: "row",
+      left: "Ortiqcha:",
+      right: `${money(-balance)} So'm`,
+      bold: true,
+    })
+  } else {
+    elements.push({ type: "text", value: "To'liq to'langan", align: "center" })
+  }
+
+  if (data.status && data.status !== "CHECKED_OUT") {
+    elements.push({
+      type: "row",
+      left: "Holat:",
+      right: STATUS_LABELS[data.status] || data.status,
+    })
+  }
+
+  elements.push({ type: "line", style: "dashed" })
+  if (design.footer_text.trim()) {
+    elements.push({
+      type: "text",
+      value: design.footer_text.trim(),
+      align: "center",
+      bold: true,
+    })
+  }
+  if (design.footer_note.trim()) {
+    elements.push({ type: "text", value: design.footer_note.trim(), align: "center" })
+  }
+  if (design.qr_url.trim()) {
+    elements.push({ type: "qr", value: design.qr_url.trim(), size: 5 })
+  }
+  elements.push({ type: "feed", lines: 1 })
+  return elements
+}
+
+/** Bron chekini chiqarish (dizayn berilmasa — standart) */
+export const printReservationReceipt = async (
+  data: ReservationReceiptData,
+  hotelName: string,
+  design?: ReceiptSettings | null
+): Promise<{ ok: boolean; error?: string }> => {
+  const d = design || DEFAULT_RECEIPT_SETTINGS
+  const r = await request("/print", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paper: d.paper,
+      elements: buildReservationElements(data, hotelName, d),
+    }),
+  })
+  return { ok: r.ok, error: r.error }
+}
