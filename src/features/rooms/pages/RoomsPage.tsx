@@ -20,6 +20,7 @@ import {
 import {
   addDaysStr,
   busyIntervalsFor,
+  dailyBookingOn,
   dayIsBlocked,
   findFreeSlot,
   firstFreeDate,
@@ -27,6 +28,10 @@ import {
   nextBookingStart,
   todayStr as todayString,
 } from "@/features/reservations/lib/booking"
+import {
+  useBookingDefaults,
+  resolveBookingType,
+} from "@/features/settings/api/bookingDefaults"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -124,6 +129,8 @@ export const RoomsPage = () => {
   // "Yangi bandlov" dialogi — bron sahifasidagi bilan AYNAN bir komponent
   const canBook = can("reservation.create")
   const [bookingRequest, setBookingRequest] = useState<NewBookingRequest | null>(null)
+  // Dialog qaysi tur bilan ochilishi — mehmonxona sozlamasidan
+  const { data: bookingDefaults } = useBookingDefaults()
 
   const { data: rooms = [], isLoading, isError } = useRooms()
   const { data: branches = [] } = useBranches()
@@ -324,11 +331,14 @@ export const RoomsPage = () => {
     const now = new Date()
     const nowMin = now.getHours() * 60 + now.getMinutes()
 
-    // Xona shu kunda soatlik bronlar bilan ishlayaptimi
+    // Soatlik rejim: sozlamada shunday belgilangan bo'lsa yoki xona bugun
+    // allaqachon soatlik bronlar bilan ishlayotgan bo'lsa
     const busyToday = busyIntervalsFor(reservations, room.id, today)
-    const hasHourlyToday = busyToday.length > 0
+    const preferHourly =
+      resolveBookingType(bookingDefaults) === "HOURLY" || busyToday.length > 0
 
-    if (hasHourlyToday) {
+    // Kunlik bron bugungi kunni to'liq egallagan bo'lsa soatlik ham mumkin emas
+    if (preferHourly && !dailyBookingOn(reservations, room.id, today)) {
       // Hozirgi vaqtdan keyingi birinchi bo'sh oraliq. Faqat "hozir"dan
       // izlanadi: o'tib ketgan soatni taklif qilishning ma'nosi yo'q, bugun
       // joy qolmagan bo'lsa quyida kunlik rejaga o'tiladi

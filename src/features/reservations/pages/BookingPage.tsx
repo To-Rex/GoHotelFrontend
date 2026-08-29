@@ -57,6 +57,10 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import {
+  useBookingDefaults,
+  resolveBookingType,
+} from "@/features/settings/api/bookingDefaults"
+import {
   PAYMENT_METHOD_OPTIONS,
   addDaysStr,
   bookingErrorMessage as apiErrorMessage,
@@ -158,6 +162,8 @@ export function BookingPage() {
   // "Yangi bandlov" dialogi so'rovi (null — yopiq). Dialogning o'zi alohida
   // komponent: xonalar sahifasi ham xuddi shu komponentni ochadi
   const [bookingRequest, setBookingRequest] = useState<NewBookingRequest | null>(null)
+  // Dialog qaysi tur bilan ochilishi — mehmonxona sozlamasidan
+  const { data: bookingDefaults } = useBookingDefaults()
 
 
   // Xato xabarini brauzer alert() o'rniga dialog sifatida ko'rsatish
@@ -437,9 +443,10 @@ export function BookingPage() {
 
   /* Kalendar tanlovidan "Yangi bandlov" so'rovini qurish.
 
-     Tanlangan kunda soatlik bronlar bo'lsa — foydalanuvchi katta ehtimol
-     yana soat qo'shmoqchi, shuning uchun standart tur "Soatlik" bo'ladi va
-     band soatlarni chetlab birinchi bo'sh vaqt tanlanadi. */
+     Tur mehmonxona sozlamasidan olinadi. Undan qat'i nazar, tanlangan
+     kunda soatlik bronlar bo'lsa — foydalanuvchi katta ehtimol yana soat
+     qo'shmoqchi, shuning uchun "Soatlik" ochiladi va band soatlarni chetlab
+     birinchi bo'sh vaqt tanlanadi. Dialogda turni almashtirish avvalgidek. */
   const openBookingModal = () => {
     const hasHourlyOnDay =
       !!selectedRoom &&
@@ -452,7 +459,10 @@ export function BookingPage() {
           r.booking_type === "HOURLY" &&
           resStartDate(r) === selectionStart
       )
-    const initialType: "DAILY" | "HOURLY" = hasHourlyOnDay ? "HOURLY" : "DAILY"
+    const initialType: "DAILY" | "HOURLY" =
+      hasHourlyOnDay || resolveBookingType(bookingDefaults) === "HOURLY"
+        ? "HOURLY"
+        : "DAILY"
     let inT = "14:00"
     let outT = "16:00"
     if (initialType === "HOURLY" && selectedRoom && selectionStart) {

@@ -23,10 +23,17 @@ import {
   Receipt,
   ScanLine,
   ListOrdered,
+  CalendarClock,
   type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
+import {
+  useBookingDefaults,
+  useSaveBookingDefaults,
+  resolveBookingType,
+  type BookingType,
+} from "../api/bookingDefaults"
 import {
   useHkAutoSettings,
   useSaveHkAutoSettings,
@@ -202,6 +209,29 @@ export const SettingsPage = () => {
       window.setTimeout(() => setHkSaved(false), 3000)
     } catch (e) {
       setHkError(apiErrorMessage(e))
+    }
+  }
+
+  // --- Yangi bandlov dialogining standart turi ---
+  const { data: bookingDefaults } = useBookingDefaults()
+  const saveBookingDefaultsMutation = useSaveBookingDefaults()
+  const [bookingType, setBookingType] = useState<BookingType>("DAILY")
+  const [bookingSaved, setBookingSaved] = useState(false)
+  const [bookingError, setBookingError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (bookingDefaults) setBookingType(resolveBookingType(bookingDefaults))
+  }, [bookingDefaults])
+
+  const onSaveBookingDefaults = async () => {
+    setBookingError(null)
+    setBookingSaved(false)
+    try {
+      await saveBookingDefaultsMutation.mutateAsync(bookingType)
+      setBookingSaved(true)
+      window.setTimeout(() => setBookingSaved(false), 3000)
+    } catch (e) {
+      setBookingError(apiErrorMessage(e))
     }
   }
 
@@ -411,6 +441,7 @@ export const SettingsPage = () => {
     { href: "#shift", label: "Smena va kassa", dot: "bg-violet-500" },
     { href: "#tprints", label: "Chek printeri", dot: "bg-slate-500" },
     { href: "#nav-order", label: "Menyu tartibi", dot: "bg-amber-500" },
+    { href: "#booking-default", label: "Standart bron", dot: "bg-indigo-500" },
     { href: "#booking-edit", label: "Bron tahriri", dot: "bg-sky-500" },
     { href: "#auto-complete", label: "Avto-yakunlash", dot: "bg-primary-600" },
     { href: "#scanner", label: "Hujjat skaneri", dot: "bg-sky-500" },
@@ -696,6 +727,59 @@ export const SettingsPage = () => {
             desc="Chapdagi menyuda sahifalar qanday ketma-ketlikda turishini belgilang. Tartib mehmonxonaning barcha xodimlariga amal qiladi."
           >
             <NavOrderCard />
+          </SettingCard>
+
+          {/* Yangi bandlov dialogining standart turi */}
+          <SettingCard
+            id="booking-default"
+            icon={CalendarClock}
+            iconClass="bg-indigo-50 text-indigo-600"
+            title="Standart bron turi"
+            desc="Bron qilish va Xonalar sahifasida «Yangi bandlov» oynasi qaysi tur bilan ochilishi. Xodim oynada turni istagancha almashtira oladi."
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              {[
+                {
+                  key: "DAILY" as const,
+                  title: "Kunlik",
+                  text: "Oyna kunlik bron bilan ochiladi: kirish va chiqish sanasi tanlanadi.",
+                },
+                {
+                  key: "HOURLY" as const,
+                  title: "Soatlik",
+                  text: "Oyna soatlik bron bilan ochiladi: bo'sh vaqt avtomatik tanlanib, davomiylik bir bosishda belgilanadi.",
+                },
+              ].map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => setBookingType(m.key)}
+                  className={cn(
+                    "relative rounded-xl border p-4 text-left transition-all",
+                    bookingType === m.key
+                      ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                      : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                  )}
+                >
+                  {bookingType === m.key && (
+                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary-600" />
+                  )}
+                  <p className="pr-6 text-sm font-semibold text-gray-900">{m.title}</p>
+                  <p className="mt-1 text-xs leading-snug text-gray-600">{m.text}</p>
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-gray-400">
+              Xona bugun allaqachon soatlik bronlar bilan ishlayotgan bo'lsa, oyna
+              standart turdan qat'i nazar soatlik ochiladi — xodim yana soat
+              qo'shmoqchi bo'lishi ehtimoli yuqori.
+            </p>
+            <SaveRow
+              onSave={onSaveBookingDefaults}
+              pending={saveBookingDefaultsMutation.isPending}
+              saved={bookingSaved}
+              error={bookingError}
+            />
           </SettingCard>
 
           {/* Bron tahriri vaqt oynasi */}
