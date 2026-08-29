@@ -13,6 +13,20 @@ import {
 } from "../api/rooms"
 import type { Room } from "@/types/api"
 import { RoomReservationsDialog } from "../components/RoomReservationsDialog"
+import {
+  NewBookingDialog,
+  type NewBookingRequest,
+} from "@/features/reservations/components/NewBookingDialog"
+import {
+  addDaysStr,
+  busyIntervalsFor,
+  dayIsBlocked,
+  findFreeSlot,
+  firstFreeDate,
+  minToTime,
+  nextBookingStart,
+  todayStr as todayString,
+} from "@/features/reservations/lib/booking"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -106,6 +120,10 @@ export const RoomsPage = () => {
 
   // "Bandlovlar" oynasi qaysi xona uchun ochiq
   const [reservationsRoom, setReservationsRoom] = useState<Room | null>(null)
+
+  // "Yangi bandlov" dialogi — bron sahifasidagi bilan AYNAN bir komponent
+  const canBook = can("reservation.create")
+  const [bookingRequest, setBookingRequest] = useState<NewBookingRequest | null>(null)
 
   const { data: rooms = [], isLoading, isError } = useRooms()
   const { data: branches = [] } = useBranches()
@@ -288,6 +306,60 @@ export const RoomsPage = () => {
     }
     return m
   }, [rooms])
+
+  /* Xona ustiga bosilganda "Yangi bandlov" dialogi ochiladi.
+
+     Bo'sh xona — bugundan; band xona — eng yaqin bo'shash vaqtidan:
+       · soatlik bron bilan band bo'lsa, o'sha kunning birinchi bo'sh
+         oralig'i tanlanadi (bronlar orasidagi tanaffus ham hisobga olinadi);
+       · kunlik bron bilan band bo'lsa, mehmon chiqadigan kun olinadi va
+         zanjir bo'lsa (bir mehmon chiqqan kuni ikkinchisi kirsa) oxirigacha
+         suriladi.
+
+     Chiqish sanasi keyingi mijozning kirish sanasidan oshmaydi — ya'ni yangi
+     bron keyinroqqa bron qilgan mijozning vaqtiga o'tib ketmaydi. */
+  const openBookingFor = (room: Room) => {
+    if (!canBook) return
+    const today = todayString()
+    const now = new Date()
+    const nowMin = now.getHours() * 60 + now.getMinutes()
+
+    // Xona shu kunda soatlik bronlar bilan ishlayaptimi
+    const busyToday = busyIntervalsFor(reservations, room.id, today)
+    const hasHourlyToday = busyToday.length > 0
+
+    if (hasHourlyToday) {
+      // Hozirgi vaqtdan keyingi birinchi bo'sh oraliq. Faqat "hozir"dan
+      // izlanadi: o'tib ketgan soatni taklif qilishning ma'nosi yo'q, bugun
+      // joy qolmagan bo'lsa quyida kunlik rejaga o'tiladi
+      const slot = findFreeSlot(busyToday, [nowMin])
+      if (slot) {
+        setBookingRequest({
+          room,
+          bookingType: "HOURLY",
+          checkInDate: today,
+          checkOutDate: addDaysStr(today, 1),
+          checkInTime: minToTime(slot[0]),
+          checkOutTime: minToTime(slot[1]),
+        })
+        return
+      }
+    }
+
+    // Kunlik: xona qachondan bo'sh bo'ladi
+    const start = dayIsBlocked(reservations, room.id, today)
+      ? firstFreeDate(reservations, room.id, today)
+      : today
+    // Chiqish sanasi keyingi mijozning kirish kunidan oshmasin
+    const limit = nextBookingStart(reservations, room.id, start)
+    const wanted = addDaysStr(start, 1)
+    setBookingRequest({
+      room,
+      bookingType: "DAILY",
+      checkInDate: start,
+      checkOutDate: limit && wanted > limit ? limit : wanted,
+    })
+  }
 
   // --- Yaratish/tahrirlash dialogi ---
   const [modalOpen, setModalOpen] = useState(false)
@@ -579,7 +651,12 @@ export const RoomsPage = () => {
                   {floorRooms.map((room) => (
                     <div
                       key={room.id}
-                      className="group relative rounded-xl border border-gray-200 bg-white p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md"
+                      onClick={canBook ? () => openBookingFor(room) : undefined}
+                      title={canBook ? "Yangi bandlov" : undefined}
+                      className={cn(
+                        "group relative rounded-xl border border-gray-200 bg-white p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md",
+                        canBook && "cursor-pointer"
+                      )}
                     >
                       {/* Chap chekkadagi nozik holat chizig'i (bo'sh xonada ko'rinmaydi) */}
                       <span
@@ -595,7 +672,8 @@ export const RoomsPage = () => {
                         <button
                           type="button"
                           disabled={!canStatus}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             setStatusError(null)
                             setStatusRoom(room)
                           }}
@@ -644,7 +722,10 @@ export const RoomsPage = () => {
                               <button
                                 type="button"
                                 title="Xona bandlovlari"
-                                onClick={() => setReservationsRoom(room)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setReservationsRoom(room)
+                                }}
                                 className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
                               >
                                 <CalendarCheck className="h-3.5 w-3.5" />
@@ -654,7 +735,10 @@ export const RoomsPage = () => {
                               <button
                                 type="button"
                                 title="Tahrirlash"
-                                onClick={() => openEdit(room)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openEdit(room)
+                                }}
                                 className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
@@ -664,7 +748,10 @@ export const RoomsPage = () => {
                               <button
                                 type="button"
                                 title="O'chirish"
-                                onClick={() => onDelete(room)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDelete(room)
+                                }}
                                 className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -892,9 +979,12 @@ export const RoomsPage = () => {
                 ...(collapsed ? [] : floorRooms).map((room) => (
                 <TableRow
                   key={room.id}
+                  onClick={canBook ? () => openBookingFor(room) : undefined}
+                  title={canBook ? "Yangi bandlov" : undefined}
                   className={cn(
                     "border-l-4",
-                    statusRowAccent[room.current_status] || "border-l-gray-200"
+                    statusRowAccent[room.current_status] || "border-l-gray-200",
+                    canBook && "cursor-pointer"
                   )}
                 >
                   <TableCell>
@@ -921,7 +1011,8 @@ export const RoomsPage = () => {
                     <button
                       type="button"
                       disabled={!canStatus}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation()
                         setStatusError(null)
                         setStatusRoom(room)
                       }}
@@ -956,7 +1047,10 @@ export const RoomsPage = () => {
                           <button
                             type="button"
                             title="Xona bandlovlari"
-                            onClick={() => setReservationsRoom(room)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setReservationsRoom(room)
+                            }}
                             className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
                           >
                             <CalendarCheck className="h-4 w-4" />
@@ -966,7 +1060,10 @@ export const RoomsPage = () => {
                           <button
                             type="button"
                             title="Tahrirlash"
-                            onClick={() => openEdit(room)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openEdit(room)
+                            }}
                             className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                           >
                             <Pencil className="h-4 w-4" />
@@ -976,7 +1073,10 @@ export const RoomsPage = () => {
                           <button
                             type="button"
                             title="O'chirish"
-                            onClick={() => onDelete(room)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDelete(room)
+                            }}
                             className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1193,6 +1293,12 @@ export const RoomsPage = () => {
       <RoomReservationsDialog
         room={reservationsRoom}
         onClose={() => setReservationsRoom(null)}
+      />
+
+      {/* Yangi bandlov — bron sahifasidagi bilan AYNAN bir komponent */}
+      <NewBookingDialog
+        request={bookingRequest}
+        onClose={() => setBookingRequest(null)}
       />
     </div>
   )
