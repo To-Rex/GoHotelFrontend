@@ -9,6 +9,8 @@ import {
   Scale,
   Store,
   BedDouble,
+  Banknote,
+  Undo2,
 } from "lucide-react"
 import { useInvoices, usePayments } from "../api/finance"
 import { useExpenses } from "@/features/expenses/api/expenses"
@@ -180,13 +182,110 @@ export const FinancePage = () => {
         0
       )
 
-    // To'lov usullari bo'yicha taqsimot (masalan: naqd / karta)
-    const byMethod: Record<string, number> = {}
-    for (const p of filteredPayments) {
-      byMethod[p.payment_method] = (byMethod[p.payment_method] || 0) + Number(p.amount || 0)
+    // Qaytarimlar manfiy to'lov bo'lib yoziladi: ular `income` ni o'zi
+    // kamaytiradi, lekin alohida ham ko'rsatiladi — aks holda "tushum nega
+    // kamaydi" degan savol javobsiz qoladi
+    const refunds = filteredPayments.reduce(
+      (s, p) => s + (Number(p.amount || 0) < 0 ? -Number(p.amount || 0) : 0),
+      0
+    )
+    return {
+      income,
+      invoiceTotal,
+      invoiceDiscount,
+      invoicePaid,
+      debt,
+      refunds,
     }
-    return { income, invoiceTotal, invoiceDiscount, invoicePaid, debt, byMethod }
   }, [filteredPayments, filteredInvoices])
+
+  /* To'lov turlari bo'yicha to'liq tafsilot.
+
+     Uch manba bir jadvalda: bron to'lovlari, do'kon savdosi va xarajatlar.
+     Ilgari sahifada faqat bron to'lovlari turi bo'yicha chiplar bor edi —
+     do'kon qaysi usul bilan olingani va pul qaysi usulda chiqib ketgani
+     ko'rinmasdi.
+
+     Do'konda bo'lib to'langan savdo har bo'lagi o'z usuliga yoziladi
+     (jami "MIXED" bo'lib qolmasligi uchun). */
+  const methodRows = useMemo(() => {
+    const rows: Record<string, { pay: number; shop: number; expense: number }> = {}
+    const at = (method?: string | null) => {
+      const key = (method || "").toUpperCase() || "UNKNOWN"
+      if (!rows[key]) rows[key] = { pay: 0, shop: 0, expense: 0 }
+      return rows[key]
+    }
+
+    for (const p of filteredPayments) at(p.payment_method).pay += Number(p.amount || 0)
+
+    for (const sale of shopPaid) {
+      if (sale.payments?.length) {
+        for (const part of sale.payments) {
+          at(part.payment_method).shop += Number(part.amount || 0)
+        }
+      } else {
+        at(sale.payment_method).shop += Number(sale.total_amount || 0)
+      }
+    }
+
+    for (const e of filteredExpenses) at(e.payment_method).expense += Number(e.amount || 0)
+
+    // Tanish usullar avval, tartibda; notanishlari oxirida — ular ham
+    // ko'rinishi kerak, aks holda pul jimgina yo'qolganday tuyuladi
+    const known = Object.keys(METHOD_LABELS)
+    const order = [...known, ...Object.keys(rows).filter((k) => !known.includes(k))]
+    return order
+      .filter((key) => rows[key])
+      .map((key) => {
+        const row = rows[key]
+        const income = row.pay + row.shop
+        return {
+          key,
+          label: METHOD_LABELS[key] || key,
+          ...row,
+          income,
+          net: income - row.expense,
+        }
+      })
+  }, [filteredPayments, shopPaid, filteredExpenses])
+
+  // Xarajatlar toifalari bo'yicha — pul qayerga ketgani
+  // Jadvalning "Jami" qatori — qatorlarning o'zidan. Alohida hisoblansa
+  // yaxlitlash yoki bo'lib to'lash farqi jadval ichida qarama-qarshilik
+  // bo'lib ko'rinardi
+  const methodTotals = useMemo(
+    () =>
+      methodRows.reduce(
+        (acc, r) => ({
+          pay: acc.pay + r.pay,
+          shop: acc.shop + r.shop,
+          income: acc.income + r.income,
+          expense: acc.expense + r.expense,
+          net: acc.net + r.net,
+        }),
+        { pay: 0, shop: 0, income: 0, expense: 0, net: 0 }
+      ),
+    [methodRows]
+  )
+
+  const expenseCategories = useMemo(() => {
+    const byCategory: Record<string, { total: number; count: number }> = {}
+    for (const e of filteredExpenses) {
+      const key = e.category?.trim() || "Boshqa"
+      if (!byCategory[key]) byCategory[key] = { total: 0, count: 0 }
+      byCategory[key].total += Number(e.amount || 0)
+      byCategory[key].count += 1
+    }
+    return Object.entries(byCategory)
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.total - a.total)
+  }, [filteredExpenses])
+
+  // Kassadagi naqd qoldiq: naqd tushum − naqd xarajat
+  const cashOnHand = useMemo(() => {
+    const row = methodRows.find((r) => r.key === "CASH")
+    return row ? row.net : 0
+  }, [methodRows])
 
   const isLoading = invoicesLoading || paymentsLoading
 
@@ -253,6 +352,24 @@ export const FinancePage = () => {
       icon: BedDouble,
       accent: "bg-orange-50 text-orange-600",
     },
+    {
+      label: "Naqd qoldiq",
+      value: `${fmt(cashOnHand)} So'm`,
+      sub: "naqd tushum \u2212 naqd xarajat",
+      icon: Banknote,
+      accent: "bg-emerald-50 text-emerald-600",
+    },
+    ...(summary.refunds > 0
+      ? [
+          {
+            label: "Qaytarilgan",
+            value: `${fmt(summary.refunds)} So'm`,
+            sub: "tushumdan allaqachon ayirilgan",
+            icon: Undo2,
+            accent: "bg-rose-50 text-rose-600",
+          },
+        ]
+      : []),
     // Xarajatlar va sof natija — expense ruxsati bo'lganlarga ko'rsatiladi
     ...(canExpenses
       ? [
@@ -357,18 +474,147 @@ export const FinancePage = () => {
         ))}
       </div>
 
-      {/* To'lov usullari bo'yicha taqsimot */}
-      {Object.keys(summary.byMethod).length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(summary.byMethod).map(([method, amount]) => (
-            <span
-              key={method}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600"
-            >
-              <span className="font-medium">{METHOD_LABELS[method] || method}:</span>
-              <span className="font-semibold text-gray-900">{fmt(amount)} So'm</span>
+      {/* To'lov usullari bo'yicha to'liq tafsilot */}
+      <div className="overflow-hidden rounded-lg border bg-white">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <h2 className="text-lg font-bold tracking-tight">To'lov usullari bo'yicha</h2>
+          <span className="text-xs text-gray-400">
+            qaytarimlar tushumdan ayirilgan
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px] text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50/80 text-left">
+                <th className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  Usul
+                </th>
+                <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  Bron to'lovlari
+                </th>
+                <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  Do'kon
+                </th>
+                <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  Jami tushum
+                </th>
+                <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  Xarajat
+                </th>
+                <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  Sof
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {methodRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
+                    Tanlangan davrda pul harakati bo'lmagan
+                  </td>
+                </tr>
+              ) : (
+                methodRows.map((row) => (
+                  <tr key={row.key}>
+                    <td className="px-4 py-2 font-medium text-gray-800">{row.label}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-gray-600">
+                      {row.pay ? fmt(row.pay) : "\u2014"}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-gray-600">
+                      {row.shop ? fmt(row.shop) : "\u2014"}
+                    </td>
+                    <td className="px-4 py-2 text-right font-semibold tabular-nums text-emerald-600">
+                      {fmt(row.income)}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-red-600">
+                      {row.expense ? fmt(row.expense) : "\u2014"}
+                    </td>
+                    <td
+                      className={cn(
+                        "px-4 py-2 text-right font-semibold tabular-nums",
+                        row.net < 0 ? "text-red-600" : "text-gray-900"
+                      )}
+                    >
+                      {fmt(row.net)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+            {methodRows.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 bg-gray-50/60 font-semibold">
+                  <td className="px-4 py-2">Jami</td>
+                  <td className="px-4 py-2 text-right tabular-nums">
+                    {fmt(methodTotals.pay)}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums">
+                    {fmt(methodTotals.shop)}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums text-emerald-600">
+                    {fmt(methodTotals.income)}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums text-red-600">
+                    {fmt(methodTotals.expense)}
+                  </td>
+                  <td
+                    className={cn(
+                      "px-4 py-2 text-right tabular-nums",
+                      methodTotals.net < 0 ? "text-red-600" : "text-emerald-700"
+                    )}
+                  >
+                    {fmt(methodTotals.net)}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+        {shopDebtTotal > 0 && (
+          <p className="border-t px-4 py-2.5 text-xs text-gray-500">
+            Bronga yozilgan {shopDebts.length} ta to'lanmagan do'kon savdosi (
+            {fmt(shopDebtTotal)} so'm) tushumga kirmagan \u2014 pul hali olinmagan.
+          </p>
+        )}
+      </div>
+
+      {/* Xarajatlar toifalari — pul qayerga ketgani */}
+      {expenseCategories.length > 0 && (
+        <div className="overflow-hidden rounded-lg border bg-white">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <h2 className="text-lg font-bold tracking-tight">Xarajatlar toifasi</h2>
+            <span className="text-xs text-gray-400">
+              jami {fmt(expensesTotal)} So'm
             </span>
-          ))}
+          </div>
+          <ul className="divide-y divide-gray-100">
+            {expenseCategories.map((c) => {
+              const share = expensesTotal > 0 ? (c.total / expensesTotal) * 100 : 0
+              return (
+                <li key={c.name} className="flex items-center gap-3 px-4 py-2.5">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-gray-800">
+                      {c.name}
+                    </span>
+                    <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                      <span
+                        className="block h-full rounded-full bg-red-400"
+                        style={{ width: `${share}%` }}
+                      />
+                    </span>
+                  </span>
+                  <span className="flex-shrink-0 text-right">
+                    <span className="block text-sm font-bold tabular-nums text-gray-900">
+                      {fmt(c.total)} So'm
+                    </span>
+                    <span className="block text-[11px] text-gray-400">
+                      {c.count} ta \u00b7 {share.toFixed(0)}%
+                    </span>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
         </div>
       )}
 
