@@ -156,8 +156,9 @@ export const NavOrderCard = () => {
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-gray-400">
-        Xodim faqat o'ziga ruxsat berilgan sahifalarni ko'radi — tartib esa
-        hamma uchun bir xil bo'ladi.
+        Bandni sichqoncha bilan ushlab surib joyini o'zgartiring — yoki
+        yonidagi o'q tugmalaridan foydalaning. Xodim faqat o'ziga ruxsat
+        berilgan sahifalarni ko'radi, tartib esa hamma uchun bir xil bo'ladi.
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
