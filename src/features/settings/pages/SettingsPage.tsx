@@ -22,9 +22,11 @@ import {
   RefreshCw,
   Receipt,
   ScanLine,
+  ListOrdered,
   type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
+import { NavOrderCard } from "../components/NavOrderCard"
 import {
   useHkAutoSettings,
   useSaveHkAutoSettings,
@@ -408,6 +410,7 @@ export const SettingsPage = () => {
   const NAV_CHIPS = [
     { href: "#shift", label: "Smena va kassa", dot: "bg-violet-500" },
     { href: "#tprints", label: "Chek printeri", dot: "bg-slate-500" },
+    { href: "#nav-order", label: "Menyu tartibi", dot: "bg-amber-500" },
     { href: "#booking-edit", label: "Bron tahriri", dot: "bg-sky-500" },
     { href: "#auto-complete", label: "Avto-yakunlash", dot: "bg-primary-600" },
     { href: "#scanner", label: "Hujjat skaneri", dot: "bg-sky-500" },
@@ -684,6 +687,17 @@ export const SettingsPage = () => {
         </div>
 
         <div className="grid gap-4">
+          {/* Yon menyu tartibi — mehmonxonaning barcha xodimlariga amal qiladi */}
+          <SettingCard
+            id="nav-order"
+            icon={ListOrdered}
+            iconClass="bg-amber-50 text-amber-600"
+            title="Menyu tartibi"
+            desc="Chapdagi menyuda sahifalar qanday ketma-ketlikda turishini belgilang. Tartib mehmonxonaning barcha xodimlariga amal qiladi."
+          >
+            <NavOrderCard />
+          </SettingCard>
+
           {/* Bron tahriri vaqt oynasi */}
           <SettingCard
             id="booking-edit"

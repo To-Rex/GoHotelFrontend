@@ -1,30 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
+import { Building2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
-  LayoutDashboard,
-  Users,
-  DoorOpen,
-  CalendarCheck,
-  CalendarDays,
-  Wallet,
-  Settings,
-  Layers,
-  Building2,
-  PanelLeftClose,
-  PanelLeftOpen,
-  TrendingDown,
-  Store,
-  FileBarChart,
-  Banknote,
-  BedDouble,
-  Sparkles,
-  ConciergeBell,
-  ClipboardList,
-  UserCog,
-  ShieldCheck,
-  History,
-  Warehouse,
-  MessageSquare,
-} from "lucide-react";
+  MAIN_NAV_LINKS,
+  MANAGEMENT_NAV_LINKS,
+  type NavLink,
+} from "./navLinks";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { usePermissions } from "@/lib/permissions";
@@ -36,6 +16,7 @@ import {
   allowedRoutesFor,
 } from "@/features/shifts/api/shifts";
 import { useStaffMessages } from "@/features/messages/api/messages";
+import { useNavOrder, applyNavOrder } from "@/features/settings/api/navOrder";
 
 export const Sidebar = () => {
   const location = useLocation();
@@ -54,41 +35,30 @@ export const Sidebar = () => {
   const { data: staffMessages = [] } = useStaffMessages(60_000);
   const openMessages = staffMessages.filter((m) => m.status === "OPEN").length;
 
-  const allLinks = [
-    { name: "Boshqaruv", href: "/", icon: LayoutDashboard },
-    { name: "Bron qilish", href: "/booking", icon: CalendarDays },
-    { name: "Bandlovlar", href: "/reservations", icon: CalendarCheck },
-    { name: "Xonalar", href: "/rooms", icon: DoorOpen },
-    { name: "Qavatlar", href: "/floors", icon: Layers },
-    { name: "Mehmonlar", href: "/guests", icon: Users },
-    { name: "Moliya", href: "/finance", icon: Wallet },
-    { name: "Xarajatlar", href: "/expenses", icon: TrendingDown },
-    { name: "Do'kon", href: "/shop", icon: Store },
-    { name: "Kassa hisobotlari", href: "/cash-reports", icon: Banknote },
-    { name: "Mening hisobotim", href: "/my-reports", icon: FileBarChart },
-    { name: "Xabarlar", href: "/messages", icon: MessageSquare, badge: openMessages },
-    { name: "Sozlamalar", href: "/settings", icon: Settings },
-  ];
-
-  // Boshqaruv (administratsiya) bo'limlari — admin/menejer o'z mehmonxonasini
-  // to'liq boshqarishi uchun. Ruxsati bo'lmagan foydalanuvchiga ko'rinmaydi.
-  const managementLinks = [
-    { name: "Xona turlari", href: "/room-types", icon: BedDouble },
-    { name: "Qulayliklar", href: "/amenities", icon: Sparkles },
-    { name: "Xizmatlar", href: "/services", icon: ConciergeBell },
-    { name: "Ombor", href: "/warehouse", icon: Warehouse },
-    { name: "Xo'jalik ishlari", href: "/housekeeping", icon: ClipboardList },
-    { name: "Xodimlar", href: "/employees", icon: UserCog },
-    { name: "Smenalar", href: "/shifts", icon: History },
-    { name: "Ruxsatnomalar", href: "/permissions", icon: ShieldCheck },
-  ];
+  // Sahifalar ro'yxati navLinks.ts da — sozlamalardagi tartiblash kartasi ham
+  // shu ro'yxatni o'qiydi. Xabarlar bandiga jonli belgi shu yerda ulanadi.
+  const allLinks: NavLink[] = MAIN_NAV_LINKS.map((l) =>
+    l.href === "/messages" ? { ...l, badge: openMessages } : l
+  );
+  const managementLinks = MANAGEMENT_NAV_LINKS;
 
   // Foydalanuvchining ruxsatlariga mos sahifalargina ko'rsatiladi. Smena
   // cheklovi bo'lsa, ochiq qolgan sahifalardan boshqasi ko'rsatilmaydi.
   const allowed = (href: string) =>
     canRoute(href) && (!restriction || openRoutes.includes(href));
-  const links = allLinks.filter((l) => allowed(l.href));
-  const adminLinks = managementLinks.filter((l) => allowed(l.href));
+
+  // Administrator belgilagan tartib — mehmonxonaning barcha xodimlariga
+  // birdek amal qiladi. Tartib faqat JOYLASHUVni o'zgartiradi: qaysi sahifa
+  // ko'rinishini yuqoridagi ruxsat/cheklov filtri hal qiladi.
+  const { data: navOrder } = useNavOrder();
+  const links = applyNavOrder(
+    allLinks.filter((l) => allowed(l.href)),
+    navOrder?.order
+  );
+  const adminLinks = applyNavOrder(
+    managementLinks.filter((l) => allowed(l.href)),
+    navOrder?.order
+  );
 
   const initials = user
     ? `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase() || "?"
@@ -103,7 +73,7 @@ export const Sidebar = () => {
 
   // Bitta havolani chizish — asosiy va administratsiya guruhlari uchun umumiy.
   // badge — ochiq xabar/so'rovlar soni kabi jonli ko'rsatkich (0 da yashirin)
-  const renderLink = (link: { name: string; href: string; icon: any; badge?: number }) => {
+  const renderLink = (link: NavLink) => {
     const isActive =
       link.href === "/"
         ? location.pathname === "/"
