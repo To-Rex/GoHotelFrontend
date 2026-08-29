@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List, Clock, ChevronDown, CheckCircle2 } from "lucide-react"
+import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List, Clock, ChevronDown, CheckCircle2, CalendarCheck } from "lucide-react"
 import { useReservations } from "@/features/reservations/api/reservations"
 import {
   useRooms,
@@ -12,6 +12,7 @@ import {
   useUpdateRoomStatus,
 } from "../api/rooms"
 import type { Room } from "@/types/api"
+import { RoomReservationsDialog } from "../components/RoomReservationsDialog"
 import { usePermissions } from "@/lib/permissions"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -99,7 +100,12 @@ export const RoomsPage = () => {
   const canEdit = can("room.update", "room.manage")
   const canDelete = can("room.delete", "room.manage")
   const canStatus = can("room.update", "room.status.update", "room.manage")
+  // Xonaning bandlovlari — bron ko'rish ruxsati bo'lganlarga
+  const canSeeReservations = can("reservation.view", "reservation.manage")
   const user = useAuthStore((s) => s.user)
+
+  // "Bandlovlar" oynasi qaysi xona uchun ochiq
+  const [reservationsRoom, setReservationsRoom] = useState<Room | null>(null)
 
   const { data: rooms = [], isLoading, isError } = useRooms()
   const { data: branches = [] } = useBranches()
@@ -630,10 +636,20 @@ export const RoomsPage = () => {
                           {Number(room.base_price || 0).toLocaleString()}{" "}
                           <span className="text-xs font-normal text-gray-400">So'm</span>
                         </p>
-                        {(canEdit || canDelete) && (
+                        {(canEdit || canDelete || canSeeReservations) && (
                           /* Amallar: telefonda (hover yo'q) doim ko'rinadi,
                              desktopda esa avvalgidek hover'da paydo bo'ladi */
                           <div className="flex gap-0.5 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+                            {canSeeReservations && (
+                              <button
+                                type="button"
+                                title="Xona bandlovlari"
+                                onClick={() => setReservationsRoom(room)}
+                                className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
+                              >
+                                <CalendarCheck className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                             {canEdit && (
                               <button
                                 type="button"
@@ -806,7 +822,7 @@ export const RoomsPage = () => {
               <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Narxi</TableHead>
               <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Sig'imi</TableHead>
               <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Holati</TableHead>
-              {(canEdit || canDelete) && (
+              {(canEdit || canDelete || canSeeReservations) && (
                 <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">Amallar</TableHead>
               )}
             </TableRow>
@@ -814,7 +830,7 @@ export const RoomsPage = () => {
           <TableBody>
             {sortedRooms.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={(canEdit || canDelete) ? 6 : 5} className="py-12">
+                <TableCell colSpan={(canEdit || canDelete || canSeeReservations) ? 6 : 5} className="py-12">
                   <div className="flex flex-col items-center gap-2 text-gray-400">
                     <DoorOpen className="h-8 w-8" />
                     <p className="text-sm">
@@ -837,7 +853,7 @@ export const RoomsPage = () => {
                   onClick={() => toggleFloor(key)}
                   className="cursor-pointer select-none border-y border-primary-100 bg-primary-50/60 hover:bg-primary-100/60"
                 >
-                  <TableCell colSpan={(canEdit || canDelete) ? 6 : 5} className="py-2.5">
+                  <TableCell colSpan={(canEdit || canDelete || canSeeReservations) ? 6 : 5} className="py-2.5">
                     <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary-700">
                       <ChevronDown
                         className={cn(
@@ -933,9 +949,19 @@ export const RoomsPage = () => {
                         </p>
                       )}
                   </TableCell>
-                  {(canEdit || canDelete) && (
+                  {(canEdit || canDelete || canSeeReservations) && (
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-0.5">
+                        {canSeeReservations && (
+                          <button
+                            type="button"
+                            title="Xona bandlovlari"
+                            onClick={() => setReservationsRoom(room)}
+                            className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
+                          >
+                            <CalendarCheck className="h-4 w-4" />
+                          </button>
+                        )}
                         {canEdit && (
                           <button
                             type="button"
@@ -1162,6 +1188,12 @@ export const RoomsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Xonaning bandlovlari — kartadagi/qatordagi tugma ochadi */}
+      <RoomReservationsDialog
+        room={reservationsRoom}
+        onClose={() => setReservationsRoom(null)}
+      />
     </div>
   )
 }

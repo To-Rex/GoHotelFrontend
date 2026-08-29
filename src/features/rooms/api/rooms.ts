@@ -260,3 +260,46 @@ export const useUpdateRoomStatus = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
   });
 };
+
+/* Xonaning bandlovlari — xona kartochkasidagi "Bandlovlar" tugmasi uchun.
+
+   Mehmon ismi javobning o'zida keladi, shuning uchun ro'yxatni ko'rsatish
+   uchun mehmonlar bazasini alohida yuklash shart emas — eski bronning
+   mehmoni ham to'g'ri ko'rinadi. */
+export interface RoomReservation {
+  id: string;
+  reservation_number: string;
+  guest_id: string;
+  guest_name?: string | null;
+  guest_phone?: string | null;
+  room_id: string;
+  booking_type: string;
+  check_in_date: string;
+  check_out_date: string;
+  check_in_datetime?: string | null;
+  check_out_datetime?: string | null;
+  adults: number;
+  children: number;
+  status: string;
+  total_amount: number;
+  paid_amount: number;
+  payment_status: string;
+  discount_amount: number;
+  notes?: string | null;
+  cancelled_reason?: string | null;
+  created_at: string;
+}
+
+export const useRoomReservations = (roomId?: string) =>
+  useQuery({
+    queryKey: ['roomReservations', roomId],
+    // Dialog ochilgandagina so'raladi — xonalar ro'yxati og'irlashmaydi
+    enabled: !!roomId,
+    queryFn: async () => {
+      const { data } = await api.get<RoomReservation[]>(
+        `/rooms/${roomId}/reservations`,
+        { params: { limit: 500 } }
+      );
+      return Array.isArray(data) ? data : [];
+    },
+  });
