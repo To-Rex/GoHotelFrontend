@@ -27,6 +27,13 @@ describe("applyNavOrder", () => {
     expect(result).toEqual(["/c", "/a", "/b", "/yangi"])
   })
 
+  it("olib tashlangan sahifa saqlangan tartibda qolsa ham buzilmaydi", () => {
+    // Admin saqlagan tartibda endi mavjud bo'lmagan sahifa turishi mumkin
+    // (masalan olib tashlangan "/reservations") — qolganlar joyida qoladi
+    const result = hrefs(applyNavOrder(links, ["/c", "/olib-tashlangan", "/a"]))
+    expect(result).toEqual(["/c", "/a", "/b"])
+  })
+
   it("tartibda yo'qlar o'zaro standart ketma-ketligini saqlaydi", () => {
     const result = hrefs(applyNavOrder(links, ["/c"]))
     expect(result).toEqual(["/c", "/a", "/b"])

@@ -13,7 +13,6 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   // Dashboard moliyaviy KPI (jami tushum) ko'rsatadi — hisobot ruxsati talab qilinadi
   "/": ["report.view", "report.generate"],
   "/booking": ["reservation.create", "reservation.view"],
-  "/reservations": ["reservation.view"],
   "/rooms": ["room.view"],
   // Qavatlar — ADMIN/SUPER_ADMIN (isAdmin bypass) yoki floor ruxsatli xodim ko'radi
   "/floors": ["floor.create", "floor.update", "floor.delete"],
@@ -113,7 +112,6 @@ export function usePermissions() {
     const order = [
       "/",
       "/booking",
-      "/reservations",
       "/guests",
       "/rooms",
       "/finance",

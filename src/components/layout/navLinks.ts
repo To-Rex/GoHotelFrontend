@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   Users,
   DoorOpen,
-  CalendarCheck,
   CalendarDays,
   Wallet,
   Settings,
@@ -41,7 +40,6 @@ export interface NavLink {
 export const MAIN_NAV_LINKS: NavLink[] = [
   { name: "Boshqaruv", href: "/", icon: LayoutDashboard },
   { name: "Bron qilish", href: "/booking", icon: CalendarDays },
-  { name: "Bandlovlar", href: "/reservations", icon: CalendarCheck },
   { name: "Xonalar", href: "/rooms", icon: DoorOpen },
   { name: "Qavatlar", href: "/floors", icon: Layers },
   { name: "Mehmonlar", href: "/guests", icon: Users },

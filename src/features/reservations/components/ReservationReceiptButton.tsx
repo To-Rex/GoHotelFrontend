@@ -5,8 +5,28 @@ import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/store/auth"
 import { useReceiptSettings } from "@/features/shop/api/shop"
 import { printReservationReceipt, type ReservationReceiptData } from "@/lib/tprints"
-import type { Reservation } from "@/types/api"
 import { cn } from "@/lib/utils"
+
+/** Chek uchun yetarli bo'lgan eng kichik ma'lumot.
+ *
+ *  To'liq `Reservation` emas: xona bandlovlari ro'yxati kabi qisqartirilgan
+ *  javoblar ham shu tugmadan foydalana olishi kerak — chek baribir faqat shu
+ *  maydonlardan quriladi. */
+export interface ReceiptReservation {
+  reservation_number: string
+  booking_type: string
+  check_in_date: string
+  check_out_date: string
+  check_in_datetime?: string | null
+  check_out_datetime?: string | null
+  adults: number
+  children: number
+  total_amount: number
+  paid_amount: number
+  discount_amount: number
+  created_at: string
+  status: string
+}
 
 /* Bron cheki — istalgan bron uchun, jumladan eskilari uchun ham.
 
@@ -18,7 +38,7 @@ import { cn } from "@/lib/utils"
    olinadi, ya'ni sarlavha, izohlar va QR ikkala hujjatda ham bir xil turadi. */
 
 interface Props {
-  reservation: Reservation
+  reservation: ReceiptReservation
   /** Ro'yxatdagi qatorlar uchun ixcham ko'rinish */
   compact?: boolean
   guestName?: string | null

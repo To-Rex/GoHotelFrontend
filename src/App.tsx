@@ -3,7 +3,6 @@ import { MainLayout } from "./components/layout/MainLayout";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
 import { BookingPage } from "./features/reservations/pages/BookingPage";
-import { ReservationsPage } from "./features/reservations/pages/ReservationsPage";
 import { RoomsPage } from "./features/rooms/pages/RoomsPage";
 import { FloorsPage } from "./features/rooms/pages/FloorsPage";
 import { GuestsPage } from "./features/guests/pages/GuestsPage";
@@ -57,7 +56,6 @@ function App() {
         <Route path="/" element={<RootGate />}>
           <Route index element={<DashboardPage />} />
           <Route path="booking" element={<BookingPage />} />
-          <Route path="reservations" element={<ReservationsPage />} />
           <Route path="rooms" element={<RoomsPage />} />
           <Route path="floors" element={<FloorsPage />} />
           <Route path="guests" element={<GuestsPage />} />
