@@ -130,7 +130,13 @@ export const useAcceptShift = () =>
 
 export const useForceCloseShift = () =>
   useShiftMutation(
-    async (payload: { session_id: string; counted_cash?: number; notes?: string }) => {
+    async (payload: {
+      session_id: string;
+      counted_cash?: number;
+      notes?: string;
+      /** Kassa keyingi xodim qabul qilishini kutsinmi (standart: ha) */
+      hand_over?: boolean;
+    }) => {
       const { data } = await api.post<ShiftSession>("/shifts/force-close", payload);
       return data;
     }

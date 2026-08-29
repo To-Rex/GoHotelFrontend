@@ -30,6 +30,7 @@ import { usePermissions } from "@/lib/permissions"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -101,6 +102,10 @@ export const ShiftPanel = () => {
   // Majburiy yopish
   const [forceDialog, setForceDialog] = useState(false)
   const [forceCounted, setForceCounted] = useState("")
+  // Majburiy yopishda kassa keyingi xodimga o'tsinmi. Standart — HA: aks
+  // holda kassadagi pul hisobdan chiqib ketadi va keyingi xodim uni qabul
+  // qilmagan holda ish boshlab, smena topshirishda ortiqcha pul chiqaradi.
+  const [forceHandOver, setForceHandOver] = useState(true)
   const [forceNotes, setForceNotes] = useState("")
   const [forceError, setForceError] = useState<string | null>(null)
 
@@ -167,10 +172,12 @@ export const ShiftPanel = () => {
         session_id: blocking.id,
         counted_cash: n,
         notes: forceNotes || undefined,
+        hand_over: forceHandOver,
       })
       setForceDialog(false)
       setForceCounted("")
       setForceNotes("")
+      setForceHandOver(true)
     } catch (e) {
       setForceError(apiErrorMessage(e))
     }
@@ -560,6 +567,25 @@ export const ShiftPanel = () => {
               pulni sanab kiritsangiz farq o'sha xodim hisobiga yoziladi;
               kiritmasangiz kutilgan summa bo'yicha (farqsiz) yopiladi.
             </p>
+
+            {/* Kassa taqdiri: keyingi xodimga o'tadimi yoki admin oldimi */}
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border bg-gray-50 p-3">
+              <Checkbox
+                checked={forceHandOver}
+                onCheckedChange={(v) => setForceHandOver(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm">
+                <b className="font-medium text-gray-900">
+                  Kassani keyingi xodim qabul qilsin
+                </b>
+                <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                  {forceHandOver
+                    ? "Smena «topshirilgan» holatda qoladi — keyingi xodim uni o'z paroli bilan qabul qiladi va sanalgan summa uning boshlang'ich kassasi bo'ladi."
+                    : "Pulni o'zingiz olasiz: smena butunlay yopiladi va keyingi xodim kassani noldan boshlaydi."}
+                </span>
+              </span>
+            </label>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">
                 Kassadagi haqiqiy summa (ixtiyoriy)
