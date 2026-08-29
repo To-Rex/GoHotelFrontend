@@ -10,6 +10,8 @@ export type BookingType = "DAILY" | "HOURLY"
 
 export interface BookingDefaults {
   default_type: BookingType
+  /** Xonadagi HAR BIR kishi mehmon sifatida ro'yxatga olinishi shartmi */
+  require_all_guests: boolean
 }
 
 export const useBookingDefaults = () =>
@@ -26,10 +28,11 @@ export const useBookingDefaults = () =>
 export const useSaveBookingDefaults = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (defaultType: BookingType) => {
-      const { data } = await api.put<BookingDefaults>("/hotels/booking-settings", {
-        default_type: defaultType,
-      })
+    mutationFn: async (next: {
+      default_type: BookingType
+      require_all_guests: boolean
+    }) => {
+      const { data } = await api.put<BookingDefaults>("/hotels/booking-settings", next)
       return data
     },
     onSuccess: (data) => qc.setQueryData(["bookingDefaults"], data),
@@ -38,5 +41,5 @@ export const useSaveBookingDefaults = () => {
 
 /** Sozlama hali kelmagan bo'lsa ham dialog ochilaverishi kerak. */
 export const resolveBookingType = (
-  settings: BookingDefaults | undefined
+  settings: Pick<BookingDefaults, "default_type"> | undefined
 ): BookingType => (settings?.default_type === "HOURLY" ? "HOURLY" : "DAILY")

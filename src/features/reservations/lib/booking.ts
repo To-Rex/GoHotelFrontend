@@ -250,3 +250,19 @@ export function dayIsBlocked(list: any[], roomId: string, dateStr: string): bool
       resStartDate(r) === dateStr
   )
 }
+
+/* ------------------------------------------------------- hamrohlar -- */
+
+/** Xonaga kerakli hamrohlar soni (asosiy mehmondan tashqarisi). */
+export const companionSlots = (adults: number): number =>
+  Math.max(Math.floor(Number(adults) || 1) - 1, 0)
+
+/**
+ * Yana nechta mehmon kiritilishi kerak.
+ *
+ * Mehmonlar soni kamaytirilganda ortiqcha tanlovlar hisobga olinmaydi —
+ * ular ro'yxatdan qirqiladi, shuning uchun natija hech qachon manfiy
+ * bo'lmaydi.
+ */
+export const missingCompanions = (adults: number, chosen: number): number =>
+  Math.max(companionSlots(adults) - Math.max(chosen, 0), 0)

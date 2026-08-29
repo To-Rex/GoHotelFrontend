@@ -216,18 +216,25 @@ export const SettingsPage = () => {
   const { data: bookingDefaults } = useBookingDefaults()
   const saveBookingDefaultsMutation = useSaveBookingDefaults()
   const [bookingType, setBookingType] = useState<BookingType>("DAILY")
+  const [requireAllGuests, setRequireAllGuests] = useState(false)
   const [bookingSaved, setBookingSaved] = useState(false)
   const [bookingError, setBookingError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (bookingDefaults) setBookingType(resolveBookingType(bookingDefaults))
+    if (bookingDefaults) {
+      setBookingType(resolveBookingType(bookingDefaults))
+      setRequireAllGuests(bookingDefaults.require_all_guests === true)
+    }
   }, [bookingDefaults])
 
   const onSaveBookingDefaults = async () => {
     setBookingError(null)
     setBookingSaved(false)
     try {
-      await saveBookingDefaultsMutation.mutateAsync(bookingType)
+      await saveBookingDefaultsMutation.mutateAsync({
+        default_type: bookingType,
+        require_all_guests: requireAllGuests,
+      })
       setBookingSaved(true)
       window.setTimeout(() => setBookingSaved(false), 3000)
     } catch (e) {
@@ -774,6 +781,25 @@ export const SettingsPage = () => {
               standart turdan qat'i nazar soatlik ochiladi — xodim yana soat
               qo'shmoqchi bo'lishi ehtimoli yuqori.
             </p>
+
+            {/* Xonadagi har bir kishini ro'yxatga olish */}
+            <label className="mt-4 flex cursor-pointer items-start gap-2.5 border-t border-gray-100 pt-4">
+              <Checkbox
+                checked={requireAllGuests}
+                onCheckedChange={(v) => setRequireAllGuests(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm">
+                <b className="font-medium text-gray-900">
+                  Xonadagi har bir mehmon ro'yxatga olinsin
+                </b>
+                <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                  {requireAllGuests
+                    ? "Mehmonlar soni nechta bo'lsa, shuncha mehmon kiritilmaguncha bron yaratilmaydi. Hamrohlar bazaga qo'shiladi — keyingi safar qidiruvda topiladi va hujjati saqlanib qoladi."
+                    : "Hamrohlarni kiritish ixtiyoriy: xodim faqat asosiy mehmon bilan ham bron qila oladi. Hamrohlar bo'limi baribir ko'rinadi, xohlasa to'ldiradi."}
+                </span>
+              </span>
+            </label>
             <SaveRow
               onSave={onSaveBookingDefaults}
               pending={saveBookingDefaultsMutation.isPending}

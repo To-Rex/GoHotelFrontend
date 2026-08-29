@@ -29,6 +29,8 @@ import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { useAuthStore } from "@/store/auth"
 import { usePermissions } from "@/lib/permissions"
+import { useBookingDefaults } from "@/features/settings/api/bookingDefaults"
+import { CompanionGuests, type Companion } from "./CompanionGuests"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -46,10 +48,12 @@ import {
   addDaysStr,
   bookingErrorMessage,
   busyIntervalsFor,
+  companionSlots,
   dayDiff,
   findFreeSlot,
   hourlyDuration,
   minToTime,
+  missingCompanions,
   nextBookingStart,
   normalizeTime,
   sanitizePassport,
@@ -222,6 +226,10 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [discountType, setDiscountType] = useState<"AMOUNT" | "PERCENT">("AMOUNT")
   const [discountValue, setDiscountValue] = useState("")
   const [localError, setLocalError] = useState<string | null>(null)
+  // Xonadagi hamrohlar — mehmonlar soni 1 dan ko'p bo'lganda
+  const [companions, setCompanions] = useState<Companion[]>([])
+  const { data: bookingDefaults } = useBookingDefaults()
+  const guestsRequired = bookingDefaults?.require_all_guests === true
 
   // Xato: chaqiruvchi o'z dialogida ko'rsatsa o'shanga, bo'lmasa shu yerda
   const showError = (message: string) => {
@@ -446,6 +454,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     setNationalityOther("")
     setGuestScanNotFound(null)
     setLocalError(null)
+    setCompanions([])
     clearGuestPhoto()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request])
@@ -461,6 +470,15 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const watchNewPhone = watch("new_guest_phone")
 
   const hourCount = bookingType === "HOURLY" ? hourlyDuration(watchInTime, watchOutTime) : 0
+
+  /* Hamrohlar hisobi. Mehmonlar soni kamaytirilsa ortiqcha tanlovlar
+     yig'ilib qolmasligi uchun ro'yxat shu yerda qirqiladi. */
+  const adultsCount = Math.max(Number(watch("adults")) || 1, 1)
+  const trimmedCompanions = useMemo(
+    () => companions.slice(0, companionSlots(adultsCount)),
+    [companions, adultsCount]
+  )
+  const companionsMissing = missingCompanions(adultsCount, trimmedCompanions.length)
 
   // Yangi mehmon formasida passport/telefon terilishi bilan mavjud mehmonni
   // jonli aniqlash — dublikat yaratmaslik va ishni tezlashtirish uchun
@@ -632,6 +650,17 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       showError("Har bir to'lov qatorida to'lov turini tanlang.")
       return
     }
+    // Majburiy rejim: xonadagi har bir kishi ro'yxatga olinishi shart.
+    // Serverdan oldin shu yerda to'xtatamiz — xabar tushunarli bo'lishi uchun
+    if (guestsRequired && companionsMissing > 0) {
+      showError(
+        `Xonadagi har bir mehmon ro'yxatga olinishi kerak: ${adultsCount} kishidan ` +
+          `${adultsCount - companionsMissing} tasi kiritilgan. Qolgan ${companionsMissing} ta ` +
+          `mehmonni "Hamrohlar" bo'limida tanlang yoki yangi qo'shing.`
+      )
+      return
+    }
+
     const paymentsTotal = paymentRows.reduce((s, p) => s + p.amount, 0)
     if (finalTotal > 0 && paymentsTotal > finalTotal) {
       showError(
@@ -693,6 +722,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
         hotelId,
         adults: values.adults,
         children: values.children || 0,
+        // Hamrohlar — har biri bazadagi haqiqiy mehmon
+        companion_guest_ids: trimmedCompanions.map((c) => c.id),
         notes: values.notes,
         payment_amount: paymentsTotal,
         payment_method: (paymentRows[0]?.payment_method as any) || null,
@@ -1407,6 +1438,24 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
           {errors.adults && <p className="text-xs text-red-500">{errors.adults.message}</p>}
         </div>
 
+        {/* Xonadagi qolgan mehmonlar ham ro'yxatga olinadi */}
+        <CompanionGuests
+          adults={adultsCount}
+          mainGuestId={selectedGuestId || undefined}
+          guests={guests}
+          value={trimmedCompanions}
+          onChange={setCompanions}
+          required={guestsRequired}
+          hotelId={presetRoom?.hotel_id || user?.hotel_id || undefined}
+          onError={showError}
+        />
+        {companionsMissing > 0 && guestsRequired && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+            Xonadagi har bir mehmon ro'yxatga olinishi kerak — yana{" "}
+            {companionsMissing} ta mehmon kiritilishi zarur.
+          </p>
+        )}
+
         <div className="space-y-1">
           <label className="text-sm font-medium">Qo'shimcha izoh</label>
           <Input placeholder="Izoh..." {...register("notes")} />
@@ -1566,7 +1615,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               createGuestMutation.isPending ||
               photoUploading ||
               selectedTimeConflict ||
-              dailyRangeConflict
+              dailyRangeConflict ||
+              (guestsRequired && companionsMissing > 0)
             }
           >
             {(createReservationMutation.isPending ||

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import {
   CalendarCheck,
+  Users,
   CalendarDays,
   Clock,
   Loader2,
@@ -364,6 +365,16 @@ const ReservationItem = ({
           <span className="text-gray-300">—</span>
         )}
       </div>
+
+      {/* Hamrohlar — xonada yana kim turgani */}
+      {res.companions && res.companions.length > 0 && (
+        <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-gray-500">
+          <Users className="h-3.5 w-3.5 text-gray-400" />
+          {res.companions
+            .map((c) => c.name || "Ismsiz mehmon")
+            .join(", ")}
+        </p>
+      )}
 
       {/* Muddat va summa (chegirma / to'langan qismi bilan) */}
       <div className="mt-2.5 flex items-end justify-between gap-2">

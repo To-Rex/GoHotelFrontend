@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest"
 import {
   HOURLY_TURNOVER_MIN,
   busyIntervalsFor,
+  companionSlots,
   dayIsBlocked,
   findFreeSlot,
   firstFreeDate,
   minToTime,
+  missingCompanions,
   nextBookingStart,
   timeToMin,
 } from "./booking"
@@ -208,5 +210,31 @@ describe("xonalar sahifasidagi bron so'rovi", () => {
     const { start, checkOut } = plan(list, "2026-09-05")
     expect(start).toBe("2026-09-08")
     expect(checkOut).toBe("2026-09-09")
+  })
+})
+
+describe("hamrohlar hisobi", () => {
+  it("bitta mehmon uchun hamroh kerak emas", () => {
+    expect(companionSlots(1)).toBe(0)
+    expect(missingCompanions(1, 0)).toBe(0)
+  })
+
+  it("3 kishi bo'lsa yana 2 ta mehmon kerak", () => {
+    expect(companionSlots(3)).toBe(2)
+    expect(missingCompanions(3, 0)).toBe(2)
+    expect(missingCompanions(3, 1)).toBe(1)
+    expect(missingCompanions(3, 2)).toBe(0)
+  })
+
+  it("mehmonlar soni kamaytirilsa ortiqcha tanlov hisobga olinmaydi", () => {
+    // 3 kishi tanlangan edi, keyin 2 ga tushirildi — kamomad chiqmaydi
+    expect(missingCompanions(2, 3)).toBe(0)
+  })
+
+  it("noto'g'ri qiymatlar hisobni buzmaydi", () => {
+    expect(companionSlots(0)).toBe(0)
+    expect(companionSlots(NaN)).toBe(0)
+    expect(missingCompanions(NaN, 0)).toBe(0)
+    expect(missingCompanions(3, -1)).toBe(2)
   })
 })

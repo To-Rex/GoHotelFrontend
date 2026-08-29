@@ -287,6 +287,8 @@ export interface RoomReservation {
   discount_amount: number;
   notes?: string | null;
   cancelled_reason?: string | null;
+  /** Xonada turgan qolgan mehmonlar */
+  companions?: Array<{ guest_id: string; name?: string | null }> | null;
   created_at: string;
 }
 
