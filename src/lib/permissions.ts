@@ -16,7 +16,11 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   "/rooms": ["room.view"],
   // Qavatlar — ADMIN/SUPER_ADMIN (isAdmin bypass) yoki floor ruxsatli xodim ko'radi
   "/floors": ["floor.create", "floor.update", "floor.delete"],
-  "/guests": ["guest.view"],
+  // Mehmonlar bazasi — admin (bypass) va menejer (shift.force_close) uchun.
+  // Qabulxona xodimiga sahifa ko'rinmaydi: unga mehmon KERAK bo'lgan joyda —
+  // "Yangi bandlov" oynasida — qidirish, skanerlash va yangi mehmon qo'shish
+  // avvalgidek ishlayveradi, chunki u sahifa ruxsatiga bog'liq emas.
+  "/guests": ["shift.force_close"],
   "/finance": ["finance.view"],
   // Xarajatlar — BARCHA rollar uchun ochiq (bo'sh massiv = hammaga ruxsat);
   // kiritish ham hammaga ochiq, o'chirish esa expense.delete bilan cheklanadi
