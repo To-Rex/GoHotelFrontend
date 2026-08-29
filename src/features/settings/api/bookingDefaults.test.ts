@@ -31,12 +31,6 @@ describe("xonalar sahifasidagi tur tanlovi", () => {
   const ROOM = "room-1"
   const today = "2026-09-05"
 
-  // Sahifadagi qoida: soatlik afzal, lekin kunlik bron bugungi kunni
-  // egallagan bo'lsa soatlik mumkin emas — kunlik rejaga o'tiladi
-  const wantsHourly = (list: any[], settings: any, busyCount: number) =>
-    (resolveBookingType(settings) === "HOURLY" || busyCount > 0) &&
-    !dailyBookingOn(list, ROOM, today)
-
   const daily = (from: string, to: string, extra: any = {}) => ({
     room_id: ROOM,
     status: "CONFIRMED",
@@ -46,27 +40,41 @@ describe("xonalar sahifasidagi tur tanlovi", () => {
     ...extra,
   })
 
-  it("sozlama soatlik bo'lsa bo'sh xonada ham soatlik ochiladi", () => {
-    expect(wantsHourly([], { default_type: "HOURLY" }, 0)).toBe(true)
+  /* Sahifadagi qoida: turni odatda DIALOG hal qiladi (sozlama bo'yicha).
+     Sahifa faqat bitta holatda turni o'zi majburlaydi — xona bugun
+     allaqachon soatlik ishlayotgan bo'lsa.
+
+     Nega shunday: sozlama javobi xona bosilgan ONDA hali kelmagan bo'lishi
+     mumkin. Ilgari tur shu yerda hisoblanardi va o'sha paytda sozlama
+     bo'lmasa "kunlik" bo'lib qotib qolardi — sozlamada soatlik turgan
+     bo'lsa ham. */
+  const forcedType = (list: any[], busyTodayCount: number) =>
+    busyTodayCount > 0 && !dailyBookingOn(list, ROOM, today) ? "HOURLY" : undefined
+
+  it("bo'sh xonada turni dialog hal qiladi", () => {
+    // undefined — ya'ni sahifa majburlamaydi, sozlama qo'llanadi
+    expect(forcedType([], 0)).toBeUndefined()
   })
 
-  it("sozlama kunlik bo'lsa bo'sh xonada kunlik ochiladi", () => {
-    expect(wantsHourly([], { default_type: "DAILY" }, 0)).toBe(false)
+  it("bugun soatlik ishlayotgan xonada soatlik majburlanadi", () => {
+    expect(forcedType([], 2)).toBe("HOURLY")
   })
 
-  it("xona bugun soatlik ishlayotgan bo'lsa sozlamadan qat'i nazar soatlik", () => {
-    expect(wantsHourly([], { default_type: "DAILY" }, 2)).toBe(true)
-  })
-
-  it("kunlik mehmon turgan xonada soatlik ochilmaydi", () => {
-    // Sozlama soatlik bo'lsa ham: bugun kunlik bron bilan band
+  it("kunlik mehmon turgan xonada soatlik majburlanmaydi", () => {
     const list = [daily("2026-09-04", "2026-09-08")]
-    expect(wantsHourly(list, { default_type: "HOURLY" }, 0)).toBe(false)
+    expect(forcedType(list, 2)).toBeUndefined()
   })
 
-  it("mehmon chiqadigan kuni soatlik yana mumkin", () => {
+  it("mehmon chiqadigan kuni soatlik yana majburlanadi", () => {
     // Chiqish kuni band emas — o'sha kuni yangi mehmon kiradi
     const list = [daily("2026-09-01", today)]
-    expect(wantsHourly(list, { default_type: "HOURLY" }, 0)).toBe(true)
+    expect(forcedType(list, 1)).toBe("HOURLY")
+  })
+
+  it("sozlama kelmaguncha kunlik ko'rinadi, kelgach soatlikka o'tadi", () => {
+    // Dialog aynan shu qiymatlarga tayanadi: yuklanayotganda kunlik,
+    // javob kelgach sozlamadagi tur
+    expect(resolveBookingType(undefined)).toBe("DAILY")
+    expect(resolveBookingType({ default_type: "HOURLY" })).toBe("HOURLY")
   })
 })

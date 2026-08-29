@@ -29,7 +29,10 @@ import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { useAuthStore } from "@/store/auth"
 import { usePermissions } from "@/lib/permissions"
-import { useBookingDefaults } from "@/features/settings/api/bookingDefaults"
+import {
+  useBookingDefaults,
+  resolveBookingType,
+} from "@/features/settings/api/bookingDefaults"
 import { CompanionGuests, type Companion } from "./CompanionGuests"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -76,7 +79,12 @@ export interface NewBookingRequest {
   room?: any | null
   checkInDate: string
   checkOutDate: string
-  bookingType: "DAILY" | "HOURLY"
+  /** Berilmasa — mehmonxona sozlamasidagi standart tur olinadi.
+   *
+   *  Chaqiruvchi turni O'ZI hisoblasa, sozlama hali yuklanmagan paytda
+   *  bosilgan tugma noto'g'ri turni qotirib qo'yardi. Shuning uchun tanlov
+   *  shu yerda — dialog sozlamani kutib, kelganda qo'llaydi. */
+  bookingType?: "DAILY" | "HOURLY"
   checkInTime?: string
   checkOutTime?: string
 }
@@ -231,6 +239,12 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const { data: bookingDefaults } = useBookingDefaults()
   const guestsRequired = bookingDefaults?.require_all_guests === true
 
+  /* So'rovda tur ko'rsatilmagan bo'lsa u sozlamadan olinadi. Sozlama hali
+     kelmagan bo'lsa dialog vaqtincha kunlik bilan ochiladi va javob kelgach
+     o'ziga keladi — bu bayroq shuni kuzatadi. Xodim turni qo'lda
+     almashtirsa bayroq tushadi va sozlama uni bosib ketmaydi. */
+  const typePendingRef = useRef(false)
+
   // Xato: chaqiruvchi o'z dialogida ko'rsatsa o'shanga, bo'lmasa shu yerda
   const showError = (message: string) => {
     if (onError) onError(message)
@@ -243,6 +257,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     reset,
     setValue,
     watch,
+    getValues,
     formState: { errors },
   } = useForm<BookingForm>({
     resolver: zodResolver(reservationSchema) as any,
@@ -416,6 +431,24 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       .slice(0, 20)
   }, [guests, guestSearch])
 
+  /* Berilgan xona va kun uchun birinchi bo'sh soat oralig'i.
+
+     Bugungi kun bo'lsa qidiruv HOZIRDAN boshlanadi — o'tib ketgan soatni
+     taklif qilishning ma'nosi yo'q. Joy topilmasa null qaytadi va odatdagi
+     14:00 qo'yiladi: xodim sanani o'zgartirishi mumkin, kesishuv haqidagi
+     ogohlantirish esa o'z o'rnida turadi. */
+  const freeSlotFor = (roomId: string, dateStr: string): [string, string] | null => {
+    if (!roomId || !dateStr) return null
+    const busy = busyIntervalsFor(reservations, roomId, dateStr)
+    const now = new Date()
+    const starts =
+      dateStr === todayStr
+        ? [now.getHours() * 60 + now.getMinutes()]
+        : [8 * 60, 0]
+    const slot = findFreeSlot(busy, starts)
+    return slot ? [minToTime(slot[0]), minToTime(slot[1])] : null
+  }
+
   /* Dialog ochilganda (yoki boshqa so'rov bilan qayta ochilganda) forma
      to'liq tozalanadi va so'rovdagi qiymatlar bilan to'ldiriladi — eski
      tanlov keyingi bronga o'tib ketmasligi kerak. */
@@ -431,19 +464,28 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
         : 0
     const nights = Number.isFinite(rawNights) ? Math.max(rawNights, 0) : 0
     reset()
-    setBookingType(request.bookingType)
-    setValue("booking_type", request.bookingType)
+    // Tur: so'rovda ko'rsatilgan bo'lsa o'sha, bo'lmasa sozlamadan
+    const wanted = request.bookingType ?? resolveBookingType(bookingDefaults)
+    typePendingRef.current = !request.bookingType && !bookingDefaults
+    setBookingType(wanted)
+    setValue("booking_type", wanted)
     setValue("room_id", room?.id || "")
     setValue("check_in_date", request.checkInDate)
     setValue("check_out_date", request.checkOutDate)
-    setValue("check_in_time", request.checkInTime || "14:00")
-    setValue("check_out_time", request.checkOutTime || "16:00")
+    // Soatlikda vaqt berilmagan bo'lsa — o'sha kunning birinchi bo'sh
+    // oralig'i (band soatlar va tanaffus hisobga olinadi)
+    const slot =
+      wanted === "HOURLY" && !request.checkInTime && room
+        ? freeSlotFor(room.id, request.checkInDate)
+        : null
+    setValue("check_in_time", request.checkInTime || (slot ? slot[0] : "14:00"))
+    setValue("check_out_time", request.checkOutTime || (slot ? slot[1] : "16:00"))
     // Mehmonlar soni standart 2 (odatda juftlik keladi)
     setValue("adults", 2)
     setValue("children", 0)
     setValue("guest_id", "")
     setValue("new_guest_nationality", DEFAULT_NATIONALITY)
-    setValue("payment_amount", request.bookingType === "HOURLY" ? price : nights * price)
+    setValue("payment_amount", wanted === "HOURLY" ? price : nights * price)
     setValue("payment_method", "CASH")
     setExtraPayments([])
     setDiscountType("AMOUNT")
@@ -458,6 +500,22 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     clearGuestPhoto()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request])
+
+  /* Sozlama kechroq kelsa — dialog vaqtincha kunlik bilan ochilgan bo'lsa —
+     turni bir marta to'g'rilaymiz. Xodim turni qo'lda tanlagan bo'lsa
+     bayroq tushgan bo'ladi va bu yerga kirilmaydi. */
+  useEffect(() => {
+    if (!open || !typePendingRef.current || !bookingDefaults) return
+    typePendingRef.current = false
+    if (resolveBookingType(bookingDefaults) === "DAILY") return
+    setBookingType("HOURLY")
+    setValue("booking_type", "HOURLY")
+    const roomId = presetRoom?.id || getValues("room_id")
+    const slot = freeSlotFor(roomId, getValues("check_in_date"))
+    setValue("check_in_time", slot ? slot[0] : "14:00")
+    setValue("check_out_time", slot ? slot[1] : "16:00")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, bookingDefaults])
 
   const watchInTime = watch("check_in_time")
   const watchOutTime = watch("check_out_time")
@@ -841,6 +899,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               key={opt.key}
               type="button"
               onClick={() => {
+                // Qo'lda tanlangan tur sozlama bilan bosib ketilmasin
+                typePendingRef.current = false
                 setBookingType(opt.key)
                 setValue("booking_type", opt.key)
                 if (opt.key === "HOURLY") {
