@@ -11,9 +11,10 @@ export interface NavOrder {
   order: string[]
 }
 
-export const useNavOrder = () =>
+export const useNavOrder = (enabled = true) =>
   useQuery({
     queryKey: ["navOrder"],
+    enabled,
     queryFn: async () => {
       const { data } = await api.get<NavOrder>("/hotels/nav-settings")
       return data

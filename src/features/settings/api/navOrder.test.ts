@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest"
 import { applyNavOrder } from "./navOrder"
-import { MAIN_NAV_LINKS, MANAGEMENT_NAV_LINKS } from "@/components/layout/navLinks"
+import {
+  MAIN_NAV_LINKS,
+  MANAGEMENT_NAV_LINKS,
+  firstSidebarRoute,
+} from "@/components/layout/navLinks"
 
 const hrefs = (list: Array<{ href: string }>) => list.map((l) => l.href)
 
@@ -55,5 +59,48 @@ describe("applyNavOrder", () => {
   it("menyu ro'yxatlarida takroriy manzil yo'q", () => {
     const all = [...hrefs(MAIN_NAV_LINKS), ...hrefs(MANAGEMENT_NAV_LINKS)]
     expect(new Set(all).size).toBe(all.length)
+  })
+})
+
+describe("firstSidebarRoute", () => {
+  // Sahifa ochiqligini soxtalashtirish uchun oddiy ruxsat to'plami
+  const only = (...hrefs: string[]) => (href: string) => hrefs.includes(href)
+
+  it("tartib bo'lmasa menyudagi birinchi ochiq sahifa", () => {
+    const visible = only("/booking", "/rooms", "/guests")
+    // Standart tartibda "Bron qilish" "Xonalar"dan oldin turadi
+    expect(firstSidebarRoute(visible, undefined, "/")).toBe("/booking")
+  })
+
+  it("admin tartibni o'zgartirsa kirish sahifasi ham siljiydi", () => {
+    const visible = only("/booking", "/rooms", "/guests")
+    expect(firstSidebarRoute(visible, ["/rooms", "/booking"], "/")).toBe("/rooms")
+  })
+
+  it("ruxsati yo'q sahifa birinchi bo'lib qolmaydi", () => {
+    // Tartibda birinchi turgan "/" xodimga yopiq — keyingisi olinadi
+    const visible = only("/rooms", "/guests")
+    expect(firstSidebarRoute(visible, ["/", "/rooms"], "/")).toBe("/rooms")
+  })
+
+  it("boshqaruv bandi asosiy sahifalardan tepaga chiqmaydi", () => {
+    // Menyuda "Administratsiya" sarlavhasi ostida turadi, tartibda oldinda
+    // ko'rsatilgan bo'lsa ham
+    const visible = only("/rooms", "/employees")
+    expect(firstSidebarRoute(visible, ["/employees", "/rooms"], "/")).toBe("/rooms")
+  })
+
+  it("faqat boshqaruv sahifasi ochiq bo'lsa o'sha olinadi", () => {
+    expect(firstSidebarRoute(only("/employees"), undefined, "/")).toBe("/employees")
+  })
+
+  it("hech narsa ochiq bo'lmasa zaxira manzil qaytadi", () => {
+    expect(firstSidebarRoute(() => false, undefined, "/zaxira")).toBe("/zaxira")
+  })
+
+  it("smena cheklovi paytida ochiq qolgan sahifa olinadi", () => {
+    // Cheklov filtri ham shu `visible` orqali keladi — kassa sahifasi
+    const visible = only("/cash-reports", "/my-reports")
+    expect(firstSidebarRoute(visible, undefined, "/")).toBe("/cash-reports")
   })
 })

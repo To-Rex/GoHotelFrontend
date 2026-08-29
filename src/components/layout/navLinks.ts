@@ -21,6 +21,7 @@ import {
   MessageSquare,
   type LucideIcon,
 } from "lucide-react"
+import { applyNavOrder } from "@/features/settings/api/navOrder"
 
 /* Yon menyu sahifalari — YAGONA ro'yxat.
 
@@ -63,3 +64,30 @@ export const MANAGEMENT_NAV_LINKS: NavLink[] = [
   { name: "Smenalar", href: "/shifts", icon: History },
   { name: "Ruxsatnomalar", href: "/permissions", icon: ShieldCheck },
 ]
+
+/**
+ * Yon menyudagi BIRINCHI ochiq sahifa.
+ *
+ * Tizimga kirgan xodim aynan shu sahifada turishi kerak — oldindan
+ * belgilangan sahifada emas. Hisob yon menyuning o'zi bilan bir xil
+ * qoidada: avval ko'rinadiganlar ajratiladi (ruxsat va smena cheklovi),
+ * so'ng administrator belgilagan tartib qo'llanadi. Guruhlar alohida
+ * saralanadi, chunki menyuda ular orasida "Administratsiya" sarlavhasi
+ * turadi va boshqaruv bandi hech qachon asosiy sahifalardan tepaga
+ * chiqmaydi.
+ *
+ * `visible` — menyudagi bilan bir xil filtr; `fallback` esa hech bir
+ * sahifa ochiq bo'lmaganda (yoki ruxsatlar hali kelmaganda) qaytariladi.
+ */
+export const firstSidebarRoute = (
+  visible: (href: string) => boolean,
+  order: string[] | undefined,
+  fallback: string
+): string => {
+  // Saralash menyu bilan BIR XIL funksiyada — ikkinchi nusxa yozilsa,
+  // vaqt o'tib ikkalasi bir-biridan chetga chiqib ketardi
+  const firstOf = (links: NavLink[]): string | undefined =>
+    applyNavOrder(links.filter((l) => visible(l.href)), order)[0]?.href
+
+  return firstOf(MAIN_NAV_LINKS) ?? firstOf(MANAGEMENT_NAV_LINKS) ?? fallback
+}

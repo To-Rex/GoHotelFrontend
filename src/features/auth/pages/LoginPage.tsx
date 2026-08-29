@@ -155,7 +155,7 @@ export const LoginPage = () => {
         headers: { Authorization: `Bearer ${data.access_token}` },
       });
       setAuth(profileRes.data, data.access_token, data.refresh_token);
-      navigate("/");
+      navigate("/start");
       return null;
     } catch (err) {
       return faceErrorMessage(err);
@@ -184,7 +184,7 @@ export const LoginPage = () => {
       });
 
       setAuth(profileRes.data, data.access_token, data.refresh_token);
-      navigate("/");
+      navigate("/start");
     } catch (err: any) {
       console.error("Login error", err);
       // 401 — noto'g'ri login/parol; boshqa xatolarda umumiy matn

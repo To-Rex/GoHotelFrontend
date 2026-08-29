@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { useAuthStore } from "@/store/auth";
 import { usePermissions } from "@/lib/permissions";
+import { LANDING_GATE_ROUTE } from "./LandingRedirect";
 import {
   useShiftState,
   shiftRestriction,
@@ -30,7 +31,7 @@ export const MainLayout = () => {
   const { pathname } = useLocation();
   // Ichki boshqaruv sahifalari qidiruvga chiqmasligi kerak (noindex)
   useSeo({ title: "Boshqaruv paneli — GoHotel", noindex: true });
-  const { canRoute, firstAllowedRoute } = usePermissions();
+  const { canRoute } = usePermissions();
 
   // Smena holati — faqat kassa bilan ishlaydigan xodimlar uchun so'raladi.
   // Ish vaqti tugagan / kassa kesimi kelgan / blok bo'lgan xodim faqat
@@ -70,10 +71,13 @@ export const MainLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Ruxsati yo'q sahifaga to'g'ridan-to'g'ri URL orqali kirilsa — ruxsat berilgan
-  // birinchi sahifaga qaytaramiz.
+  // Ruxsati yo'q sahifaga to'g'ridan-to'g'ri URL orqali kirilsa (yoki xodim
+  // ochiq bo'lmagan "/" manzilida turgan bo'lsa) — kirish darvozasiga.
+  // U yerdan yon menyudagi birinchi ochiq sahifaga o'tadi, ya'ni oldindan
+  // belgilangan sahifa yo'q: administrator menyu tartibini o'zgartirsa,
+  // xodim ham o'sha birinchi sahifada turadi.
   if (!canRoute(pathname)) {
-    return <Navigate to={firstAllowedRoute()} replace />;
+    return <Navigate to={LANDING_GATE_ROUTE} replace />;
   }
 
   // Smena cheklovi: smena ochilmagan, ish vaqti tugagan (davom etilmagan),

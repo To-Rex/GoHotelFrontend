@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { MainLayout } from "./components/layout/MainLayout";
+import { LandingRedirect } from "./components/layout/LandingRedirect";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
 import { BookingPage } from "./features/reservations/pages/BookingPage";
@@ -55,6 +56,8 @@ function App() {
         {/* Protected Routes */}
         <Route path="/" element={<RootGate />}>
           <Route index element={<DashboardPage />} />
+          {/* Kirish sahifasi: yon menyudagi birinchi ochiq sahifaga yo'naltiradi */}
+          <Route path="start" element={<LandingRedirect />} />
           <Route path="booking" element={<BookingPage />} />
           <Route path="rooms" element={<RoomsPage />} />
           <Route path="floors" element={<FloorsPage />} />
