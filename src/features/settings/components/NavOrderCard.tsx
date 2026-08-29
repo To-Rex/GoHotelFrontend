@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ChevronDown, ChevronUp, Loader2, CheckCircle2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -89,10 +89,15 @@ export const NavOrderCard = () => {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Admin ro'yxatni qo'lda o'zgartirgan bo'lsa, fonda kelgan javob uni
+  // bosib ketmasligi kerak — aks holda oyna qayta faollashganda tartiblash
+  // ishi yo'qoladi
+  const dirtyRef = useRef(false)
+
   // Serverdagi tartib kelgach ro'yxatlar shunga keltiriladi. Saqlangan
   // tartibda yo'q sahifa yo'qolmaydi — o'z guruhi oxirida qoladi.
   useEffect(() => {
-    if (!navOrder) return
+    if (!navOrder || dirtyRef.current) return
     setMain(applyNavOrder(MAIN_NAV_LINKS, navOrder.order))
     setAdmin(applyNavOrder(MANAGEMENT_NAV_LINKS, navOrder.order))
   }, [navOrder])
@@ -107,11 +112,14 @@ export const NavOrderCard = () => {
     if (target < 0 || target >= list.length) return
     const next = [...list]
     ;[next[index], next[target]] = [next[target], next[index]]
+    dirtyRef.current = true
     setList(next)
     setSaved(false)
   }
 
   const resetOrder = () => {
+    // Standart tartibga qaytarish ham o'zgarish — saqlanmaguncha turadi
+    dirtyRef.current = true
     setMain(MAIN_NAV_LINKS)
     setAdmin(MANAGEMENT_NAV_LINKS)
     setSaved(false)
@@ -124,6 +132,7 @@ export const NavOrderCard = () => {
       // Ikkala guruh bitta ro'yxatga qo'shiladi: menyu har bir guruhni
       // shu umumiy tartibga qarab saralaydi
       await saveMutation.mutateAsync([...main, ...admin].map((l) => l.href))
+      dirtyRef.current = false
       setSaved(true)
       window.setTimeout(() => setSaved(false), 3000)
     } catch (e) {
