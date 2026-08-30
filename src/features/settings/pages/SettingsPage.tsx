@@ -24,10 +24,12 @@ import {
   ScanLine,
   ListOrdered,
   CalendarClock,
+  Percent,
   type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
+import { DiscountRulesCard } from "../components/DiscountRulesCard"
 import {
   useBookingDefaults,
   useSaveBookingDefaults,
@@ -120,10 +122,10 @@ const SETTING_GROUPS = [
   {
     key: "booking",
     label: "Bron va mehmonlar",
-    desc: "Bandlov oynasi qanday ochilishi, bronni tahrirlash oynasi va hujjat skaneri",
+    desc: "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash va hujjat skaneri",
     icon: CalendarClock,
     iconClass: "bg-indigo-50 text-indigo-600",
-    cards: ["booking-default", "booking-edit", "scanner"],
+    cards: ["booking-default", "discount-rules", "booking-edit", "scanner"],
   },
   {
     key: "cash",
@@ -690,7 +692,18 @@ export const SettingsPage = () => {
                 />
               </SettingCard>
 
-              {/* Bron tahriri vaqt oynasi */}
+              {/* Chegirma qoidalari — administrator belgilaydi, qolganlar ishlatadi */}
+          <SettingCard
+            id="discount-rules"
+            icon={Percent}
+            iconClass="bg-rose-50 text-rose-600"
+            title="Chegirma qoidalari"
+            desc="Kim qancha chegirma bera olishi. Kunlik va soatlik bron alohida sozlanadi; 0 qiymati «cheklovsiz» degani."
+          >
+            <DiscountRulesCard />
+          </SettingCard>
+
+          {/* Bron tahriri vaqt oynasi */}
               <SettingCard
                 id="booking-edit"
                 icon={CalendarCog}

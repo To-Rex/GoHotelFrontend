@@ -33,6 +33,12 @@ import {
   useBookingDefaults,
   resolveBookingType,
 } from "@/features/settings/api/bookingDefaults"
+import {
+  useDiscountRules,
+  ruleFor,
+  discountProblem,
+  discountHint,
+} from "@/features/settings/api/discountRules"
 import { CompanionGuests, type Companion } from "./CompanionGuests"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -238,6 +244,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [companions, setCompanions] = useState<Companion[]>([])
   const { data: bookingDefaults } = useBookingDefaults()
   const guestsRequired = bookingDefaults?.require_all_guests === true
+  const { data: discountRules } = useDiscountRules()
 
   /* So'rovda tur ko'rsatilmagan bo'lsa u sozlamadan olinadi. Sozlama hali
      kelmagan bo'lsa dialog vaqtincha kunlik bilan ochiladi va javob kelgach
@@ -640,6 +647,21 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       : Math.min(Math.max(rawDiscount, 0), effectiveTotal)
   const finalTotal = Math.max(effectiveTotal - discountAmount, 0)
 
+  /* Chegirma qoidasi — administrator sozlaydi, xodim shu doirada ishlaydi.
+     Bu yerdagi tekshiruv xodimga DARHOL javob berish uchun; haqiqiy to'siq
+     serverda, ya'ni brauzerni chetlab o'tib bo'lmaydi. */
+  const discountRule = ruleFor(discountRules, bookingType)
+  const discountDuration = bookingType === "HOURLY" ? hourCount : dialogNightCount
+  const discountError = discountProblem(
+    discountRule,
+    bookingType,
+    discountDuration,
+    effectiveTotal,
+    discountType === "AMOUNT" ? rawDiscount : 0,
+    discountType === "PERCENT" ? rawDiscount : 0
+  )
+  const discountLimitText = discountHint(discountRule, bookingType)
+
   useEffect(() => {
     if (!open) return
     setValue("payment_amount", finalTotal)
@@ -708,6 +730,12 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       showError("Har bir to'lov qatorida to'lov turini tanlang.")
       return
     }
+    // Chegirma qoidasi — serverdan oldin shu yerda, xabar tushunarli bo'lsin
+    if (discountError) {
+      showError(discountError)
+      return
+    }
+
     // Majburiy rejim: xonadagi har bir kishi ro'yxatga olinishi shart.
     // Serverdan oldin shu yerda to'xtatamiz — xabar tushunarli bo'lishi uchun
     if (guestsRequired && companionsMissing > 0) {
@@ -1531,15 +1559,33 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
             <span className="text-sm font-semibold text-gray-900">{effectiveTotal.toLocaleString()} So'm</span>
           </div>
 
-          {/* Chegirma: so'mda yoki foizda */}
+          {/* Chegirma: so'mda yoki foizda — qoida doirasida */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-gray-600">Chegirma</span>
+            <span className="text-sm text-gray-600">
+              Chegirma
+              {discountLimitText && (
+                <span className="mt-0.5 block text-[11px] font-normal text-gray-400">
+                  {discountLimitText}
+                </span>
+              )}
+            </span>
             <div className="flex items-center gap-1.5">
               <Input
                 type="number"
                 min={0}
-                max={discountType === "PERCENT" ? 100 : effectiveTotal}
-                className="h-8 w-28 text-right"
+                // Qoidadagi chegara maydonning o'zida ham turadi
+                max={
+                  discountType === "PERCENT"
+                    ? Math.min(discountRule.max_percent || 100, 100)
+                    : Math.min(discountRule.max_amount || effectiveTotal, effectiveTotal)
+                }
+                disabled={!discountRule.enabled}
+                title={
+                  discountRule.enabled
+                    ? undefined
+                    : "Chegirma berish sozlamalarda o'chirilgan"
+                }
+                className="h-8 w-28 text-right disabled:cursor-not-allowed disabled:bg-gray-100"
                 placeholder="0"
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
@@ -1557,6 +1603,12 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               </select>
             </div>
           </div>
+
+          {discountError && (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+              {discountError}
+            </p>
+          )}
 
           {/* Chegirma qo'llangan bo'lsa — yakuniy jami */}
           {discountAmount > 0 && (
@@ -1676,6 +1728,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               photoUploading ||
               selectedTimeConflict ||
               dailyRangeConflict ||
+              !!discountError ||
               (guestsRequired && companionsMissing > 0)
             }
           >
