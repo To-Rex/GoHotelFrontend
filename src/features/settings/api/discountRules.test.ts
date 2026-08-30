@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest"
 import {
   EMPTY_RULE,
+  discountAllowed,
+  discountBlockedReason,
   discountHint,
   discountProblem,
   ruleFor,
@@ -106,5 +108,50 @@ describe("discountHint", () => {
     const hint = discountHint(rule({ max_percent: 10, min_duration: 2 }), "HOURLY")
     expect(hint).toContain("10%")
     expect(hint).toContain("2 soat")
+  })
+})
+
+describe("discountAllowed — maydon ochiqmi", () => {
+  it("cheklovsiz qoidada ochiq", () => {
+    expect(discountAllowed(EMPTY_RULE, 1)).toBe(true)
+  })
+
+  it("o'chirilgan bo'lsa yopiq", () => {
+    expect(discountAllowed(rule({ enabled: false }), 5)).toBe(false)
+  })
+
+  it("davomiylik shartiga tushmasa yopiq", () => {
+    // 2 soatdan boshlab chegirma — 1 soatlik bronda maydon kerak emas
+    expect(discountAllowed(rule({ min_duration: 2 }), 1)).toBe(false)
+    expect(discountAllowed(rule({ max_duration: 2 }), 5)).toBe(false)
+  })
+
+  it("chegara qiymatining o'zida ochiq", () => {
+    expect(discountAllowed(rule({ min_duration: 2 }), 2)).toBe(true)
+    expect(discountAllowed(rule({ max_duration: 2 }), 2)).toBe(true)
+  })
+
+  it("foiz va summa chegarasi maydonni YOPMAYDI", () => {
+    // Ular kiritilgan qiymatni cheklaydi, kiritishning o'zini emas
+    expect(discountAllowed(rule({ max_percent: 10 }), 1)).toBe(true)
+    expect(discountAllowed(rule({ max_amount: 5000 }), 1)).toBe(true)
+  })
+})
+
+describe("discountBlockedReason", () => {
+  it("ochiq bo'lsa sabab yo'q", () => {
+    expect(discountBlockedReason(EMPTY_RULE, "HOURLY", 1)).toBeNull()
+  })
+
+  it("sabab bron davomiyligini ham aytadi", () => {
+    const reason = discountBlockedReason(rule({ min_duration: 2 }), "HOURLY", 1)
+    expect(reason).toContain("2 soat")
+    expect(reason).toContain("1 soat")
+  })
+
+  it("o'chirilganini aytadi", () => {
+    expect(discountBlockedReason(rule({ enabled: false }), "DAILY", 3)).toContain(
+      "o'chirilgan"
+    )
   })
 })

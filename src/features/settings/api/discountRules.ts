@@ -67,6 +67,38 @@ export const ruleFor = (
 }
 
 /**
+ * Shu bronga chegirma UMUMAN berilishi mumkinmi.
+ *
+ * Foiz va summa chegaralari maydonni yopmaydi — ular kiritilgan qiymatni
+ * cheklaydi. Davomiylik sharti esa boshqacha: 1 soatlik bronga chegirma
+ * yo'q bo'lsa, xodim raqam terib o'tirmasligi kerak — maydonning o'zi
+ * yopiladi.
+ */
+export const discountAllowed = (rule: DiscountRule, duration: number): boolean => {
+  if (!rule.enabled) return false
+  if (rule.min_duration > 0 && duration < rule.min_duration) return false
+  if (rule.max_duration > 0 && duration > rule.max_duration) return false
+  return true
+}
+
+/** Maydon nega yopilgani — xodimga tushuntirish uchun. */
+export const discountBlockedReason = (
+  rule: DiscountRule,
+  bookingType: "DAILY" | "HOURLY",
+  duration: number
+): string | null => {
+  if (!rule.enabled) return "Chegirma berish sozlamalarda o'chirilgan"
+  const unit = bookingType === "HOURLY" ? "soat" : "kecha"
+  if (rule.min_duration > 0 && duration < rule.min_duration) {
+    return `Chegirma kamida ${rule.min_duration} ${unit}dan boshlab beriladi — bu bron ${duration} ${unit}`
+  }
+  if (rule.max_duration > 0 && duration > rule.max_duration) {
+    return `Chegirma ko'pi bilan ${rule.max_duration} ${unit}lik bronga beriladi — bu bron ${duration} ${unit}`
+  }
+  return null
+}
+
+/**
  * Chegirma qoidaga sig'adimi. Sig'masa — sabab matni, sig'sa — null.
  *
  * Server bilan bir xil qoida: bu yerdagi tekshiruv xodimga darhol javob

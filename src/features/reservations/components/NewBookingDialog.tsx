@@ -38,6 +38,8 @@ import {
   ruleFor,
   discountProblem,
   discountHint,
+  discountAllowed,
+  discountBlockedReason,
 } from "@/features/settings/api/discountRules"
 import { CompanionGuests, type Companion } from "./CompanionGuests"
 import { Button } from "@/components/ui/button"
@@ -661,6 +663,24 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     discountType === "PERCENT" ? rawDiscount : 0
   )
   const discountLimitText = discountHint(discountRule, bookingType)
+
+  /* Chegirma umuman berilmaydigan holat (o'chirilgan yoki davomiylik
+     shartiga tushmaydi) — maydon yopiladi. Foiz/summa chegarasi esa
+     maydonni yopmaydi: unda raqam kiritiladi, faqat chegara qo'yiladi. */
+  const discountOpen = discountAllowed(discountRule, discountDuration)
+  const discountBlockText = discountBlockedReason(
+    discountRule,
+    bookingType,
+    discountDuration
+  )
+
+  /* Davomiylik o'zgarib chegirma taqiqlangan bo'lsa — kiritilgan qiymat
+     tozalanadi. Aks holda u ko'rinmay turib yuborilar va server rad
+     etardi (masalan 3 soatga 10% qo'yilib, keyin 1 soatga tushirilsa). */
+  useEffect(() => {
+    if (!open || discountOpen || !discountValue) return
+    setDiscountValue("")
+  }, [open, discountOpen, discountValue])
 
   useEffect(() => {
     if (!open) return
@@ -1579,20 +1599,18 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                     ? Math.min(discountRule.max_percent || 100, 100)
                     : Math.min(discountRule.max_amount || effectiveTotal, effectiveTotal)
                 }
-                disabled={!discountRule.enabled}
-                title={
-                  discountRule.enabled
-                    ? undefined
-                    : "Chegirma berish sozlamalarda o'chirilgan"
-                }
+                disabled={!discountOpen}
+                title={discountBlockText || undefined}
                 className="h-8 w-28 text-right disabled:cursor-not-allowed disabled:bg-gray-100"
                 placeholder="0"
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
               />
               <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:bg-gray-100"
                 value={discountType}
+                disabled={!discountOpen}
+                title={discountBlockText || undefined}
                 onChange={(e) => {
                   setDiscountType(e.target.value as "AMOUNT" | "PERCENT")
                   setDiscountValue("")
@@ -1604,10 +1622,16 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
             </div>
           </div>
 
-          {discountError && (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
-              {discountError}
+          {!discountOpen && discountBlockText ? (
+            <p className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">
+              {discountBlockText}
             </p>
+          ) : (
+            discountError && (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+                {discountError}
+              </p>
+            )
           )}
 
           {/* Chegirma qo'llangan bo'lsa — yakuniy jami */}
