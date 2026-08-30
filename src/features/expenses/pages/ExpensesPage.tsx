@@ -25,6 +25,10 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import {
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+} from "@/lib/paymentMethods"
 
 const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -42,14 +46,8 @@ const CATEGORY_SUGGESTIONS = [
   "Boshqa",
 ]
 
-const METHOD_LABELS: Record<string, string> = {
-  CASH: "Naqd pul",
-  CREDIT_CARD: "Kredit karta",
-  DEBIT_CARD: "Debit karta",
-  BANK_TRANSFER: "Bank o'tkazmasi",
-  MOBILE_PAYMENT: "Mobil to'lov",
-  ONLINE: "Onlayn",
-}
+// Nomlar va ro'yxat butun ilova uchun bitta joyda
+const METHOD_LABELS = PAYMENT_METHOD_LABELS
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 
@@ -483,7 +481,7 @@ export const ExpensesPage = () => {
                   value={method}
                   onChange={(e) => setMethod(e.target.value)}
                 >
-                  {Object.entries(METHOD_LABELS).map(([v, l]) => (
+                  {PAYMENT_METHODS.map(({ value: v, label: l }) => (
                     <option key={v} value={v}>
                       {l}
                     </option>

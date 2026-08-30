@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 
 const selectClass =
   "flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -48,17 +49,8 @@ const statusBadge: Record<string, string> = {
   REFUNDED: "bg-purple-100 text-purple-700",
 }
 
-const METHOD_LABELS: Record<string, string> = {
-  CASH: "Naqd pul",
-  CREDIT_CARD: "Kredit karta",
-  DEBIT_CARD: "Debit karta",
-  BANK_TRANSFER: "Bank o'tkazmasi",
-  MOBILE_PAYMENT: "Mobil to'lov",
-  ONLINE: "Onlayn",
-  // Do'kon sotuvlari usullari
-  CARD: "Karta",
-  TRANSFER: "O'tkazma",
-}
+// Nomlar butun ilova uchun bitta joyda; eski kodlar ham shu yerda
+const METHOD_LABELS = PAYMENT_METHOD_LABELS
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 

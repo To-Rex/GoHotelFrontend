@@ -43,6 +43,7 @@ import { useEmployees } from "@/features/employees/api/employees"
 import { useAuthStore } from "@/store/auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { canonicalMethod } from "@/lib/paymentMethods"
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 
@@ -94,21 +95,25 @@ const sinceLabel = (iso: string | null | undefined): string => {
   return h > 0 ? `${h} s ${m} d` : `${m} d`
 }
 
-// Bugungi to'lov usullari guruhlash (naqd/karta/o'tkazma/boshqa)
+/* Bugungi to'lov usullari — ilovadagi to'rtta usul.
+
+   Guruhlash `canonicalMethod` orqali: eski kodlar (CREDIT_CARD,
+   MOBILE_PAYMENT...) o'z usuliga yig'iladi, notanish kod esa "Boshqa" da
+   qoladi. Ilgari bu yerda o'z jadvali bor edi va onlayn to'lovlar
+   "Boshqa" ga tushib ketardi. */
 const METHOD_GROUPS = [
-  { key: "CASH", label: "Naqd", color: "#10b981", dot: "bg-emerald-500" },
-  { key: "CARD", label: "Karta", color: "#3b82f6", dot: "bg-blue-500" },
-  { key: "TRANSFER", label: "O'tkazma", color: "#8b5cf6", dot: "bg-violet-500" },
+  { key: "CASH", label: "Naqd pul", color: "#10b981", dot: "bg-emerald-500" },
+  { key: "CARD", label: "Bank kartasi", color: "#3b82f6", dot: "bg-blue-500" },
+  { key: "ONLINE", label: "Online to'lov", color: "#f59e0b", dot: "bg-amber-500" },
+  {
+    key: "BANK_TRANSFER",
+    label: "Bank o'tkazmasi",
+    color: "#8b5cf6",
+    dot: "bg-violet-500",
+  },
   { key: "OTHER", label: "Boshqa", color: "#94a3b8", dot: "bg-slate-400" },
 ]
-const methodGroupKey = (m: string): string =>
-  m === "CASH"
-    ? "CASH"
-    : m === "CREDIT_CARD" || m === "DEBIT_CARD"
-      ? "CARD"
-      : m === "BANK_TRANSFER"
-        ? "TRANSFER"
-        : "OTHER"
+const methodGroupKey = (m: string): string => canonicalMethod(m)
 
 // Sana sarlavhasi uchun o'zbekcha oy/hafta kunlari
 const UZ_MONTHS = [

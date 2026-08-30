@@ -1667,12 +1667,11 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                 {...register("payment_method")}
               >
                 <option value="">To'lov turini tanlang</option>
-                <option value="CASH">Naqd pul</option>
-                <option value="CREDIT_CARD">Kredit karta</option>
-                <option value="DEBIT_CARD">Debit karta</option>
-                <option value="BANK_TRANSFER">Bank o'tkazmasi</option>
-                <option value="MOBILE_PAYMENT">Mobil to'lov</option>
-                <option value="ONLINE">Onlayn</option>
+                {PAYMENT_METHOD_OPTIONS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
               </select>
             </div>
             {errors.payment_method && <p className="text-xs text-red-500 mt-1">{errors.payment_method.message}</p>}

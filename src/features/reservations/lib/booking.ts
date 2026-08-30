@@ -14,15 +14,10 @@ export const HOURLY_TURNOVER_MIN = 15
 /** Soatlik bron uchun tayyor davomiyliklar (1 dan 12 soatgacha) */
 export const DURATION_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
 
-/** Qisman (bo'lib) to'lov qatorlari uchun to'lov usullari */
-export const PAYMENT_METHOD_OPTIONS = [
-  { value: "CASH", label: "Naqd pul" },
-  { value: "CREDIT_CARD", label: "Kredit karta" },
-  { value: "DEBIT_CARD", label: "Debit karta" },
-  { value: "BANK_TRANSFER", label: "Bank o'tkazmasi" },
-  { value: "MOBILE_PAYMENT", label: "Mobil to'lov" },
-  { value: "ONLINE", label: "Onlayn" },
-] as const
+/** Qisman (bo'lib) to'lov qatorlari uchun to'lov usullari.
+ *
+ *  Ro'yxat butun ilova uchun bitta joyda — `@/lib/paymentMethods`. */
+export { PAYMENT_METHODS as PAYMENT_METHOD_OPTIONS } from "@/lib/paymentMethods"
 
 /** Tugagan bronlar yangi bronga to'siq emas — mehmon erta chiqib ketgan
  *  bo'lsa xona darhol yana band qilinadi */

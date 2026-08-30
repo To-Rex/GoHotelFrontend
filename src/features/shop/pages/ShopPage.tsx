@@ -11,6 +11,7 @@ import {
   Banknote,
   CreditCard,
   ArrowRightLeft,
+  Globe,
   CheckCircle2,
   PackageOpen,
   PackagePlus,
@@ -74,23 +75,31 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import {
+  PAYMENT_METHODS as CANONICAL_METHODS,
+  PAYMENT_METHOD_LABELS,
+} from "@/lib/paymentMethods"
 
 const CATEGORIES = ["Ichimliklar", "Shirinliklar", "Gazaklar", "Boshqa"]
 
 const EMOJI_SUGGESTIONS = ["🥤", "💧", "☕", "🧃", "🍫", "🍬", "🍪", "🍩", "🍟", "🥜", "🍿", "🧴"]
 
-const PAYMENT_METHODS = [
-  { key: "CASH", label: "Naqd", icon: Banknote },
-  { key: "CARD", label: "Karta", icon: CreditCard },
-  { key: "TRANSFER", label: "O'tkazma", icon: ArrowRightLeft },
-]
-
-const METHOD_LABELS: Record<string, string> = {
-  CASH: "Naqd",
-  CARD: "Karta",
-  TRANSFER: "O'tkazma",
-  MIXED: "Aralash",
+/* To'lov usullari butun ilova uchun bitta joyda (@/lib/paymentMethods).
+   Bu yerda faqat ikonka qo'shiladi. */
+const METHOD_ICONS: Record<string, typeof Banknote> = {
+  CASH: Banknote,
+  CARD: CreditCard,
+  ONLINE: Globe,
+  BANK_TRANSFER: ArrowRightLeft,
 }
+
+const PAYMENT_METHODS = CANONICAL_METHODS.map((m) => ({
+  key: m.value,
+  label: m.label,
+  icon: METHOD_ICONS[m.value] || Banknote,
+}))
+
+const METHOD_LABELS = PAYMENT_METHOD_LABELS
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 

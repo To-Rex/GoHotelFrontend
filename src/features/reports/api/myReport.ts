@@ -15,34 +15,25 @@ import { api } from "@/lib/api"
  * bo'yicha belgilanadi.
  */
 
-/** Hisobot ustunlari — bazadagi to'lov kodlarining O'ZI.
+/** Hisobot ustunlari — ilovadagi to'rtta to'lov usuli.
  *
- *  Har bir usul o'z ustunida: xodim "Mobil to'lov" tanlagan bo'lsa,
- *  hisobotda ham aynan shunday ko'rinishi kerak. Ilovada ikki xil kod bor —
- *  bron to'lovi va xarajat uzun kodni ishlatadi (CREDIT_CARD...), do'kon
- *  esa qisqasini (CARD, TRANSFER) — shuning uchun ikkalasi ham ro'yxatda. */
+ *  Xodim shu to'rttadan birini tanlaydi, shuning uchun hisobot ham aynan
+ *  shularni ko'rsatadi. Bazadagi eski kodlar (CREDIT_CARD, MOBILE_PAYMENT...)
+ *  serverda o'z kanonik ustuniga yig'iladi — eski yozuvlar yo'qolmaydi. */
 export interface MethodBreakdown {
   cash: number
   card: number
-  credit_card: number
-  debit_card: number
-  transfer: number
-  bank_transfer: number
-  mobile_payment: number
   online: number
+  bank_transfer: number
   other: number
 }
 
-/** Ustunlar tartibi va nomlari — bron oynasidagi nomlar bilan bir xil */
+/** Ustunlar tartibi va nomlari — to'lov oynasidagi nomlar bilan bir xil */
 export const METHOD_COLUMNS: Array<{ key: keyof MethodBreakdown; label: string }> = [
   { key: "cash", label: "Naqd pul" },
-  { key: "card", label: "Karta (do'kon)" },
-  { key: "credit_card", label: "Kredit karta" },
-  { key: "debit_card", label: "Debit karta" },
-  { key: "transfer", label: "O'tkazma (do'kon)" },
+  { key: "card", label: "Bank kartasi" },
+  { key: "online", label: "Online to'lov" },
   { key: "bank_transfer", label: "Bank o'tkazmasi" },
-  { key: "mobile_payment", label: "Mobil to'lov" },
-  { key: "online", label: "Onlayn" },
   { key: "other", label: "Boshqa" },
 ]
 
