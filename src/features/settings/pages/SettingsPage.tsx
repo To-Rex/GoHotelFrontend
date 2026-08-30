@@ -94,6 +94,11 @@ const TABLE_LABELS: Record<string, string> = {
   reports: "Hisobotlar",
   room_status_history: "Xona holati tarixi",
   shift_sessions: "Smenalar va kassa sessiyalari",
+  shop_sales: "Do'kon sotuvlari",
+  shop_sale_items: "Do'kon sotuv qatorlari",
+  shop_writeoffs: "Do'kon hisobdan chiqarishlari",
+  shop_batches: "Do'kon partiyalari",
+  shop_products: "Do'kon mahsulotlari",
   file_attachments: "Fayllar",
   rooms_reset: "Bo'sh holatga qaytarilgan xonalar",
   user_permissions: "Ruxsat biriktiruvlari",
@@ -575,7 +580,7 @@ export const SettingsPage = () => {
       icon: Database,
       title: "Operatsion ma'lumotlarni tozalash",
       description:
-        "Bronlar, hisob-fakturalar, to'lovlar, mehmonlar, xo'jalik vazifalari, smenalar va kassa sessiyalari, bildirishnomalar va tarix o'chiriladi.",
+        "Bronlar, hisob-fakturalar, to'lovlar, mehmonlar, xarajatlar, xo'jalik vazifalari, do'kon (sotuvlar, mahsulotlar va ombor qoldig'i), smenalar va kassa sessiyalari, bildirishnomalar va tarix o'chiriladi.",
       keeps: "Saqlanadi: xodimlar, ruxsatlar, xonalar, qavatlar, turlar, xizmatlar.",
     },
     {
