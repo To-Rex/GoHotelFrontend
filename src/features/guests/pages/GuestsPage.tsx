@@ -215,6 +215,20 @@ export const GuestsPage = () => {
     }
     // handlePhoto tanlovni tozalaydi, shuning uchun undan KEYIN.
     setPickedFace(group);
+
+    /* Tahrirlashda mehmon id'si allaqachon bor — kutishning ma'nosi yo'q va
+       xodim "Saqlash" ni bosmasa yuz biriktirilmay qolardi. Yaratishda esa
+       id faqat saqlashdan keyin paydo bo'ladi, shuning uchun u yerda tanlov
+       eslab qolinadi. */
+    if (editing) {
+      const ok = await attachFace(editing.id, group);
+      setErrorMsg(
+        ok
+          ? null
+          : "Yuzni biriktirib bo'lmadi. Qayta urinib ko'ring."
+      );
+      if (ok) setPickedFace(null);
+    }
   };
 
   const openModal = () => {
@@ -254,14 +268,19 @@ export const GuestsPage = () => {
   /* Yuzni mehmonga biriktiradi. Muvaffaqiyatni qaytaradi va HECH QACHON
      xato tashlamaydi: biriktirish qo'shimcha qadam, u tufayli mehmonni
      saqlash yo'qolmasligi kerak. */
-  const attachFace = async (guestId: string): Promise<boolean> => {
-    if (!pickedFace) return true;
+  /* `group` ataylab argument: tahrirlashda bu `setPickedFace` dan darhol
+     keyin chaqiriladi va o'shanda state hali eski qiymatni tutadi. */
+  const attachFace = async (
+    guestId: string,
+    group: SightingGroup | null = pickedFace
+  ): Promise<boolean> => {
+    if (!group) return true;
     try {
       await enrollFace.mutateAsync({
-        sightingId: pickedFace.best_sighting_id,
+        sightingId: group.best_sighting_id,
         // Guruhning hamma ko'rinishlari — shablon aniqroq bo'ladi va
         // qolganlari ro'yxatda qolib ketmaydi.
-        sightingIds: pickedFace.sighting_ids,
+        sightingIds: group.sighting_ids,
         guestId,
         // Xodim suratni ataylab tanladi va mehmon kamera oldida turibdi.
         consent: true,
@@ -798,6 +817,9 @@ export const GuestsPage = () => {
                   guestId={editing.id}
                   branchId={activeBranchId}
                   allowRemove
+                  // Biriktirish quyidagi surat bo'limidagi tugma orqali —
+                  // u yaratishdagi bilan bir xil va tanish.
+                  attachable={false}
                 />
               </div>
             )}
@@ -824,8 +846,10 @@ export const GuestsPage = () => {
                     <input type="file" accept={GUEST_PHOTO_ACCEPT} className="hidden" onChange={(e) => handlePhoto(e.target.files?.[0] || null)} />
                   </label>
                   {/* Filial IP kamerasidan tanlash — mehmon qabulxonaga
-                      kelganda kamera uni allaqachon suratga olgan bo'ladi */}
-                  {!editing && (
+                      kelganda kamera uni allaqachon suratga olgan bo'ladi.
+                      Yaratishda ham, tahrirlashda ham bir xil ko'rinadi:
+                      farq faqat qachon biriktirilishida, va uni xodim
+                      bilishi shart emas. */}
                   <button
                     type="button"
                     onClick={() => setFacePickerOpen(true)}
@@ -833,9 +857,12 @@ export const GuestsPage = () => {
                   >
                     <Video className="h-5 w-5 text-primary-500" />
                     <span className="text-xs text-primary-700 font-medium">Filial kamerasidan tanlash (Face ID)</span>
-                    <span className="text-[11px] text-primary-500/80">Keyingi tashrifda avtomatik tanaladi</span>
+                    <span className="text-[11px] text-primary-500/80">
+                      {editing
+                        ? "Tanlangan zahoti biriktiriladi"
+                        : "Keyingi tashrifda avtomatik tanaladi"}
+                    </span>
                   </button>
-                  )}
                 </div>
               )}
               {pickedFace && (

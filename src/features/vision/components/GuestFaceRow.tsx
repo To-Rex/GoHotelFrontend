@@ -32,6 +32,13 @@ interface GuestFaceRowProps {
   noBranchHint?: string
   /** O'chirish tugmasi ko'rsatilsinmi — rozilikni qaytarib olish uchun. */
   allowRemove?: boolean
+  /** Biriktirish tugmasi shu yerda bo'lsinmi.
+   *
+   *  Mehmonlar formasida biriktirish surat bo'limidagi katta tugma orqali
+   *  bajariladi, shuning uchun u yerda bu qator faqat holatni ko'rsatadi.
+   *  Bitta dialogda bitta amal uchun ikkita tugma — noto'g'ri yuz
+   *  biriktirilishining odatiy sababi. */
+  attachable?: boolean
   className?: string
 }
 
@@ -41,6 +48,7 @@ export function GuestFaceRow({
   noBranchTitle,
   noBranchHint,
   allowRemove = false,
+  attachable = true,
   className,
 }: GuestFaceRowProps) {
   const { data, isLoading, isError, error: statusError } = useGuestFaceStatus(guestId)
@@ -112,16 +120,18 @@ export function GuestFaceRow({
               Yuz biriktirilgan
               {data && data.profiles > 1 && ` (${data.profiles} ko'rinish)`}
             </span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setPickerOpen(true)}
-              disabled={enroll.isPending}
-            >
-              <Video className="mr-1.5 h-3.5 w-3.5" />
-              Yana qo'shish
-            </Button>
+            {attachable && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setPickerOpen(true)}
+                disabled={enroll.isPending}
+              >
+                <Video className="mr-1.5 h-3.5 w-3.5" />
+                Yana qo'shish
+              </Button>
+            )}
             {allowRemove && (
               <Button
                 type="button"
@@ -146,20 +156,22 @@ export function GuestFaceRow({
               <ScanFace className="h-3.5 w-3.5 text-gray-400" />
               Yuz biriktirilmagan
             </span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setPickerOpen(true)}
-              disabled={enroll.isPending}
-            >
-              {enroll.isPending ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Video className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Kameradan biriktirish
-            </Button>
+            {attachable && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setPickerOpen(true)}
+                disabled={enroll.isPending}
+              >
+                {enroll.isPending ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Video className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Kameradan biriktirish
+              </Button>
+            )}
           </>
         )}
       </div>
