@@ -25,10 +25,12 @@ import {
   ListOrdered,
   CalendarClock,
   Percent,
+  Video,
   type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
+import { VisionCamerasCard } from "@/features/vision/components/VisionCamerasCard"
 import { DiscountRulesCard } from "../components/DiscountRulesCard"
 import {
   useBookingDefaults,
@@ -155,6 +157,14 @@ const SETTING_GROUPS = [
     icon: Timer,
     iconClass: "bg-primary-50 text-primary-600",
     cards: ["auto-complete"],
+  },
+  {
+    key: "cameras",
+    label: "Kameralar",
+    desc: "Yuz tanish kameralarini filiallarga biriktirish — qaysi filial xodimi qaysi suratlarni ko'radi",
+    icon: Video,
+    iconClass: "bg-sky-50 text-sky-600",
+    cards: ["vision-cameras"],
   },
   {
     key: "appearance",
@@ -1177,6 +1187,23 @@ export const SettingsPage = () => {
                 />
               </SettingCard>
 
+            </>
+          )}
+
+          {group === "cameras" && (
+            <>
+              {/* Kamerani filialga biriktirish. Bu sozlanmagunicha kameraning
+                  suratlari hech qaysi filial ro'yxatiga tushmaydi va yangi
+                  mehmonga yuz biriktirib bo'lmaydi. */}
+              <SettingCard
+                id="vision-cameras"
+                icon={Video}
+                iconClass="bg-sky-50 text-sky-600"
+                title="Yuz tanish kameralari"
+                desc="Har bir kamera qaysi filialda turishini belgilang. Yangi mehmonga yuz biriktirishda xodim faqat o'z filiali kameralaridan kelgan suratlarni ko'radi — boshqa filialning odamini tasodifan biriktirib qo'ymasligi uchun."
+              >
+                <VisionCamerasCard />
+              </SettingCard>
             </>
           )}
 

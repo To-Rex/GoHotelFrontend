@@ -230,10 +230,14 @@ export function FacePickerDialog({
                 <p className="text-sm font-medium text-gray-600">
                   Bu filialda yangi yuz yo'q
                 </p>
+                {/* Sozlamalar sahifasi faqat administrator uchun, shuning
+                    uchun qabulxona xodimiga u yerga borishni aytish foydasiz —
+                    kimga murojaat qilishini aytamiz. */}
                 <p className="max-w-sm text-xs text-gray-400">
                   Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda
-                  paydo bo'ladi. Ro'yxat bo'sh qolsa — kamera filialga
-                  biriktirilmagan bo'lishi mumkin (Sozlamalar → Kameralar).
+                  paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan
+                  bo'lishi mumkin; administratordan so'rang (Sozlamalar →
+                  Kameralar).
                 </p>
               </div>
             ) : (
