@@ -6,7 +6,7 @@ import {
   CircleDollarSign,
   AlertCircle,
   TrendingDown,
-  Scale,
+  TrendingUp,
   Store,
   BedDouble,
   Banknote,
@@ -298,6 +298,12 @@ export const FinancePage = () => {
     return <div>Xatolik yuz berdi. Iltimos qayta urining.</div>
   }
 
+  /* Davr yakuni. Ilgari bu ifoda uch joyda takrorlanardi — qiymat, rang va
+     belgi uchun alohida; bittasini o'zgartirib qolganlarini unutish oson
+     edi. */
+  const netResult = summary.income + shopRevenue - expensesTotal
+  const netPositive = netResult >= 0
+
   const cards = [
     {
       label: "Tushum (to'lovlar)",
@@ -371,16 +377,6 @@ export const FinancePage = () => {
             sub: `${filteredExpenses.length} ta chiqim`,
             icon: TrendingDown,
             accent: "bg-red-50 text-red-600",
-          },
-          {
-            label: "Sof natija",
-            value: `${fmt(summary.income + shopRevenue - expensesTotal)} So'm`,
-            sub: "tushum + do'kon − xarajat",
-            icon: Scale,
-            accent:
-              summary.income + shopRevenue - expensesTotal >= 0
-                ? "bg-emerald-50 text-emerald-600"
-                : "bg-red-50 text-red-600",
           },
         ]
       : []),
@@ -465,6 +461,76 @@ export const FinancePage = () => {
           </div>
         ))}
       </div>
+
+      {/* DAVR YAKUNI — qolgan kartalardan ataylab boshqacha: bu ularning
+          xulosasi, ular bilan bir qatorda turadigan yana bitta raqam emas.
+          Shuning uchun to'liq kenglik, kattaroq shrift va belgisiga qarab
+          rang. Tarkibiy qismlari yonida yozilgan: xodim raqam qayerdan
+          chiqqanini kartalarni qo'shib chiqmasdan ko'radi. */}
+      {canExpenses && (
+        <div
+          className={cn(
+            "rounded-xl border-2 p-5",
+            netPositive
+              ? "border-emerald-200 bg-emerald-50/60"
+              : "border-red-200 bg-red-50/60"
+          )}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span
+                className={cn(
+                  "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl",
+                  netPositive
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-red-100 text-red-700"
+                )}
+              >
+                {netPositive ? (
+                  <TrendingUp className="h-6 w-6" />
+                ) : (
+                  <TrendingDown className="h-6 w-6" />
+                )}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-gray-600">Sof natija</p>
+                <p
+                  className={cn(
+                    "text-2xl sm:text-3xl font-bold tabular-nums leading-tight",
+                    netPositive ? "text-emerald-700" : "text-red-700"
+                  )}
+                >
+                  {fmt(netResult)} So'm
+                </p>
+              </div>
+            </div>
+
+            {/* Hisob-kitobi — qaysi raqamlardan yig'ilgani */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+              <span className="whitespace-nowrap">
+                Tushum{" "}
+                <b className="font-semibold text-gray-700 tabular-nums">
+                  {fmt(summary.income)}
+                </b>
+              </span>
+              <span className="text-gray-300">+</span>
+              <span className="whitespace-nowrap">
+                Do'kon{" "}
+                <b className="font-semibold text-gray-700 tabular-nums">
+                  {fmt(shopRevenue)}
+                </b>
+              </span>
+              <span className="text-gray-300">−</span>
+              <span className="whitespace-nowrap">
+                Xarajat{" "}
+                <b className="font-semibold text-gray-700 tabular-nums">
+                  {fmt(expensesTotal)}
+                </b>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* To'lov usullari bo'yicha to'liq tafsilot */}
       <div className="overflow-hidden rounded-lg border bg-white">
