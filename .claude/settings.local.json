@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Set-Location \"c:\\\\Users\\\\TO-Rex\\\\Desktop\\\\GoHotel\\\\GoHotelFrontend\"; npm run build 2>&1 | Select-String -Pattern \"error|Error|built in\" | Select-Object -First 10 | ForEach-Object { $_.Line })",
+      "Read(//c/Users/TO-Rex/Desktop/GoHotel/GoHotelBackend/**)",
+      "Bash(mkdir -p app/assets/ocr)",
+      "Bash(cp .venv/Lib/site-packages/rapidocr_onnxruntime/models/ch_PP-OCRv3_det_infer.onnx app/assets/ocr/ppocr_v3_det.onnx)",
+      "Bash(cp .venv/Lib/site-packages/rapidocr_onnxruntime/models/ch_PP-OCRv3_rec_infer.onnx app/assets/ocr/ppocr_v3_rec.onnx)",
+      "Bash(sed -i 's/^  CreditCard,$/  CreditCard,\\\\n  Flashlight,/' src/features/guests/components/DocumentScanner.tsx)",
+      "Bash(npx tsc *)"
+    ]
+  }
+}
