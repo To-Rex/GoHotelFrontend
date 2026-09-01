@@ -1373,7 +1373,11 @@ export function BookingPage() {
 
       {/* Bronni boshqarish modali: ko'rish / tahrirlash / bekor qilish */}
       <Dialog open={manageOpen} onOpenChange={(o) => (o ? setManageOpen(true) : closeManageModal())}>
-        <DialogContent className="sm:max-w-[500px]">
+        {/* Kenglik mazmunga qarab: pastdagi to'rt tugma (bekor qilish, chek,
+            yopish, tahrirlash) bir qatorda ~560px joy oladi. 500px da ular
+            sig'masdi va butun dialogni gorizontal chiqarib yuborardi —
+            o'ng chetdagi tugma bilan izoh matni kesilib qolardi. */}
+        <DialogContent className="sm:max-w-[640px]">
           {selectedReservation && (() => {
             const res = selectedReservation
             const isHourly = editValues.booking_type === "HOURLY"
@@ -1388,8 +1392,13 @@ export function BookingPage() {
             return (
               <>
                 <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    Bron · {res.reservation_number || ""}
+                  {/* Bron raqami uzun, telefonda esa dialog tor — sarlavha
+                      o'ralsin, chetiga chiqib ketmasin. Yopish tugmasi
+                      o'ng yuqorida turadi, shuning uchun o'ngdan joy. */}
+                  <DialogTitle className="flex flex-wrap items-center gap-2 pr-6">
+                    <span className="break-all">
+                      Bron · {res.reservation_number || ""}
+                    </span>
                     <span
                       className={cn(
                         "text-[11px] font-medium px-2 py-0.5 rounded-full",
@@ -2046,7 +2055,7 @@ export function BookingPage() {
                       </Button>
                     </>
                   ) : (
-                    <div className="flex w-full items-center justify-between">
+                    <div className="flex w-full flex-wrap items-center justify-between gap-2">
                       {!cancelLocked ? (
                         <Button
                           variant="ghost"
@@ -2059,7 +2068,7 @@ export function BookingPage() {
                       ) : (
                         <span />
                       )}
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                         {/* Chek — istalgan bron uchun, jumladan eskilari uchun ham */}
                         <ReservationReceiptButton
                           reservation={res}
