@@ -22,6 +22,7 @@ import { apiErrorMessage } from "@/lib/apiError"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/types/api"
 import { useRoomReservations, type RoomReservation } from "../api/rooms"
+import { sortRoomReservations } from "../lib/roomReservations"
 
 /* Xonaning bandlovlari.
 
@@ -105,6 +106,7 @@ interface Props {
   onClose: () => void
 }
 
+
 export const RoomReservationsDialog = ({ room, onClose }: Props) => {
   const { data: reservations = [], isLoading, error } = useRoomReservations(room?.id)
   const [search, setSearch] = useState("")
@@ -119,15 +121,21 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return reservations.filter((r) => {
-      if (statusFilter && r.status !== statusFilter) return false
-      if (!q) return true
-      return (
-        (r.reservation_number || "").toLowerCase().includes(q) ||
-        (r.guest_name || "").toLowerCase().includes(q) ||
-        (r.guest_phone || "").toLowerCase().includes(q)
-      )
-    })
+    /* Yangisidan eskisiga, boshlanish PAYTI bo'yicha. Server ham shunday
+       qaytaradi, lekin tartib ko'rinadigan joyda aniq bo'lgani yaxshi: bu
+       dialogda paginatsiya yo'q, ya'ni saralash hech narsani buzmaydi va
+       ro'yxat server tartibiga bog'liq bo'lib qolmaydi. */
+    return sortRoomReservations(
+      reservations.filter((r) => {
+        if (statusFilter && r.status !== statusFilter) return false
+        if (!q) return true
+        return (
+          (r.reservation_number || "").toLowerCase().includes(q) ||
+          (r.guest_name || "").toLowerCase().includes(q) ||
+          (r.guest_phone || "").toLowerCase().includes(q)
+        )
+      })
+    )
   }, [reservations, search, statusFilter])
 
   // Bekor qilingan/kelmagan bronlar pul hisobiga kirmaydi
