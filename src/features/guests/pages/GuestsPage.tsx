@@ -12,6 +12,7 @@ import { NATIONALITIES, DEFAULT_NATIONALITY } from "../constants";
 import { BirthDateSelect } from "../components/BirthDateSelect";
 import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog";
+import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow";
 import {
   fetchSightingFile,
   useEnrollSighting,
@@ -318,9 +319,6 @@ export const GuestsPage = () => {
           } finally {
             setUploading(false);
           }
-        }
-        if (pickedFace) {
-          faceFailed = !(await attachFace(editing.id));
         }
       } else {
         const guest = await createGuest.mutateAsync({
@@ -785,6 +783,25 @@ export const GuestsPage = () => {
               </div>
             </div>
 
+            {/* Mavjud mehmon: yuz holati, biriktirish va o'chirish.
+                Yangi mehmonda id hali yo'q — u yerda quyidagi surat
+                bo'limidagi tugma ishlatiladi va biriktirish saqlashdan
+                keyin bajariladi. */}
+            {editing && (
+              <div className="pt-2 border-t border-gray-200 space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Yuz (Face ID)
+                </p>
+                <GuestFaceRow
+                  guestId={editing.id}
+                  branchId={activeBranchId}
+                  allowRemove
+                  noBranchTitle="Filialingiz aniqlanmadi"
+                  noBranchHint="Suratlar filial bo'yicha ajratiladi. Hisobingizga filial biriktirilmagan — administratordan so'rang."
+                />
+              </div>
+            )}
+
             {/* Surat */}
             <div className="pt-2 border-t border-gray-200 space-y-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Surat (ixtiyoriy)</p>
@@ -808,6 +825,7 @@ export const GuestsPage = () => {
                   </label>
                   {/* Filial IP kamerasidan tanlash — mehmon qabulxonaga
                       kelganda kamera uni allaqachon suratga olgan bo'ladi */}
+                  {!editing && (
                   <button
                     type="button"
                     onClick={() => setFacePickerOpen(true)}
@@ -817,6 +835,7 @@ export const GuestsPage = () => {
                     <span className="text-xs text-primary-700 font-medium">Filial kamerasidan tanlash (Face ID)</span>
                     <span className="text-[11px] text-primary-500/80">Keyingi tashrifda avtomatik tanaladi</span>
                   </button>
+                  )}
                 </div>
               )}
               {pickedFace && (

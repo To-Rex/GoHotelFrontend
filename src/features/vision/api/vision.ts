@@ -204,6 +204,7 @@ export const useEnrollSighting = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vision-sightings'] });
       queryClient.invalidateQueries({ queryKey: ['vision-sighting-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['guest-face-status'] });
       queryClient.invalidateQueries({ queryKey: ['guests'] });
     },
   });
@@ -218,6 +219,48 @@ export const useAcknowledgeSighting = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vision-sightings'] });
+    },
+  });
+};
+
+export interface GuestFaceStatus {
+  guest_id: string;
+  enrolled: boolean;
+  profiles: number;
+  consent_at?: string | null;
+  last_matched_at?: string | null;
+}
+
+/**
+ * Mehmonda yuz biriktirilganmi.
+ *
+ * Mavjud mehmonni tanlaganda kerak: yuzi bo'lmasa uni hoziroq biriktirish
+ * taklif qilinadi, bo'lsa esa qayta so'ralmaydi.
+ */
+export const useGuestFaceStatus = (guestId?: string | null) =>
+  useQuery({
+    queryKey: ['guest-face-status', guestId ?? null],
+    enabled: !!guestId,
+    // Yuz kamdan-kam o'zgaradi; har dialog ochilganda qayta so'rashning
+    // hojati yo'q.
+    staleTime: 60 * 1000,
+    retry: false,
+    queryFn: async () => {
+      const { data } = await api.get<GuestFaceStatus>(`/vision/guests/${guestId}/face`);
+      return data;
+    },
+  });
+
+/** Mehmonning biometrik ma'lumotlarini butunlay o'chiradi (rozilikni qaytarib olish). */
+export const useDeleteGuestFace = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (guestId: string) => {
+      const { data } = await api.delete<GuestFaceStatus>(`/vision/guests/${guestId}/face`);
+      return data;
+    },
+    onSuccess: (_data, guestId) => {
+      queryClient.invalidateQueries({ queryKey: ['guest-face-status', guestId] });
     },
   });
 };

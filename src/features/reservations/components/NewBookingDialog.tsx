@@ -43,6 +43,7 @@ import {
   discountBlockedReason,
 } from "@/features/settings/api/discountRules"
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
+import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
 import {
   fetchSightingFile,
   useEnrollSighting,
@@ -1238,7 +1239,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                   selectedGuestObj.last_name?.[0] ?? ""
                 }`.toUpperCase()
                 return (
-                  <div className="flex items-center gap-3 rounded-lg border-2 border-primary-200 bg-primary-50 px-3 py-2.5">
+                  <div className="space-y-2 rounded-lg border-2 border-primary-200 bg-primary-50 px-3 py-2.5">
+                  <div className="flex items-center gap-3">
                     <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
                       {initials || "?"}
                     </span>
@@ -1266,6 +1268,16 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                     >
                       O'zgartirish
                     </button>
+                  </div>
+                  {/* Mavjud mehmonning yuzi bo'lmasa — hoziroq biriktirish.
+                      Mehmon allaqachon bor, shuning uchun bron saqlanishini
+                      kutmaydi: darhol biriktiriladi va natija shu yerda
+                      ko'rinadi. */}
+                  <GuestFaceRow
+                    guestId={selectedGuestObj.id}
+                    branchId={activeBranchId}
+                    className="border-t border-primary-200/70 pt-2"
+                  />
                   </div>
                 )
               }
