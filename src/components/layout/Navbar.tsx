@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
+import { LiveClock } from "./LiveClock";
 import { RecognizedGuestsMenu } from "@/features/vision/components/RecognizedGuestsMenu";
 import {
   NewBookingDialog,
@@ -151,6 +152,11 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             <Menu size={20} />
           </button>
         )}
+
+        {/* Real vaqt soati — chapda, eng ko'zga tashlanadigan element.
+            Yonidagi smena hisoblagichi ham vaqt haqida, shuning uchun
+            ikkalasi bir joyda turadi. */}
+        <LiveClock className="mr-1 sm:mr-2" />
 
         {/* Xodim uchun ish vaqti hisoblagichi: soat nechada tugashi (yaqqol)
             va tugashiga qancha qolgani */}
