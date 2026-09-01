@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react"
 import { format, addDays, parseISO } from "date-fns"
 import { ChevronLeft, ChevronRight, ChevronDown, Plus, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { RoomStatusNote } from "@/features/rooms/components/RoomStatusNote"
+import type { RoomStatusDetail } from "@/features/rooms/lib/roomStatusInfo"
 import { DEBT_BAR_CLASS, debtHint, debtLevelOf } from "../lib/booking"
 
 const DAY_MINUTES = 24 * 60
@@ -69,6 +71,8 @@ export interface HourlyBoardProps {
   statusColors: Record<string, string>
   /** Xonaga biriktirilgan faol xo'jalik vazifasi turi (room_id -> task_type) */
   activeTaskTypeByRoom?: Record<string, string>
+  /** Xona holati tafsiloti (tozalash qachon boshlangani va h.k.). */
+  statusDetailByRoom?: Record<string, RoomStatusDetail | null>
 }
 
 // Faol vazifa turlari yorlig'i va ranglari (BookingPage bilan bir xil)
@@ -142,6 +146,7 @@ export function HourlyBoard({
   getGuestName,
   statusColors,
   activeTaskTypeByRoom = {},
+  statusDetailByRoom = {},
 }: HourlyBoardProps) {
   // Joriy vaqt — har 30 soniyada yangilanadi
   const [now, setNow] = useState(() => new Date())
@@ -692,6 +697,14 @@ export function HourlyBoard({
                                     activeTaskTypeByRoom[room.id]}
                                 </span>
                               )}
+                            {/* Qachondan beri shu holatda. Lentada joy tor —
+                                ixcham ko'rinish, to'liq matni tooltipda. */}
+                            {statusDetailByRoom[room.id] && (
+                              <RoomStatusNote
+                                detail={statusDetailByRoom[room.id]!}
+                                compact
+                              />
+                            )}
                           </div>
 
                           <span className="text-[11px] text-gray-400 truncate">

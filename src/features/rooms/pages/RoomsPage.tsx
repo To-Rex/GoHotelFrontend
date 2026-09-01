@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { DoorOpen, Plus, Pencil, Trash2, Loader2, RefreshCw, Search, Users, Layers, LayoutGrid, List, Clock, ChevronDown, CheckCircle2, CalendarCheck } from "lucide-react"
 import { useReservations } from "@/features/reservations/api/reservations"
 import {
@@ -13,6 +13,9 @@ import {
 } from "../api/rooms"
 import type { Room } from "@/types/api"
 import { RoomReservationsDialog } from "../components/RoomReservationsDialog"
+import { RoomStatusNote } from "../components/RoomStatusNote"
+import { activeTaskFor, roomStatusDetail } from "../lib/roomStatusInfo"
+import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
 import {
   NewBookingDialog,
   type NewBookingRequest,
@@ -548,6 +551,27 @@ export const RoomsPage = () => {
     return <div>Xatolik yuz berdi. Iltimos qayta urining.</div>
   }
 
+  /* Holat tafsiloti: qachondan beri, kim, boshlanganmi.
+
+     Vazifalar butun mehmonxona bo'yicha bir marta olinadi va xona bo'yicha
+     guruhlanadi — har bir karta uchun alohida so'rov yuborish ro'yxatni
+     o'nlab so'rovga bo'lib yuborardi. Vaqt `nowTick` bilan yangilanadi,
+     shunda "35 daqiqa" yozuvi ekranda qotib qolmaydi. */
+  const { data: hkTasks = [] } = useHousekeepingTasks()
+  const [nowTick, setNowTick] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNowTick(Date.now()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+  const statusDetailByRoom = useMemo(() => {
+    const m: Record<string, ReturnType<typeof roomStatusDetail>> = {}
+    for (const r of rooms) {
+      const detail = roomStatusDetail(r, activeTaskFor(hkTasks, r.id), nowTick)
+      if (detail) m[r.id] = detail
+    }
+    return m
+  }, [rooms, hkTasks, nowTick])
+
   const freeCount = rooms.filter((r) => r.current_status === "AVAILABLE").length
   const busyCount = rooms.filter((r) =>
     ["OCCUPIED", "RESERVED"].includes(r.current_status)
@@ -695,6 +719,11 @@ export const RoomsPage = () => {
                             Bo'shaydi: {freeAtByRoom[room.id].label}
                           </p>
                         )}
+                      {/* Tozalash/ta'mirlash: qachondan beri va kim.
+                          Bo'sh xonada bu qator umuman chiqmaydi. */}
+                      {statusDetailByRoom[room.id] && (
+                        <RoomStatusNote detail={statusDetailByRoom[room.id]!} />
+                      )}
                       <div className="mt-2.5 flex items-end justify-between">
                         <p className="text-sm font-bold tabular-nums text-gray-900">
                           {Number(room.base_price || 0).toLocaleString()}{" "}
@@ -1025,6 +1054,9 @@ export const RoomsPage = () => {
                           Bo'shaydi: {freeAtByRoom[room.id].label}
                         </p>
                       )}
+                    {statusDetailByRoom[room.id] && (
+                      <RoomStatusNote detail={statusDetailByRoom[room.id]!} />
+                    )}
                   </TableCell>
                   {(canEdit || canDelete || canSeeReservations) && (
                     <TableCell className="text-right">

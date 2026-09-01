@@ -43,6 +43,11 @@ import {
 } from "../api/reservations"
 import { useRooms, useRoomTypes, useFloors } from "@/features/rooms/api/rooms"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
+import { RoomStatusNote } from "@/features/rooms/components/RoomStatusNote"
+import {
+  activeTaskFor,
+  roomStatusDetail,
+} from "@/features/rooms/lib/roomStatusInfo"
 import { useGuests } from "@/features/guests/api/guests"
 import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
 import {
@@ -269,6 +274,24 @@ export function BookingPage() {
   // /housekeeping da vazifa yaratilsa, bu yerda xona belgisi sifatida chiqadi.
   // Kesh kaliti bir xil bo'lgani uchun vazifa o'zgarishi darhol aks etadi.
   const { data: hkTasks = [] } = useHousekeepingTasks()
+
+  /* Holat tafsiloti: tozalash qachon boshlangani, kim biriktirilgani.
+     Belgining o'zi ("Tozalanmoqda") xona nega band ekanini aytadi, lekin
+     qachondan beri shundaligini aytmaydi — aynan shu farq bir kun turib
+     qolgan xonani ko'zdan qochirgan edi. Vaqt daqiqada bir yangilanadi. */
+  const [statusNowTick, setStatusNowTick] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setStatusNowTick(Date.now()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+  const statusDetailByRoom = useMemo(() => {
+    const m: Record<string, ReturnType<typeof roomStatusDetail>> = {}
+    for (const r of rooms) {
+      const detail = roomStatusDetail(r, activeTaskFor(hkTasks, r.id), statusNowTick)
+      if (detail) m[r.id] = detail
+    }
+    return m
+  }, [rooms, hkTasks, statusNowTick])
   const activeTaskTypeByRoom = useMemo(() => {
     const m: Record<string, string> = {}
     for (const t of hkTasks) {
@@ -884,6 +907,7 @@ export function BookingPage() {
           getGuestName={getGuestName}
           statusColors={statusColors}
           activeTaskTypeByRoom={activeTaskTypeByRoom}
+          statusDetailByRoom={statusDetailByRoom}
         />
       ) : (
       <>
@@ -1084,6 +1108,13 @@ export function BookingPage() {
                               activeTaskTypeByRoom[room.id]}
                           </span>
                         )}
+                      {/* Qachondan beri shu holatda — bo'sh xonada chiqmaydi */}
+                      {statusDetailByRoom[room.id] && (
+                        <RoomStatusNote
+                          detail={statusDetailByRoom[room.id]!}
+                          compact
+                        />
+                      )}
                     </div>
                     <span className="text-xs text-gray-400 truncate">
                       {room.room_type?.name || "Standard"}

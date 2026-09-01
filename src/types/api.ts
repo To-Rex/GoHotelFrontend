@@ -55,6 +55,9 @@ export interface Room {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+  /** Joriy holatga qachon o'tgani. `updated_at` bu ish uchun yaramaydi —
+   *  u narx yoki izoh tahrirlansa ham yangilanadi. */
+  status_changed_at?: string | null;
 }
 
 export interface RoomDetail extends Room {
