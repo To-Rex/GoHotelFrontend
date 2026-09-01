@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useBranches } from "@/features/rooms/api/rooms"
 import { cn } from "@/lib/utils"
 import { fetchSightingImage, useSightingGroups, type SightingGroup } from "../api/vision"
 
@@ -30,9 +31,10 @@ import { fetchSightingImage, useSightingGroups, type SightingGroup } from "../ap
  *    tug'diradi: xodim "qaysi birini tanlayman?" deb o'ylaydi, va
  *    biriktirilmagan qolgan ikkitasi ro'yxatda qolib ketadi.
  *
- * 2. **Faqat shu filial.** `branchId` bo'lmasa so'rov umuman yuborilmaydi.
- *    Filtrsiz ro'yxat butun mehmonxonani qaytarardi va xodim yonidagi
- *    filialning odamini biriktirib qo'yishi mumkin edi.
+ * 2. **Faqat bitta filial.** Ro'yxat hech qachon filialsiz so'ralmaydi —
+ *    aks holda u butun mehmonxonani qaytarardi va xodim yonidagi filialning
+ *    odamini biriktirib qo'yishi mumkin edi. Filial chaqiruvchidan keladi
+ *    (bandlovda — xonadan), berilmasa xodim shu yerda tanlaydi.
  *
  * 3. **Faqat biriktirilmaganlar.** Allaqachon boshqa mehmonga tegishli yuz
  *    ko'rinmaydi: uni ikkinchi marta biriktirish bitta odamni ikki mehmon
@@ -42,12 +44,16 @@ import { fetchSightingImage, useSightingGroups, type SightingGroup } from "../ap
 interface FacePickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Qaysi filial kameralari ko'rsatiladi. Bo'sh bo'lsa ro'yxat so'ralmaydi. */
+  /** Qaysi filial kameralari ko'rsatiladi.
+   *
+   *  Berilsa — o'zgartirib bo'lmaydi: bandlovda filial bron qilinayotgan
+   *  xonadan kelib chiqadi va uni qo'lda almashtirish noto'g'ri bo'lardi.
+   *  Berilmasa — xodim ro'yxatdan tanlaydi. Administratorda `branch_id`
+   *  bo'lmasligi odatiy hol, va u sababli imkoniyat butunlay yopilib
+   *  qolmasligi kerak. */
   branchId?: string | null
   onSelect: (group: SightingGroup) => void
-  /** Filial noma'lum bo'lganda ko'rsatiladigan izoh — chaqiruvchiga qarab
-      sabab har xil: bandlovda xona tanlanmagan, mehmonlar sahifasida esa
-      xodimga filial biriktirilmagan. */
+  /** Mehmonxonada umuman filial bo'lmaganda ko'rsatiladigan izoh. */
   noBranchTitle?: string
   noBranchHint?: string
 }
@@ -183,13 +189,29 @@ export function FacePickerDialog({
   onOpenChange,
   branchId,
   onSelect,
-  noBranchTitle = "Avval xonani tanlang",
-  noBranchHint = "Suratlar filial bo'yicha ajratiladi — qaysi filial ekani xonadan aniqlanadi. Boshqa filialning kameralaridan kelgan suratlar bu yerda ko'rinmaydi.",
+  noBranchTitle = "Filial topilmadi",
+  noBranchHint = "Suratlar filial bo'yicha ajratiladi, lekin bu mehmonxonada filial yaratilmagan. Avval filial qo'shing.",
 }: FacePickerDialogProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [chosenBranch, setChosenBranch] = useState<string>("")
+
+  /* Chaqiruvchi filialni bergan bo'lsa o'sha, bo'lmasa xodim tanlagani.
+     Faqat bittasi ishlatiladi — ikkalasi bir vaqtda hech qachon emas. */
+  const fixedBranch = branchId || null
+  const { data: branches = [] } = useBranches()
+  const effectiveBranch = fixedBranch || chosenBranch || null
+
+  /* Filial berilmagan va mehmonxonada bittagina filial bo'lsa — tanlash
+     shart emas, o'zi tanlanadi. Ko'p filialli mehmonxonada esa xodim
+     ataylab tanlashi kerak: noto'g'ri filial noto'g'ri odamni biriktiradi. */
+  useEffect(() => {
+    if (fixedBranch || chosenBranch) return
+    const list = branches as Array<{ id: string }>
+    if (list.length === 1) setChosenBranch(list[0].id)
+  }, [fixedBranch, chosenBranch, branches])
 
   const { data, isLoading, isError, refetch, isFetching } = useSightingGroups({
-    branchId: branchId || undefined,
+    branchId: effectiveBranch || undefined,
     minutes: WINDOW_MINUTES,
     limit: 24,
     // Dialog ochiq turganda yangi kelganlar o'zidan paydo bo'lsin — mehmon
@@ -221,7 +243,7 @@ export function FacePickerDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {!branchId ? (
+        {(branches as Array<{ id: string }>).length === 0 ? (
           <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div className="text-sm text-amber-800">
@@ -231,6 +253,29 @@ export function FacePickerDialog({
           </div>
         ) : (
           <>
+            {/* Filialni chaqiruvchi bermagan bo'lsa — shu yerda tanlanadi.
+                Bandlovda u xonadan aniq bo'ladi va tanlov ko'rsatilmaydi. */}
+            {!fixedBranch && (branches as Array<{ id: string }>).length > 1 && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-600">Filial</label>
+                <select
+                  className="h-9 flex-1 rounded-lg border border-gray-300 bg-white px-2 text-sm"
+                  value={chosenBranch}
+                  onChange={(e) => {
+                    setChosenBranch(e.target.value)
+                    setSelectedKey(null)
+                  }}
+                >
+                  <option value="">— tanlang —</option>
+                  {(branches as Array<{ id: string; name: string }>).map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs text-gray-500">
                 Har bir karta — bitta odam. Bir necha marta o'tgan bo'lsa
@@ -250,7 +295,16 @@ export function FacePickerDialog({
               </Button>
             </div>
 
-            {isLoading ? (
+            {!effectiveBranch ? (
+              <div className="flex h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 text-center">
+                <Camera className="h-7 w-7 text-gray-300" />
+                <p className="text-sm font-medium text-gray-600">Filialni tanlang</p>
+                <p className="max-w-sm text-xs text-gray-400">
+                  Suratlar filial bo'yicha ajratiladi — boshqa filialning
+                  kameralaridan kelgan yuzlar bu yerda ko'rinmaydi.
+                </p>
+              </div>
+            ) : isLoading ? (
               <div className="flex h-56 items-center justify-center text-gray-400">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>

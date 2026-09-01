@@ -792,12 +792,12 @@ export const GuestsPage = () => {
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Yuz (Face ID)
                 </p>
+                {/* branchId berilmasa (masalan administratorda filial yo'q)
+                    oyna filialni o'zi so'raydi — imkoniyat yopilib qolmaydi. */}
                 <GuestFaceRow
                   guestId={editing.id}
                   branchId={activeBranchId}
                   allowRemove
-                  noBranchTitle="Filialingiz aniqlanmadi"
-                  noBranchHint="Suratlar filial bo'yicha ajratiladi. Hisobingizga filial biriktirilmagan — administratordan so'rang."
                 />
               </div>
             )}
@@ -867,8 +867,6 @@ export const GuestsPage = () => {
         onOpenChange={setFacePickerOpen}
         branchId={activeBranchId}
         onSelect={handleFacePicked}
-        noBranchTitle="Filialingiz aniqlanmadi"
-        noBranchHint="Suratlar filial bo'yicha ajratiladi. Hisobingizga filial biriktirilmagan — administratordan so'rang yoki bandlov dialogidan foydalaning, u filialni xonadan aniqlaydi."
       />
     </div>
   );

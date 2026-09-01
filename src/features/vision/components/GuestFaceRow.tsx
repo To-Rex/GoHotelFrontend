@@ -43,7 +43,7 @@ export function GuestFaceRow({
   allowRemove = false,
   className,
 }: GuestFaceRowProps) {
-  const { data, isLoading, isError } = useGuestFaceStatus(guestId)
+  const { data, isLoading, isError, error: statusError } = useGuestFaceStatus(guestId)
   const enroll = useEnrollSighting()
   const remove = useDeleteGuestFace()
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -88,9 +88,12 @@ export function GuestFaceRow({
     }
   }
 
-  // Vision umuman sozlanmagan bo'lsa (endpoint yo'q yoki ruxsat yo'q) —
-  // jimgina yashiramiz. Ishlamaydigan tugma ko'rsatishdan ko'ra yaxshiroq.
-  if (isError) return null
+  /* Endpoint umuman yo'q (backend yangilanmagan) yoki ruxsat yo'q — jimgina
+     yashiramiz: ishlamaydigan tugma ko'rsatishdan yaxshiroq.
+     Boshqa xatolar (tarmoq uzilishi, 500) esa vaqtinchalik — ularda tugmani
+     yashirish xodimni imkoniyat umuman yo'q deb o'ylashga majbur qilardi. */
+  const status = (statusError as any)?.response?.status
+  if (isError && (status === 404 || status === 403)) return null
 
   const enrolled = !!data?.enrolled
 
