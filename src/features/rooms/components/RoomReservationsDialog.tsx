@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import type { Room } from "@/types/api"
 import { useRoomReservations, type RoomReservation } from "../api/rooms"
 import { sortRoomReservations } from "../lib/roomReservations"
+import { ReservationDetailDialog } from "./ReservationDetailDialog"
 
 /* Xonaning bandlovlari.
 
@@ -111,6 +112,10 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
   const { data: reservations = [], isLoading, error } = useRoomReservations(room?.id)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
+  /* Bosilgan band — to'liq ma'lumot oynasi shu bilan ochiladi. Yozuvning
+     o'zi saqlanadi, ID emas: ro'yxat yangilanib qolsa ham oyna ochiq
+     turgan bandni yo'qotmaydi. */
+  const [detail, setDetail] = useState<RoomReservation | null>(null)
 
   // Holatlar bo'yicha sonlar — filtr chiplarida ko'rsatiladi
   const statusCounts = useMemo(() => {
@@ -161,6 +166,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
   // Oyna yopilganda filtrlar keyingi xona uchun qolib ketmasin
   const close = () => {
     clearFilters()
+    setDetail(null)
     onClose()
   }
 
@@ -293,10 +299,22 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
           )}
 
           {filtered.map((res) => (
-            <ReservationItem key={res.id} res={res} roomNumber={room?.room_number} />
+            <ReservationItem
+              key={res.id}
+              res={res}
+              roomNumber={room?.room_number}
+              onOpen={() => setDetail(res)}
+            />
           ))}
         </div>
       </DialogContent>
+
+      {/* Band ustiga bosilganda — to'liq ma'lumot. Ro'yxat oynasi ochiq
+          qoladi, shuning uchun yopilgach xodim o'sha joyiga qaytadi. */}
+      <ReservationDetailDialog
+        reservation={detail}
+        onClose={() => setDetail(null)}
+      />
     </Dialog>
   )
 }
@@ -305,9 +323,11 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
 const ReservationItem = ({
   res,
   roomNumber,
+  onOpen,
 }: {
   res: RoomReservation
   roomNumber?: string
+  onOpen: () => void
 }) => {
   const isHourly = (res.booking_type || "").toUpperCase() === "HOURLY"
   const timeRange =
@@ -319,8 +339,18 @@ const ReservationItem = ({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+      title="To'liq ma'lumot"
       className={cn(
-        "rounded-2xl border border-l-4 bg-white p-3.5",
+        "cursor-pointer rounded-2xl border border-l-4 bg-white p-3.5 transition-colors hover:border-gray-300 hover:bg-gray-50/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
         statusEdge[res.status] || "border-l-transparent"
       )}
     >
@@ -343,13 +373,17 @@ const ReservationItem = ({
           </p>
         </div>
         {/* Chek — arxivdagi bronlar uchun ham; bron ma'lumotidan quriladi,
-            shuning uchun qo'shimcha yozuv talab qilmaydi */}
-        <ReservationReceiptButton
-          reservation={res}
-          compact
-          guestName={res.guest_name}
-          roomNumber={roomNumber}
-        />
+            shuning uchun qo'shimcha yozuv talab qilmaydi.
+            Bosilishi bandning o'ziga o'tmasin: aks holda chek bilan birga
+            tafsilot oynasi ham ochilardi. */}
+        <span onClick={(e) => e.stopPropagation()}>
+          <ReservationReceiptButton
+            reservation={res}
+            compact
+            guestName={res.guest_name}
+            roomNumber={roomNumber}
+          />
+        </span>
       </div>
 
       {/* Mehmon: avatar + ism + telefon */}

@@ -287,9 +287,32 @@ export interface RoomReservation {
   discount_amount: number;
   notes?: string | null;
   cancelled_reason?: string | null;
+  discount_percent?: number;
   /** Xonada turgan qolgan mehmonlar */
   companions?: Array<{ guest_id: string; name?: string | null }> | null;
   created_at: string;
+
+  /* Tafsilot oynasi uchun: kim, qachon, qayerda. Ro'yxatning o'zi bularsiz
+     ham ishlaydi — shuning uchun hammasi ixtiyoriy. */
+  updated_at?: string | null;
+  cancelled_at?: string | null;
+  checkout_requested_at?: string | null;
+  created_by_name?: string | null;
+  cancelled_by_name?: string | null;
+  branch_name?: string | null;
+  room_number?: string | null;
+  room_type_name?: string | null;
+  floor_number?: number | null;
+  floor_name?: string | null;
+  /** Xona ko'chirishlar tarixi */
+  room_moves?: Array<{
+    from_room_number?: string | null;
+    to_room_number?: string | null;
+    old_total?: number | null;
+    new_total?: number | null;
+    moved_by_name?: string | null;
+    moved_at?: string | null;
+  }> | null;
 }
 
 export const useRoomReservations = (roomId?: string) =>
