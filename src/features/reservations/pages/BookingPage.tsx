@@ -48,6 +48,7 @@ import {
   activeTaskFor,
   roomStatusDetail,
 } from "@/features/rooms/lib/roomStatusInfo"
+import { isBlockedAlways, statusLabel } from "@/features/rooms/lib/roomBookable"
 import { useGuests } from "@/features/guests/api/guests"
 import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
 import {
@@ -1137,13 +1138,26 @@ export function BookingPage() {
                         key={day.toISOString()}
                         className={cn(
                           "flex-shrink-0 border-r border-gray-50 h-full",
-                          canCreate && !isPastDay(day) ? "cursor-pointer" : "cursor-default",
+                          canCreate && !isPastDay(day) && !isBlockedAlways(room.current_status)
+                            ? "cursor-pointer"
+                            : "cursor-default",
                           isPastDay(day) && "bg-gray-100/60",
                           isToday(day) && "bg-primary-50/30",
                           isInSelectionRange(room.id, day) && "bg-primary-100/70"
                         )}
                         style={{ width: DAY_WIDTH }}
-                        onClick={() => handleCellClick(room, day)}
+                        /* Ta'mir/tekshiruv/xizmatdan tashqari xonada bron
+                           boshlanmaydi — dialog ochilsa ham rad etilardi */
+                        title={
+                          isBlockedAlways(room.current_status)
+                            ? `${room.room_number}-xona ${statusLabel(room.current_status)} — bron qilib bo'lmaydi`
+                            : undefined
+                        }
+                        onClick={
+                          isBlockedAlways(room.current_status)
+                            ? undefined
+                            : () => handleCellClick(room, day)
+                        }
                       />
                     ))}
 

@@ -639,7 +639,12 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     [bookingType, watchFormDate, watchFormOutDate, watchInTime, watchOutTime]
   )
   const roomBlockReason = activeRoom
-    ? roomBookingBlock(activeRoom, bookingWindow, new Date())
+    ? roomBookingBlock(
+        // Ro'yxatdagi yangi nusxa ustun — preset eskirgan bo'lishi mumkin
+        rooms.find((r) => r.id === activeRoom.id) || activeRoom,
+        bookingWindow,
+        new Date()
+      )
     : null
 
   /* Hamrohlar hisobi. Mehmonlar soni kamaytirilsa ortiqcha tanlovlar
@@ -880,10 +885,13 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
 
     try {
       // Bron aynan bir xona uchun — branch_id va hotel_id ni o'sha xonadan olamiz
+      /* Ro'yxatdagi yangi nusxa ustun turadi. `presetRoom` — dialog
+         ochilgan paytdagi surat; xona holati o'shandan beri o'zgargan
+         bo'lishi mumkin (masalan tozalash tugab, yoki aksincha ta'mirga
+         qo'yilib). Holat tekshiruvi eng yangi ma'lumotga tayanishi kerak. */
       const chosenRoom =
-        presetRoom?.id === values.room_id
-          ? presetRoom
-          : rooms.find((r) => r.id === values.room_id)
+        rooms.find((r) => r.id === values.room_id) ||
+        (presetRoom?.id === values.room_id ? presetRoom : undefined)
 
       // Xona holati yo'l qo'yadimi. Server ham tekshiradi, lekin sabab shu
       // yerda aniqroq aytiladi — xodim nima qilishini biladi.
@@ -1954,6 +1962,9 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               photoUploading ||
               selectedTimeConflict ||
               dailyRangeConflict ||
+              // Xona holati yo'l qo'ymasa tugma ham bosilmaydi — xodim
+              // xatoni bosgandan keyin emas, oldin ko'radi
+              !!roomBlockReason ||
               !!discountError ||
               (guestsRequired && companionsMissing > 0)
             }
