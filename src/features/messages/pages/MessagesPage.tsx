@@ -9,6 +9,7 @@ import {
   Clock,
 } from "lucide-react"
 import {
+  DEFAULT_MESSAGE_DAYS,
   useStaffMessages,
   useSendStaffMessage,
   useMarkMessageDone,
@@ -40,7 +41,15 @@ const timeLabel = (iso: string | null) => {
 
 export const MessagesPage = () => {
   const user = useAuthStore((s) => s.user)
-  const { data: messages = [], isLoading } = useStaffMessages(30_000)
+  /* Taxta standart holatda oxirgi ikki kunni ko'rsatadi: xabarlar qisqa
+     umrli va eski yozuvlar orasida bugungisini topib bo'lmay qoladi.
+     "Avvalgilari" bosilsa hammasi keladi. OCHIQ xabarlar esa ikkala
+     holatda ham ko'rinadi — buni server ta'minlaydi. */
+  const [showAll, setShowAll] = useState(false)
+  const { data: messages = [], isLoading } = useStaffMessages(
+    30_000,
+    showAll ? 0 : DEFAULT_MESSAGE_DAYS
+  )
   // Xonalar ro'yxati ixtiyoriy qulaylik — ruxsati yo'q xodimda (masalan
   // farroshda) bo'sh keladi va tanlov ko'rsatilmaydi; xona raqamini
   // matnning o'zida yozib yuboraveradi
@@ -196,7 +205,32 @@ export const MessagesPage = () => {
             {f.label}
           </button>
         ))}
+
+        {/* Oyna almashtirgichi — filtrlar yonida, chunki ikkalasi ham
+            "nima ko'rinadi" degan savolga javob beradi. */}
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="ml-auto rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+          title={
+            showAll
+              ? "Faqat oxirgi ikki kunlik xabarlarni ko'rsatish"
+              : "Ikki kundan avvalgi xabarlarni ham ko'rsatish"
+          }
+        >
+          {showAll ? "Oxirgi 2 kun" : "Avvalgilarini ko'rsatish"}
+        </button>
       </div>
+
+      {/* Qaysi oyna ochiq ekani ro'yxat tepasida aytiladi: bo'sh taxta
+          "xabar yo'q" emas, "bu oynada yo'q" bo'lishi mumkin. */}
+      {!isLoading && (
+        <p className="-mt-1 text-[11px] text-gray-400">
+          {showAll
+            ? "Barcha xabarlar ko'rsatilmoqda"
+            : `Oxirgi ${DEFAULT_MESSAGE_DAYS} kunlik xabarlar · bajarilmagan so'rovlar muddatidan qat'i nazar ko'rinadi`}
+        </p>
+      )}
 
       {/* RO'YXAT */}
       <div className="animate-dash-rise space-y-2.5" style={{ animationDelay: "180ms" }}>
@@ -212,6 +246,15 @@ export const MessagesPage = () => {
             <p className="text-sm">
               {filter === "ALL" ? "Hozircha xabarlar yo'q" : "Bu bo'limda xabar yo'q"}
             </p>
+            {!showAll && (
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                className="text-xs font-medium text-primary-600 hover:text-primary-700"
+              >
+                Avvalgi xabarlarni ko'rsatish
+              </button>
+            )}
           </div>
         ) : (
           shown.map((m) => {
