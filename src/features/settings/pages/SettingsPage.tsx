@@ -26,11 +26,13 @@ import {
   CalendarClock,
   Percent,
   Video,
+  Monitor,
   type LucideIcon,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
 import { VisionCamerasCard } from "@/features/vision/components/VisionCamerasCard"
+import { VisionDevicesCard } from "@/features/vision/components/VisionDevicesCard"
 import { DiscountRulesCard } from "../components/DiscountRulesCard"
 import {
   useBookingDefaults,
@@ -164,7 +166,7 @@ const SETTING_GROUPS = [
     desc: "Yuz tanish kameralarini filiallarga biriktirish — qaysi filial xodimi qaysi suratlarni ko'radi",
     icon: Video,
     iconClass: "bg-sky-50 text-sky-600",
-    cards: ["vision-cameras"],
+    cards: ["vision-devices", "vision-cameras"],
   },
   {
     key: "appearance",
@@ -1195,6 +1197,16 @@ export const SettingsPage = () => {
               {/* Kamerani filialga biriktirish. Bu sozlanmagunicha kameraning
                   suratlari hech qaysi filial ro'yxatiga tushmaydi va yangi
                   mehmonga yuz biriktirib bo'lmaydi. */}
+              <SettingCard
+                id="vision-devices"
+                icon={Monitor}
+                iconClass="bg-sky-50 text-sky-600"
+                title="Kamera kompyuterlari va tokenlar"
+                desc="Har bir kamera kompyuteriga bitta token yarating va uni GoHotels Vision ilovasiga kiriting. Tokensiz agent serverga ulanmaydi va quyidagi kameralar ro'yxati bo'sh qoladi."
+              >
+                <VisionDevicesCard />
+              </SettingCard>
+
               <SettingCard
                 id="vision-cameras"
                 icon={Video}

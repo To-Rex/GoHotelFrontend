@@ -167,6 +167,72 @@ export const useAcknowledgeSighting = () => {
 };
 
 // ---------------------------------------------------------------------------
+// Qurilmalar (kamera agenti o'rnatilgan kompyuterlar)
+// ---------------------------------------------------------------------------
+
+export interface VisionDevice {
+  id: string;
+  name: string;
+  device_id?: string | null;
+  branch_id?: string | null;
+  is_active: boolean;
+  /** Tokenning oxirgi 4 belgisi — qaysi token ekanini ajratish uchun. */
+  token_hint: string;
+  last_seen_at?: string | null;
+  events_received: number;
+  created_at: string;
+}
+
+/** Yaratilgan qurilma — `token` FAQAT shu javobda ochiq keladi. */
+export interface VisionDeviceCreated extends VisionDevice {
+  token: string;
+}
+
+export const useVisionDevices = () =>
+  useQuery({
+    queryKey: ['vision-devices'],
+    queryFn: async () => {
+      const { data } = await api.get<VisionDevice[]>('/vision/devices');
+      return data;
+    },
+  });
+
+/**
+ * Yangi kamera agenti uchun token yaratadi.
+ *
+ * Token javobda bir marta ochiq keladi va bazada faqat SHA-256 xeshi
+ * qoladi — ya'ni uni qayta ko'rsatib bo'lmaydi. Yo'qolsa yangisini
+ * yaratib, eskisini bekor qilish kerak.
+ */
+export const useCreateVisionDevice = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { name: string; branch_id?: string | null }) => {
+      const { data } = await api.post<VisionDeviceCreated>('/vision/devices', payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vision-devices'] });
+    },
+  });
+};
+
+/** Tokenni bekor qiladi. Qurilma o'chirilmaydi — tarix qoladi. */
+export const useRevokeVisionDevice = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (deviceId: string) => {
+      const { data } = await api.delete(`/vision/devices/${deviceId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vision-devices'] });
+      queryClient.invalidateQueries({ queryKey: ['vision-cameras'] });
+    },
+  });
+};
+
+// ---------------------------------------------------------------------------
 // Kameralar
 // ---------------------------------------------------------------------------
 
