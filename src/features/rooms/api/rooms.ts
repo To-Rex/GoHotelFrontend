@@ -266,6 +266,25 @@ export const useUpdateRoomStatus = () => {
    Mehmon ismi javobning o'zida keladi, shuning uchun ro'yxatni ko'rsatish
    uchun mehmonlar bazasini alohida yuklash shart emas — eski bronning
    mehmoni ham to'g'ri ko'rinadi. */
+/* Xonada turgan bir kishi. Hamroh bazadan o'chirilgan bo'lsa faqat bronda
+   saqlangan ism keladi — qolgan maydonlar bo'sh bo'ladi. */
+export interface ReservationOccupant {
+  guest_id?: string | null;
+  name?: string | null;
+  is_primary: boolean;
+  phone?: string | null;
+  email?: string | null;
+  passport_number?: string | null;
+  id_document_type?: string | null;
+  id_document_number?: string | null;
+  nationality?: string | null;
+  birth_date?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  /** Yuz biriktirilgan — kamera taniydi */
+  has_face?: boolean;
+}
+
 export interface RoomReservation {
   id: string;
   reservation_number: string;
@@ -304,6 +323,9 @@ export interface RoomReservation {
   room_type_name?: string | null;
   floor_number?: number | null;
   floor_name?: string | null;
+  /** Xonada turganlar — asosiy mehmon va hamrohlar, kartochkalari bilan.
+   *  `companions` bronda saqlangan xom yozuv bo'lib qoladi. */
+  occupants?: ReservationOccupant[] | null;
   /** Xona ko'chirishlar tarixi */
   room_moves?: Array<{
     from_room_number?: string | null;

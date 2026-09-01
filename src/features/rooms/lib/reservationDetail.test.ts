@@ -6,7 +6,7 @@ import {
   formatDateTime,
   hourCount,
   nightCount,
-  occupantNames,
+  occupantsOf,
   overpaidOf,
   stayLabel,
   timeOf,
@@ -155,20 +155,52 @@ describe("debtOf / overpaidOf", () => {
   })
 })
 
-describe("occupantNames", () => {
-  it("asosiy mehmon va hamrohlar birga", () => {
+describe("occupantsOf", () => {
+  it("server yuborgan kartochkalarni o'zgartirmasdan qaytaradi", () => {
     const r = res({
       guest_name: "Dilshodjon Haydarov",
+      occupants: [
+        {
+          guest_id: "g1",
+          name: "Dilshodjon Haydarov",
+          is_primary: true,
+          passport_number: "AA1234567",
+          nationality: "O'zbekiston",
+        },
+        { guest_id: "g2", name: "Aziz Karimov", is_primary: false },
+      ],
+    })
+    const list = occupantsOf(r)
+    expect(list).toHaveLength(2)
+    expect(list[0].passport_number).toBe("AA1234567")
+    expect(list[1].is_primary).toBe(false)
+  })
+
+  /* Quyidagilar zaxira yo'l uchun: server `occupants` ni yubormasa (eski
+     javob yoki keshdagi eski yozuv) oyna bo'sh qolmasligi kerak. */
+
+  it("occupants kelmasa bron yozuvidan yig'iladi", () => {
+    const r = res({
+      guest_id: "g1",
+      guest_name: "Dilshodjon Haydarov",
+      guest_phone: "+998901234567",
       companions: [
         { guest_id: "g2", name: "Aziz Karimov" },
         { guest_id: "g3", name: "Nodira Yusupova" },
       ],
     })
-    expect(occupantNames(r)).toEqual([
+    expect(occupantsOf(r).map((p) => p.name)).toEqual([
       "Dilshodjon Haydarov",
       "Aziz Karimov",
       "Nodira Yusupova",
     ])
+    expect(occupantsOf(r)[0].is_primary).toBe(true)
+    expect(occupantsOf(r)[0].phone).toBe("+998901234567")
+  })
+
+  it("bo'sh occupants ro'yxati ham zaxira yo'lga o'tadi", () => {
+    const r = res({ guest_name: "Kimdir", occupants: [] })
+    expect(occupantsOf(r).map((p) => p.name)).toEqual(["Kimdir"])
   })
 
   it("ismsiz hamroh ro'yxatga tushmaydi", () => {
@@ -176,11 +208,10 @@ describe("occupantNames", () => {
       guest_name: "Dilshodjon Haydarov",
       companions: [{ guest_id: "g2", name: null }, { guest_id: "g3", name: "  " }],
     })
-    expect(occupantNames(r)).toEqual(["Dilshodjon Haydarov"])
+    expect(occupantsOf(r).map((p) => p.name)).toEqual(["Dilshodjon Haydarov"])
   })
 
-  it("hamrohsiz bron", () => {
-    expect(occupantNames(res({ guest_name: "Kimdir" }))).toEqual(["Kimdir"])
-    expect(occupantNames(res({}))).toEqual([])
+  it("mehmoni ko'rsatilmagan bron bo'sh ro'yxat beradi", () => {
+    expect(occupantsOf(res({}))).toEqual([])
   })
 })

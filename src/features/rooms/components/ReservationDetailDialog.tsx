@@ -1,13 +1,21 @@
 import {
   ArrowRight,
   Banknote,
+  BadgeCheck,
+  Cake,
   CalendarDays,
   Clock,
   DoorOpen,
   FileText,
+  Flag,
   History,
+  IdCard,
+  Mail,
   MapPin,
+  MapPinned,
   Phone,
+  ScanFace,
+  StickyNote,
   User as UserIcon,
   Users,
 } from "lucide-react"
@@ -22,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ReservationReceiptButton } from "@/features/reservations/components/ReservationReceiptButton"
 import { cn } from "@/lib/utils"
-import type { RoomReservation } from "../api/rooms"
+import type { RoomReservation, ReservationOccupant } from "../api/rooms"
 import {
   debtOf,
   formatDate,
@@ -30,7 +38,7 @@ import {
   hourCount,
   isHourly,
   nightCount,
-  occupantNames,
+  occupantsOf,
   overpaidOf,
   stayLabel,
 } from "../lib/reservationDetail"
@@ -130,6 +138,99 @@ const Row = ({
   )
 }
 
+/** Mehmon kartochkasidagi bitta qator — qiymati bo'sh bo'lsa chizilmaydi. */
+const Fact = ({
+  icon: Icon,
+  value,
+  title,
+}: {
+  icon: typeof UserIcon
+  value?: React.ReactNode
+  title: string
+}) => {
+  if (value === null || value === undefined || value === "") return null
+  return (
+    <span
+      title={title}
+      className="inline-flex min-w-0 items-center gap-1 text-xs text-gray-600"
+    >
+      <Icon className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+      <span className="break-words">{value}</span>
+    </span>
+  )
+}
+
+/**
+ * Xonada turgan bir kishining kartochkasi.
+ *
+ * Hujjat, fuqarolik, tug'ilgan sana — xodim bularni ko'rish uchun mehmonlar
+ * sahifasiga o'tib qidirishi kerak edi. Bo'sh maydonlar chizilmaydi, shuning
+ * uchun ma'lumoti kam mehmon bir qatordan iborat bo'lib qoladi.
+ */
+const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
+  const doc =
+    [person.id_document_type, person.id_document_number]
+      .filter(Boolean)
+      .join(" ") || null
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-2.5">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="font-semibold leading-tight text-gray-900">
+          {person.name || "Ism ko'rsatilmagan"}
+        </span>
+        <span
+          className={cn(
+            "rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+            person.is_primary
+              ? "bg-primary-100 text-primary-700"
+              : "bg-gray-200 text-gray-600"
+          )}
+        >
+          {person.is_primary ? "Asosiy mehmon" : "Hamroh"}
+        </span>
+        {person.has_face && (
+          <span
+            title="Yuz biriktirilgan — kamera taniydi"
+            className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700"
+          >
+            <ScanFace className="h-3 w-3" />
+            Yuz
+          </span>
+        )}
+      </div>
+
+      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+        <Fact icon={Phone} value={person.phone} title="Telefon" />
+        <Fact icon={Mail} value={person.email} title="Email" />
+        <Fact
+          icon={BadgeCheck}
+          value={person.passport_number}
+          title="Passport raqami"
+        />
+        <Fact icon={IdCard} value={doc} title="Hujjat" />
+        <Fact icon={Flag} value={person.nationality} title="Fuqaroligi" />
+        <Fact
+          icon={Cake}
+          value={formatDate(person.birth_date)}
+          title="Tug'ilgan sana"
+        />
+        <Fact icon={MapPinned} value={person.address} title="Manzil" />
+        <Fact icon={StickyNote} value={person.notes} title="Mehmon haqida izoh" />
+      </div>
+
+      {/* Bronda ismi bor, lekin bazada topilmagan hamroh: o'chirilgan
+          bo'lishi mumkin. Yozuv yo'qolmagani, faqat kartochkasi yo'qligi
+          aytiladi — aks holda "ma'lumot yo'q" xatoga o'xshab ko'rinardi. */}
+      {!person.guest_id && (
+        <p className="mt-1 text-[11px] text-gray-400">
+          Mehmonlar bazasida topilmadi — bronda saqlangan ism
+        </p>
+      )}
+    </div>
+  )
+}
+
 interface Props {
   reservation: RoomReservation | null
   onClose: () => void
@@ -144,7 +245,7 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
   const hours = hourCount(res)
   const debt = debtOf(res)
   const overpaid = overpaidOf(res)
-  const occupants = occupantNames(res)
+  const occupants = occupantsOf(res)
   const moves = res.room_moves || []
 
   // "3-qavat" yoki nomi berilgan bo'lsa o'sha
@@ -186,47 +287,27 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
 
         <div className="grid gap-3 sm:grid-cols-2">
           {/* ------------------------------------------------------ KIM */}
-          <Section icon={UserIcon} title="Mehmon">
-            <p className="text-base font-semibold leading-tight text-gray-900">
-              {res.guest_name || "Ism ko'rsatilmagan"}
-            </p>
-            {res.guest_phone && (
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
-                <Phone className="h-3.5 w-3.5 text-gray-400" />
-                {res.guest_phone}
-              </p>
-            )}
-            <div className="mt-2 border-t border-gray-100 pt-2">
-              <Row
-                label="Mehmonlar soni"
-                value={
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5 text-gray-400" />
-                    {res.adults} kattalar
-                    {res.children ? `, ${res.children} bolalar` : ""}
-                  </span>
-                }
-              />
-              {occupants.length > 1 && (
-                <div className="pt-1">
-                  <p className="text-xs text-gray-500">Xonada turganlar</p>
-                  <ul className="mt-1 space-y-0.5">
-                    {occupants.map((name, i) => (
-                      <li
-                        key={`${name}-${i}`}
-                        className="flex items-center gap-1.5 text-sm text-gray-900"
-                      >
-                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary-400" />
-                        {name}
-                        {i === 0 && (
-                          <span className="text-[11px] text-gray-400">
-                            (asosiy)
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          <Section icon={UserIcon} title="Xonada turganlar">
+            <Row
+              label="Mehmonlar soni"
+              value={
+                <span className="inline-flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5 text-gray-400" />
+                  {res.adults} kattalar
+                  {res.children ? `, ${res.children} bolalar` : ""}
+                </span>
+              }
+            />
+            {/* Har bir kishi o'z kartochkasi bilan: hujjat, fuqarolik,
+                tug'ilgan sana. Eski bronlarda bu ma'lumot kelmasligi
+                mumkin — o'shanda bron yozuviga qaytamiz. */}
+            <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
+              {occupants.length > 0 ? (
+                occupants.map((person, i) => (
+                  <OccupantCard key={person.guest_id || `${person.name}-${i}`} person={person} />
+                ))
+              ) : (
+                <p className="text-sm text-gray-400">Mehmon ko'rsatilmagan</p>
               )}
             </div>
           </Section>

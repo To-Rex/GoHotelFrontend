@@ -1,4 +1,4 @@
-import type { RoomReservation } from "../api/rooms"
+import type { RoomReservation, ReservationOccupant } from "../api/rooms"
 
 /**
  * Bandlov tafsiloti uchun formatlash va hisob-kitob.
@@ -95,13 +95,28 @@ export function overpaidOf(res: RoomReservation): number {
   return Math.max(Number(res.paid_amount || 0) - Number(res.total_amount || 0), 0)
 }
 
-/** Xonada turganlar: asosiy mehmon + hamrohlar, ismi bor bo'lganlari. */
-export function occupantNames(res: RoomReservation): string[] {
-  const names: string[] = []
-  if (res.guest_name) names.push(res.guest_name)
+/**
+ * Xonada turganlar, kartochkalari bilan.
+ *
+ * Server `occupants` ni qaytaradi. U kelmasa — eski javob yoki eski
+ * keshlangan yozuv bo'lsa — bronning o'zidagi ism va telefondan yig'iladi.
+ * Shu tufayli oyna server yangilanmagan holatda ham bo'sh qolmaydi.
+ */
+export function occupantsOf(res: RoomReservation): ReservationOccupant[] {
+  if (res.occupants && res.occupants.length) return res.occupants
+
+  const fallback: ReservationOccupant[] = []
+  if (res.guest_name || res.guest_phone) {
+    fallback.push({
+      guest_id: res.guest_id,
+      name: res.guest_name,
+      is_primary: true,
+      phone: res.guest_phone,
+    })
+  }
   for (const c of res.companions || []) {
     const name = (c?.name || "").trim()
-    if (name) names.push(name)
+    if (name) fallback.push({ guest_id: c.guest_id, name, is_primary: false })
   }
-  return names
+  return fallback
 }
