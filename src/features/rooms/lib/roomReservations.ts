@@ -24,23 +24,3 @@ export function reservationStartMs(r: RoomReservation): number {
   return Number.isNaN(ms) ? 0 : ms
 }
 
-function createdMs(r: RoomReservation): number {
-  const ms = r.created_at ? new Date(r.created_at).getTime() : NaN
-  return Number.isNaN(ms) ? 0 : ms
-}
-
-/**
- * Yangisidan eskisiga: avval boshlanish payti, teng bo'lsa — keyin
- * kiritilgani yuqorida.
- *
- * Kirish massivi o'zgartirilmaydi — chaqiruvchi uni `useMemo` ichida
- * ishlatadi va React state'ini joyida o'zgartirish kutilmagan qayta
- * chizishlarga olib kelardi.
- */
-export function sortRoomReservations(
-  items: readonly RoomReservation[]
-): RoomReservation[] {
-  return [...items].sort(
-    (a, b) => reservationStartMs(b) - reservationStartMs(a) || createdMs(b) - createdMs(a)
-  )
-}

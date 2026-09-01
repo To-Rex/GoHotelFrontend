@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react"
 import {
   CalendarCheck,
+  ChevronDown,
   Users,
   CalendarDays,
   Clock,
   Loader2,
   Phone,
   Search,
+  SlidersHorizontal,
   FilterX,
 } from "lucide-react"
 import {
@@ -22,7 +24,16 @@ import { apiErrorMessage } from "@/lib/apiError"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/types/api"
 import { useRoomReservations, type RoomReservation } from "../api/rooms"
-import { sortRoomReservations } from "../lib/roomReservations"
+import {
+  EMPTY_FILTERS,
+  SORT_LABELS,
+  applyFilters,
+  hasActiveFilters,
+  summarize,
+  type ReservationFilters,
+  type ReservationSort,
+} from "../lib/reservationFilters"
+import { buildDatePresets } from "@/lib/datePresets"
 import { ReservationDetailDialog } from "./ReservationDetailDialog"
 
 /* Xonaning bandlovlari.
@@ -110,8 +121,13 @@ interface Props {
 
 export const RoomReservationsDialog = ({ room, onClose }: Props) => {
   const { data: reservations = [], isLoading, error } = useRoomReservations(room?.id)
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+  /* Filtrlar bitta obyektda: ular oltita bo'lib ketdi va har biriga
+     alohida holat tutish tozalash va tekshirishni tarqoq qilardi. */
+  const [filters, setFilters] = useState<ReservationFilters>(EMPTY_FILTERS)
+  const [sort, setSort] = useState<ReservationSort>("newest")
+  const [showMore, setShowMore] = useState(false)
+  const patch = (part: Partial<ReservationFilters>) =>
+    setFilters((prev) => ({ ...prev, ...part }))
   /* Bosilgan band — to'liq ma'lumot oynasi shu bilan ochiladi. Yozuvning
      o'zi saqlanadi, ID emas: ro'yxat yangilanib qolsa ham oyna ochiq
      turgan bandni yo'qotmaydi. */
@@ -124,43 +140,25 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
     return m
   }, [reservations])
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    /* Yangisidan eskisiga, boshlanish PAYTI bo'yicha. Server ham shunday
-       qaytaradi, lekin tartib ko'rinadigan joyda aniq bo'lgani yaxshi: bu
-       dialogda paginatsiya yo'q, ya'ni saralash hech narsani buzmaydi va
-       ro'yxat server tartibiga bog'liq bo'lib qolmaydi. */
-    return sortRoomReservations(
-      reservations.filter((r) => {
-        if (statusFilter && r.status !== statusFilter) return false
-        if (!q) return true
-        return (
-          (r.reservation_number || "").toLowerCase().includes(q) ||
-          (r.guest_name || "").toLowerCase().includes(q) ||
-          (r.guest_phone || "").toLowerCase().includes(q)
-        )
-      })
-    )
-  }, [reservations, search, statusFilter])
+  /* Ro'yxat: filtrlab, so'ng tartiblab. Mantiq `lib/reservationFilters`
+     da va test bilan qoplangan — bu yerda faqat chaqiriladi. */
+  const filtered = useMemo(
+    () => applyFilters(reservations, filters, sort),
+    [reservations, filters, sort]
+  )
 
-  // Bekor qilingan/kelmagan bronlar pul hisobiga kirmaydi
-  const stats = useMemo(() => {
-    const live = reservations.filter(
-      (r) => r.status !== "CANCELLED" && r.status !== "NO_SHOW"
-    )
-    return {
-      total: reservations.length,
-      active: reservations.filter(
-        (r) => r.status === "CHECKED_IN" || r.status === "CONFIRMED"
-      ).length,
-      income: live.reduce((sum, r) => sum + Number(r.paid_amount || 0), 0),
-    }
-  }, [reservations])
+  /* Jamlanma KO'RINIB TURGAN ro'yxat bo'yicha. Filtr qo'yilganda butun
+     xona bo'yicha raqam ko'rsatish chalg'itardi: xodim "shu davrda qancha
+     tushum bo'ldi?" degan savolga javob kutadi. */
+  const stats = useMemo(() => summarize(filtered), [filtered])
 
-  const hasFilters = !!search.trim() || !!statusFilter
+  // Tez davr tugmalari — moliya va xarajatlar sahifalaridagi bilan bir xil
+  const datePresets = useMemo(() => buildDatePresets(new Date()), [])
+
+  const hasFilters = hasActiveFilters(filters)
   const clearFilters = () => {
-    setSearch("")
-    setStatusFilter("")
+    setFilters(EMPTY_FILTERS)
+    setSort("newest")
   }
 
   // Oyna yopilganda filtrlar keyingi xona uchun qolib ketmasin
@@ -172,7 +170,9 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
 
   return (
     <Dialog open={!!room} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="sm:max-w-[680px]">
+      {/* Filtrlar qatori kengaydi (qidiruv, tartib, sana oralig'i, tur,
+          to'lov) — 680px da ular juda tor qisilardi */}
+      <DialogContent className="sm:max-w-[760px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
@@ -184,12 +184,13 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
 
         {!isLoading && !error && reservations.length > 0 && (
           <>
-            {/* Qisqa jamlanma */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Jamlanma — ko'rinib turgan ro'yxat bo'yicha */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[
-                { label: "Jami bandlov", value: String(stats.total) },
+                { label: "Bandlov", value: String(stats.total) },
                 { label: "Faol", value: String(stats.active) },
                 { label: "Tushum", value: `${fmt(stats.income)} so'm` },
+                { label: "Qarz", value: `${fmt(stats.debt)} so'm` },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -205,22 +206,147 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
 
             {/* Qidiruv va holat filtri */}
             <div className="space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  className="h-9 pl-9"
-                  placeholder="Bandlov raqami, mehmon yoki telefon..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[180px] flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    className="h-9 pl-9"
+                    placeholder="Bandlov raqami, mehmon yoki telefon..."
+                    value={filters.search}
+                    onChange={(e) => patch({ search: e.target.value })}
+                  />
+                </div>
+                {/* Tartib — qidiruv yonida, chunki ikkalasi ham ro'yxatning
+                    ko'rinishini boshqaradi */}
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-2 text-xs"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as ReservationSort)}
+                  title="Tartib"
+                >
+                  {Object.entries(SORT_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => setShowMore((v) => !v)}
+                >
+                  <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
+                  Filtrlar
+                  <ChevronDown
+                    className={cn(
+                      "ml-1 h-3.5 w-3.5 transition-transform",
+                      showMore && "rotate-180"
+                    )}
+                  />
+                </Button>
               </div>
+
+              {/* Qo'shimcha filtrlar — yopiq turadi, chunki ko'p hollarda
+                  qidiruv va holat yetarli. Bittasi qo'yilgan bo'lsa panel
+                  o'zi ochiq qoladi, aks holda ko'rinmas filtr ro'yxatni
+                  qisqartirib turgandek tuyulardi. */}
+              {(showMore || !!filters.dateFrom || !!filters.dateTo ||
+                !!filters.paymentStatus || !!filters.bookingType) && (
+                <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50/60 p-2.5">
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-gray-500">
+                        Sanadan
+                      </label>
+                      <Input
+                        type="date"
+                        className="h-8 w-[140px] text-xs"
+                        value={filters.dateFrom}
+                        max={filters.dateTo || undefined}
+                        onChange={(e) => patch({ dateFrom: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-gray-500">
+                        Sanagacha
+                      </label>
+                      <Input
+                        type="date"
+                        className="h-8 w-[140px] text-xs"
+                        value={filters.dateTo}
+                        min={filters.dateFrom || undefined}
+                        onChange={(e) => patch({ dateTo: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-gray-500">
+                        Bron turi
+                      </label>
+                      <select
+                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                        value={filters.bookingType}
+                        onChange={(e) => patch({ bookingType: e.target.value })}
+                      >
+                        <option value="">Barchasi</option>
+                        <option value="DAILY">Kunlik</option>
+                        <option value="HOURLY">Soatlik</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-gray-500">
+                        To'lov
+                      </label>
+                      <select
+                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                        value={filters.paymentStatus}
+                        onChange={(e) =>
+                          patch({ paymentStatus: e.target.value })
+                        }
+                      >
+                        <option value="">Barchasi</option>
+                        {Object.entries(PAY_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Tez davrlar — moliya va xarajatlar sahifalaridagi bilan
+                      bir xil ro'yxat va bir xil xatti-harakat */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {datePresets.map((p) => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => patch({ dateFrom: p.from, dateTo: p.to })}
+                        className={cn(
+                          "rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
+                          filters.dateFrom === p.from && filters.dateTo === p.to
+                            ? "border-primary-600 bg-primary-50 text-primary-700"
+                            : "border-gray-200 text-gray-600 hover:bg-white"
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Sana oralig'i turish davri bo'yicha: davrga tegib o'tgan
+                    bandlovlar ham ko'rinadi.
+                  </p>
+                </div>
+              )}
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setStatusFilter("")}
+                  onClick={() => patch({ status: "" })}
                   className={cn(
                     "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                    !statusFilter
+                    !filters.status
                       ? "border-primary-600 bg-primary-50 text-primary-700"
                       : "border-gray-200 text-gray-600 hover:bg-gray-50"
                   )}
@@ -234,11 +360,11 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                       key={value}
                       type="button"
                       onClick={() =>
-                        setStatusFilter(statusFilter === value ? "" : value)
+                        patch({ status: filters.status === value ? "" : value })
                       }
                       className={cn(
                         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                        statusFilter === value
+                        filters.status === value
                           ? "border-primary-600 bg-primary-50 text-primary-700"
                           : "border-gray-200 text-gray-600 hover:bg-gray-50"
                       )}
@@ -264,6 +390,18 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                   </Button>
                 )}
               </div>
+
+              {/* Nechtasi ko'rinayotgani — filtr qo'yilganda ro'yxat qanchaga
+                  qisqarganini bilish kerak */}
+              {hasFilters && (
+                <p className="text-[11px] text-gray-500">
+                  {reservations.length} tadan{" "}
+                  <span className="font-semibold text-gray-700">
+                    {filtered.length}
+                  </span>{" "}
+                  ta ko'rsatilmoqda
+                </p>
+              )}
             </div>
           </>
         )}
