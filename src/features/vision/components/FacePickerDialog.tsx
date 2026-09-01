@@ -31,9 +31,14 @@ import { fetchSightingImage, useSightings, type Sighting } from "../api/vision"
 interface FacePickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Bron qilinayotgan xonaning filiali. */
+  /** Qaysi filial kameralari ko'rsatiladi. Bo'sh bo'lsa ro'yxat so'ralmaydi. */
   branchId?: string | null
   onSelect: (sighting: Sighting) => void
+  /** Filial noma'lum bo'lganda ko'rsatiladigan izoh — chaqiruvchiga qarab
+      sabab har xil: bandlovda xona tanlanmagan, mehmonlar sahifasida esa
+      xodimga filial biriktirilmagan. */
+  noBranchTitle?: string
+  noBranchHint?: string
 }
 
 const WINDOW_MINUTES = 120
@@ -138,6 +143,8 @@ export function FacePickerDialog({
   onOpenChange,
   branchId,
   onSelect,
+  noBranchTitle = "Avval xonani tanlang",
+  noBranchHint = "Suratlar filial bo'yicha ajratiladi — qaysi filial ekani xonadan aniqlanadi. Boshqa filialning kameralaridan kelgan suratlar bu yerda ko'rinmaydi.",
 }: FacePickerDialogProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -183,12 +190,8 @@ export function FacePickerDialog({
           <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div className="text-sm text-amber-800">
-              <p className="font-medium">Avval xonani tanlang</p>
-              <p className="mt-0.5 text-xs">
-                Suratlar filial bo'yicha ajratiladi — qaysi filial ekani xonadan
-                aniqlanadi. Boshqa filialning kameralaridan kelgan suratlar bu
-                yerda ko'rinmaydi.
-              </p>
+              <p className="font-medium">{noBranchTitle}</p>
+              <p className="mt-0.5 text-xs">{noBranchHint}</p>
             </div>
           </div>
         ) : (

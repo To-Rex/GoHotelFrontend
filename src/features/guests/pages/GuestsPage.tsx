@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone, ScanLine } from "lucide-react";
+import { Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone, ScanLine, Video } from "lucide-react";
 import {
   useGuests,
   useCreateGuest,
@@ -11,6 +11,12 @@ import {
 import { NATIONALITIES, DEFAULT_NATIONALITY } from "../constants";
 import { BirthDateSelect } from "../components/BirthDateSelect";
 import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
+import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog";
+import {
+  fetchSightingFile,
+  useEnrollSighting,
+  type Sighting,
+} from "@/features/vision/api/vision";
 import type { Guest } from "@/types/api";
 import { usePermissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth";
@@ -62,6 +68,7 @@ export const GuestsPage = () => {
   const user = useAuthStore((s) => s.user);
 
   const createGuest = useCreateGuest();
+  const enrollFace = useEnrollSighting();
   const updateGuest = useUpdateGuest();
 
   const [search, setSearch] = useState("");
@@ -72,6 +79,11 @@ export const GuestsPage = () => {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  /* Filial kamerasidan tanlangan yuz. Yaratishda mehmon id'si hali yo'q,
+     shuning uchun biriktirish saqlashdan keyinga qoldiriladi; tahrirlashda
+     id bor va darhol biriktiriladi. */
+  const [facePickerOpen, setFacePickerOpen] = useState(false);
+  const [pickedFace, setPickedFace] = useState<Sighting | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const set = (k: keyof typeof emptyForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -161,6 +173,10 @@ export const GuestsPage = () => {
   };
 
   const handlePhoto = (file: File | null) => {
+    // Fayldan yuklangan surat kameradan tanlangan yuzning o'rnini bosadi —
+    // biriktirish ham u bilan bekor bo'ladi, aks holda boshqa odamning yuzi
+    // biriktirilib qolardi.
+    setPickedFace(null);
     if (photoPreview) URL.revokeObjectURL(photoPreview);
     if (!file) {
       setPhoto(null);
@@ -177,6 +193,24 @@ export const GuestsPage = () => {
     }
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  /* Xodimning filiali — mehmonlar sahifasida xona yo'q, shuning uchun doira
+     xodimning o'z filiali bo'ladi. Filialsiz xodim (masalan administrator)
+     uchun tanlash oynasi buni ochiq aytadi. */
+  const activeBranchId = user?.branch_id || null;
+
+  const handleFacePicked = async (sighting: Sighting) => {
+    try {
+      const file = await fetchSightingFile(sighting.id, `kamera-${Date.now()}.jpg`);
+      handlePhoto(file);
+    } catch {
+      // Surat yuklanmasa ham biriktirish ishlaydi: vektor serverda saqlangan,
+      // rasm faqat ko'rsatish uchun.
+      setErrorMsg("Surat yuklanmadi, lekin yuz baribir biriktiriladi.");
+    }
+    // handlePhoto tanlovni tozalaydi, shuning uchun undan KEYIN.
+    setPickedFace(sighting);
   };
 
   const openModal = () => {
@@ -213,12 +247,32 @@ export const GuestsPage = () => {
     return "Xatolik yuz berdi. Qayta urinib ko'ring.";
   };
 
+  /* Yuzni mehmonga biriktiradi. Muvaffaqiyatni qaytaradi va HECH QACHON
+     xato tashlamaydi: biriktirish qo'shimcha qadam, u tufayli mehmonni
+     saqlash yo'qolmasligi kerak. */
+  const attachFace = async (guestId: string): Promise<boolean> => {
+    if (!pickedFace) return true;
+    try {
+      await enrollFace.mutateAsync({
+        sightingId: pickedFace.id,
+        guestId,
+        // Xodim suratni ataylab tanladi va mehmon kamera oldida turibdi.
+        consent: true,
+      });
+      return true;
+    } catch (e) {
+      console.error("Yuzni biriktirishda xatolik", e);
+      return false;
+    }
+  };
+
   const onSubmit = async () => {
     if (!form.first_name.trim()) {
       setErrorMsg("Ism kiritilishi shart");
       return;
     }
     setErrorMsg(null);
+    let faceFailed = false;
     try {
       if (editing) {
         // Tahrirlash: bo'shatilgan ixtiyoriy maydonlar "" bilan tozalanadi.
@@ -259,6 +313,9 @@ export const GuestsPage = () => {
             setUploading(false);
           }
         }
+        if (pickedFace) {
+          faceFailed = !(await attachFace(editing.id));
+        }
       } else {
         const guest = await createGuest.mutateAsync({
           first_name: form.first_name.trim(),
@@ -283,9 +340,19 @@ export const GuestsPage = () => {
             setUploading(false);
           }
         }
+        if (pickedFace && guest?.id) {
+          faceFailed = !(await attachFace(guest.id));
+        }
       }
       handlePhoto(null);
       setModalOpen(false);
+      if (faceFailed) {
+        // Mehmon saqlandi — buni yo'qotmaymiz. Faqat yuz biriktirilmagani
+        // aytiladi, chunki xodim keyingi tashrifda tanilishini kutadi.
+        setErrorMsg(
+          "Mehmon saqlandi, lekin yuz biriktirilmadi — keyingi tashrifda avtomatik tanilmaydi."
+        );
+      }
     } catch (e) {
       setErrorMsg(apiError(e));
     }
@@ -726,12 +793,31 @@ export const GuestsPage = () => {
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
-                  <Upload className="h-5 w-5 text-gray-400" />
-                  <span className="text-xs text-gray-600 font-medium">Passport surati / mehmon fotosi</span>
-                  <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · 5 MB</span>
-                  <input type="file" accept={GUEST_PHOTO_ACCEPT} className="hidden" onChange={(e) => handlePhoto(e.target.files?.[0] || null)} />
-                </label>
+                <div className="space-y-2">
+                  <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
+                    <Upload className="h-5 w-5 text-gray-400" />
+                    <span className="text-xs text-gray-600 font-medium">Passport surati / mehmon fotosi</span>
+                    <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · 5 MB</span>
+                    <input type="file" accept={GUEST_PHOTO_ACCEPT} className="hidden" onChange={(e) => handlePhoto(e.target.files?.[0] || null)} />
+                  </label>
+                  {/* Filial IP kamerasidan tanlash — mehmon qabulxonaga
+                      kelganda kamera uni allaqachon suratga olgan bo'ladi */}
+                  <button
+                    type="button"
+                    onClick={() => setFacePickerOpen(true)}
+                    className="w-full flex flex-col items-center justify-center gap-1 h-20 rounded-lg border-2 border-dashed border-primary-300 bg-primary-50/40 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                  >
+                    <Video className="h-5 w-5 text-primary-500" />
+                    <span className="text-xs text-primary-700 font-medium">Filial kamerasidan tanlash (Face ID)</span>
+                    <span className="text-[11px] text-primary-500/80">Keyingi tashrifda avtomatik tanaladi</span>
+                  </button>
+                </div>
+              )}
+              {pickedFace && (
+                <p className="flex items-center gap-1.5 text-[11px] text-primary-700">
+                  <Video className="h-3.5 w-3.5" />
+                  {pickedFace.camera_name || pickedFace.camera_id} kamerasidan — saqlangach yuzi biriktiriladi
+                </p>
               )}
             </div>
 
@@ -747,6 +833,17 @@ export const GuestsPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Xodimning filiali kameralaridan yuz tanlash. Boshqa filial
+          suratlari bu yerga tushmaydi. */}
+      <FacePickerDialog
+        open={facePickerOpen}
+        onOpenChange={setFacePickerOpen}
+        branchId={activeBranchId}
+        onSelect={handleFacePicked}
+        noBranchTitle="Filialingiz aniqlanmadi"
+        noBranchHint="Suratlar filial bo'yicha ajratiladi. Hisobingizga filial biriktirilmagan — administratordan so'rang yoki bandlov dialogidan foydalaning, u filialni xonadan aniqlaydi."
+      />
     </div>
   );
 };
