@@ -103,6 +103,9 @@ export interface NewBookingRequest {
   bookingType?: "DAILY" | "HOURLY"
   checkInTime?: string
   checkOutTime?: string
+  /** Oldindan tanlangan mehmon. Kamera tanigan mehmon ustiga bosilganda
+   *  dialog o'sha mehmon bilan ochiladi — xodim uni qaytadan qidirmaydi. */
+  guestId?: string
 }
 
 interface Props {
@@ -532,14 +535,16 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     // Mehmonlar soni standart 2 (odatda juftlik keladi)
     setValue("adults", 2)
     setValue("children", 0)
-    setValue("guest_id", "")
+    // Oldindan berilgan mehmon tanlangan holatda ochiladi. Berilmasa —
+    // avvalgidek bo'sh, xodim ro'yxatdan qidiradi.
+    setValue("guest_id", request.guestId || "")
     setValue("new_guest_nationality", DEFAULT_NATIONALITY)
     setValue("payment_amount", wanted === "HOURLY" ? price : nights * price)
     setValue("payment_method", "CASH")
     setExtraPayments([])
     setDiscountType("AMOUNT")
     setDiscountValue("")
-    setSelectedGuestId("")
+    setSelectedGuestId(request.guestId || "")
     setGuestSearch("")
     setShowNewGuest(false)
     setNationalityOther("")

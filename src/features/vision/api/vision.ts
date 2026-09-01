@@ -27,6 +27,9 @@ export interface Sighting {
   guest_phone?: string | null;
   last_stay_at?: string | null;
   visits: number;
+  /** Ochiq yoki kutilayotgan broni bormi — panel qaysi harakatni taklif
+      qilishini shu belgilaydi: kutib olish yoki yangi bron. */
+  has_active_reservation: boolean;
   has_thumbnail: boolean;
   /** Vektori saqlangan va hali hech kimga biriktirilmagan. */
   can_enroll: boolean;
@@ -47,6 +50,8 @@ export interface SightingsQuery {
   limit?: number;
   /** Faqat hali hech kimga biriktirilmaganlar. */
   onlyUnmatched?: boolean;
+  /** Faqat tanilganlar — navbar paneli shu rejimda ishlaydi. */
+  onlyMatched?: boolean;
   includeAcknowledged?: boolean;
   /** Polling oralig'i (ms). 0 yoki undefined — o'chirilgan. */
   refetchMs?: number;
@@ -59,6 +64,7 @@ export const useSightings = (params: SightingsQuery = {}) => {
     minutes = 60,
     limit = 24,
     onlyUnmatched = false,
+    onlyMatched = false,
     includeAcknowledged = true,
     refetchMs,
     enabled = true,
@@ -71,6 +77,7 @@ export const useSightings = (params: SightingsQuery = {}) => {
       minutes,
       limit,
       onlyUnmatched,
+      onlyMatched,
       includeAcknowledged,
     ],
     // Filialsiz so'ramaymiz: filtrsiz ro'yxat butun mehmonxonani qaytaradi
@@ -84,6 +91,7 @@ export const useSightings = (params: SightingsQuery = {}) => {
           minutes,
           limit,
           only_unmatched: onlyUnmatched,
+          only_matched: onlyMatched,
           include_acknowledged: includeAcknowledged,
         },
       });

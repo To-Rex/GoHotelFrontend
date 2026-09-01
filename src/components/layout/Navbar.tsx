@@ -16,6 +16,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
+import { RecognizedGuestsMenu } from "@/features/vision/components/RecognizedGuestsMenu";
+import {
+  NewBookingDialog,
+  type NewBookingRequest,
+} from "@/features/reservations/components/NewBookingDialog";
+import { addDaysStr, todayStr } from "@/features/reservations/lib/booking";
 import { cn } from "@/lib/utils";
 
 // Qolgan daqiqalarni odam o'qiydigan ko'rinishga keltiradi: "2 soat 15 daq"
@@ -36,6 +42,22 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
   const { user, logout } = useAuthStore();
   // Yuz bilan kirishni sozlash dialogi (har bir xodim o'z yuzini biriktiradi)
   const [faceDialogOpen, setFaceDialogOpen] = useState(false);
+
+  /* Kamera tanigan mehmon ustiga bosilganda ochiladigan bandlov dialogi.
+     U shu yerda turadi, sahifada emas: panel navbarda, ya'ni har qanday
+     sahifadan bosilishi mumkin. Xona berilmaydi — dialog o'z ro'yxatini
+     ko'rsatadi, sanalar esa bugundan ertaga. */
+  const [bookingRequest, setBookingRequest] = useState<NewBookingRequest | null>(
+    null
+  );
+  const openBookingFor = (guestId: string) => {
+    const today = todayStr();
+    setBookingRequest({
+      checkInDate: today,
+      checkOutDate: addDaysStr(today, 1),
+      guestId,
+    });
+  };
 
   // Profil menyusi: account bosilganda ochiladi (ichida Chiqish tugmasi).
   // Tashqariga bosilganda yoki Escape'da yopiladi
@@ -194,6 +216,8 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             <Moon size={18} className="text-muted-foreground hover:text-foreground" />
           )}
         </Button>
+        {/* Kamera tanigan mehmonlar — xodimning o'z filiali bo'yicha */}
+        <RecognizedGuestsMenu onPickGuest={openBookingFor} />
         <Button
           variant="ghost"
           size="icon"
@@ -267,6 +291,10 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
       </div>
 
       <FaceEnrollDialog open={faceDialogOpen} onOpenChange={setFaceDialogOpen} />
+      <NewBookingDialog
+        request={bookingRequest}
+        onClose={() => setBookingRequest(null)}
+      />
     </header>
   );
 };
