@@ -564,7 +564,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     if (resolveBookingType(bookingDefaults) === "DAILY") return
     setBookingType("HOURLY")
     setValue("booking_type", "HOURLY")
-    const roomId = presetRoom?.id || getValues("room_id")
+    const roomId = getValues("room_id") || presetRoom?.id || ""
     const slot = freeSlotFor(roomId, getValues("check_in_date"))
     setValue("check_in_time", slot ? slot[0] : "14:00")
     setValue("check_out_time", slot ? slot[1] : "16:00")
@@ -577,15 +577,30 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const watchFormOutDate = watch("check_out_date")
   const watchFormRoom = watch("room_id")
 
+  /* AMALDAGI XONA — bitta manba.
+
+     Dialog xona bosilib ochilganda `request.room` keladi va u formaga
+     darhol yoziladi, shuning uchun odatda ikkalasi bir xil. Farq xodim
+     ro'yxatdan boshqasini tanlaganda chiqadi: o'shanda forma qiymati ustun
+     turishi kerak. Ilgari hamma joyda `presetRoom?.id || watchFormRoom`
+     yozilgan edi — preset ustun edi va tanlangan xona e'tiborga
+     olinmasdi. */
+  const activeRoomId = watchFormRoom || presetRoom?.id || ""
+  const activeRoom = useMemo(
+    () =>
+      presetRoom?.id === activeRoomId
+        ? presetRoom
+        : rooms.find((r) => r.id === activeRoomId) || null,
+    [presetRoom, activeRoomId, rooms]
+  )
+
   /* Bron qilinayotgan xonaning filiali — yuz tanlash oynasi shu bo'yicha
      filtrlanadi. Xona tanlanmagunicha oyna hech narsa ko'rsatmaydi va nima
      uchun ekanini aytadi: filialsiz ro'yxat butun mehmonxonani qaytarardi. */
-  const activeBranchId = useMemo(() => {
-    const roomId = presetRoom?.id || watchFormRoom
-    const room =
-      presetRoom?.id === roomId ? presetRoom : rooms.find((r) => r.id === roomId)
-    return room?.branch_id || user?.branch_id || null
-  }, [presetRoom, watchFormRoom, rooms, user?.branch_id])
+  const activeBranchId = useMemo(
+    () => activeRoom?.branch_id || user?.branch_id || null,
+    [activeRoom, user?.branch_id]
+  )
   const watchNationality = watch("new_guest_nationality")
   const watchBirthDate = watch("new_guest_birth_date")
   const watchNewPassport = watch("new_guest_passport_number")
@@ -628,10 +643,9 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
 
   const dialogBusyTimes = useMemo(() => {
     if (!open || bookingType !== "HOURLY") return []
-    const roomId = presetRoom?.id || watchFormRoom
-    if (!roomId || !watchFormDate) return []
-    return busyIntervalsFor(reservations, roomId, watchFormDate)
-  }, [open, bookingType, presetRoom, watchFormRoom, watchFormDate, reservations])
+    if (!activeRoomId || !watchFormDate) return []
+    return busyIntervalsFor(reservations, activeRoomId, watchFormDate)
+  }, [open, bookingType, activeRoomId, watchFormDate, reservations])
 
   const selectedTimeConflict = useMemo(() => {
     if (bookingType !== "HOURLY" || !watchInTime || !watchOutTime) return false
@@ -649,10 +663,9 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
      qo'yiladi — bunday sanani tanlashning o'zi mumkin bo'lmaydi. */
   const nextGuestStart = useMemo(() => {
     if (bookingType !== "DAILY") return null
-    const roomId = presetRoom?.id || watchFormRoom
-    if (!roomId || !watchFormDate) return null
-    return nextBookingStart(reservations, roomId, watchFormDate)
-  }, [bookingType, presetRoom, watchFormRoom, watchFormDate, reservations])
+    if (!activeRoomId || !watchFormDate) return null
+    return nextBookingStart(reservations, activeRoomId, watchFormDate)
+  }, [bookingType, activeRoomId, watchFormDate, reservations])
 
   const dailyRangeConflict =
     bookingType === "DAILY" &&
@@ -685,7 +698,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   }, [open, bookingType, nowTick, watchFormDate, watchInTime, watchOutTime])
 
   // --- Jonli hisob-kitob: sanalar/xona o'zgarsa narx darhol qayta hisoblanadi
-  const dialogRoom = presetRoom || rooms.find((r) => r.id === watchFormRoom) || null
+  const dialogRoom = activeRoom
   const dialogRoomPrice = dialogRoom ? getRoomPrice(dialogRoom) : 0
   const roomPrice = dialogRoomPrice
   const dialogNightCount =
@@ -1041,7 +1054,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                 setValue("booking_type", opt.key)
                 if (opt.key === "HOURLY") {
                   // Band soatlarni chetlab birinchi bo'sh vaqtni avtomatik tanlaymiz
-                  const roomId = presetRoom?.id || watchFormRoom
+                  const roomId = activeRoomId
                   const dateStr = watchFormDate || ""
                   const busy =
                     roomId && dateStr ? busyIntervalsFor(reservations, roomId, dateStr) : []
@@ -1073,12 +1086,18 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
           ))}
         </div>
 
-        {presetRoom ? (
+        {/* XONA. Ilgari dialog xona bosilib ochilganda xona qat'iy edi:
+            ro'yxat umuman ko'rsatilmasdi va boshqasiga o'tish uchun dialogni
+            yopib, taxtadan boshqa xonani bosish kerak bo'lardi. Endi ro'yxat
+            doim ochiq. Yuqoridagi karta esa qoldi — u tanlangan xonani
+            (endi preset emas, AMALDAGI xonani) sana/soat xulosasi bilan
+            ko'rsatadi. */}
+        {activeRoom && (
           <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-lg">
             <BedDouble className="h-5 w-5 text-primary-600" />
             <div>
               <p className="text-sm font-semibold text-gray-900">
-                {presetRoom.room_number}
+                {activeRoom.room_number}
               </p>
               {bookingType === "HOURLY" ? (
                 <p className="text-xs text-gray-500">
@@ -1093,21 +1112,20 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               )}
             </div>
           </div>
-        ) : (
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Xona *</label>
-            <select
-              className="w-full flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("room_id")}
-            >
-              <option value="">Xonani tanlang</option>
-              {rooms.map(r => (
-                <option key={r.id} value={r.id}>{r.room_number} ({r.room_type?.name}) - {getRoomPrice(r)} So'm</option>
-              ))}
-            </select>
-            {errors.room_id && <p className="text-xs text-red-500">{errors.room_id.message}</p>}
-          </div>
         )}
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Xona *</label>
+          <select
+            className="w-full flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            {...register("room_id")}
+          >
+            <option value="">Xonani tanlang</option>
+            {rooms.map(r => (
+              <option key={r.id} value={r.id}>{r.room_number} ({r.room_type?.name}) - {getRoomPrice(r)} So'm</option>
+            ))}
+          </select>
+          {errors.room_id && <p className="text-xs text-red-500">{errors.room_id.message}</p>}
+        </div>
 
         {bookingType === "HOURLY" ? (
           <>
@@ -1676,7 +1694,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
           value={trimmedCompanions}
           onChange={setCompanions}
           required={guestsRequired}
-          hotelId={presetRoom?.hotel_id || user?.hotel_id || undefined}
+          hotelId={activeRoom?.hotel_id || user?.hotel_id || undefined}
           onError={showError}
         />
         {companionsMissing > 0 && guestsRequired && (
