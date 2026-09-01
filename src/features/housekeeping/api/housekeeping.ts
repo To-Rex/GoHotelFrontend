@@ -68,7 +68,12 @@ export const useCreateHousekeepingTask = () => {
       });
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['housekeepingTasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['housekeepingTasks'] });
+      // Vazifa ochilishi xona holatini ham o'zgartiradi (ta'mir, tekshiruv,
+      // tozalash) — bandlov taxtasi va xonalar ro'yxati eskirib qolmasin
+      qc.invalidateQueries({ queryKey: ['rooms'] });
+    },
   });
 };
 
