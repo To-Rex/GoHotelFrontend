@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { format, addDays, parseISO } from "date-fns"
-import { ChevronLeft, ChevronRight, ChevronDown, Clock, Plus, Layers } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { DEBT_BAR_CLASS, debtHint, debtLevelOf } from "../lib/booking"
 
@@ -468,12 +468,6 @@ export function HourlyBoard({
         <div className="flex items-center gap-3">
           {isToday && (
             <>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200">
-                <Clock className="h-4 w-4 text-primary-600" />
-                <span className="text-sm font-bold text-gray-900 tabular-nums">
-                  {format(now, "HH:mm")}
-                </span>
-              </div>
               <div className="text-sm text-gray-600">
                 Hozir bo'sh: <span className="font-bold text-emerald-600">{freeNowCount}</span>
                 <span className="text-gray-400"> / {totalRooms}</span>
