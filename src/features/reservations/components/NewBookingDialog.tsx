@@ -46,7 +46,7 @@ import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import {
   fetchSightingFile,
   useEnrollSighting,
-  type Sighting,
+  type SightingGroup,
 } from "@/features/vision/api/vision"
 import { CompanionGuests, type Companion } from "./CompanionGuests"
 import { Button } from "@/components/ui/button"
@@ -248,7 +248,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
      turadi: mehmon hali yaratilmagan, biriktirish esa mehmon id'sini
      talab qiladi. */
   const [facePickerOpen, setFacePickerOpen] = useState(false)
-  const [pickedFace, setPickedFace] = useState<Sighting | null>(null)
+  const [pickedFace, setPickedFace] = useState<SightingGroup | null>(null)
   const [selectedGuestId, setSelectedGuestId] = useState<string>("")
   const [bookingType, setBookingType] = useState<"DAILY" | "HOURLY">("DAILY")
   const [extraPayments, setExtraPayments] = useState<Array<{ amount: string; method: string }>>([])
@@ -313,9 +313,12 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   /* Tanlangan yuz oddiy surat kabi ko'rinadi: xodim uchun farqi yo'q, u
      shunchaki suratni ko'radi. Farq saqlashda — surat yuklanadi VA yuz
      mehmonga biriktiriladi, ya'ni keyingi tashrifda u tanaladi. */
-  const handleFacePicked = async (sighting: Sighting) => {
+  const handleFacePicked = async (group: SightingGroup) => {
     try {
-      const file = await fetchSightingFile(sighting.id, `kamera-${Date.now()}.jpg`)
+      const file = await fetchSightingFile(
+        group.best_sighting_id,
+        `kamera-${Date.now()}.jpg`
+      )
       handlePhotoChange(file)
     } catch {
       // Surat yuklanmasa ham biriktirish ishlaydi: vektor serverda saqlangan,
@@ -323,7 +326,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       showError("Surat yuklanmadi, lekin yuz baribir biriktiriladi.")
     }
     // handlePhotoChange tanlovni tozalaydi, shuning uchun undan KEYIN.
-    setPickedFace(sighting)
+    setPickedFace(group)
   }
 
   // --- Kamera orqali surat olish ---
@@ -877,7 +880,11 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
         if (pickedFace && guestId) {
           try {
             await enrollFaceMutation.mutateAsync({
-              sightingId: pickedFace.id,
+              sightingId: pickedFace.best_sighting_id,
+              // Guruhning hamma ko'rinishlari: bir necha epizoddan yig'ilgan
+              // shablon bittasidan aniqroq, va qolganlari "tanilmagan" bo'lib
+              // ro'yxatda qolib ketmaydi.
+              sightingIds: pickedFace.sighting_ids,
               guestId,
               // Xodim suratni ataylab tanladi va mehmon kamera oldida
               // turibdi — rozilik shu harakat bilan tasdiqlanadi.
@@ -1619,8 +1626,9 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                 {pickedFace && (
                   <p className="flex items-center gap-1.5 text-[11px] text-primary-700">
                     <Video className="h-3.5 w-3.5" />
-                    {pickedFace.camera_name || pickedFace.camera_id} kamerasidan —
-                    mehmon saqlangach yuzi biriktiriladi
+                    {pickedFace.camera_name || pickedFace.camera_id} kamerasidan
+                    {pickedFace.count > 1 && ` · ${pickedFace.count} ta surat`} — mehmon
+                    saqlangach yuzi biriktiriladi
                   </p>
                 )}
               </div>

@@ -93,6 +93,54 @@ export const useSightings = (params: SightingsQuery = {}) => {
 };
 
 /**
+ * Bir odamning bir necha ko'rinishi — bitta karta.
+ *
+ * Mehmon kamera oldidan uch marta o'tsa uchta epizod yoziladi. Server
+ * ularni vektorlari bo'yicha guruhlab beradi, shunda xodim "bularning
+ * qaysi biri?" deb o'ylamaydi va biriktirilmagan qolganlari ro'yxatda
+ * qolib ketmaydi.
+ */
+export interface SightingGroup {
+  /** Guruhning barcha ko'rinishlari — biriktirishda hammasi yuboriladi. */
+  sighting_ids: string[];
+  /** Eng sifatlisi — surat shundan olinadi. */
+  best_sighting_id: string;
+  count: number;
+  camera_id: string;
+  camera_name?: string | null;
+  location?: string | null;
+  branch_id?: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  quality_score: number;
+  /** A'zolarning bir-biriga o'xshashligi. Past bo'lsa guruhga boshqa odam
+      tushgan bo'lishi mumkin — panel buni belgilab qo'yadi. */
+  cohesion: number;
+  has_thumbnail: boolean;
+}
+
+export interface SightingGroupList {
+  items: SightingGroup[];
+  ungrouped: number;
+}
+
+export const useSightingGroups = (params: SightingsQuery = {}) => {
+  const { branchId, minutes = 120, limit = 24, refetchMs, enabled = true } = params;
+  return useQuery({
+    queryKey: ['vision-sighting-groups', branchId ?? null, minutes, limit],
+    // Filialsiz so'ramaymiz: filtrsiz ro'yxat butun mehmonxonani qaytarardi.
+    enabled: enabled && !!branchId,
+    refetchInterval: refetchMs && refetchMs > 0 ? refetchMs : false,
+    queryFn: async () => {
+      const { data } = await api.get<SightingGroupList>('/vision/sightings/groups', {
+        params: { branch_id: branchId, minutes, limit },
+      });
+      return data;
+    },
+  });
+};
+
+/**
  * Ko'rinish suratini yuklaydi.
  *
  * `<img src>` sarlavha yubormaydi, endpoint esa token talab qiladi —
@@ -139,15 +187,23 @@ export const useEnrollSighting = () => {
       sightingId: string;
       guestId: string;
       consent: boolean;
+      /** Guruhning qolgan ko'rinishlari — ular ham shu mehmonga yoziladi
+          va vektorlari shablonga qo'shiladi. */
+      sightingIds?: string[];
     }) => {
       const { data } = await api.post<EnrollResult>(
         `/vision/sightings/${payload.sightingId}/enroll`,
-        { guest_id: payload.guestId, consent: payload.consent }
+        {
+          guest_id: payload.guestId,
+          consent: payload.consent,
+          sighting_ids: payload.sightingIds ?? [],
+        }
       );
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vision-sightings'] });
+      queryClient.invalidateQueries({ queryKey: ['vision-sighting-groups'] });
       queryClient.invalidateQueries({ queryKey: ['guests'] });
     },
   });

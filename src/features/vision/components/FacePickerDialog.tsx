@@ -1,5 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import { Camera, Loader2, RefreshCw, ShieldAlert, UserCheck } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import {
+  Camera,
+  Layers,
+  Loader2,
+  RefreshCw,
+  ShieldAlert,
+  TriangleAlert,
+  UserCheck,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -10,22 +18,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { fetchSightingImage, useSightings, type Sighting } from "../api/vision"
+import { fetchSightingImage, useSightingGroups, type SightingGroup } from "../api/vision"
 
 /**
- * Filial kamerasidan kelgan yuzlardan bittasini tanlash.
+ * Filial kamerasidan yuz tanlash — odamlar bo'yicha guruhlangan holda.
  *
- * Ikki qoida bu komponentning shaklini belgilaydi:
+ * Uch qoida bu komponentning shaklini belgilaydi:
  *
- * 1. **Faqat shu filial.** `branchId` bo'lmasa dialog umuman so'rov
- *    yubormaydi va nima uchun ekanini aytadi. Filtrsiz ro'yxat butun
- *    mehmonxonani qaytarardi va xodim yonidagi filialning odamini
- *    biriktirib qo'yishi mumkin edi — bu boshqa odamning broniga olib
- *    keladigan xato.
+ * 1. **Bir odam — bitta karta.** Mehmon kamera oldidan uch marta o'tsa
+ *    server ularni bitta guruhga yig'adi. Alohida ko'rsatish ikki xato
+ *    tug'diradi: xodim "qaysi birini tanlayman?" deb o'ylaydi, va
+ *    biriktirilmagan qolgan ikkitasi ro'yxatda qolib ketadi.
  *
- * 2. **Faqat biriktirilmaganlar.** Allaqachon boshqa mehmonga tegishli yuz
- *    ro'yxatda ko'rinmaydi: uni ikkinchi marta biriktirish bitta odamni
- *    ikki mehmon qilib qo'yardi va tanish ishonchsiz bo'lib qolardi.
+ * 2. **Faqat shu filial.** `branchId` bo'lmasa so'rov umuman yuborilmaydi.
+ *    Filtrsiz ro'yxat butun mehmonxonani qaytarardi va xodim yonidagi
+ *    filialning odamini biriktirib qo'yishi mumkin edi.
+ *
+ * 3. **Faqat biriktirilmaganlar.** Allaqachon boshqa mehmonga tegishli yuz
+ *    ko'rinmaydi: uni ikkinchi marta biriktirish bitta odamni ikki mehmon
+ *    qilib qo'yardi.
  */
 
 interface FacePickerDialogProps {
@@ -33,7 +44,7 @@ interface FacePickerDialogProps {
   onOpenChange: (open: boolean) => void
   /** Qaysi filial kameralari ko'rsatiladi. Bo'sh bo'lsa ro'yxat so'ralmaydi. */
   branchId?: string | null
-  onSelect: (sighting: Sighting) => void
+  onSelect: (group: SightingGroup) => void
   /** Filial noma'lum bo'lganda ko'rsatiladigan izoh — chaqiruvchiga qarab
       sabab har xil: bandlovda xona tanlanmagan, mehmonlar sahifasida esa
       xodimga filial biriktirilmagan. */
@@ -43,6 +54,9 @@ interface FacePickerDialogProps {
 
 const WINDOW_MINUTES = 120
 const REFRESH_MS = 5000
+
+/** Guruh a'zolari bir-biriga shu darajadan kam o'xshasa — ogohlantiramiz. */
+const WEAK_COHESION = 0.7
 
 function timeAgo(iso: string): string {
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
@@ -54,16 +68,18 @@ function timeAgo(iso: string): string {
 }
 
 /**
- * Bitta surat. Rasm `<img src>` bilan olinmaydi — endpoint token talab
- * qiladi, `<img>` esa sarlavha yubormaydi. Shuning uchun blob sifatida
- * yuklanadi va object URL yasaladi.
+ * Bitta guruh kartasi.
+ *
+ * Rasm `<img src>` bilan olinmaydi — endpoint token talab qiladi, `<img>`
+ * esa sarlavha yubormaydi. Shuning uchun blob sifatida yuklanadi va object
+ * URL yasaladi.
  */
-function SightingThumb({
-  sighting,
+function GroupCard({
+  group,
   selected,
   onClick,
 }: {
-  sighting: Sighting
+  group: SightingGroup
   selected: boolean
   onClick: () => void
 }) {
@@ -73,8 +89,8 @@ function SightingThumb({
 
   useEffect(() => {
     let cancelled = false
-    if (!sighting.has_thumbnail) return
-    fetchSightingImage(sighting.id)
+    if (!group.has_thumbnail) return
+    fetchSightingImage(group.best_sighting_id)
       .then((objectUrl) => {
         if (cancelled) {
           URL.revokeObjectURL(objectUrl)
@@ -93,7 +109,9 @@ function SightingThumb({
         urlRef.current = null
       }
     }
-  }, [sighting.id, sighting.has_thumbnail])
+  }, [group.best_sighting_id, group.has_thumbnail])
+
+  const weak = group.count > 1 && group.cohesion < WEAK_COHESION
 
   return (
     <button
@@ -110,12 +128,12 @@ function SightingThumb({
         {url ? (
           <img
             src={url}
-            alt={`${sighting.camera_name || sighting.camera_id} kamerasidan`}
+            alt={`${group.camera_name || group.camera_id} kamerasidan`}
             className="h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-gray-300">
-            {failed || !sighting.has_thumbnail ? (
+            {failed || !group.has_thumbnail ? (
               <Camera className="h-6 w-6" />
             ) : (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -123,17 +141,39 @@ function SightingThumb({
           </div>
         )}
       </div>
-      <div className="space-y-0.5 px-2 py-1.5">
-        <p className="truncate text-[11px] font-medium text-gray-700">
-          {sighting.camera_name || sighting.camera_id}
-        </p>
-        <p className="text-[10px] text-gray-400">{timeAgo(sighting.seen_at)}</p>
-      </div>
+
+      {group.count > 1 && (
+        <span
+          className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-gray-900/75 px-1.5 py-0.5 text-[10px] font-medium text-white"
+          title={`${group.count} ta surat bitta odamga tegishli deb topildi`}
+        >
+          <Layers className="h-3 w-3" />
+          {group.count}
+        </span>
+      )}
+      {weak && (
+        <span
+          className="absolute right-1.5 top-1.5 rounded-full bg-amber-500/90 p-1 text-white"
+          title="Guruh a'zolari bir-biriga unchalik o'xshamaydi — tekshirib ko'ring"
+        >
+          <TriangleAlert className="h-3 w-3" />
+        </span>
+      )}
       {selected && (
-        <span className="absolute right-1.5 top-1.5 rounded-full bg-primary-600 p-1 text-white">
+        <span className="absolute bottom-1.5 right-1.5 rounded-full bg-primary-600 p-1 text-white">
           <UserCheck className="h-3 w-3" />
         </span>
       )}
+
+      <div className="space-y-0.5 px-2 py-1.5">
+        <p className="truncate text-[11px] font-medium text-gray-700">
+          {group.camera_name || group.camera_id}
+        </p>
+        <p className="text-[10px] text-gray-400">
+          {timeAgo(group.last_seen_at)}
+          {group.count > 1 && ` · ${group.count} marta`}
+        </p>
+      </div>
     </button>
   )
 }
@@ -146,14 +186,12 @@ export function FacePickerDialog({
   noBranchTitle = "Avval xonani tanlang",
   noBranchHint = "Suratlar filial bo'yicha ajratiladi — qaysi filial ekani xonadan aniqlanadi. Boshqa filialning kameralaridan kelgan suratlar bu yerda ko'rinmaydi.",
 }: FacePickerDialogProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
 
-  const { data, isLoading, isError, refetch, isFetching } = useSightings({
+  const { data, isLoading, isError, refetch, isFetching } = useSightingGroups({
     branchId: branchId || undefined,
     minutes: WINDOW_MINUTES,
     limit: 24,
-    onlyUnmatched: true,
-    includeAcknowledged: true,
     // Dialog ochiq turganda yangi kelganlar o'zidan paydo bo'lsin — mehmon
     // qabulxonaga endi yaqinlashayotgan bo'lishi mumkin.
     refetchMs: open ? REFRESH_MS : 0,
@@ -161,14 +199,11 @@ export function FacePickerDialog({
   })
 
   useEffect(() => {
-    if (!open) setSelectedId(null)
+    if (!open) setSelectedKey(null)
   }, [open])
 
-  const items = useMemo(
-    () => (data?.items || []).filter((s) => s.can_enroll),
-    [data]
-  )
-  const selected = items.find((s) => s.id === selectedId) || null
+  const items = data?.items || []
+  const selected = items.find((g) => g.best_sighting_id === selectedKey) || null
 
   const confirm = () => {
     if (!selected) return
@@ -196,10 +231,10 @@ export function FacePickerDialog({
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-xs text-gray-500">
-                Shu filial kameralaridan oxirgi {WINDOW_MINUTES / 60} soat ichida
-                kelgan, hali hech kimga biriktirilmagan yuzlar
+                Har bir karta — bitta odam. Bir necha marta o'tgan bo'lsa
+                suratlari birlashtirilgan va hammasi birga biriktiriladi.
               </p>
               <Button
                 type="button"
@@ -242,15 +277,23 @@ export function FacePickerDialog({
               </div>
             ) : (
               <div className="grid max-h-[22rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
-                {items.map((sighting) => (
-                  <SightingThumb
-                    key={sighting.id}
-                    sighting={sighting}
-                    selected={sighting.id === selectedId}
-                    onClick={() => setSelectedId(sighting.id)}
+                {items.map((group) => (
+                  <GroupCard
+                    key={group.best_sighting_id}
+                    group={group}
+                    selected={group.best_sighting_id === selectedKey}
+                    onClick={() => setSelectedKey(group.best_sighting_id)}
                   />
                 ))}
               </div>
+            )}
+
+            {selected && selected.count > 1 && (
+              <p className="flex items-center gap-1.5 text-xs text-gray-500">
+                <Layers className="h-3.5 w-3.5" />
+                {selected.count} ta surat biriktiriladi — bir nechtasidan
+                yig'ilgan shablon aniqroq ishlaydi.
+              </p>
             )}
           </>
         )}

@@ -15,7 +15,7 @@ import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import {
   fetchSightingFile,
   useEnrollSighting,
-  type Sighting,
+  type SightingGroup,
 } from "@/features/vision/api/vision";
 import type { Guest } from "@/types/api";
 import { usePermissions } from "@/lib/permissions";
@@ -83,7 +83,7 @@ export const GuestsPage = () => {
      shuning uchun biriktirish saqlashdan keyinga qoldiriladi; tahrirlashda
      id bor va darhol biriktiriladi. */
   const [facePickerOpen, setFacePickerOpen] = useState(false);
-  const [pickedFace, setPickedFace] = useState<Sighting | null>(null);
+  const [pickedFace, setPickedFace] = useState<SightingGroup | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const set = (k: keyof typeof emptyForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -200,9 +200,12 @@ export const GuestsPage = () => {
      uchun tanlash oynasi buni ochiq aytadi. */
   const activeBranchId = user?.branch_id || null;
 
-  const handleFacePicked = async (sighting: Sighting) => {
+  const handleFacePicked = async (group: SightingGroup) => {
     try {
-      const file = await fetchSightingFile(sighting.id, `kamera-${Date.now()}.jpg`);
+      const file = await fetchSightingFile(
+        group.best_sighting_id,
+        `kamera-${Date.now()}.jpg`
+      );
       handlePhoto(file);
     } catch {
       // Surat yuklanmasa ham biriktirish ishlaydi: vektor serverda saqlangan,
@@ -210,7 +213,7 @@ export const GuestsPage = () => {
       setErrorMsg("Surat yuklanmadi, lekin yuz baribir biriktiriladi.");
     }
     // handlePhoto tanlovni tozalaydi, shuning uchun undan KEYIN.
-    setPickedFace(sighting);
+    setPickedFace(group);
   };
 
   const openModal = () => {
@@ -254,7 +257,10 @@ export const GuestsPage = () => {
     if (!pickedFace) return true;
     try {
       await enrollFace.mutateAsync({
-        sightingId: pickedFace.id,
+        sightingId: pickedFace.best_sighting_id,
+        // Guruhning hamma ko'rinishlari — shablon aniqroq bo'ladi va
+        // qolganlari ro'yxatda qolib ketmaydi.
+        sightingIds: pickedFace.sighting_ids,
         guestId,
         // Xodim suratni ataylab tanladi va mehmon kamera oldida turibdi.
         consent: true,
@@ -816,7 +822,8 @@ export const GuestsPage = () => {
               {pickedFace && (
                 <p className="flex items-center gap-1.5 text-[11px] text-primary-700">
                   <Video className="h-3.5 w-3.5" />
-                  {pickedFace.camera_name || pickedFace.camera_id} kamerasidan — saqlangach yuzi biriktiriladi
+                  {pickedFace.camera_name || pickedFace.camera_id} kamerasidan
+                  {pickedFace.count > 1 && ` · ${pickedFace.count} ta surat`} — saqlangach yuzi biriktiriladi
                 </p>
               )}
             </div>
