@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Camera,
   ScanLine,
+  Video,
 } from "lucide-react"
 
 import { useCreateReservation, useReservations } from "../api/reservations"
@@ -41,6 +42,12 @@ import {
   discountAllowed,
   discountBlockedReason,
 } from "@/features/settings/api/discountRules"
+import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
+import {
+  fetchSightingFile,
+  useEnrollSighting,
+  type Sighting,
+} from "@/features/vision/api/vision"
 import { CompanionGuests, type Companion } from "./CompanionGuests"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -208,6 +215,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
 
   const createReservationMutation = useCreateReservation()
   const createGuestMutation = useCreateGuest()
+  const enrollFaceMutation = useEnrollSighting()
 
   const priceMap = useMemo(() => {
     const map: Record<string, number> = {}
@@ -236,6 +244,11 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [guestPhoto, setGuestPhoto] = useState<File | null>(null)
   const [guestPhotoPreview, setGuestPhotoPreview] = useState<string | null>(null)
   const [photoUploading, setPhotoUploading] = useState(false)
+  /* Filial kamerasidan tanlangan yuz. Bron saqlanguncha faqat shu yerda
+     turadi: mehmon hali yaratilmagan, biriktirish esa mehmon id'sini
+     talab qiladi. */
+  const [facePickerOpen, setFacePickerOpen] = useState(false)
+  const [pickedFace, setPickedFace] = useState<Sighting | null>(null)
   const [selectedGuestId, setSelectedGuestId] = useState<string>("")
   const [bookingType, setBookingType] = useState<"DAILY" | "HOURLY">("DAILY")
   const [extraPayments, setExtraPayments] = useState<Array<{ amount: string; method: string }>>([])
@@ -273,6 +286,10 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   })
 
   const handlePhotoChange = (file: File | null) => {
+    // Fayl yoki veb-kameradan olingan surat kameradan tanlangan yuzning
+    // o'rnini bosadi — biriktirish ham u bilan birga bekor bo'lishi kerak,
+    // aks holda boshqa odamning yuzi biriktirilib qolardi.
+    setPickedFace(null)
     if (guestPhotoPreview) URL.revokeObjectURL(guestPhotoPreview)
     if (!file) {
       setGuestPhoto(null)
@@ -292,6 +309,22 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   }
 
   const clearGuestPhoto = () => handlePhotoChange(null)
+
+  /* Tanlangan yuz oddiy surat kabi ko'rinadi: xodim uchun farqi yo'q, u
+     shunchaki suratni ko'radi. Farq saqlashda — surat yuklanadi VA yuz
+     mehmonga biriktiriladi, ya'ni keyingi tashrifda u tanaladi. */
+  const handleFacePicked = async (sighting: Sighting) => {
+    try {
+      const file = await fetchSightingFile(sighting.id, `kamera-${Date.now()}.jpg`)
+      handlePhotoChange(file)
+    } catch {
+      // Surat yuklanmasa ham biriktirish ishlaydi: vektor serverda saqlangan,
+      // rasm faqat ko'rsatish uchun. Xodimga to'sqinlik qilmaymiz.
+      showError("Surat yuklanmadi, lekin yuz baribir biriktiriladi.")
+    }
+    // handlePhotoChange tanlovni tozalaydi, shuning uchun undan KEYIN.
+    setPickedFace(sighting)
+  }
 
   // --- Kamera orqali surat olish ---
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -473,6 +506,9 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
         : 0
     const nights = Number.isFinite(rawNights) ? Math.max(rawNights, 0) : 0
     reset()
+    // Yangi bron oldingisidan surat yoki tanlangan yuzni meros qilib
+    // olmasligi kerak — aks holda yuz boshqa mehmonga biriktirilardi.
+    handlePhotoChange(null)
     // Tur: so'rovda ko'rsatilgan bo'lsa o'sha, bo'lmasa sozlamadan
     const wanted = request.bookingType ?? resolveBookingType(bookingDefaults)
     typePendingRef.current = !request.bookingType && !bookingDefaults
@@ -531,6 +567,16 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const watchFormDate = watch("check_in_date")
   const watchFormOutDate = watch("check_out_date")
   const watchFormRoom = watch("room_id")
+
+  /* Bron qilinayotgan xonaning filiali — yuz tanlash oynasi shu bo'yicha
+     filtrlanadi. Xona tanlanmagunicha oyna hech narsa ko'rsatmaydi va nima
+     uchun ekanini aytadi: filialsiz ro'yxat butun mehmonxonani qaytarardi. */
+  const activeBranchId = useMemo(() => {
+    const roomId = presetRoom?.id || watchFormRoom
+    const room =
+      presetRoom?.id === roomId ? presetRoom : rooms.find((r) => r.id === roomId)
+    return room?.branch_id || user?.branch_id || null
+  }, [presetRoom, watchFormRoom, rooms, user?.branch_id])
   const watchNationality = watch("new_guest_nationality")
   const watchBirthDate = watch("new_guest_birth_date")
   const watchNewPassport = watch("new_guest_passport_number")
@@ -734,6 +780,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const onSubmit = async (values: BookingForm) => {
     // Surat yuklanmay qolsa — bron yaratilgandan keyin ogohlantiramiz
     let photoUploadFailed = false
+    let faceEnrollFailed = false
 
     const paymentRows = [
       {
@@ -817,6 +864,28 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
             photoUploadFailed = true
           } finally {
             setPhotoUploading(false)
+          }
+        }
+
+        /* Kameradan yuz tanlangan bo'lsa — endi mehmon id'si bor, uni
+           biriktiramiz. Shundan keyin mehmon kamera oldidan o'tsa avtomatik
+           tanaladi.
+
+           Bron BUZILMAYDI: biriktirish alohida, ixtiyoriy qadam va u
+           yiqilsa xodim bron yaratganini yo'qotmaydi — yuzni keyin
+           qabulxona panelidan biriktirish mumkin. */
+        if (pickedFace && guestId) {
+          try {
+            await enrollFaceMutation.mutateAsync({
+              sightingId: pickedFace.id,
+              guestId,
+              // Xodim suratni ataylab tanladi va mehmon kamera oldida
+              // turibdi — rozilik shu harakat bilan tasdiqlanadi.
+              consent: true,
+            })
+          } catch (enrollError) {
+            console.error("Yuzni biriktirishda xatolik", enrollError)
+            faceEnrollFailed = true
           }
         }
       }
@@ -913,6 +982,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       setExtraPayments([])
       setDiscountValue("")
       setDiscountType("AMOUNT")
+      handlePhotoChange(null)
       reset()
       onCreated?.()
       onClose()
@@ -920,6 +990,11 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       if (photoUploadFailed) {
         showError(
           "Bron va mehmon saqlandi, lekin suratni yuklab bo'lmadi. Suratni keyinroq qayta yuklashingiz mumkin."
+        )
+      } else if (faceEnrollFailed) {
+        showError(
+          "Bron va mehmon saqlandi, lekin yuz biriktirilmadi — keyingi tashrifda avtomatik tanilmaydi. " +
+            "Yuzni qabulxona panelidan qayta biriktirishingiz mumkin."
         )
       }
     } catch (error: any) {
@@ -1523,9 +1598,31 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                       <span className="text-xs text-gray-600 font-medium">Kamera</span>
                       <span className="text-[11px] text-gray-400">Hoziroq suratga olish</span>
                     </button>
+                    {/* Filial IP kamerasidan tanlash — mehmon qabulxonaga
+                        kelganda kamera uni allaqachon suratga olgan bo'ladi */}
+                    <button
+                      type="button"
+                      onClick={() => setFacePickerOpen(true)}
+                      className="col-span-2 flex flex-col items-center justify-center gap-1 h-20 rounded-lg border-2 border-dashed border-primary-300 bg-primary-50/40 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                    >
+                      <Video className="h-5 w-5 text-primary-500" />
+                      <span className="text-xs text-primary-700 font-medium">
+                        Filial kamerasidan tanlash
+                      </span>
+                      <span className="text-[11px] text-primary-500/80">
+                        Keyingi tashrifda avtomatik tanaladi
+                      </span>
+                    </button>
                   </div>
                 )}
                 {cameraError && <p className="text-xs text-red-500">{cameraError}</p>}
+                {pickedFace && (
+                  <p className="flex items-center gap-1.5 text-[11px] text-primary-700">
+                    <Video className="h-3.5 w-3.5" />
+                    {pickedFace.camera_name || pickedFace.camera_id} kamerasidan —
+                    mehmon saqlangach yuzi biriktiriladi
+                  </p>
+                )}
               </div>
 
               <button
@@ -1764,6 +1861,15 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       </form>
     </DialogContent>
   </Dialog>
+      {/* Filial kamerasidan yuz tanlash. Filial bron qilinayotgan xonadan
+          olinadi — boshqa filialning suratlari bu yerga tushmaydi. */}
+      <FacePickerDialog
+        open={facePickerOpen}
+        onOpenChange={setFacePickerOpen}
+        branchId={activeBranchId}
+        onSelect={handleFacePicked}
+      />
+
       {/* Ichki xato dialogi — chaqiruvchi o'zinikini bermagan bo'lsa */}
       <Dialog open={!!localError} onOpenChange={(o) => !o && setLocalError(null)}>
         <DialogContent className="sm:max-w-[420px]">
