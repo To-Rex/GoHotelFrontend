@@ -15,6 +15,7 @@ import type { Room } from "@/types/api"
 import { RoomReservationsDialog } from "../components/RoomReservationsDialog"
 import { RoomStatusNote } from "../components/RoomStatusNote"
 import { activeTaskFor, roomStatusDetail } from "../lib/roomStatusInfo"
+import { roomBookingBlock } from "../lib/roomBookable"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
 import {
   NewBookingDialog,
@@ -301,6 +302,27 @@ export const RoomsPage = () => {
   }, [sortedRooms, floors])
 
   // Holatlar bo'yicha sonlar (filtr chiplarida ko'rsatiladi)
+  /* Holat tafsiloti: qachondan beri, kim, boshlanganmi.
+
+     Vazifalar butun mehmonxona bo'yicha bir marta olinadi va xona bo'yicha
+     guruhlanadi — har bir karta uchun alohida so'rov yuborish ro'yxatni
+     o'nlab so'rovga bo'lib yuborardi. Vaqt `nowTick` bilan yangilanadi,
+     shunda "35 daqiqa" yozuvi ekranda qotib qolmaydi. */
+  const { data: hkTasks = [] } = useHousekeepingTasks()
+  const [nowTick, setNowTick] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNowTick(Date.now()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+  const statusDetailByRoom = useMemo(() => {
+    const m: Record<string, ReturnType<typeof roomStatusDetail>> = {}
+    for (const r of rooms) {
+      const detail = roomStatusDetail(r, activeTaskFor(hkTasks, r.id), nowTick)
+      if (detail) m[r.id] = detail
+    }
+    return m
+  }, [rooms, hkTasks, nowTick])
+
   const statusCounts = useMemo(() => {
     const m: Record<string, number> = {}
     for (const r of rooms) {
@@ -551,26 +573,11 @@ export const RoomsPage = () => {
     return <div>Xatolik yuz berdi. Iltimos qayta urining.</div>
   }
 
-  /* Holat tafsiloti: qachondan beri, kim, boshlanganmi.
-
-     Vazifalar butun mehmonxona bo'yicha bir marta olinadi va xona bo'yicha
-     guruhlanadi — har bir karta uchun alohida so'rov yuborish ro'yxatni
-     o'nlab so'rovga bo'lib yuborardi. Vaqt `nowTick` bilan yangilanadi,
-     shunda "35 daqiqa" yozuvi ekranda qotib qolmaydi. */
-  const { data: hkTasks = [] } = useHousekeepingTasks()
-  const [nowTick, setNowTick] = useState(() => Date.now())
-  useEffect(() => {
-    const timer = setInterval(() => setNowTick(Date.now()), 60_000)
-    return () => clearInterval(timer)
-  }, [])
-  const statusDetailByRoom = useMemo(() => {
-    const m: Record<string, ReturnType<typeof roomStatusDetail>> = {}
-    for (const r of rooms) {
-      const detail = roomStatusDetail(r, activeTaskFor(hkTasks, r.id), nowTick)
-      if (detail) m[r.id] = detail
-    }
-    return m
-  }, [rooms, hkTasks, nowTick])
+  /* Ta'mir/tekshiruv/xizmatdan tashqari xonaga bosilganda bron dialogi
+     ochilmaydi — u baribir rad etilardi. Sanalar bu yerda ma'lum emas,
+     shuning uchun faqat "har qanday vaqt uchun yopiq" holatlar tekshiriladi;
+     tozalanayotgan xona ochiladi va dialog sanaga qarab qaror qiladi. */
+  const bookBlockFor = (room: Room) => roomBookingBlock(room, null, new Date())
 
   const freeCount = rooms.filter((r) => r.current_status === "AVAILABLE").length
   const busyCount = rooms.filter((r) =>
@@ -661,11 +668,18 @@ export const RoomsPage = () => {
                   {floorRooms.map((room) => (
                     <div
                       key={room.id}
-                      onClick={canBook ? () => openBookingFor(room) : undefined}
-                      title={canBook ? "Yangi bandlov" : undefined}
+                      onClick={
+                        canBook && !bookBlockFor(room)
+                          ? () => openBookingFor(room)
+                          : undefined
+                      }
+                      title={
+                        bookBlockFor(room) ||
+                        (canBook ? "Yangi bandlov" : undefined)
+                      }
                       className={cn(
                         "group relative rounded-xl border border-gray-200 bg-white p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md",
-                        canBook && "cursor-pointer"
+                        canBook && !bookBlockFor(room) && "cursor-pointer"
                       )}
                     >
                       {/* Chap chekkadagi nozik holat chizig'i (bo'sh xonada ko'rinmaydi) */}
@@ -994,12 +1008,18 @@ export const RoomsPage = () => {
                 ...(collapsed ? [] : floorRooms).map((room) => (
                 <TableRow
                   key={room.id}
-                  onClick={canBook ? () => openBookingFor(room) : undefined}
-                  title={canBook ? "Yangi bandlov" : undefined}
+                  onClick={
+                    canBook && !bookBlockFor(room)
+                      ? () => openBookingFor(room)
+                      : undefined
+                  }
+                  title={
+                    bookBlockFor(room) || (canBook ? "Yangi bandlov" : undefined)
+                  }
                   className={cn(
                     "border-l-4",
                     statusRowAccent[room.current_status] || "border-l-gray-200",
-                    canBook && "cursor-pointer"
+                    canBook && !bookBlockFor(room) && "cursor-pointer"
                   )}
                 >
                   <TableCell>

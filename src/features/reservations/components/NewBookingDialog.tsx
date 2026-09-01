@@ -19,6 +19,13 @@ import {
 import { useCreateReservation, useReservations } from "../api/reservations"
 import { useRooms, useRoomTypes } from "@/features/rooms/api/rooms"
 import {
+  isBlockedAlways,
+  isRestrictedStatus,
+  roomBookingBlock,
+  statusLabel,
+  type BookingWindow,
+} from "@/features/rooms/lib/roomBookable"
+import {
   useGuests,
   useCreateGuest,
   uploadGuestFile,
@@ -608,6 +615,33 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
 
   const hourCount = bookingType === "HOURLY" ? hourlyDuration(watchInTime, watchOutTime) : 0
 
+  /* XONA HOLATI BO'YICHA TO'SIQ.
+
+     Ta'mir/tekshiruv/xizmatdan tashqari — holat almashtirilmaguncha hech
+     qanday sanaga bron qilinmaydi. Tozalash esa faqat mehmon aynan hozir
+     kirmoqchi bo'lsa to'sadi: u qisqa va o'z-o'zidan tugaydi, kelgusi
+     sanalarga xalaqit bermaydi.
+
+     Server ham xuddi shu qoidani qo'llaydi — bu yerdagisi xodim so'rov
+     yuborishdan oldin sababni ko'rishi uchun. */
+  const bookingWindow: BookingWindow = useMemo(
+    () => ({
+      bookingType,
+      checkInDate: watchFormDate,
+      checkOutDate: watchFormOutDate,
+      checkInAt: watchFormDate && watchInTime ? `${watchFormDate}T${watchInTime}` : null,
+      checkOutAt:
+        watchFormDate && watchInTime && watchOutTime
+          ? // Chiqish vaqti kirishdan kichik bo'lsa — keyingi kunga o'tadi
+            `${watchOutTime <= watchInTime ? addDaysStr(watchFormDate, 1) : watchFormDate}T${watchOutTime}`
+          : null,
+    }),
+    [bookingType, watchFormDate, watchFormOutDate, watchInTime, watchOutTime]
+  )
+  const roomBlockReason = activeRoom
+    ? roomBookingBlock(activeRoom, bookingWindow, new Date())
+    : null
+
   /* Hamrohlar hisobi. Mehmonlar soni kamaytirilsa ortiqcha tanlovlar
      yig'ilib qolmasligi uchun ro'yxat shu yerda qirqiladi. */
   const adultsCount = Math.max(Number(watch("adults")) || 1, 1)
@@ -850,6 +884,16 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
         presetRoom?.id === values.room_id
           ? presetRoom
           : rooms.find((r) => r.id === values.room_id)
+
+      // Xona holati yo'l qo'yadimi. Server ham tekshiradi, lekin sabab shu
+      // yerda aniqroq aytiladi — xodim nima qilishini biladi.
+      const blocked = chosenRoom
+        ? roomBookingBlock(chosenRoom, bookingWindow, new Date())
+        : null
+      if (blocked) {
+        showError(blocked)
+        return
+      }
       const branchId = chosenRoom?.branch_id || user?.branch_id || ""
       const hotelId = chosenRoom?.hotel_id || user?.hotel_id || undefined
 
@@ -1121,10 +1165,29 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
           >
             <option value="">Xonani tanlang</option>
             {rooms.map(r => (
-              <option key={r.id} value={r.id}>{r.room_number} ({r.room_type?.name}) - {getRoomPrice(r)} So'm</option>
+              <option
+                key={r.id}
+                value={r.id}
+                /* Ta'mir/tekshiruv/xizmatdan tashqari xonalar tanlanmaydi.
+                   Tozalanayotgani esa ro'yxatda qoladi — u kelgusi sanalarga
+                   bron qilinishi mumkin, faqat hozirgi payt uchun emas. */
+                disabled={isBlockedAlways(r.current_status)}
+              >
+                {r.room_number} ({r.room_type?.name}) - {getRoomPrice(r)} So'm
+                {isRestrictedStatus(r.current_status)
+                  ? ` — ${statusLabel(r.current_status)}`
+                  : ""}
+              </option>
             ))}
           </select>
           {errors.room_id && <p className="text-xs text-red-500">{errors.room_id.message}</p>}
+          {/* Sabab yuborishdan oldin ko'rinadi — xodim sanani o'zgartirsa
+              yoki tozalash tugasa yozuv o'zi yo'qoladi. */}
+          {roomBlockReason && (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              {roomBlockReason}
+            </p>
+          )}
         </div>
 
         {bookingType === "HOURLY" ? (

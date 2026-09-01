@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Plus, Layers } from "lucide-rea
 import { cn } from "@/lib/utils"
 import { RoomStatusNote } from "@/features/rooms/components/RoomStatusNote"
 import type { RoomStatusDetail } from "@/features/rooms/lib/roomStatusInfo"
+import { isBlockedAlways } from "@/features/rooms/lib/roomBookable"
 import { DEBT_BAR_CLASS, debtHint, debtLevelOf } from "../lib/booking"
 
 const DAY_MINUTES = 24 * 60
@@ -719,7 +720,14 @@ export function HourlyBoard({
                           <div className="flex h-full">
                             {visibleHours.map((h) => {
                               const slot = freeSlotAt(room.id, h)
-                              const clickable = canCreate && !!slot
+                              /* Ta'mir/tekshiruv/xizmatdan tashqari xonada
+                                 yangi bron boshlanmaydi — bo'sh soat ko'rinsa
+                                 ham. Tozalanayotgan xona bosiladi: dialog
+                                 sanaga qarab qaror qiladi. */
+                              const roomBlocked = isBlockedAlways(
+                                room.current_status
+                              )
+                              const clickable = canCreate && !!slot && !roomBlocked
                               const isPast = isToday && h < Math.floor(nowMin / 60)
                               const nextDay = h >= 24
                               return (
