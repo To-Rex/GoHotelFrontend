@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { format, subDays, startOfMonth } from "date-fns"
+import { format } from "date-fns"
 import { TrendingDown, Plus, Trash2, Loader2, User as UserIcon } from "lucide-react"
 import { useExpenses, useCreateExpense, useDeleteExpense } from "../api/expenses"
 import type { Expense } from "@/types/api"
@@ -25,6 +25,11 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import {
+  buildDatePresets,
+  isRangeInverted,
+  resolveDateRange,
+} from "@/lib/datePresets"
 import {
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
@@ -67,30 +72,43 @@ export const ExpensesPage = () => {
   const user = useAuthStore((s) => s.user)
 
   const todayStr = format(new Date(), "yyyy-MM-dd")
-  const [dateFrom, setDateFrom] = useState(todayStr)
-  const [dateTo, setDateTo] = useState(todayStr)
 
-  const { data: expenses = [], isLoading } = useExpenses(dateFrom, dateTo)
+  /* Davr tanlash. Qaysi tugma bosilgani KALIT sifatida saqlanadi, sanalarga
+     qarab topilmaydi: ikki davr bir xil oraliqqa tushishi mumkin (oyning
+     1-kunida "Shu oy" = "Bugun", 7-kunida "Shu oy" = "Oxirgi 7 kun") va
+     o'shanda tanlov noto'g'ri tugmada qolib ketardi. Batafsil izoh
+     `lib/datePresets.ts` da. */
+  const [presetKey, setPresetKey] = useState<string | null>("today")
+  const [custom, setCustom] = useState({ from: todayStr, to: todayStr })
+
+  // Kun almashsa tugmalar sanasi ham yangilanadi — sahifa yarim tundan
+  // o'tib ketsa "Bugun" kechagi kunda qolib ketmasin.
+  const presets = useMemo(() => buildDatePresets(new Date(todayStr)), [todayStr])
+  const { from: dateFrom, to: dateTo } = resolveDateRange(
+    presets,
+    presetKey,
+    custom
+  )
+  const rangeInverted = isRangeInverted(dateFrom, dateTo)
+
+  const selectPreset = (p: { key: string; from: string; to: string }) => {
+    setPresetKey(p.key)
+    // Qo'lda tahrirlashga o'tilganda shu sanalardan davom etsin
+    setCustom({ from: p.from, to: p.to })
+  }
+
+  const editRange = (next: { from: string; to: string }) => {
+    setCustom(next)
+    setPresetKey(null)
+  }
+
+  const {
+    data: expenses = [],
+    isLoading,
+    isFetching,
+  } = useExpenses(dateFrom, dateTo, true, { keepPrevious: true })
   const createMutation = useCreateExpense()
   const deleteMutation = useDeleteExpense()
-
-  const presets = [
-    { key: "today", label: "Bugun", from: todayStr, to: todayStr },
-    {
-      key: "week",
-      label: "Oxirgi 7 kun",
-      from: format(subDays(new Date(), 6), "yyyy-MM-dd"),
-      to: todayStr,
-    },
-    {
-      key: "month",
-      label: "Shu oy",
-      from: format(startOfMonth(new Date()), "yyyy-MM-dd"),
-      to: todayStr,
-    },
-    { key: "all", label: "Barcha davr", from: "", to: "" },
-  ]
-  const activePreset = presets.find((p) => p.from === dateFrom && p.to === dateTo)?.key
 
   // Eski backendda date_from/date_to bo'lmasa ham to'g'ri ishlashi uchun
   // mijoz tomonida ham filtrlaymiz
@@ -193,6 +211,11 @@ export const ExpensesPage = () => {
               ? `Davr: ${dateFrom || "..."} — ${dateTo || "..."}`
               : "Davr: barcha davr"}{" "}
             · {filtered.length} ta chiqim
+            {/* Davr almashganda eski ro'yxat joyida qoladi, shuning uchun
+                yangilanayotganini shu kichik belgi bildiradi. */}
+            {isFetching && (
+              <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin text-gray-400" />
+            )}
           </p>
         </div>
         {canCreate && (
@@ -210,13 +233,11 @@ export const ExpensesPage = () => {
             <button
               key={p.key}
               type="button"
-              onClick={() => {
-                setDateFrom(p.from)
-                setDateTo(p.to)
-              }}
+              onClick={() => selectPreset(p)}
+              aria-pressed={presetKey === p.key}
               className={cn(
                 "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
-                activePreset === p.key
+                presetKey === p.key
                   ? "border-primary-600 bg-primary-50 text-primary-700"
                   : "border-gray-200 text-gray-600 hover:bg-gray-50"
               )}
@@ -233,7 +254,7 @@ export const ExpensesPage = () => {
               className="w-40"
               value={dateFrom}
               max={dateTo || undefined}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => editRange({ from: e.target.value, to: dateTo })}
             />
           </div>
           <div className="space-y-1">
@@ -243,11 +264,21 @@ export const ExpensesPage = () => {
               className="w-40"
               value={dateTo}
               min={dateFrom || undefined}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => editRange({ from: dateFrom, to: e.target.value })}
             />
           </div>
         </div>
       </div>
+
+      {/* Teskari oraliqda ro'yxat doim bo'sh chiqadi. Buni aytmasak,
+          "xarajatlar yo'q" degan yozuv sanalar almashib qolganini emas,
+          xarajat yozilmaganini bildirayotgandek tuyuladi. */}
+      {rangeInverted && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          Boshlanish sanasi tugash sanasidan keyin turibdi — shuning uchun
+          ro'yxat bo'sh. Sanalarni almashtirib ko'ring.
+        </p>
+      )}
 
       {/* Jami + kategoriyalar taqsimoti */}
       <div className="flex flex-wrap items-center gap-3">

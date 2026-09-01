@@ -1,10 +1,30 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Expense } from '@/types/api';
 
+interface ExpensesOptions {
+  // Davr almashganda eski ro'yxatni ekranda ushlab turish. Sana o'zgarishi
+  // yangi queryKey degani, ya'ni so'rov noldan boshlanadi va sahifa bir
+  // lahzaga bo'shab qoladi — davr tugmalari bilan birga. Bu chaqiruvchi
+  // uchun tugma bosilmagandek tuyuladi, shuning uchun xarajatlar sahifasi
+  // buni yoqadi. Boshqa joylarda (smena hisoboti) eski davr raqamlari bir
+  // lahza ko'rinib qolgani yaxshi emas — shuning uchun ixtiyoriy.
+  keepPrevious?: boolean;
+}
+
 // Xarajatlar ro'yxati — sana oralig'i ixtiyoriy. `enabled` bilan ruxsati
 // yo'q foydalanuvchilar uchun so'rov umuman yuborilmaydi (403 oldini oladi).
-export const useExpenses = (dateFrom?: string, dateTo?: string, enabled = true) => {
+export const useExpenses = (
+  dateFrom?: string,
+  dateTo?: string,
+  enabled = true,
+  options: ExpensesOptions = {},
+) => {
   return useQuery({
     queryKey: ['expenses', dateFrom, dateTo],
     queryFn: async () => {
@@ -18,6 +38,7 @@ export const useExpenses = (dateFrom?: string, dateTo?: string, enabled = true) 
       return Array.isArray(data) ? data : [];
     },
     enabled,
+    placeholderData: options.keepPrevious ? keepPreviousData : undefined,
   });
 };
 

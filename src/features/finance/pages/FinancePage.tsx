@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { format, subDays, startOfMonth } from "date-fns"
+import { format } from "date-fns"
 import {
   Wallet,
   ReceiptText,
@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { buildDatePresets, resolveDateRange } from "@/lib/datePresets"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 
 const selectClass =
@@ -58,9 +59,35 @@ export const FinancePage = () => {
   const todayStr = format(new Date(), "yyyy-MM-dd")
 
   // Standart holat — bugungi hisobot
-  const [dateFrom, setDateFrom] = useState(todayStr)
-  const [dateTo, setDateTo] = useState(todayStr)
+  /* Tanlangan davr kalit sifatida saqlanadi, sanalarga qarab topilmaydi:
+     "Shu oy" oyning 1-kunida "Bugun" bilan, 7-kunida "Oxirgi 7 kun" bilan
+     bir xil oraliq beradi va o'shanda tanlov noto'g'ri tugmada qolardi.
+     Izoh `lib/datePresets.ts` da. */
+  const [presetKey, setPresetKey] = useState<string | null>("today")
+  const [custom, setCustom] = useState({ from: todayStr, to: todayStr })
   const [statusFilter, setStatusFilter] = useState("")
+
+  // Tez tanlovlar: bugungi/kechagi kun, 7 kun, shu oy, barcha davr.
+  // Kun almashsa sanalar ham yangilanadi.
+  const presets = useMemo(
+    () => buildDatePresets(new Date(todayStr), { withYesterday: true }),
+    [todayStr]
+  )
+  const { from: dateFrom, to: dateTo } = resolveDateRange(
+    presets,
+    presetKey,
+    custom
+  )
+
+  const selectPreset = (p: { key: string; from: string; to: string }) => {
+    setPresetKey(p.key)
+    setCustom({ from: p.from, to: p.to })
+  }
+
+  const editRange = (next: { from: string; to: string }) => {
+    setCustom(next)
+    setPresetKey(null)
+  }
 
   const {
     data: invoices = [],
@@ -89,31 +116,6 @@ export const FinancePage = () => {
   const { data: shopDebts = [] } = useShopSales(undefined, undefined, {
     status: "PENDING",
   })
-
-  // Tez tanlovlar: bugungi/kechagi kun, 7 kun, shu oy, barcha davr
-  const presets = [
-    { key: "today", label: "Bugun", from: todayStr, to: todayStr },
-    {
-      key: "yesterday",
-      label: "Kecha",
-      from: format(subDays(new Date(), 1), "yyyy-MM-dd"),
-      to: format(subDays(new Date(), 1), "yyyy-MM-dd"),
-    },
-    {
-      key: "week",
-      label: "Oxirgi 7 kun",
-      from: format(subDays(new Date(), 6), "yyyy-MM-dd"),
-      to: todayStr,
-    },
-    {
-      key: "month",
-      label: "Shu oy",
-      from: format(startOfMonth(new Date()), "yyyy-MM-dd"),
-      to: todayStr,
-    },
-    { key: "all", label: "Barcha davr", from: "", to: "" },
-  ]
-  const activePreset = presets.find((p) => p.from === dateFrom && p.to === dateTo)?.key
 
   // Sana oralig'i bo'yicha mijoz tomonida ham filtrlaymiz — backend eski
   // versiyada bo'lsa (date_from/date_to parametrlarini bilmasa) ham hisobot
@@ -402,13 +404,11 @@ export const FinancePage = () => {
             <button
               key={p.key}
               type="button"
-              onClick={() => {
-                setDateFrom(p.from)
-                setDateTo(p.to)
-              }}
+              onClick={() => selectPreset(p)}
+              aria-pressed={presetKey === p.key}
               className={cn(
                 "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
-                activePreset === p.key
+                presetKey === p.key
                   ? "border-primary-600 bg-primary-50 text-primary-700"
                   : "border-gray-200 text-gray-600 hover:bg-gray-50"
               )}
@@ -425,7 +425,7 @@ export const FinancePage = () => {
               className="w-40"
               value={dateFrom}
               max={dateTo || undefined}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => editRange({ from: e.target.value, to: dateTo })}
             />
           </div>
           <div className="space-y-1">
@@ -435,7 +435,7 @@ export const FinancePage = () => {
               className="w-40"
               value={dateTo}
               min={dateFrom || undefined}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => editRange({ from: dateFrom, to: e.target.value })}
             />
           </div>
         </div>
