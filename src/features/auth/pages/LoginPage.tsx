@@ -20,14 +20,13 @@ import {
   Loader2,
   Lock,
   Moon,
-  ScanFace,
   Sun,
   User,
 } from "lucide-react";
 import {
-  getFaceAvailability,
   hasCamera,
-  faceLogin,
+  verifyFaceLogin,
+  loginWithoutCamera,
   faceErrorMessage,
 } from "@/features/auth/api/face";
 import { FaceCameraDialog } from "@/features/auth/components/FaceCameraDialog";
@@ -131,34 +130,48 @@ export const LoginPage = () => {
     document.title = "GoHotel";
   }, []);
 
-  // "Yuz bilan kirish" tugmasi FAQAT: (a) serverda yuz-kirish yoqilgan va
-  // kamida bitta xodim yuz biriktirgan, (b) qurilmada kamera bor bo'lsa
-  // ko'rinadi — aks holda umuman so'ralmaydi
-  const [faceEnabled, setFaceEnabled] = useState(false);
+  /* IKKI BOSQICHLI KIRISH.
+
+     Birinchi bosqich — login va parol. Xodim yuz biriktirgan bo'lsa server
+     tokenlarni bermaydi, o'rniga qisqa muddatli `face_token` qaytaradi va
+     kirish shu yerda to'xtaydi. Ikkinchi bosqich — kamera oynasi.
+
+     Yuzning o'zi bilan kirish YO'Q: ilgari login sahifasida "Yuz bilan
+     kirish" tugmasi bor edi va u parolni butunlay chetlab o'tardi. */
+  const [faceToken, setFaceToken] = useState<string | null>(null);
   const [faceOpen, setFaceOpen] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([getFaceAvailability(), hasCamera()]).then(([avail, cam]) => {
-      if (!cancelled) setFaceEnabled(avail && cam);
+
+  /** Tokenlar kelgach sessiyani ochish — ikkala yo'l uchun umumiy. */
+  const finishLogin = async (tokens: { access_token: string; refresh_token: string }) => {
+    localStorage.setItem("accessToken", tokens.access_token);
+    localStorage.setItem("refreshToken", tokens.refresh_token);
+    const profileRes = await api.get("/auth/me", {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    setAuth(profileRes.data, tokens.access_token, tokens.refresh_token);
+    navigate("/start");
+  };
 
   const handleFaceCapture = async (photo: Blob): Promise<string | null> => {
+    if (!faceToken) return "Kirish seansi tugadi — qaytadan urinib ko'ring";
     try {
-      const data = await faceLogin(photo);
-      localStorage.setItem("accessToken", data.access_token);
-      localStorage.setItem("refreshToken", data.refresh_token);
-      const profileRes = await api.get("/auth/me", {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-      setAuth(profileRes.data, data.access_token, data.refresh_token);
-      navigate("/start");
+      await finishLogin(await verifyFaceLogin(faceToken, photo));
       return null;
     } catch (err) {
       return faceErrorMessage(err);
+    }
+  };
+
+  /* Oyna yopilsa kirish TUGALLANMAYDI. Foydalanuvchi parolni to'g'ri
+     kiritgan bo'lsa ham, yuz tekshiruvidan o'tmasa ichkariga kira
+     olmaydi — challenge shu yerda bekor qilinadi. */
+  const closeFaceStep = (open: boolean) => {
+    setFaceOpen(open);
+    if (!open) {
+      setFaceToken(null);
+      setError(
+        "Yuz tekshiruvi tugallanmadi. Kirish uchun uni o'tashingiz kerak."
+      );
     }
   };
 
@@ -176,15 +189,21 @@ export const LoginPage = () => {
       setError(null);
       const { data } = await api.post("/auth/login", values);
 
-      localStorage.setItem("accessToken", data.access_token);
-      localStorage.setItem("refreshToken", data.refresh_token);
+      if (data?.face_required && data?.face_token) {
+        /* Yuz biriktirgan xodim. Kamera bo'lsa — ikkinchi bosqich; bo'lmasa
+           parol bilan kiritiladi, chunki tekshirishning imkoni yo'q. */
+        if (await hasCamera()) {
+          setFaceToken(data.face_token);
+          setFaceOpen(true);
+          return;
+        }
+        await finishLogin(
+          await loginWithoutCamera(data.face_token, "qurilmada kamera topilmadi")
+        );
+        return;
+      }
 
-      const profileRes = await api.get("/auth/me", {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-
-      setAuth(profileRes.data, data.access_token, data.refresh_token);
-      navigate("/start");
+      await finishLogin(data);
     } catch (err: any) {
       console.error("Login error", err);
       // 401 — noto'g'ri login/parol; boshqa xatolarda umumiy matn
@@ -478,28 +497,21 @@ export const LoginPage = () => {
                 )}
               </Button>
 
-              {/* Yuz bilan kirish — faqat qo'llab-quvvatlanadigan holatda */}
-              {faceEnabled && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setFaceOpen(true)}
-                  className="h-11 w-full gap-2 rounded-xl border-zinc-200 bg-white font-semibold text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900"
-                >
-                  <ScanFace size={18} />
-                  Yuz bilan kirish
-                </Button>
-              )}
+              {/* Yuz bilan to'g'ridan-to'g'ri kirish tugmasi OLIB
+                  TASHLANDI: u parolni butunlay chetlab o'tardi. Yuz endi
+                  ikkinchi bosqich va parol tekshirilgandan keyin
+                  so'raladi. */}
             </form>
           </Form>
         </div>
 
+        {/* Ikkinchi bosqich. Yopilsa kirish tugallanmaydi. */}
         <FaceCameraDialog
           open={faceOpen}
-          onOpenChange={setFaceOpen}
-          title="Yuz bilan kirish"
-          actionLabel="Qo'lda kirish"
-          hint="Yuzingizni oval ramkaga joylang — tanilishi bilan avtomatik kirasiz"
+          onOpenChange={closeFaceStep}
+          title="Yuzni tasdiqlang"
+          actionLabel="Bekor qilish"
+          hint="Ikkinchi bosqich: yuzingizni oval ramkaga joylang. Bu hisobga faqat uning egasi kira oladi."
           auto
           onCapture={handleFaceCapture}
         />

@@ -5,6 +5,7 @@ import { api, API_URL } from '@/lib/api';
    hisoblanib xodimlar profillari bilan solishtiriladi — brauzerga model
    yuklab olinmaydi (tez va yengil). */
 
+/** Serverda yuz tekshiruvi dvigateli ishlaydimi. */
 export const getFaceAvailability = async (): Promise<boolean> => {
   try {
     const { data } = await api.get<{ available: boolean }>('/auth/face/availability');
@@ -27,18 +28,44 @@ export const hasCamera = async (): Promise<boolean> => {
   }
 };
 
-export const faceLogin = async (photo: Blob) => {
+export interface IssuedTokens {
+  access_token: string;
+  refresh_token: string;
+}
+
+/**
+ * Kirishning IKKINCHI bosqichi: login-parol to'g'ri kelgach yuzni tekshirish.
+ *
+ * `faceToken` birinchi bosqichdan keladi va aynan bitta xodimni ko'rsatadi —
+ * server kadrni faqat o'sha xodimning profillari bilan solishtiradi. Shu
+ * tufayli parolni bilgan odam boshqa birovning yuzi bilan kira olmaydi.
+ *
+ * DIQQAT: global `api` emas, toza axios. Yuz mos kelmaganda backend 401
+ * qaytaradi — global interceptor esa har 401 da sahifani /login'ga qayta
+ * yuklab, sababni ko'rsatishga ulgurmasdi.
+ */
+export const verifyFaceLogin = async (faceToken: string, photo: Blob) => {
   const form = new FormData();
+  form.append('face_token', faceToken);
   form.append('file', photo, 'face.jpg');
-  // DIQQAT: global `api` emas, toza axios ishlatiladi. Yuz tanilmaganda
-  // backend 401 qaytaradi — global interceptor esa har 401 da sahifani
-  // /login'ga qayta yuklab, "begona shaxs" xabarini ko'rsatishga ulgurmasdi
-  const { data } = await axios.post(`${API_URL}/auth/face/login`, form);
-  return data as {
-    access_token: string;
-    refresh_token: string;
-    user: any;
-  };
+  const { data } = await axios.post(`${API_URL}/auth/face/verify-login`, form);
+  return data as IssuedTokens;
+};
+
+/**
+ * Kamerasiz qurilmada ikkinchi bosqichni o'tkazib yuborish.
+ *
+ * Kamera bor-yo'qligini faqat qurilmaning o'zi biladi, shuning uchun bu
+ * qaror shu yerdan keladi. Lekin parolsiz ochilmaydi: `faceToken` faqat
+ * login va parol to'g'ri kelganda beriladi va besh daqiqada kuchini
+ * yo'qotadi.
+ */
+export const loginWithoutCamera = async (faceToken: string, reason: string) => {
+  const { data } = await axios.post(`${API_URL}/auth/login/no-camera`, {
+    face_token: faceToken,
+    reason,
+  });
+  return data as IssuedTokens;
 };
 
 export const getFaceStatus = async () => {
