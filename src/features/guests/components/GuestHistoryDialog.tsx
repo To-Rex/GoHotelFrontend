@@ -1,12 +1,17 @@
+import { useMemo, useState } from "react"
 import {
   BedDouble,
   CalendarDays,
+  CalendarSearch,
+  CheckCircle2,
   Clock,
   DoorOpen,
+  FilterX,
   Loader2,
   Phone,
   UserCheck,
   Users,
+  XCircle,
 } from "lucide-react"
 
 import {
@@ -17,10 +22,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { apiErrorMessage } from "@/lib/apiError"
 import { cn } from "@/lib/utils"
 import type { Guest } from "@/types/api"
 import { useGuestHistory, type GuestStay } from "../api/guestHistory"
+import {
+  EMPTY_STAY_FILTER,
+  filterStays,
+  hasStayFilter,
+  presenceVerdict,
+  type StayDateFilter,
+} from "../lib/guestStays"
 
 /**
  * Mehmonning to'liq tarixi: qachon, qaysi xonada, kim bilan turgan.
@@ -201,7 +214,19 @@ interface Props {
 export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
   const { data, isLoading, error } = useGuestHistory(guest?.id)
   const summary = data?.summary
-  const stays = data?.stays || []
+  const stays = useMemo(() => data?.stays || [], [data])
+
+  /* Sana bo'yicha tekshirish. "Bu mehmon falon kuni kelganmi?" — resepsiya
+     eng ko'p so'raydigan savol, va unga tarixni ko'z bilan qidirmasdan
+     javob berish kerak. Mantiq `lib/guestStays` da va test bilan
+     qulflangan: chiqish kunida mehmon endi xonada emas. */
+  const [dateFilter, setDateFilter] = useState<StayDateFilter>(EMPTY_STAY_FILTER)
+  const filtered = useMemo(() => filterStays(stays, dateFilter), [stays, dateFilter])
+  const verdict = useMemo(
+    () => presenceVerdict(stays, dateFilter),
+    [stays, dateFilter]
+  )
+  const filterOn = hasStayFilter(dateFilter)
 
   return (
     <Dialog open={!!guest} onOpenChange={(open) => !open && onClose()}>
@@ -272,14 +297,123 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
               </p>
             )}
 
+            {/* SANA BO'YICHA TEKSHIRISH */}
+            {stays.length > 0 && (
+              <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50/60 p-2.5">
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-gray-500">
+                      Sanadan
+                    </label>
+                    <Input
+                      type="date"
+                      className="h-8 w-[140px] bg-white text-xs"
+                      value={dateFilter.from}
+                      max={dateFilter.to || undefined}
+                      onChange={(e) =>
+                        setDateFilter((p) => ({ ...p, from: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-gray-500">
+                      Sanagacha
+                    </label>
+                    <Input
+                      type="date"
+                      className="h-8 w-[140px] bg-white text-xs"
+                      value={dateFilter.to}
+                      min={dateFilter.from || undefined}
+                      onChange={(e) =>
+                        setDateFilter((p) => ({ ...p, to: e.target.value }))
+                      }
+                    />
+                  </div>
+                  {/* Bitta kunni tekshirish eng ko'p kerak bo'ladi —
+                      ikkala maydonni qo'lda to'ldirish shart bo'lmasin */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => {
+                      const today = new Date()
+                      const pad = (n: number) => String(n).padStart(2, "0")
+                      const d = `${today.getFullYear()}-${pad(
+                        today.getMonth() + 1
+                      )}-${pad(today.getDate())}`
+                      setDateFilter({ from: d, to: d })
+                    }}
+                  >
+                    <CalendarSearch className="mr-1 h-3.5 w-3.5" />
+                    Bugun
+                  </Button>
+                  {filterOn && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-gray-500"
+                      onClick={() => setDateFilter(EMPTY_STAY_FILTER)}
+                    >
+                      <FilterX className="mr-1 h-3.5 w-3.5" />
+                      Tozalash
+                    </Button>
+                  )}
+                </div>
+
+                {/* JAVOB. Xodim ro'yxatni ko'z bilan qidirmasin — savolga
+                    to'g'ridan-to'g'ri javob beriladi. */}
+                {filterOn && (
+                  <p
+                    className={cn(
+                      "flex items-start gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-medium",
+                      verdict.present
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-gray-200 bg-white text-gray-600"
+                    )}
+                  >
+                    {verdict.present ? (
+                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                    )}
+                    <span>
+                      {verdict.day
+                        ? verdict.present
+                          ? `Ha — ${fmtDate(verdict.day)} kuni bu yerda turgan${
+                              verdict.room ? `, ${verdict.room}-xonada` : ""
+                            }.`
+                          : `Yo'q — ${fmtDate(verdict.day)} kuni bu yerda turmagan.`
+                        : verdict.present
+                          ? `Bu davrda ${verdict.count} marta turgan.`
+                          : "Bu davrda umuman turmagan."}
+                    </span>
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="max-h-[50vh] space-y-2.5 overflow-y-auto pr-0.5">
               {stays.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-12 text-gray-400">
                   <BedDouble className="h-8 w-8" />
                   <p className="text-sm">Bu mehmon hali turmagan</p>
                 </div>
+              ) : filtered.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-10 text-gray-400">
+                  <CalendarSearch className="h-8 w-8" />
+                  <p className="text-sm">Tanlangan sanada turish topilmadi</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDateFilter(EMPTY_STAY_FILTER)}
+                  >
+                    Butun tarixni ko'rsatish
+                  </Button>
+                </div>
               ) : (
-                stays.map((stay) => <StayCard key={stay.id} stay={stay} />)
+                filtered.map((stay) => <StayCard key={stay.id} stay={stay} />)
               )}
             </div>
           </>
