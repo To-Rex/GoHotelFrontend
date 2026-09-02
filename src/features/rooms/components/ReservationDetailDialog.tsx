@@ -1,14 +1,8 @@
-import { useState } from "react"
-
 import {
   ArrowRight,
   Banknote,
   BadgeCheck,
   Cake,
-  Check,
-  Loader2,
-  Pencil,
-  X,
   CalendarDays,
   Clock,
   DoorOpen,
@@ -34,11 +28,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { ReservationReceiptButton } from "@/features/reservations/components/ReservationReceiptButton"
-import { useUpdateGuest } from "@/features/guests/api/guests"
-import { usePermissions } from "@/lib/permissions"
-import { apiErrorMessage } from "@/lib/apiError"
+import { GuestContactEditor } from "@/features/guests/components/GuestContactEditor"
 import { cn } from "@/lib/utils"
 import type { RoomReservation, ReservationOccupant } from "../api/rooms"
 import {
@@ -183,43 +174,6 @@ const Fact = ({
  * og'irlashtirardi.
  */
 const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
-  const { can } = usePermissions()
-  const updateGuest = useUpdateGuest()
-
-  const [editing, setEditing] = useState(false)
-  const [phone, setPhone] = useState("")
-  const [passport, setPassport] = useState("")
-  const [error, setError] = useState<string | null>(null)
-
-  // Bazada yozuvi bo'lmagan hamrohni tahrirlab bo'lmaydi — o'zgartirish
-  // yoziladigan joy yo'q
-  const canEdit = can("guest.update") && !!person.guest_id
-
-  const startEdit = () => {
-    setPhone(person.phone || "")
-    setPassport(person.passport_number || "")
-    setError(null)
-    setEditing(true)
-  }
-
-  const save = async () => {
-    if (!person.guest_id) return
-    setError(null)
-    try {
-      /* Bo'sh satr maydonni TOZALAYDI — mehmonlar sahifasidagi bilan bir xil
-         xatti-harakat. Xato kiritilgan raqamni o'chirib qo'yish ham kerak
-         bo'ladi. */
-      await updateGuest.mutateAsync({
-        id: person.guest_id,
-        phone: phone.trim(),
-        passport_number: passport.trim(),
-      })
-      setEditing(false)
-    } catch (e) {
-      setError(apiErrorMessage(e))
-    }
-  }
-
   const doc =
     [person.id_document_type, person.id_document_number]
       .filter(Boolean)
@@ -250,84 +204,8 @@ const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
             Yuz
           </span>
         )}
-        {canEdit && !editing && (
-          <button
-            type="button"
-            onClick={startEdit}
-            title="Telefon va passportni tahrirlash"
-            className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-gray-500 hover:bg-white hover:text-primary-700"
-          >
-            <Pencil className="h-3 w-3" />
-            Tahrirlash
-          </button>
-        )}
       </div>
 
-      {editing ? (
-        <div className="mt-2 space-y-2">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-gray-500">
-                Telefon
-              </label>
-              <Input
-                className="h-8 text-xs"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+998 90 123 45 67"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-gray-500">
-                Passport raqami
-              </label>
-              <Input
-                className="h-8 text-xs"
-                value={passport}
-                onChange={(e) => setPassport(e.target.value)}
-                placeholder="AA1234567"
-              />
-            </div>
-          </div>
-
-          {error && (
-            <p className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-600">
-              {error}
-            </p>
-          )}
-
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={save}
-              disabled={updateGuest.isPending}
-            >
-              {updateGuest.isPending ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <Check className="mr-1 h-3 w-3" />
-              )}
-              Saqlash
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setEditing(false)}
-              disabled={updateGuest.isPending}
-            >
-              <X className="mr-1 h-3 w-3" />
-              Bekor qilish
-            </Button>
-            <span className="text-[11px] text-gray-400">
-              Bo'sh qoldirilsa maydon tozalanadi
-            </span>
-          </div>
-        </div>
-      ) : (
       <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
         <Fact icon={Phone} value={person.phone} title="Telefon" />
         <Fact icon={Mail} value={person.email} title="Email" />
@@ -346,7 +224,14 @@ const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
         <Fact icon={MapPinned} value={person.address} title="Manzil" />
         <Fact icon={StickyNote} value={person.notes} title="Mehmon haqida izoh" />
       </div>
-      )}
+
+      {/* Telefon va passportni shu yerning o'zida to'g'rilash */}
+      <GuestContactEditor
+        guestId={person.guest_id}
+        phone={person.phone}
+        passport={person.passport_number}
+        className="mt-1.5"
+      />
 
       {/* Bronda ismi bor, lekin bazada topilmagan hamroh: o'chirilgan
           bo'lishi mumkin. Yozuv yo'qolmagani, faqat kartochkasi yo'qligi

@@ -51,6 +51,7 @@ import {
 } from "@/features/settings/api/discountRules"
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
+import { GuestContactEditor } from "@/features/guests/components/GuestContactEditor"
 import {
   fetchSightingFile,
   useEnrollSighting,
@@ -1363,6 +1364,15 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                       O'zgartirish
                     </button>
                   </div>
+                  {/* Telefon yoki passport xato kiritilgan bo'lsa shu
+                      yerning o'zida to'g'rilanadi — bron yaratishni to'xtatib,
+                      mehmonlar sahifasiga o'tish shart emas. */}
+                  <GuestContactEditor
+                    guestId={selectedGuestObj.id}
+                    phone={selectedGuestObj.phone}
+                    passport={selectedGuestObj.passport_number}
+                    className="border-t border-primary-200/70 pt-2"
+                  />
                   {/* Mavjud mehmonning yuzi bo'lmasa — hoziroq biriktirish.
                       Mehmon allaqachon bor, shuning uchun bron saqlanishini
                       kutmaydi: darhol biriktiriladi va natija shu yerda
