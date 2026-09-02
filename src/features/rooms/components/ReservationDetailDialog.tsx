@@ -33,6 +33,8 @@ import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
 import { cn } from "@/lib/utils"
 import type { RoomReservation, ReservationOccupant } from "../api/rooms"
 import {
+  checkInDateLabel,
+  checkOutDateLabel,
   debtOf,
   formatDate,
   formatDateTime,
@@ -332,8 +334,11 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
                 : `Kunlik${nights ? ` · ${nights} kecha` : ""}`}
             </p>
             <div className="mt-2 border-t border-gray-100 pt-2">
-              <Row label="Kirish sanasi" value={formatDate(res.check_in_date)} />
-              <Row label="Chiqish sanasi" value={formatDate(res.check_out_date)} />
+              {/* Sanalar aniq vaqt bilan bir manbadan olinadi — soatlik
+                  bronda `check_out_date` ga ishonib bo'lmaydi, izoh
+                  `lib/reservationDetail.ts` da */}
+              <Row label="Kirish sanasi" value={checkInDateLabel(res)} />
+              <Row label="Chiqish sanasi" value={checkOutDateLabel(res)} />
               <Row
                 label="Chiqish so'ralgan"
                 value={formatDateTime(res.checkout_requested_at)}

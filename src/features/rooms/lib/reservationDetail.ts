@@ -49,6 +49,48 @@ export function isHourly(res: RoomReservation): boolean {
   return (res.booking_type || "").toUpperCase() === "HOURLY"
 }
 
+/**
+ * Aniq vaqtdan sana — ko'rsatiladigan SOAT bilan bir manbadan.
+ *
+ * Nega shunday: sanani `check_out_date` dan, soatni esa
+ * `check_out_datetime` dan olsak, ular bir-biriga zid chiqishi mumkin. Bir
+ * manbadan olinsa bunday bo'lishi imkonsiz.
+ */
+export function localDateOf(value?: string | null): string | null {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
+}
+
+/**
+ * Kirish sanasi.
+ *
+ * Soatlik bronda aniq vaqtdan olinadi, kunlikda esa sana maydonidan.
+ */
+export function checkInDateLabel(res: RoomReservation): string | null {
+  if (isHourly(res)) {
+    return localDateOf(res.check_in_datetime) || formatDate(res.check_in_date)
+  }
+  return formatDate(res.check_in_date)
+}
+
+/**
+ * Chiqish sanasi.
+ *
+ * Soatlik bronda `check_out_date` ga ISHONIB BO'LMAYDI: bazada
+ * `check_out_date > check_in_date` cheklovi bor, shuning uchun bir kunlik
+ * soatlik bron uchun server u yerga ertangi kunni yozib qo'yadi. Ya'ni
+ * 19:56–21:56 oralig'idagi bron "chiqish sanasi: ertaga" bo'lib
+ * ko'rinardi. Haqiqiy chiqish payti — `check_out_datetime`.
+ */
+export function checkOutDateLabel(res: RoomReservation): string | null {
+  if (isHourly(res)) {
+    return localDateOf(res.check_out_datetime) || formatDate(res.check_out_date)
+  }
+  return formatDate(res.check_out_date)
+}
+
 /** Kunlik bron uchun kechalar soni. Soatlikda 0. */
 export function nightCount(res: RoomReservation): number {
   if (isHourly(res)) return 0
@@ -75,10 +117,16 @@ export function hourCount(res: RoomReservation): number {
  */
 export function stayLabel(res: RoomReservation): string {
   if (isHourly(res)) {
-    const day = formatDate(res.check_in_date) || res.check_in_date
+    // Kun ham vaqt bilan bir manbadan — ular zid chiqmasligi uchun
+    const day = checkInDateLabel(res) || res.check_in_date
     const from = timeOf(res.check_in_datetime)
     const to = timeOf(res.check_out_datetime)
-    return from && to ? `${day}, ${from} – ${to}` : day
+    if (!from || !to) return day
+    // Tunni kesib o'tgan bron: chiqish boshqa kunda
+    const endDay = checkOutDateLabel(res)
+    return endDay && endDay !== day
+      ? `${day}, ${from} – ${endDay}, ${to}`
+      : `${day}, ${from} – ${to}`
   }
   const from = formatDate(res.check_in_date) || res.check_in_date
   const to = formatDate(res.check_out_date) || res.check_out_date

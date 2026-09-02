@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest"
 import type { RoomReservation } from "../api/rooms"
 import {
+  checkInDateLabel,
+  checkOutDateLabel,
   debtOf,
   formatDate,
   formatDateTime,
@@ -131,10 +133,64 @@ describe("stayLabel", () => {
     expect(stayLabel(res({ booking_type: "HOURLY" }))).toBe("01.09.2026")
   })
 
+  it("tunni kesib o'tgan soatlik bronda ikkala kun ham ko'rinadi", () => {
+    const r = res({
+      booking_type: "HOURLY",
+      check_in_date: "2026-09-02",
+      check_out_date: "2026-09-03",
+      check_in_datetime: new Date(2026, 8, 2, 22, 0).toISOString(),
+      check_out_datetime: new Date(2026, 8, 3, 2, 0).toISOString(),
+    })
+    expect(stayLabel(r)).toBe("02.09.2026, 22:00 – 03.09.2026, 02:00")
+  })
+
   it("buzuq sanada yozuv yo'qolmaydi — xom qiymat chiqadi", () => {
     expect(stayLabel(res({ check_in_date: "xx", check_out_date: "yy" }))).toBe(
       "xx → yy"
     )
+  })
+})
+
+describe("checkInDateLabel / checkOutDateLabel", () => {
+  /* Soatlik bronda `check_out_date` HAQIQIY sana emas: bazada
+     check_out_date > check_in_date cheklovi bor, shuning uchun bir kunlik
+     soatlik bron uchun server u yerga ertangi kunni yozib qo'yadi.
+     Aynan shu sabab "19:56–21:56" bronida chiqish sanasi ertaga bo'lib
+     ko'rinardi. */
+
+  it("kunlik bronda sana maydonlaridan olinadi", () => {
+    const r = res({ check_in_date: "2026-09-01", check_out_date: "2026-09-03" })
+    expect(checkInDateLabel(r)).toBe("01.09.2026")
+    expect(checkOutDateLabel(r)).toBe("03.09.2026")
+  })
+
+  it("soatlik bronda ertangi kun EMAS, haqiqiy chiqish sanasi", () => {
+    const r = res({
+      booking_type: "HOURLY",
+      check_in_date: "2026-09-02",
+      // Server cheklov tufayli ertangi kunni yozib qo'ygan
+      check_out_date: "2026-09-03",
+      check_in_datetime: new Date(2026, 8, 2, 19, 56).toISOString(),
+      check_out_datetime: new Date(2026, 8, 2, 21, 56).toISOString(),
+    })
+    expect(checkInDateLabel(r)).toBe("02.09.2026")
+    expect(checkOutDateLabel(r)).toBe("02.09.2026")
+  })
+
+  it("tunni kesib o'tgan soatlik bronda chiqish ertangi kun", () => {
+    const r = res({
+      booking_type: "HOURLY",
+      check_in_date: "2026-09-02",
+      check_out_date: "2026-09-03",
+      check_in_datetime: new Date(2026, 8, 2, 22, 0).toISOString(),
+      check_out_datetime: new Date(2026, 8, 3, 2, 0).toISOString(),
+    })
+    expect(checkOutDateLabel(r)).toBe("03.09.2026")
+  })
+
+  it("vaqti yo'q soatlik bronda sana maydoniga tushiladi", () => {
+    const r = res({ booking_type: "HOURLY", check_out_date: "2026-09-03" })
+    expect(checkOutDateLabel(r)).toBe("03.09.2026")
   })
 })
 

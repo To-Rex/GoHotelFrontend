@@ -93,11 +93,38 @@ const nightsOf = (stay: GuestStay): number => {
   return Math.max(Math.round((b - a) / 86_400_000), 0)
 }
 
+/**
+ * Soatlik turish matni.
+ *
+ * `check_out_date` ga ISHONIB BO'LMAYDI: bazada
+ * check_out_date > check_in_date cheklovi bor, shuning uchun bir kunlik
+ * soatlik bron uchun server u yerga ertangi kunni yozib qo'yadi. Sana ham,
+ * soat ham aniq vaqtdan olinadi — shunda ular zid chiqmaydi.
+ */
+const hourlyLabel = (stay: GuestStay): string => {
+  const start = stay.check_in_datetime
+  const end = stay.check_out_datetime
+  const day = start ? localDate(start) : fmtDate(stay.check_in_date)
+  const from = timeOf(start)
+  const to = timeOf(end)
+  if (!from || !to) return day || ""
+  const endDay = end ? localDate(end) : day
+  return endDay && endDay !== day
+    ? `${day}, ${from} – ${endDay}, ${to}`
+    : `${day}, ${from} – ${to}`
+}
+
+/** Aniq vaqtdan sana — ko'rsatiladigan soat bilan bir manbadan. */
+const localDate = (value?: string | null): string | null => {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
+}
+
 const StayCard = ({ stay }: { stay: GuestStay }) => {
   const hourly = (stay.booking_type || "").toUpperCase() === "HOURLY"
   const nights = hourly ? 0 : nightsOf(stay)
-  const from = timeOf(stay.check_in_datetime)
-  const to = timeOf(stay.check_out_datetime)
 
   // O'zidan boshqalar — "kim bilan kelgan" savoliga javob aynan shular
   const others = stay.people.filter((p) => !p.is_self && p.name)
@@ -144,11 +171,7 @@ const StayCard = ({ stay }: { stay: GuestStay }) => {
             ) : (
               <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
             )}
-            {hourly
-              ? `${fmtDate(stay.check_in_date)}${
-                  from && to ? `, ${from} – ${to}` : ""
-                }`
-              : `${fmtDate(stay.check_in_date)} → ${fmtDate(stay.check_out_date)}`}
+            {hourly ? hourlyLabel(stay) : `${fmtDate(stay.check_in_date)} → ${fmtDate(stay.check_out_date)}`}
             <span className="text-xs text-gray-400">
               {hourly ? "soatlik" : nights ? `${nights} kecha` : "kunlik"}
             </span>

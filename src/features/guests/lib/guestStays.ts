@@ -27,22 +27,53 @@ export function isRealStay(stay: GuestStay): boolean {
 const isHourly = (stay: GuestStay) =>
   (stay.booking_type || "").toUpperCase() === "HOURLY"
 
+const pad = (n: number) => String(n).padStart(2, "0")
+
+/** Aniq vaqtdan "yyyy-MM-dd" — mahalliy kun bo'yicha. */
+function isoLocalDate(value?: string | null): string | null {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/**
+ * Turish qamrab olgan kunlar oralig'i (ikkala chegara ham kiradi).
+ *
+ * Kunlik bronda chiqish kuni KIRMAYDI — mehmon o'sha kuni ketadi.
+ *
+ * Soatlik bronda esa `check_out_date` ga ishonib bo'lmaydi: bazada
+ * `check_out_date > check_in_date` cheklovi bor, shuning uchun bir kunlik
+ * soatlik bron uchun server u yerga ertangi kunni yozib qo'yadi. Haqiqiy
+ * kunlar aniq vaqtlardan olinadi — shunda tunni kesib o'tgan bron ikkala
+ * kunni ham to'g'ri qamraydi.
+ */
+export function stayDayRange(stay: GuestStay): [string, string] | null {
+  const fromDate = stay.check_in_date || ""
+  if (isHourly(stay)) {
+    const from = isoLocalDate(stay.check_in_datetime) || fromDate
+    if (!from) return null
+    const to = isoLocalDate(stay.check_out_datetime) || from
+    return [from, to < from ? from : to]
+  }
+
+  if (!fromDate) return null
+  const out = stay.check_out_date || fromDate
+  if (out <= fromDate) return [fromDate, fromDate]
+  // Chiqish kunidan bir kun oldingisi — oxirgi tunab qolgan kun
+  const last = new Date(`${out}T00:00:00`)
+  last.setDate(last.getDate() - 1)
+  return [fromDate, isoLocalDate(last.toISOString()) || fromDate]
+}
+
 /**
  * Mehmon shu KUNI xonada bo'lganmi.
- *
- * Chiqish kuni hisobga olinmaydi (mehmon o'sha kuni ketadi), soatlik
- * bronda esa faqat kirish kuni.
  */
 export function stayCoversDate(stay: GuestStay, day: string): boolean {
   if (!day || !isRealStay(stay)) return false
-  const from = stay.check_in_date || ""
-  if (!from) return false
-  if (isHourly(stay)) return from === day
-
-  const to = stay.check_out_date || from
-  // Chiqish kuni chegaradan tashqarida: [kirish, chiqish)
-  if (to <= from) return from === day
-  return day >= from && day < to
+  const range = stayDayRange(stay)
+  if (!range) return false
+  return day >= range[0] && day <= range[1]
 }
 
 /**

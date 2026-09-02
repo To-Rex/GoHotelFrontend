@@ -80,6 +80,34 @@ describe("stayCoversDate", () => {
     expect(stayCoversDate(hourly, "2026-09-06")).toBe(false)
   })
 
+  it("soatlik bronda ertangi kun yozib qo'yilgani javobni buzmaydi", () => {
+    /* Bazada check_out_date > check_in_date cheklovi bor, shuning uchun bir
+       kunlik soatlik bron uchun server ertangi kunni yozadi. Haqiqiy kunlar
+       aniq vaqtdan olinadi. */
+    const hourly = stay({
+      booking_type: "HOURLY",
+      check_in_date: "2026-09-02",
+      check_out_date: "2026-09-03",
+      check_in_datetime: new Date(2026, 8, 2, 19, 56).toISOString(),
+      check_out_datetime: new Date(2026, 8, 2, 21, 56).toISOString(),
+    })
+    expect(stayCoversDate(hourly, "2026-09-02")).toBe(true)
+    expect(stayCoversDate(hourly, "2026-09-03")).toBe(false)
+  })
+
+  it("tunni kesib o'tgan soatlik bron ikkala kunni qamraydi", () => {
+    const overnight = stay({
+      booking_type: "HOURLY",
+      check_in_date: "2026-09-02",
+      check_out_date: "2026-09-03",
+      check_in_datetime: new Date(2026, 8, 2, 22, 0).toISOString(),
+      check_out_datetime: new Date(2026, 8, 3, 2, 0).toISOString(),
+    })
+    expect(stayCoversDate(overnight, "2026-09-02")).toBe(true)
+    expect(stayCoversDate(overnight, "2026-09-03")).toBe(true)
+    expect(stayCoversDate(overnight, "2026-09-04")).toBe(false)
+  })
+
   it("kunlik bronda chiqish sanasi teng bo'lsa ham kirish kuni sanaladi", () => {
     const odd = stay({ check_in_date: "2026-09-07", check_out_date: "2026-09-07" })
     expect(stayCoversDate(odd, "2026-09-07")).toBe(true)
