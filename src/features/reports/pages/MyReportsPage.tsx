@@ -195,13 +195,7 @@ export const MyReportsPage = () => {
       {/* Mening qarzdorlarim — faqat shu xodim ochgan bronlar.
           Shaxsiy hisobotda savol "men kimdan pul olishim kerak", shuning
           uchun boshqa xodimlarning bronlari bu yerga kirmaydi. */}
-      <DebtorsPanel
-        dateFrom={dateFrom || undefined}
-        dateTo={dateTo || undefined}
-        mine
-        title="Qarzdorlarim"
-        initialLimit={5}
-      />
+      <DebtorsPanel mine title="Qarzdorlarim" initialLimit={5} />
 
       {/* Ko'rsatkichlar */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">

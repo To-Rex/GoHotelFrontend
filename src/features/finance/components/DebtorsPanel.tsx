@@ -104,6 +104,14 @@ export function DebtorsPanel({
         )}
       </div>
 
+      {/* Sahifadagi davr tanlovi bu ro'yxatga ta'sir qilmaydi — buni
+          aytib qo'yamiz, aks holda raqamlar davr bilan mos kelmagani
+          xato bo'lib tuyulardi */}
+      <p className="mt-0.5 text-[11px] text-gray-500">
+        To'liq to'lanmagan bronlar — davr tanlovidan qat'i nazar, barcha
+        ochiq qarzlar.
+      </p>
+
       {isLoading && (
         <div className="flex items-center gap-2 py-6 text-sm text-gray-400">
           <Loader2 className="h-4 w-4 animate-spin" />

@@ -761,12 +761,13 @@ export const FinancePage = () => {
         </div>
       </div>
 
-      {/* Qarzdorlar — bronlar bo'yicha. Moliyada savol "qaysi bron
-          to'lanmagan", shuning uchun ro'yxat bron kesimida va tanlangan
-          davr bilan cheklangan. */}
+      {/* Qarzdorlar — bronlar bo'yicha.
+
+          Tanlangan davrga BOG'LANMAGAN va bu ataylab: qarz davr hodisasi
+          emas, joriy holat. Ilgari u davr bilan cheklangan edi va
+          "Bugun" tanlanganda ro'yxat deyarli doim bo'sh chiqardi —
+          o'tgan oyda chiqib ketgan qarzdor ko'rinmasdi. */}
       <DebtorsPanel
-        dateFrom={dateFrom || undefined}
-        dateTo={dateTo || undefined}
         title="Qarzdorlar (bronlar bo'yicha)"
         initialLimit={6}
       />
