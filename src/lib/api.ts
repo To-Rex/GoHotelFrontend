@@ -45,6 +45,38 @@ api.interceptors.response.use(
     const url = String(originalRequest?.url || "");
     const isAuthPath = AUTH_PATHS.some((p) => url.includes(p));
 
+    /* QURILMA RUXSATI BEKOR QILINGAN.
+
+       Administrator qurilmani taqiqlasa yoki ro'yxatdan o'chirsa, ochiq
+       sessiya darhol to'xtashi kerak — aks holda xodim token muddatigacha
+       ishlab yuraverardi. Server buni har so'rovda tekshiradi va 403
+       qaytaradi.
+
+       Sessiya tozalanadi va sabab ko'rsatiladigan sahifaga o'tiladi.
+       O'chirilgan qurilma esa kirish sahifasiga: u yerda qurilma yangi
+       sifatida qayta ro'yxatga tushadi. */
+    const deviceCode = error.response?.data?.error_code;
+    if (
+      error.response?.status === 403 &&
+      (deviceCode === "DEVICE_REVOKED" ||
+        deviceCode === "DEVICE_BLOCKED" ||
+        deviceCode === "DEVICE_PENDING") &&
+      !isAuthPath
+    ) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      const target =
+        deviceCode === "DEVICE_REVOKED"
+          ? "/login"
+          : `/device-pending?code=${deviceCode}`;
+      // Qayta-qayta yo'naltirmaslik uchun: allaqachon o'sha sahifada
+      // bo'lsak tegmaymiz
+      if (!window.location.pathname.startsWith(target.split("?")[0])) {
+        window.location.replace(target);
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthPath) {
       originalRequest._retry = true;
       try {

@@ -65,7 +65,17 @@ export const DevicePendingPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const state = (location.state || {}) as LocationState
-  const reason: Reason = state.code || "DEVICE_PENDING"
+  /* Sabab ikki yo'l bilan kelishi mumkin: login sahifasidan router state
+     bilan, yoki sessiya to'xtatilganda to'liq qayta yuklash orqali —
+     o'shanda state saqlanmaydi, shuning uchun manzil qatoridan olinadi. */
+  const codeFromQuery = new URLSearchParams(location.search).get("code")
+  const reason: Reason =
+    state.code ||
+    (codeFromQuery === "DEVICE_BLOCKED" ||
+    codeFromQuery === "DEVICE_UNKNOWN" ||
+    codeFromQuery === "DEVICE_PENDING"
+      ? codeFromQuery
+      : "DEVICE_PENDING")
   const info = CONTENT[reason]
   const Icon = info.icon
 
