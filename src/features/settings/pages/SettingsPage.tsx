@@ -28,6 +28,7 @@ import {
   Video,
   Monitor,
   type LucideIcon,
+  Undo2,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -48,6 +49,8 @@ import { useShiftSettings, useSaveShiftSettings } from "@/features/shifts/api/sh
 import {
   useEditWindowSettings,
   useSaveEditWindowSettings,
+  useCancellationSettings,
+  useSaveCancellationSettings,
 } from "@/features/reservations/api/reservations"
 import {
   useScanSettings,
@@ -439,6 +442,33 @@ export const SettingsPage = () => {
   // --- Bron tahriri vaqt oynasi (xona almashtirish, default 10 daqiqa) ---
   const { data: editWindow } = useEditWindowSettings()
   const saveEditWindowMutation = useSaveEditWindowSettings()
+
+  /* Bekor qilishda ushlab qolinadigan foiz. Mehmonxonalar bu masalada bir
+     xil emas — biri to'lovni to'liq qaytaradi, biri jarima oladi. */
+  const { data: cancelPolicy } = useCancellationSettings()
+  const saveCancelPolicyMutation = useSaveCancellationSettings()
+  const [feePercent, setFeePercent] = useState("0")
+  const [feeSaved, setFeeSaved] = useState(false)
+  const [feeError, setFeeError] = useState<string | null>(null)
+  useEffect(() => {
+    if (cancelPolicy) setFeePercent(String(cancelPolicy.fee_percent))
+  }, [cancelPolicy])
+
+  const onSaveFeePercent = async () => {
+    const n = Number(feePercent)
+    if (!Number.isFinite(n) || n < 0 || n > 100) {
+      setFeeError("Foiz 0 dan 100 gacha bo'lishi kerak")
+      return
+    }
+    setFeeError(null)
+    try {
+      await saveCancelPolicyMutation.mutateAsync(n)
+      setFeeSaved(true)
+      setTimeout(() => setFeeSaved(false), 2000)
+    } catch (e) {
+      setFeeError(apiErrorMessage(e))
+    }
+  }
   const [windowMinutes, setWindowMinutes] = useState("10")
   const [editWinSaved, setEditWinSaved] = useState(false)
   const [editWinError, setEditWinError] = useState<string | null>(null)
@@ -763,6 +793,50 @@ export const SettingsPage = () => {
                   pending={saveEditWindowMutation.isPending}
                   saved={editWinSaved}
                   error={editWinError}
+                />
+              </SettingCard>
+
+              {/* Bekor qilishda pul qaytarish */}
+              <SettingCard
+                id="cancellation"
+                icon={Undo2}
+                iconClass="bg-rose-50 text-rose-600"
+                title="Bekor qilishda qaytarim"
+                desc="Bron bekor qilinganda mehmonga to'langan pulning qancha qismi qaytariladi. Bu yerda ushlab qolinadigan foiz ko'rsatiladi: 0% — pul to'liq qaytariladi, 100% — umuman qaytarilmaydi. Bekor qilish oynasida xodim summani o'zgartira oladi."
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="w-28"
+                    value={feePercent}
+                    onChange={(e) => setFeePercent(e.target.value)}
+                    placeholder="0"
+                  />
+                  <span className="text-sm text-gray-500">% ushlab qolinadi</span>
+                  {/* Tez tanlovlar */}
+                  {["0", "10", "25", "50", "100"].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setFeePercent(v)}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                        feePercent === v
+                          ? "bg-primary-600 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      )}
+                    >
+                      {v === "0" ? "To'liq qaytarish" : `${v}%`}
+                    </button>
+                  ))}
+                </div>
+                <SaveRow
+                  onSave={onSaveFeePercent}
+                  pending={saveCancelPolicyMutation.isPending}
+                  saved={feeSaved}
+                  error={feeError}
                 />
               </SettingCard>
 

@@ -35,6 +35,7 @@ import {
   useReservations,
   useUpdateReservation,
   useCancelReservation,
+  useCancellationQuote,
   useRequestCheckout,
   useCheckInReservation,
   useMoveRoom,
@@ -319,6 +320,20 @@ export function BookingPage() {
 
   const updateReservationMutation = useUpdateReservation()
   const cancelReservationMutation = useCancelReservation()
+
+  /* Bekor qilishda pul qaytarish.
+
+     Summa serverdan olinadi — mehmonxona sozlamasidagi foiz bo'yicha. Xodim
+     uni o'zgartira oladi: kech bekor qilishda ko'proq ushlab qolish yoki
+     aksincha, xayrixohlik bilan to'liq qaytarish kerak bo'ladi. So'rov faqat
+     tasdiqlash oynasi ochilganda yuboriladi. */
+  const { data: cancelQuote } = useCancellationQuote(
+    cancelMode && selectedReservation ? selectedReservation.id : undefined
+  )
+  const [refundInput, setRefundInput] = useState("")
+  useEffect(() => {
+    if (cancelQuote) setRefundInput(String(cancelQuote.refund_amount))
+  }, [cancelQuote])
   const requestCheckoutMutation = useRequestCheckout()
   const moveRoomMutation = useMoveRoom()
   const settleMutation = useSettleReservation()
@@ -710,10 +725,25 @@ export function BookingPage() {
   const handleCancelReservation = async () => {
     if (!selectedReservation) return
     try {
+      /* Summa faqat to'lov bo'lgan bronda yuboriladi. To'lanmagan bronda
+         qaytariladigan narsa yo'q va maydon ham ko'rsatilmaydi. */
+      const paid = Number(cancelQuote?.paid_amount || 0)
+      const refund = paid > 0 ? Number(refundInput) : undefined
+      if (refund !== undefined && (!Number.isFinite(refund) || refund < 0)) {
+        setErrorDialog("Qaytariladigan summani to'g'ri kiriting")
+        return
+      }
+      if (refund !== undefined && refund > paid + 0.01) {
+        setErrorDialog(
+          `Qaytariladigan summa to'langan puldan oshib ketdi (to'langan: ${paid.toLocaleString()} So'm)`
+        )
+        return
+      }
       await cancelReservationMutation.mutateAsync({
         id: selectedReservation.id,
         reason: cancelReason || undefined,
         hotelId: selectedReservation.hotel_id || undefined,
+        refundAmount: refund,
       })
       closeManageModal()
     } catch (error: any) {
@@ -2019,6 +2049,80 @@ export function BookingPage() {
                         value={cancelReason}
                         onChange={(e) => setCancelReason(e.target.value)}
                       />
+
+                      {/* PUL QAYTARISH. Faqat to'lov qilingan bronda
+                          ko'rsatiladi — to'lanmaganida qaytariladigan narsa
+                          yo'q va bo'sh maydon chalg'itardi. Summa sozlamadagi
+                          foizdan hisoblab qo'yiladi, lekin o'zgartirilishi
+                          mumkin: har bir holat bir xil emas. */}
+                      {!!cancelQuote && cancelQuote.paid_amount > 0 && (
+                        <div className="space-y-2 rounded-md border border-red-200 bg-white p-2.5">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span className="text-gray-500">
+                              To'langan:{" "}
+                              <b className="tabular-nums text-gray-900">
+                                {cancelQuote.paid_amount.toLocaleString()} So'm
+                              </b>
+                            </span>
+                            {cancelQuote.fee_percent > 0 && (
+                              <span className="text-gray-500">
+                                Sozlama bo'yicha ushlanadi:{" "}
+                                <b className="tabular-nums text-gray-900">
+                                  {cancelQuote.fee_percent}% ={" "}
+                                  {cancelQuote.fee_amount.toLocaleString()} So'm
+                                </b>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-end gap-2">
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-medium text-gray-500">
+                                Mehmonga qaytariladi
+                              </label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={cancelQuote.paid_amount}
+                                className="h-8 w-40 text-sm"
+                                value={refundInput}
+                                onChange={(e) => setRefundInput(e.target.value)}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setRefundInput(String(cancelQuote.paid_amount))
+                              }
+                              className="h-8 rounded-md border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            >
+                              To'liq qaytarish
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setRefundInput("0")}
+                              className="h-8 rounded-md border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            >
+                              Qaytarilmasin
+                            </button>
+                          </div>
+
+                          {/* Ushlab qolinadigan qism — kiritilgan summadan
+                              hisoblanib turadi, xodim natijani ko'radi */}
+                          <p className="text-[11px] text-gray-500">
+                            Mehmonxonada qoladi:{" "}
+                            <b className="tabular-nums text-gray-900">
+                              {Math.max(
+                                cancelQuote.paid_amount - (Number(refundInput) || 0),
+                                0
+                              ).toLocaleString()}{" "}
+                              So'm
+                            </b>
+                            . Qaytarim naqd to'lov sifatida yoziladi va moliya
+                            hisobotida ko'rinadi.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

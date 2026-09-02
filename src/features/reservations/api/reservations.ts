@@ -219,20 +219,103 @@ export const useSaveEditWindowSettings = () => {
   });
 };
 
+/* Bekor qilishda ushlab qolinadigan foiz.
+
+   Mehmonxonalar bu masalada bir xil emas: biri to'lovni to'liq qaytaradi,
+   biri jarima ushlab qoladi. Standarti 0 — sozlanmagan mehmonxonada pul
+   to'liq qaytariladi. */
+export interface CancellationSettings {
+  fee_percent: number;
+  default_percent: number;
+}
+
+export const useCancellationSettings = () =>
+  useQuery({
+    queryKey: ['reservationCancellationSettings'],
+    queryFn: async () => {
+      const { data } = await api.get<CancellationSettings>(
+        '/reservations/cancellation-settings'
+      );
+      return data;
+    },
+  });
+
+export const useSaveCancellationSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (feePercent: number) => {
+      const { data } = await api.put<CancellationSettings>(
+        '/reservations/cancellation-settings',
+        null,
+        { params: { fee_percent: feePercent } }
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ['reservationCancellationSettings'],
+      }),
+  });
+};
+
+/* Bekor qilinsa qancha qaytariladi — tasdiqlashdan OLDIN ko'rsatish uchun.
+   Pul qaytarish orqaga qaytarib bo'lmaydigan amal, shuning uchun xodim
+   summani ko'rmasdan tasdiqlamasligi kerak. */
+export interface CancellationQuote {
+  paid_amount: number;
+  fee_percent: number;
+  fee_amount: number;
+  refund_amount: number;
+}
+
+export const useCancellationQuote = (reservationId?: string) =>
+  useQuery({
+    queryKey: ['cancellationQuote', reservationId],
+    // Faqat bekor qilish tasdiqlanayotganda so'raladi
+    enabled: !!reservationId,
+    queryFn: async () => {
+      const { data } = await api.get<CancellationQuote>(
+        `/reservations/${reservationId}/cancellation-quote`
+      );
+      return data;
+    },
+  });
+
 export const useCancelReservation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, reason, hotelId }: { id: string; reason?: string; hotelId?: string }) => {
+    mutationFn: async ({
+      id,
+      reason,
+      hotelId,
+      refundAmount,
+      refundMethod,
+    }: {
+      id: string;
+      reason?: string;
+      hotelId?: string;
+      /* Qaytariladigan summa. Berilmasa server mehmonxona sozlamasidagi
+         foizdan hisoblaydi — eski chaqiruvlar shu sababdan o'zgarishsiz
+         ishlayveradi. */
+      refundAmount?: number;
+      refundMethod?: string;
+    }) => {
       const { data } = await api.post<Reservation>(
         `/reservations/${id}/cancel`,
-        { reason: reason || null },
+        {
+          reason: reason || null,
+          refund_amount: refundAmount ?? null,
+          refund_method: refundMethod ?? null,
+        },
         { params: hotelId ? { hotel_id: hotelId } : {} }
       );
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      // Pul qaytarilgan bo'lsa to'lovlar ro'yxati ham o'zgardi
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       // Bekor qilinganda bog'liq hisob-faktura ham VOID bo'ladi —
       // Moliya bo'limi darhol yangilanishi uchun keshni tozalaymiz
