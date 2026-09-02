@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { MainLayout } from "./components/layout/MainLayout";
 import { LandingRedirect } from "./components/layout/LandingRedirect";
 import { LoginPage } from "./features/auth/pages/LoginPage";
+import { DevicePendingPage } from "./features/auth/pages/DevicePendingPage";
 import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
 import { BookingPage } from "./features/reservations/pages/BookingPage";
 import { RoomsPage } from "./features/rooms/pages/RoomsPage";
@@ -50,6 +51,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/device-pending" element={<DevicePendingPage />} />
         {/* Landing (marketing) sahifasi — ochiq, autentifikatsiyasiz */}
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/leanding" element={<LandingPage />} />

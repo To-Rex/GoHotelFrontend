@@ -210,24 +210,22 @@ export const LoginPage = () => {
       if (err?.response?.status === 401) {
         setError("Login yoki parol noto'g'ri. Tekshirib, qayta urinib ko'ring.");
       } else if (err?.response?.status === 403) {
-        /* Qurilma tasdiqlanmagan bo'lsa sabab aniq aytiladi. Server matni
-           ham tushunarli, lekin nima qilish kerakligini qo'shib qo'yamiz —
-           aks holda xodim qayta-qayta urinib turadi. */
-        // Server shakli: { detail, error_code }
+        /* Qurilma tasdiqlanmagan bo'lsa — alohida sahifaga. Login
+           formasidagi qizil qator yetarli emasdi: xodim parolni to'g'ri
+           kiritgan bo'lsa ham nima bo'layotganini tushunmay, qayta-qayta
+           urinardi. Sahifada sabab, nima qilish kerakligi va
+           administratorga aytiladigan qurilma raqami turadi.
+           Server shakli: { detail, error_code } */
         const code = err?.response?.data?.error_code;
-        if (code === "DEVICE_PENDING") {
-          setError(
-            "Bu qurilma administrator tasdig'ini kutmoqda. Tasdiqlangach shu yerdan kira olasiz."
-          );
-        } else if (code === "DEVICE_BLOCKED") {
-          setError("Bu qurilmadan kirish taqiqlangan. Administratorga murojaat qiling.");
-        } else if (code === "DEVICE_UNKNOWN") {
-          setError(
-            "Qurilma aniqlanmadi. Brauzer ma'lumot saqlashiga ruxsat bering (shaxsiy rejimda ishlamaydi)."
-          );
-        } else {
-          setError(apiErrorMessage(err));
+        if (
+          code === "DEVICE_PENDING" ||
+          code === "DEVICE_BLOCKED" ||
+          code === "DEVICE_UNKNOWN"
+        ) {
+          navigate("/device-pending", { state: { code } });
+          return;
         }
+        setError(apiErrorMessage(err));
       } else if (!err?.response) {
         setError("Server bilan aloqa yo'q. Internet aloqasini tekshiring.");
       } else {
