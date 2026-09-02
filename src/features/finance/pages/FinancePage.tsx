@@ -533,6 +533,17 @@ export const FinancePage = () => {
         </div>
       )}
 
+      {/* QARZDORLAR — sahifaning yuqori qismida, davr yakunidan keyin.
+
+          Bu olinmagan pul, ya'ni sarlavha raqamlari bilan bir qatorda
+          turadigan ma'lumot. Pastda, jadvallar orasida turganda u ko'zga
+          tashlanmasdi — xodim sahifani oxirigacha aylantirmaydi.
+
+          Tanlangan davrga BOG'LANMAGAN va bu ataylab: qarz davr hodisasi
+          emas, joriy holat. Ilgari u davr bilan cheklangan edi va "Bugun"
+          tanlanganda ro'yxat deyarli doim bo'sh chiqardi. */}
+      <DebtorsPanel title="Qarzdorlar (bronlar bo'yicha)" initialLimit={6} />
+
       {/* To'lov usullari bo'yicha to'liq tafsilot */}
       <div className="overflow-hidden rounded-lg border bg-white">
         <div className="flex items-center justify-between border-b px-4 py-3">
@@ -760,17 +771,6 @@ export const FinancePage = () => {
           </Table>
         </div>
       </div>
-
-      {/* Qarzdorlar — bronlar bo'yicha.
-
-          Tanlangan davrga BOG'LANMAGAN va bu ataylab: qarz davr hodisasi
-          emas, joriy holat. Ilgari u davr bilan cheklangan edi va
-          "Bugun" tanlanganda ro'yxat deyarli doim bo'sh chiqardi —
-          o'tgan oyda chiqib ketgan qarzdor ko'rinmasdi. */}
-      <DebtorsPanel
-        title="Qarzdorlar (bronlar bo'yicha)"
-        initialLimit={6}
-      />
 
       {/* Do'kon qarzlari — bronga yozilgan, hali to'lanmagan sotuvlar */}
       {shopDebts.length > 0 && (
