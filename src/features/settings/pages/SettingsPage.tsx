@@ -29,6 +29,7 @@ import {
   Monitor,
   type LucideIcon,
   Undo2,
+  Ban,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -52,6 +53,10 @@ import {
   useCancellationSettings,
   useSaveCancellationSettings,
 } from "@/features/reservations/api/reservations"
+import {
+  useBlacklistPolicy,
+  useSaveBlacklistPolicy,
+} from "@/features/guests/api/blacklist"
 import {
   useScanSettings,
   useSaveScanSettings,
@@ -445,6 +450,33 @@ export const SettingsPage = () => {
 
   /* Bekor qilishda ushlab qolinadigan foiz. Mehmonxonalar bu masalada bir
      xil emas — biri to'lovni to'liq qaytaradi, biri jarima oladi. */
+  /* Qora ro'yxat qoidasi. Standart holda taqiq YOQIQ: administrator
+     kimnidir ro'yxatga qo'shganda unga xizmat ko'rsatilmasligini kutadi.
+     Lekin mehmonxonalar bir xil emas — birida bu qat'iy taqiq, birida
+     faqat ogohlantirish bo'lishi kerak. */
+  const { data: blacklistPolicy } = useBlacklistPolicy()
+  const saveBlacklistMutation = useSaveBlacklistPolicy()
+  const [blockBooking, setBlockBooking] = useState(true)
+  const [blSaved, setBlSaved] = useState(false)
+  const [blError, setBlError] = useState<string | null>(null)
+  useEffect(() => {
+    if (blacklistPolicy) setBlockBooking(blacklistPolicy.block_booking)
+  }, [blacklistPolicy])
+
+  const onSaveBlacklist = async (next: boolean) => {
+    setBlockBooking(next)
+    setBlError(null)
+    try {
+      await saveBlacklistMutation.mutateAsync(next)
+      setBlSaved(true)
+      setTimeout(() => setBlSaved(false), 2000)
+    } catch (e) {
+      // Saqlanmasa eski holatga qaytaramiz — ekranda yolg'on holat qolmasin
+      setBlockBooking(!next)
+      setBlError(apiErrorMessage(e))
+    }
+  }
+
   const { data: cancelPolicy } = useCancellationSettings()
   const saveCancelPolicyMutation = useSaveCancellationSettings()
   const [feePercent, setFeePercent] = useState("0")
@@ -794,6 +826,39 @@ export const SettingsPage = () => {
                   saved={editWinSaved}
                   error={editWinError}
                 />
+              </SettingCard>
+
+              {/* Qora ro'yxat qoidasi */}
+              <SettingCard
+                id="blacklist"
+                icon={Ban}
+                iconClass="bg-red-50 text-red-600"
+                title="Qora ro'yxat"
+                desc="Qora ro'yxatdagi mehmonga bron ochishni taqiqlash. Yoqilgan bo'lsa xodim unga umuman bron ocha olmaydi; o'chirilgan bo'lsa ro'yxat faqat belgi bo'lib qoladi va qaror xodimga havola qilinadi. Ro'yxatga qo'shishni faqat administrator bajaradi."
+              >
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4"
+                    checked={blockBooking}
+                    onChange={(e) => onSaveBlacklist(e.target.checked)}
+                    disabled={saveBlacklistMutation.isPending}
+                  />
+                  <span className="text-sm text-gray-700">
+                    Qora ro'yxatdagi mehmonga bron ochish taqiqlansin
+                    <span className="block text-xs text-gray-400">
+                      Standart holat — taqiqlangan
+                    </span>
+                  </span>
+                </label>
+                {blSaved && (
+                  <p className="mt-2 text-xs font-medium text-emerald-600">
+                    Saqlandi
+                  </p>
+                )}
+                {blError && (
+                  <p className="mt-2 text-xs font-medium text-red-600">{blError}</p>
+                )}
               </SettingCard>
 
               {/* Bekor qilishda pul qaytarish */}

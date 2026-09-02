@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone, ScanLine, Video } from "lucide-react";
+import { Ban, Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone, ScanLine, Video } from "lucide-react";
 import {
   useGuests,
   useCreateGuest,
@@ -18,6 +18,7 @@ import { BirthDateSelect } from "../components/BirthDateSelect";
 import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog";
 import { GuestHistoryDialog } from "../components/GuestHistoryDialog";
+import { BlacklistDialog } from "../components/BlacklistDialog";
 import { DebtorsPanel } from "@/features/finance/components/DebtorsPanel";
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow";
 import {
@@ -57,7 +58,7 @@ const DOC_TYPE_LABELS: Record<string, string> = Object.fromEntries(
 
 export const GuestsPage = () => {
   const { data: guests, isLoading, isError } = useGuests();
-  const { can } = usePermissions();
+  const { can, isAdmin } = usePermissions();
   const canCreate = can("guest.create");
   const canEdit = can("guest.update");
   const user = useAuthStore((s) => s.user);
@@ -87,6 +88,8 @@ export const GuestsPage = () => {
   // MRZ'dan o'qilgan maydonlargina to'ldiriladi, qolganlari o'z holicha qoladi
   /* Bosilgan mehmon — turish tarixi oynasi shu bilan ochiladi */
   const [historyGuest, setHistoryGuest] = useState<Guest | null>(null);
+  /* Qora ro'yxat oynasi — faqat administrator ochadi */
+  const [blacklistGuest, setBlacklistGuest] = useState<Guest | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const MRZ_COUNTRY: Record<string, string> = {
     UZB: "O'zbekiston",
@@ -569,8 +572,21 @@ export const GuestsPage = () => {
                     {initials(guest.first_name, guest.last_name)}
                   </span>
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900 leading-tight truncate">
-                      {guest.first_name} {guest.last_name}
+                    <p className="flex items-center gap-1.5 font-medium text-gray-900 leading-tight">
+                      <span className="truncate">
+                        {guest.first_name} {guest.last_name}
+                      </span>
+                      {/* Qora ro'yxat belgisi — xodim bronni ochishdan
+                          OLDIN ko'rishi kerak */}
+                      {guest.blacklisted_at && (
+                        <span
+                          title={guest.blacklist_reason || "Qora ro'yxatda"}
+                          className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700"
+                        >
+                          <Ban className="h-3 w-3" />
+                          Qora ro'yxat
+                        </span>
+                      )}
                     </p>
                     {guest.nationality && (
                       <p className="text-xs text-gray-400 leading-tight truncate">
@@ -638,6 +654,21 @@ export const GuestsPage = () => {
                     <Pencil className="h-3.5 w-3.5 mr-1" />
                     Tahrirlash
                   </Button>
+                  {/* Qora ro'yxatni FAQAT administrator boshqaradi */}
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={guest.blacklisted_at ? "text-emerald-700" : "text-red-600"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBlacklistGuest(guest);
+                      }}
+                    >
+                      <Ban className="h-3.5 w-3.5 mr-1" />
+                      {guest.blacklisted_at ? "Chiqarish" : "Qora ro'yxat"}
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -685,8 +716,19 @@ export const GuestsPage = () => {
                         {initials(guest.first_name, guest.last_name)}
                       </span>
                       <div className="min-w-0">
-                        <p className="font-medium text-gray-900 leading-tight truncate">
-                          {guest.first_name} {guest.last_name}
+                        <p className="flex items-center gap-1.5 font-medium text-gray-900 leading-tight">
+                          <span className="truncate">
+                            {guest.first_name} {guest.last_name}
+                          </span>
+                          {guest.blacklisted_at && (
+                            <span
+                              title={guest.blacklist_reason || "Qora ro'yxatda"}
+                              className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700"
+                            >
+                              <Ban className="h-3 w-3" />
+                              Qora ro'yxat
+                            </span>
+                          )}
                         </p>
                         {guest.nationality && (
                           <p className="text-xs text-gray-400 leading-tight truncate">
@@ -743,6 +785,21 @@ export const GuestsPage = () => {
                         <Pencil className="h-3.5 w-3.5 mr-1" />
                         Tahrirlash
                       </Button>
+                  {/* Qora ro'yxatni FAQAT administrator boshqaradi */}
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={guest.blacklisted_at ? "text-emerald-700" : "text-red-600"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBlacklistGuest(guest);
+                      }}
+                    >
+                      <Ban className="h-3.5 w-3.5 mr-1" />
+                      {guest.blacklisted_at ? "Chiqarish" : "Qora ro'yxat"}
+                    </Button>
+                  )}
                     </TableCell>
                   )}
                 </TableRow>
@@ -751,6 +808,12 @@ export const GuestsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Qora ro'yxat: qo'shish yoki chiqarish */}
+      <BlacklistDialog
+        guest={blacklistGuest}
+        onClose={() => setBlacklistGuest(null)}
+      />
 
       {/* Mehmon ustiga bosilganda — turish tarixi */}
       <GuestHistoryDialog

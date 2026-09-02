@@ -14,6 +14,7 @@ import {
   Camera,
   ScanLine,
   Video,
+  Ban,
 } from "lucide-react"
 
 import { useCreateReservation, useReservations } from "../api/reservations"
@@ -1399,6 +1400,28 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                       O'zgartirish
                     </button>
                   </div>
+                  {/* QORA RO'YXAT ogohlantirishi. Server baribir to'sadi,
+                      lekin xodim buni sanalarni va to'lovni kiritib
+                      bo'lgandan keyin emas, MEHMONNI TANLAGAN ZAHOTI
+                      bilishi kerak. */}
+                  {selectedGuestObj.blacklisted_at && (
+                    <div className="rounded-lg border border-red-300 bg-red-50 px-2.5 py-2">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold text-red-700">
+                        <Ban className="h-3.5 w-3.5 flex-shrink-0" />
+                        Bu mehmon qora ro'yxatda
+                      </p>
+                      {selectedGuestObj.blacklist_reason && (
+                        <p className="mt-0.5 text-[11px] leading-tight text-red-600">
+                          Sabab: {selectedGuestObj.blacklist_reason}
+                        </p>
+                      )}
+                      <p className="mt-0.5 text-[11px] leading-tight text-red-500">
+                        Sozlamada taqiq yoqiq bo'lsa bron saqlanmaydi.
+                        Administrator ro'yxatdan chiqarishi mumkin.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Telefon yoki passport xato kiritilgan bo'lsa shu
                       yerning o'zida to'g'rilanadi — bron yaratishni to'xtatib,
                       mehmonlar sahifasiga o'tish shart emas. */}

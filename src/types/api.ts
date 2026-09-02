@@ -16,7 +16,14 @@ export interface Guest {
   city?: string;
   country?: string;
   preferences?: string;
-  is_blacklisted: boolean;
+  /* QORA RO'YXAT.
+
+     Ilgari bu yerda ishlatilmaydigan `is_blacklisted: boolean` turgan edi —
+     backendda bunday maydon yo'q edi va hech qayerda o'qilmasdi. Endi
+     haqiqiy maydonlar: sana qo'yilgan bo'lsa mehmon ro'yxatda, sabab esa
+     "nega?" degan savolga javob beradi. */
+  blacklisted_at?: string | null;
+  blacklist_reason?: string | null;
   created_at: string;
   updated_at: string;
 }
