@@ -17,6 +17,7 @@ import { PermissionsPage } from "./features/employees/pages/PermissionsPage";
 import { SettingsPage } from "./features/settings/pages/SettingsPage";
 import { ReceiptDesignPage } from "./features/settings/pages/ReceiptDesignPage";
 import { ExpensesPage } from "./features/expenses/pages/ExpensesPage";
+import { DevicesPage } from "./features/devices/pages/DevicesPage";
 import { ShopPage } from "./features/shop/pages/ShopPage";
 import { MyReportsPage } from "./features/reports/pages/MyReportsPage";
 import { CashReportsPage } from "./features/shifts/pages/CashReportsPage";
@@ -64,6 +65,7 @@ function App() {
           <Route path="guests" element={<GuestsPage />} />
           <Route path="finance" element={<FinancePage />} />
           <Route path="expenses" element={<ExpensesPage />} />
+          <Route path="devices" element={<DevicesPage />} />
           <Route path="shop" element={<ShopPage />} />
           <Route path="my-reports" element={<MyReportsPage />} />
           <Route path="cash-reports" element={<CashReportsPage />} />

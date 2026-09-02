@@ -14,12 +14,20 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+import { getDeviceId } from "./deviceId";
 
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Qurilma identifikatori — kirish faqat administrator tasdiqlagan
+    // qurilmadan mumkin. Har so'rovda yuboriladi: login uchun majburiy,
+    // qolganlarida server e'tibor bermaydi.
+    const deviceId = getDeviceId();
+    if (deviceId) {
+      config.headers["X-Device-Id"] = deviceId;
     }
     return config;
   },
