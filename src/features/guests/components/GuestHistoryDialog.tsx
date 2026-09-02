@@ -79,11 +79,17 @@ const fmtDate = (value?: string | null): string | null => {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
 }
 
+/**
+ * Bron vaqtidan soat.
+ *
+ * `new Date()` ishlatilmaydi: bu maydonlarga foydalanuvchi kiritgan devor
+ * soati yoziladi va mintaqaga qayta hisoblansa qiymat siljib ketardi.
+ * Izoh `rooms/lib/reservationDetail.ts` da.
+ */
 const timeOf = (value?: string | null): string | null => {
   if (!value) return null
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const m = /^\d{4}-\d{2}-\d{2}[T ](\d{2}:\d{2})/.exec(String(value))
+  return m ? m[1] : null
 }
 
 const nightsOf = (stay: GuestStay): number => {
@@ -114,12 +120,11 @@ const hourlyLabel = (stay: GuestStay): string => {
     : `${day}, ${from} – ${to}`
 }
 
-/** Aniq vaqtdan sana — ko'rsatiladigan soat bilan bir manbadan. */
+/** Bron vaqtidan sana — soat bilan bir manbadan va bir usulda. */
 const localDate = (value?: string | null): string | null => {
   if (!value) return null
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value))
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : null
 }
 
 const StayCard = ({ stay }: { stay: GuestStay }) => {

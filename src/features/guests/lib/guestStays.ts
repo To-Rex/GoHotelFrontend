@@ -27,14 +27,20 @@ export function isRealStay(stay: GuestStay): boolean {
 const isHourly = (stay: GuestStay) =>
   (stay.booking_type || "").toUpperCase() === "HOURLY"
 
-const pad = (n: number) => String(n).padStart(2, "0")
-
-/** Aniq vaqtdan "yyyy-MM-dd" — mahalliy kun bo'yicha. */
+/**
+ * Bron vaqtidan "yyyy-MM-dd".
+ *
+ * DIQQAT: `new Date()` ISHLATILMAYDI. `check_in_datetime` va
+ * `check_out_datetime` maydonlariga foydalanuvchi kiritgan DEVOR SOATI
+ * yoziladi; mintaqaga qayta hisoblansa kun siljib ketardi — 19:17 dagi
+ * bron ertangi kunga o'tib qolardi. Loyihaning qolgan qismi
+ * (`reservations/lib/booking.ts`) ham bu maydonlarni matn sifatida
+ * o'qiydi.
+ */
 function isoLocalDate(value?: string | null): string | null {
   if (!value) return null
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(value))
+  return m ? m[1] : null
 }
 
 /**
@@ -61,9 +67,22 @@ export function stayDayRange(stay: GuestStay): [string, string] | null {
   const out = stay.check_out_date || fromDate
   if (out <= fromDate) return [fromDate, fromDate]
   // Chiqish kunidan bir kun oldingisi — oxirgi tunab qolgan kun
-  const last = new Date(`${out}T00:00:00`)
-  last.setDate(last.getDate() - 1)
-  return [fromDate, isoLocalDate(last.toISOString()) || fromDate]
+  return [fromDate, previousDay(out) || fromDate]
+}
+
+/**
+ * "yyyy-MM-dd" dan bir kun oldingisi.
+ *
+ * Hisob UTC'da: mahalliy `new Date("...T00:00:00")` mintaqaga qarab bir
+ * kun orqaga surilib, oxirgi kun noto'g'ri chiqishi mumkin edi.
+ */
+function previousDay(iso: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!m) return null
+  const t = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) - 1))
+  if (Number.isNaN(t.getTime())) return null
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`
 }
 
 /**

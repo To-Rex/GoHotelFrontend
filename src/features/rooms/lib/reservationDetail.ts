@@ -37,12 +37,24 @@ export function formatDate(value?: string | null): string | null {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
 }
 
-/** "14:30" — ISO qiymatdan soat. */
+/**
+ * "14:30" — bron vaqtidan soat.
+ *
+ * DIQQAT: `new Date()` ISHLATILMAYDI. `check_in_datetime` va
+ * `check_out_datetime` maydonlariga foydalanuvchi kiritgan DEVOR SOATI
+ * yoziladi, lekin ular bazada mintaqali ustunda saqlanadi va javobda
+ * mintaqa bilan qaytishi mumkin. `new Date()` orqali o'qilsa qiymat
+ * mahalliy mintaqaga qayta hisoblanib, soat 5 soatga siljib ketardi:
+ * 19:17 kiritilgan bron 00:17 bo'lib ko'rinardi va sana ham ertangi kunga
+ * o'tib ketardi.
+ *
+ * Shuning uchun qiymat MATN sifatida o'qiladi — loyihaning qolgan qismi
+ * (`reservations/lib/booking.ts`) ham aynan shunday qiladi.
+ */
 export function timeOf(value?: string | null): string | null {
   if (!value) return null
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const m = /^\d{4}-\d{2}-\d{2}[T ](\d{2}:\d{2})/.exec(String(value))
+  return m ? m[1] : null
 }
 
 export function isHourly(res: RoomReservation): boolean {
@@ -50,17 +62,15 @@ export function isHourly(res: RoomReservation): boolean {
 }
 
 /**
- * Aniq vaqtdan sana — ko'rsatiladigan SOAT bilan bir manbadan.
+ * Bron vaqtidan sana — ko'rsatiladigan SOAT bilan bir manbadan.
  *
- * Nega shunday: sanani `check_out_date` dan, soatni esa
- * `check_out_datetime` dan olsak, ular bir-biriga zid chiqishi mumkin. Bir
- * manbadan olinsa bunday bo'lishi imkonsiz.
+ * `timeOf` kabi matn sifatida o'qiladi: mintaqaga qayta hisoblansa sana
+ * ham soat bilan birga siljib ketardi.
  */
 export function localDateOf(value?: string | null): string | null {
   if (!value) return null
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value))
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : null
 }
 
 /**

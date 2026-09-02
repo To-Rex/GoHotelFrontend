@@ -88,8 +88,8 @@ describe("stayCoversDate", () => {
       booking_type: "HOURLY",
       check_in_date: "2026-09-02",
       check_out_date: "2026-09-03",
-      check_in_datetime: new Date(2026, 8, 2, 19, 56).toISOString(),
-      check_out_datetime: new Date(2026, 8, 2, 21, 56).toISOString(),
+      check_in_datetime: "2026-09-02T19:56:00",
+      check_out_datetime: "2026-09-02T21:56:00",
     })
     expect(stayCoversDate(hourly, "2026-09-02")).toBe(true)
     expect(stayCoversDate(hourly, "2026-09-03")).toBe(false)
@@ -100,8 +100,8 @@ describe("stayCoversDate", () => {
       booking_type: "HOURLY",
       check_in_date: "2026-09-02",
       check_out_date: "2026-09-03",
-      check_in_datetime: new Date(2026, 8, 2, 22, 0).toISOString(),
-      check_out_datetime: new Date(2026, 8, 3, 2, 0).toISOString(),
+      check_in_datetime: "2026-09-02T22:00:00",
+      check_out_datetime: "2026-09-03T02:00:00",
     })
     expect(stayCoversDate(overnight, "2026-09-02")).toBe(true)
     expect(stayCoversDate(overnight, "2026-09-03")).toBe(true)

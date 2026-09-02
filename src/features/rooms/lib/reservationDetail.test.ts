@@ -68,11 +68,29 @@ describe("formatDateTime", () => {
 })
 
 describe("timeOf", () => {
-  it("soat va daqiqa ikki xonali", () => {
-    expect(timeOf(new Date(2026, 8, 2, 9, 5).toISOString())).toBe("09:05")
+  /* Server bron vaqtini foydalanuvchi kiritgan DEVOR SOATI sifatida
+     qaytaradi. `new Date()` orqali o'qilsa u mahalliy mintaqaga qayta
+     hisoblanib, soat siljib ketardi — 19:17 dagi bron 00:17 bo'lib
+     ko'rinardi va sana ham ertangi kunga o'tardi. Aynan shu xato
+     ishlab chiqarishda chiqdi. */
+
+  it("soat qiymatdan o'zgarishsiz olinadi", () => {
+    expect(timeOf("2026-09-02T09:05:00")).toBe("09:05")
+    expect(timeOf("2026-09-02T19:17:00")).toBe("19:17")
   })
-  it("yo'q qiymatda null", () => {
+
+  it("mintaqa qo'shimchasi bo'lsa ham siljimaydi", () => {
+    expect(timeOf("2026-09-02T19:17:00Z")).toBe("19:17")
+    expect(timeOf("2026-09-02T19:17:00+00:00")).toBe("19:17")
+  })
+
+  it("bo'sh joyli ajratgich ham qabul qilinadi", () => {
+    expect(timeOf("2026-09-02 19:17:00")).toBe("19:17")
+  })
+
+  it("yo'q yoki buzuq qiymatda null", () => {
     expect(timeOf(null)).toBeNull()
+    expect(timeOf("xyz")).toBeNull()
   })
 })
 
@@ -86,6 +104,8 @@ describe("nightCount / hourCount", () => {
   })
 
   it("soatlik bronda davomiylik soatlarda", () => {
+    /* Davomiylik ikki payt AYIRMASI, ya'ni ikkalasi bir xil siljigan
+       bo'lsa ham natija to'g'ri qoladi — bu yerda `new Date()` xavfsiz. */
     const r = res({
       booking_type: "HOURLY",
       check_in_datetime: "2026-09-01T10:00:00Z",
@@ -115,18 +135,31 @@ describe("stayLabel", () => {
   })
 
   it("soatlik: sana va aniq oralig'i", () => {
-    const start = new Date(2026, 8, 1, 10, 0).toISOString()
-    const end = new Date(2026, 8, 1, 13, 0).toISOString()
     expect(
       stayLabel(
         res({
           booking_type: "HOURLY",
           check_in_date: "2026-09-01",
-          check_in_datetime: start,
-          check_out_datetime: end,
+          check_in_datetime: "2026-09-01T10:00:00",
+          check_out_datetime: "2026-09-01T13:00:00",
         })
       )
     ).toBe("01.09.2026, 10:00 – 13:00")
+  })
+
+  it("kechqurungi bron ertangi kunga surilmaydi", () => {
+    // 19:17 dagi bron mintaqa tufayli 00:17 bo'lib ko'rinardi
+    expect(
+      stayLabel(
+        res({
+          booking_type: "HOURLY",
+          check_in_date: "2026-09-02",
+          check_out_date: "2026-09-03",
+          check_in_datetime: "2026-09-02T19:17:00Z",
+          check_out_datetime: "2026-09-02T21:17:00Z",
+        })
+      )
+    ).toBe("02.09.2026, 19:17 – 21:17")
   })
 
   it("soatlik bronda vaqt yo'q bo'lsa sana qoladi", () => {
@@ -138,8 +171,8 @@ describe("stayLabel", () => {
       booking_type: "HOURLY",
       check_in_date: "2026-09-02",
       check_out_date: "2026-09-03",
-      check_in_datetime: new Date(2026, 8, 2, 22, 0).toISOString(),
-      check_out_datetime: new Date(2026, 8, 3, 2, 0).toISOString(),
+      check_in_datetime: "2026-09-02T22:00:00",
+      check_out_datetime: "2026-09-03T02:00:00",
     })
     expect(stayLabel(r)).toBe("02.09.2026, 22:00 – 03.09.2026, 02:00")
   })
@@ -170,8 +203,8 @@ describe("checkInDateLabel / checkOutDateLabel", () => {
       check_in_date: "2026-09-02",
       // Server cheklov tufayli ertangi kunni yozib qo'ygan
       check_out_date: "2026-09-03",
-      check_in_datetime: new Date(2026, 8, 2, 19, 56).toISOString(),
-      check_out_datetime: new Date(2026, 8, 2, 21, 56).toISOString(),
+      check_in_datetime: "2026-09-02T19:56:00",
+      check_out_datetime: "2026-09-02T21:56:00",
     })
     expect(checkInDateLabel(r)).toBe("02.09.2026")
     expect(checkOutDateLabel(r)).toBe("02.09.2026")
@@ -182,8 +215,8 @@ describe("checkInDateLabel / checkOutDateLabel", () => {
       booking_type: "HOURLY",
       check_in_date: "2026-09-02",
       check_out_date: "2026-09-03",
-      check_in_datetime: new Date(2026, 8, 2, 22, 0).toISOString(),
-      check_out_datetime: new Date(2026, 8, 3, 2, 0).toISOString(),
+      check_in_datetime: "2026-09-02T22:00:00",
+      check_out_datetime: "2026-09-03T02:00:00",
     })
     expect(checkOutDateLabel(r)).toBe("03.09.2026")
   })
