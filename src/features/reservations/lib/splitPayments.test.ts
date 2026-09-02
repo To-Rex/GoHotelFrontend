@@ -1,12 +1,15 @@
 import { describe, it, expect } from "vitest"
-import {
-  parseAmount,
-  rebalanceFirstAmount,
-  restoreFirstAmount,
-} from "./splitPayments"
+import { extrasTotal, parseAmount, remainderForFirst } from "./splitPayments"
 
-/* Bo'lib to'lash: keyingi qatorlarga kiritilgan summa birinchisidan
-   ayriladi, ya'ni JAMI o'zgarmaydi. */
+/* Bo'lib to'lash: JAMI summa alohida saqlanadi, birinchi qator esa undan
+   qo'shimcha qatorlar ayirilgani.
+
+   Nega ayirma bilan emas: birinchi qator nolga tushib qolganda ayirmaga
+   tayangan hisob orqaga qaytmasdi — kattaroq summa kiritib, keyin uni
+   o'chirganda birinchi qator eski holatiga emas, noto'g'ri songa
+   aylanardi. Aynan shu xato ishlab chiqarishda chiqdi. */
+
+const row = (amount: string) => ({ amount })
 
 describe("parseAmount", () => {
   it("sonni o'qiydi", () => {
@@ -28,56 +31,73 @@ describe("parseAmount", () => {
   })
 })
 
-describe("rebalanceFirstAmount", () => {
-  it("ikkinchi qatorga yozilgan summa birinchisidan ayriladi", () => {
-    // 500 000 naqd edi, 200 000 karta bilan — naqd 300 000 bo'ladi
-    expect(rebalanceFirstAmount(500000, 0, 200000)).toBe(300000)
+describe("extrasTotal", () => {
+  it("qatorlarni qo'shadi", () => {
+    expect(extrasTotal([row("200000"), row("100000")])).toBe(300000)
   })
 
-  it("qator oshirilsa farqigina ayriladi", () => {
-    // 200 000 dan 250 000 ga: birinchisidan yana 50 000
-    expect(rebalanceFirstAmount(300000, 200000, 250000)).toBe(250000)
+  it("bo'sh qatorlar hisobga olinmaydi", () => {
+    expect(extrasTotal([row(""), row("100000"), row("abc")])).toBe(100000)
   })
 
-  it("qator kamaytirilsa pul birinchisiga qaytadi", () => {
-    expect(rebalanceFirstAmount(300000, 200000, 100000)).toBe(400000)
-  })
-
-  it("qator tozalansa hammasi qaytadi", () => {
-    expect(rebalanceFirstAmount(300000, 200000, 0)).toBe(500000)
-  })
-
-  it("o'zgarish bo'lmasa summa ham o'zgarmaydi", () => {
-    expect(rebalanceFirstAmount(300000, 200000, 200000)).toBe(300000)
-  })
-
-  it("birinchi qatorda yetarli pul bo'lmasa nolga tushadi", () => {
-    /* Xodimning kiritganini o'zgartirmaymiz — jami narxdan oshadi va
-       oyna buni allaqachon ogohlantiradi. */
-    expect(rebalanceFirstAmount(100000, 0, 300000)).toBe(0)
-  })
-
-  it("jami o'zgarmaydi — asosiy qoida", () => {
-    const first = 500000
-    const next = rebalanceFirstAmount(first, 0, 200000)
-    expect(next + 200000).toBe(first)
-  })
-
-  it("uchinchi qator ham birinchisidan ayiradi", () => {
-    // 500 000 → karta 200 000 → naqd 300 000; keyin o'tkazma 100 000
-    const afterSecond = rebalanceFirstAmount(500000, 0, 200000)
-    const afterThird = rebalanceFirstAmount(afterSecond, 0, 100000)
-    expect(afterThird).toBe(200000)
-    expect(afterThird + 200000 + 100000).toBe(500000)
+  it("qator yo'q", () => {
+    expect(extrasTotal([])).toBe(0)
   })
 })
 
-describe("restoreFirstAmount", () => {
-  it("o'chirilgan qator summasi birinchisiga qaytadi", () => {
-    expect(restoreFirstAmount(300000, 200000)).toBe(500000)
+describe("remainderForFirst", () => {
+  it("qo'shimcha qator birinchisidan ayriladi", () => {
+    // 500 000 naqd edi, 200 000 karta bilan — naqd 300 000 bo'ladi
+    expect(remainderForFirst(500000, [row("200000")])).toBe(300000)
   })
 
-  it("bo'sh qator o'chirilsa hech nima o'zgarmaydi", () => {
-    expect(restoreFirstAmount(300000, 0)).toBe(300000)
+  it("uchinchi qator ham birinchisidan ayiradi", () => {
+    expect(remainderForFirst(500000, [row("200000"), row("100000")])).toBe(200000)
+  })
+
+  it("jami har doim saqlanadi", () => {
+    const total = 500000
+    const extras = [row("200000"), row("100000")]
+    expect(remainderForFirst(total, extras) + extrasTotal(extras)).toBe(total)
+  })
+
+  it("qator kamaytirilsa pul birinchisiga qaytadi", () => {
+    expect(remainderForFirst(500000, [row("100000")])).toBe(400000)
+  })
+
+  it("qator tozalansa hammasi qaytadi", () => {
+    expect(remainderForFirst(500000, [row("")])).toBe(500000)
+    expect(remainderForFirst(500000, [])).toBe(500000)
+  })
+
+  it("jamidan katta summa kiritilsa birinchisi nolga tushadi", () => {
+    expect(remainderForFirst(500000, [row("800000")])).toBe(0)
+  })
+
+  /* ENG MUHIM TEKSHIRUV: ortiqcha summa kiritilib, keyin o'chirilsa
+     birinchi qator ESKI HOLATIGA qaytishi kerak. Ayirmaga tayangan eski
+     hisobda u 800 000 bo'lib qolardi. */
+  it("ortiqcha summa o'chirilgach birinchisi to'liq tiklanadi", () => {
+    const total = 500000
+    expect(remainderForFirst(total, [row("800000")])).toBe(0)
+    expect(remainderForFirst(total, [row("")])).toBe(500000)
+    expect(remainderForFirst(total, [])).toBe(500000)
+  })
+
+  it("ortiqcha summa kamaytirilsa ham to'g'ri hisoblanadi", () => {
+    const total = 500000
+    expect(remainderForFirst(total, [row("800000")])).toBe(0)
+    expect(remainderForFirst(total, [row("300000")])).toBe(200000)
+  })
+
+  it("bir nechta ortiqcha qatordan keyin ham tiklanadi", () => {
+    const total = 500000
+    expect(remainderForFirst(total, [row("400000"), row("400000")])).toBe(0)
+    expect(remainderForFirst(total, [row("400000")])).toBe(100000)
+    expect(remainderForFirst(total, [])).toBe(500000)
+  })
+
+  it("jami nol bo'lsa birinchisi ham nol", () => {
+    expect(remainderForFirst(0, [row("100000")])).toBe(0)
   })
 })

@@ -7,8 +7,14 @@
  * kamaytirishi kerak edi — bu esa unutiladi va bron ortiqcha to'langan
  * bo'lib qolardi.
  *
- * Endi keyingi qatorlarga kiritilgan summa birinchisidan ayriladi, ya'ni
- * JAMI o'zgarmaydi. Birinchi qator "qolgani" bo'lib ishlaydi.
+ * Shuning uchun JAMI summa alohida saqlanadi, birinchi qator esa undan
+ * qo'shimcha qatorlar ayirilgani — ya'ni "qolgani" — bo'lib hisoblanadi.
+ *
+ * Nega ayirma bilan emas, jami bilan: birinchi qator NOLGA tushib qolishi
+ * mumkin (qo'shimcha qatorga undan kattaroq summa kiritilsa). O'shanda
+ * ayirmaga tayangan hisob orqaga qaytmasdi — qator o'chirilganda birinchi
+ * qator eski holatiga emas, noto'g'ri songa aylanardi. Jami saqlansa, u
+ * har doim tiklanadi.
  */
 
 /** Maydondagi matnni songa o'giradi. Bo'sh yoki buzuq qiymat — 0. */
@@ -17,35 +23,25 @@ export function parseAmount(value: string | number | null | undefined): number {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
-/**
- * Qo'shimcha qatordagi o'zgarishdan keyin birinchi qatorning yangi summasi.
- *
- * Ayirma bo'yicha ishlaydi: qator 100 000 dan 150 000 ga o'zgarsa,
- * birinchisidan 50 000 ayriladi. Qator kamaysa — aksincha, qaytariladi.
- *
- * Manfiy chiqmaydi: birinchi qatorda yetarli pul bo'lmasa u nolga tushadi
- * va jami narxdan oshadi — buni oyna allaqachon "narxdan oshiq!" deb
- * ogohlantiradi. Xodimning kiritganini o'zgartirib yubormaymiz.
- */
-export function rebalanceFirstAmount(
-  currentFirst: number,
-  previousExtra: number,
-  nextExtra: number
+/** Qo'shimcha qatorlardagi summalar yig'indisi. */
+export function extrasTotal(
+  extras: ReadonlyArray<{ amount: string }>
 ): number {
-  const delta = nextExtra - previousExtra
-  return Math.max(currentFirst - delta, 0)
+  return extras.reduce((sum, p) => sum + parseAmount(p.amount), 0)
 }
 
 /**
- * Qator o'chirilganda birinchi qatorga qaytariladigan summa.
+ * Birinchi qatorda ko'rsatiladigan summa.
  *
- * Shu tufayli "jami o'zgarmaydi" qoidasi o'chirishda ham buzilmaydi: xodim
- * karta qatorini olib tashlasa, pul naqdga qaytadi va jami avvalgidek
- * qoladi. Aks holda u birinchi qatorni qo'lda tiklashi kerak bo'lardi.
+ * Manfiy chiqmaydi: qo'shimcha qatorlar jamidan oshib ketsa birinchisi
+ * nolga tushadi va jami narxdan oshadi — buni oyna allaqachon "narxdan
+ * oshiq!" deb ogohlantiradi. Xodimning kiritganini o'zgartirib
+ * yubormaymiz. Jami summaning o'zi saqlanib qolgani uchun qator
+ * kamaytirilsa yoki o'chirilsa birinchisi to'liq tiklanadi.
  */
-export function restoreFirstAmount(
-  currentFirst: number,
-  removedExtra: number
+export function remainderForFirst(
+  intendedTotal: number,
+  extras: ReadonlyArray<{ amount: string }>
 ): number {
-  return Math.max(currentFirst + removedExtra, 0)
+  return Math.max(intendedTotal - extrasTotal(extras), 0)
 }

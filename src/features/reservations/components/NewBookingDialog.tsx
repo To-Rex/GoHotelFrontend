@@ -53,9 +53,9 @@ import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
 import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
 import {
+  extrasTotal,
   parseAmount,
-  rebalanceFirstAmount,
-  restoreFirstAmount,
+  remainderForFirst,
 } from "../lib/splitPayments"
 import {
   fetchSightingFile,
@@ -269,6 +269,30 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [selectedGuestId, setSelectedGuestId] = useState<string>("")
   const [bookingType, setBookingType] = useState<"DAILY" | "HOURLY">("DAILY")
   const [extraPayments, setExtraPayments] = useState<Array<{ amount: string; method: string }>>([])
+
+  /* Xodim to'lamoqchi bo'lgan JAMI summa. Birinchi maydon shundan
+     qo'shimcha qatorlar ayirilgani — ya'ni "qolgani" — bo'lib ko'rsatiladi.
+
+     Nega alohida saqlanadi: birinchi maydon nolga tushib qolishi mumkin
+     (qo'shimcha qatorga undan kattaroq summa kiritilsa). O'shanda faqat
+     maydondagi songa tayanib jamini tiklab bo'lmaydi — qator o'chirilganda
+     birinchi maydon eski holatiga qaytmasdi. Izoh `lib/splitPayments.ts`
+     da. */
+  const intendedTotalRef = useRef(0)
+
+  /** Jami summani belgilaydi va birinchi maydonni qayta hisoblaydi. */
+  const setPaymentTotal = (total: number) => {
+    intendedTotalRef.current = total
+    setValue("payment_amount", total)
+  }
+
+  /** Qo'shimcha qatorlar o'zgardi — birinchi maydon qayta hisoblanadi. */
+  const applyExtraPayments = (
+    next: Array<{ amount: string; method: string }>
+  ) => {
+    setExtraPayments(next)
+    setValue("payment_amount", remainderForFirst(intendedTotalRef.current, next))
+  }
   const [discountType, setDiscountType] = useState<"AMOUNT" | "PERCENT">("AMOUNT")
   const [discountValue, setDiscountValue] = useState("")
   const [localError, setLocalError] = useState<string | null>(null)
@@ -552,7 +576,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     // avvalgidek bo'sh, xodim ro'yxatdan qidiradi.
     setValue("guest_id", request.guestId || "")
     setValue("new_guest_nationality", DEFAULT_NATIONALITY)
-    setValue("payment_amount", wanted === "HOURLY" ? price : nights * price)
+    setPaymentTotal(wanted === "HOURLY" ? price : nights * price)
     setValue("payment_method", "CASH")
     setExtraPayments([])
     setDiscountType("AMOUNT")
@@ -797,7 +821,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
 
   useEffect(() => {
     if (!open) return
-    setValue("payment_amount", finalTotal)
+    setPaymentTotal(finalTotal)
     setExtraPayments([])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, bookingType, finalTotal])
@@ -809,9 +833,14 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const remainingAmount = Math.max(finalTotal - paidTotal, 0)
 
   const addExtraPayment = () => {
-    setExtraPayments((prev) => [
-      ...prev,
-      { amount: remainingAmount > 0 ? String(remainingAmount) : "", method: "" },
+    const prefill = remainingAmount > 0 ? remainingAmount : 0
+    /* Oldindan to'ldirilgan summa — bu YANGI pul, birinchi qatordan
+       olinmagan. Shuning uchun jami ham shuncha ko'payadi, aks holda
+       qator qo'shishning o'zi birinchi maydonni kamaytirib yuborardi. */
+    intendedTotalRef.current += prefill
+    applyExtraPayments([
+      ...extraPayments,
+      { amount: prefill > 0 ? String(prefill) : "", method: "" },
     ])
   }
 
@@ -819,39 +848,15 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     index: number,
     patch: Partial<{ amount: string; method: string }>
   ) => {
-    /* Summa o'zgarsa — BIRINCHI qatordan ayiramiz, ya'ni jami o'zgarmaydi.
-       Xodim odatda jami summani birinchi qatorga yozadi, so'ng mijoz
-       "bir qismini karta bilan" deydi. Ilgari birinchi qatorni qo'lda
-       kamaytirish kerak edi va bu unutilardi — bron ortiqcha to'langan
-       bo'lib qolardi. Batafsil izoh `lib/splitPayments.ts` da. */
-    if (patch.amount !== undefined) {
-      const previous = parseAmount(extraPayments[index]?.amount)
-      const next = parseAmount(patch.amount)
-      if (next !== previous) {
-        setValue(
-          "payment_amount",
-          rebalanceFirstAmount(
-            parseAmount(getValues("payment_amount")),
-            previous,
-            next
-          )
-        )
-      }
-    }
-    setExtraPayments((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)))
+    applyExtraPayments(
+      extraPayments.map((p, i) => (i === index ? { ...p, ...patch } : p))
+    )
   }
 
   const removeExtraPayment = (index: number) => {
-    // Qator o'chirilsa puli birinchisiga qaytadi — "jami o'zgarmaydi"
-    // qoidasi o'chirishda ham buzilmasin
-    const removed = parseAmount(extraPayments[index]?.amount)
-    if (removed > 0) {
-      setValue(
-        "payment_amount",
-        restoreFirstAmount(parseAmount(getValues("payment_amount")), removed)
-      )
-    }
-    setExtraPayments((prev) => prev.filter((_, i) => i !== index))
+    // Qator o'chirilsa puli birinchisiga qaytadi — jami o'zgarmagani uchun
+    // bu o'z-o'zidan bo'ladi
+    applyExtraPayments(extraPayments.filter((_, i) => i !== index))
   }
 
   const applyDuration = (hours: number) => {
@@ -859,7 +864,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     const outMin = (timeToMin(inT) + hours * 60) % (24 * 60)
     setValue("check_in_time", inT)
     setValue("check_out_time", minToTime(outMin))
-    setValue("payment_amount", roomPrice)
+    setPaymentTotal(roomPrice)
     // Summa qayta hisoblandi — qo'shimcha to'lov qatorlari eskirdi
     setExtraPayments([])
   }
@@ -1149,12 +1154,9 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                   const outT = slot ? minToTime(slot[1]) : "16:00"
                   setValue("check_in_time", inT)
                   setValue("check_out_time", outT)
-                  setValue(
-                    "payment_amount",
-                    roomPrice
-                  )
+                  setPaymentTotal(roomPrice)
                 } else {
-                  setValue("payment_amount", totalPrice)
+                  setPaymentTotal(totalPrice)
                 }
                 // To'lov summasi qayta hisoblanganda qo'shimcha to'lov
                 // qatorlari eskirib qoladi — tozalaymiz
@@ -1912,7 +1914,16 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                 min={0}
                 max={finalTotal}
                 placeholder="0"
-                {...register("payment_amount", { valueAsNumber: true })}
+                {...register("payment_amount", {
+                  valueAsNumber: true,
+                  /* Xodim birinchi maydonni o'zi tahrirlasa JAMI ham
+                     o'zgaradi: u qo'shimcha qatorlar bilan birga
+                     to'lamoqchi bo'lgan summani bildiradi. */
+                  onChange: (e) => {
+                    intendedTotalRef.current =
+                      parseAmount(e.target.value) + extrasTotal(extraPayments)
+                  },
+                })}
               />
               <select
                 className="w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
