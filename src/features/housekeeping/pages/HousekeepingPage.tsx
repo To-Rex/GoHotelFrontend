@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   X,
   MessageSquare,
+  BarChart3,
 } from "lucide-react"
+import { CleaningReportDialog } from "../components/CleaningReportDialog";
 import {
   useHousekeepingTasks,
   useCreateHousekeepingTask,
@@ -160,6 +162,7 @@ export const HousekeepingPage = () => {
   const canAssign = can("housekeeping.task.assign")
   const user = useAuthStore((s) => s.user)
 
+  const [reportOpen, setReportOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState("")
   const [search, setSearch] = useState("")
 
@@ -332,6 +335,13 @@ export const HousekeepingPage = () => {
               Xabar yuborish
             </Link>
           </Button>
+          {/* Chiqishlar bilan tozalashlarni solishtirish. Vazifalar
+              ro'yxati bunga javob bermaydi — u faqat ochiq ishlarni
+              ko'rsatadi, chiqishlar bilan taqqoslamaydi. */}
+          <Button variant="outline" onClick={() => setReportOpen(true)}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Chiqish va tozalash
+          </Button>
           {canCreate && (
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4 mr-2" />
@@ -340,6 +350,8 @@ export const HousekeepingPage = () => {
           )}
         </div>
       </div>
+
+      <CleaningReportDialog open={reportOpen} onOpenChange={setReportOpen} />
 
       {/* Qidiruv + holat chiplari */}
       <div className="flex flex-wrap items-center gap-2.5">
