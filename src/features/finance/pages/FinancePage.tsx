@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { buildDatePresets, resolveDateRange } from "@/lib/datePresets"
+import { DebtorsPanel } from "../components/DebtorsPanel"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 
 const selectClass =
@@ -759,6 +760,16 @@ export const FinancePage = () => {
           </Table>
         </div>
       </div>
+
+      {/* Qarzdorlar — bronlar bo'yicha. Moliyada savol "qaysi bron
+          to'lanmagan", shuning uchun ro'yxat bron kesimida va tanlangan
+          davr bilan cheklangan. */}
+      <DebtorsPanel
+        dateFrom={dateFrom || undefined}
+        dateTo={dateTo || undefined}
+        title="Qarzdorlar (bronlar bo'yicha)"
+        initialLimit={6}
+      />
 
       {/* Do'kon qarzlari — bronga yozilgan, hali to'lanmagan sotuvlar */}
       {shopDebts.length > 0 && (

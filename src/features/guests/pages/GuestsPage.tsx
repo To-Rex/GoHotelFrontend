@@ -18,6 +18,7 @@ import { BirthDateSelect } from "../components/BirthDateSelect";
 import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog";
 import { GuestHistoryDialog } from "../components/GuestHistoryDialog";
+import { DebtorsPanel } from "@/features/finance/components/DebtorsPanel";
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow";
 import {
   fetchSightingFile,
@@ -510,6 +511,21 @@ export const GuestsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Qarzdorlar — ODAMLAR bo'yicha. Mehmonlar sahifasida savol
+          "kim qarzdor", shuning uchun bitta mehmonning bir nechta qarzi
+          bitta qatorga yig'iladi. Qatorga bosilsa o'sha mehmonning turish
+          tarixi ochiladi. Davr cheklovi yo'q: bu yerda barcha ochiq
+          qarzlar ko'rinishi kerak. */}
+      <DebtorsPanel
+        mode="guests"
+        title="Qarzdor mehmonlar"
+        initialLimit={5}
+        onGuestClick={(id) => {
+          const found = (guests || []).find((g) => g.id === id)
+          if (found) setHistoryGuest(found)
+        }}
+      />
 
       {/* Qidiruv uchun skaner (dialog ichidagidan alohida) */}
       <DocumentScanner
