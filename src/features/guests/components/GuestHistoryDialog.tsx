@@ -1,0 +1,296 @@
+import {
+  BedDouble,
+  CalendarDays,
+  Clock,
+  DoorOpen,
+  Loader2,
+  Phone,
+  UserCheck,
+  Users,
+} from "lucide-react"
+
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { apiErrorMessage } from "@/lib/apiError"
+import { cn } from "@/lib/utils"
+import type { Guest } from "@/types/api"
+import { useGuestHistory, type GuestStay } from "../api/guestHistory"
+
+/**
+ * Mehmonning to'liq tarixi: qachon, qaysi xonada, kim bilan turgan.
+ *
+ * Mehmonlar ro'yxatida faqat kartochka bor edi — telefon, hujjat. "Bu odam
+ * ilgari kelganmi, qaysi xonani yoqtiradi, kim bilan keladi" degan savolga
+ * javob yo'q edi, holbuki resepsiya aynan shuni so'raydi.
+ *
+ * Ro'yxatda mehmon HAMROH bo'lib turgan bronlar ham bor va ular alohida
+ * belgilanadi: ularni qo'shmasak, birga kelgan ikki kishidan faqat
+ * bittasining tarixi ko'rinardi.
+ */
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: "Kutilmoqda",
+  CONFIRMED: "Tasdiqlangan",
+  CHECKED_IN: "Kirgan",
+  CHECKED_OUT: "Chiqgan",
+  NO_SHOW: "Kelmadi",
+  CANCELLED: "Bekor qilingan",
+}
+
+const statusBadge: Record<string, string> = {
+  PENDING: "bg-amber-100 text-amber-700",
+  CONFIRMED: "bg-blue-100 text-blue-700",
+  CHECKED_IN: "bg-emerald-100 text-emerald-700",
+  CHECKED_OUT: "bg-gray-200 text-gray-600",
+  NO_SHOW: "bg-gray-100 text-gray-500",
+  CANCELLED: "bg-red-100 text-red-600",
+}
+
+const fmt = (n: number) => Number(n || 0).toLocaleString()
+
+const pad = (n: number) => String(n).padStart(2, "0")
+
+/** "01.09.2026" — sof sana mintaqa siljishisiz o'qiladi. */
+const fmtDate = (value?: string | null): string | null => {
+  if (!value) return null
+  const plain = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (plain) return `${plain[3]}.${plain[2]}.${plain[1]}`
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
+}
+
+const timeOf = (value?: string | null): string | null => {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+const nightsOf = (stay: GuestStay): number => {
+  const a = new Date(stay.check_in_date).getTime()
+  const b = new Date(stay.check_out_date).getTime()
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0
+  return Math.max(Math.round((b - a) / 86_400_000), 0)
+}
+
+const StayCard = ({ stay }: { stay: GuestStay }) => {
+  const hourly = (stay.booking_type || "").toUpperCase() === "HOURLY"
+  const nights = hourly ? 0 : nightsOf(stay)
+  const from = timeOf(stay.check_in_datetime)
+  const to = timeOf(stay.check_out_datetime)
+
+  // O'zidan boshqalar — "kim bilan kelgan" savoliga javob aynan shular
+  const others = stay.people.filter((p) => !p.is_self && p.name)
+
+  const place = [
+    stay.room_number ? `${stay.room_number}-xona` : null,
+    stay.room_type_name,
+    stay.floor_number !== null && stay.floor_number !== undefined
+      ? `${stay.floor_number}-qavat`
+      : null,
+    stay.branch_name,
+  ].filter(Boolean)
+
+  return (
+    <div className="rounded-2xl border bg-white p-3.5">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold leading-tight text-gray-900">
+              {stay.reservation_number}
+            </p>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                statusBadge[stay.status] || "bg-gray-100 text-gray-500"
+              )}
+            >
+              {STATUS_LABELS[stay.status] || stay.status}
+            </span>
+            {/* Hamroh bo'lib turgan bron — bu bronni boshqa odam ochgan */}
+            {stay.role === "COMPANION" && (
+              <span
+                title="Bu bronni boshqa mehmon ochgan, bu odam hamroh bo'lgan"
+                className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700"
+              >
+                Hamroh sifatida
+              </span>
+            )}
+          </div>
+
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-gray-700">
+            {hourly ? (
+              <Clock className="h-3.5 w-3.5 text-gray-400" />
+            ) : (
+              <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+            )}
+            {hourly
+              ? `${fmtDate(stay.check_in_date)}${
+                  from && to ? `, ${from} – ${to}` : ""
+                }`
+              : `${fmtDate(stay.check_in_date)} → ${fmtDate(stay.check_out_date)}`}
+            <span className="text-xs text-gray-400">
+              {hourly ? "soatlik" : nights ? `${nights} kecha` : "kunlik"}
+            </span>
+          </p>
+
+          {place.length > 0 && (
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500">
+              <DoorOpen className="h-3.5 w-3.5 text-gray-400" />
+              {place.join(" · ")}
+            </p>
+          )}
+        </div>
+
+        <div className="text-right">
+          <p className="text-sm font-bold tabular-nums text-gray-900">
+            {fmt(stay.total_amount)} <span className="text-xs font-normal text-gray-400">So'm</span>
+          </p>
+          <p className="text-[11px] text-gray-500">
+            {stay.adults} kattalar
+            {stay.children ? `, ${stay.children} bolalar` : ""}
+          </p>
+        </div>
+      </div>
+
+      {/* KIM BILAN. O'zi ro'yxatdan chiqarilgan — savol boshqalari haqida */}
+      {others.length > 0 && (
+        <div className="mt-2.5 border-t border-gray-100 pt-2">
+          <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">
+            <Users className="h-3.5 w-3.5" />
+            Birga turganlar
+          </p>
+          <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+            {others.map((p, i) => (
+              <li
+                key={p.guest_id || `${p.name}-${i}`}
+                className="inline-flex items-center gap-1 text-sm text-gray-800"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-primary-400" />
+                {p.name}
+                {p.is_primary && (
+                  <span className="text-[11px] text-gray-400">(bron egasi)</span>
+                )}
+                {p.phone && (
+                  <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-400">
+                    <Phone className="h-3 w-3" />
+                    {p.phone}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface Props {
+  guest: Guest | null
+  onClose: () => void
+}
+
+export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
+  const { data, isLoading, error } = useGuestHistory(guest?.id)
+  const summary = data?.summary
+  const stays = data?.stays || []
+
+  return (
+    <Dialog open={!!guest} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[760px]">
+        <DialogHeader>
+          <DialogTitle className="flex flex-wrap items-center gap-2 pr-6">
+            <span className="break-words">
+              {guest ? `${guest.first_name} ${guest.last_name || ""}`.trim() : ""}
+            </span>
+            {guest?.phone && (
+              <span className="inline-flex items-center gap-1 text-sm font-normal text-gray-500">
+                <Phone className="h-3.5 w-3.5" />
+                {guest.phone}
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        {isLoading && (
+          <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Yuklanmoqda...
+          </div>
+        )}
+
+        {error && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+            {apiErrorMessage(error)}
+          </p>
+        )}
+
+        {!isLoading && !error && (
+          <>
+            {/* Jamlanma. Bekor qilingan va kelmagan turishlar bu yerga
+                kirmaydi — ular uchun mehmon xonada bo'lmagan. */}
+            {!!summary && summary.total_stays > 0 && (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  { label: "Turishlar", value: String(summary.completed_stays) },
+                  { label: "Jami kecha", value: String(summary.total_nights) },
+                  { label: "To'langan", value: `${fmt(summary.total_paid)} so'm` },
+                  {
+                    label: "Ko'p turgan xona",
+                    value: summary.favourite_room
+                      ? `${summary.favourite_room}-xona`
+                      : "—",
+                  },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-xl border border-gray-200 bg-gray-50/60 px-3 py-2"
+                  >
+                    <p className="text-[11px] text-gray-500">{s.label}</p>
+                    <p className="truncate text-sm font-bold tabular-nums text-gray-900">
+                      {s.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!!summary && (summary.first_stay || summary.last_stay) && (
+              <p className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                <UserCheck className="h-3.5 w-3.5 text-gray-400" />
+                Birinchi kelishi: <b className="text-gray-700">{fmtDate(summary.first_stay)}</b>
+                <span className="text-gray-300">·</span>
+                oxirgisi: <b className="text-gray-700">{fmtDate(summary.last_stay)}</b>
+              </p>
+            )}
+
+            <div className="max-h-[50vh] space-y-2.5 overflow-y-auto pr-0.5">
+              {stays.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-12 text-gray-400">
+                  <BedDouble className="h-8 w-8" />
+                  <p className="text-sm">Bu mehmon hali turmagan</p>
+                </div>
+              ) : (
+                stays.map((stay) => <StayCard key={stay.id} stay={stay} />)
+              )}
+            </div>
+          </>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Yopish
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

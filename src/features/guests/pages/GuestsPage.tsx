@@ -17,6 +17,7 @@ import {
 import { BirthDateSelect } from "../components/BirthDateSelect";
 import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog";
+import { GuestHistoryDialog } from "../components/GuestHistoryDialog";
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow";
 import {
   fetchSightingFile,
@@ -83,6 +84,8 @@ export const GuestsPage = () => {
 
   // Hujjat skaneri (passport/ID karta) — /booking dagi bilan bir xil komponent.
   // MRZ'dan o'qilgan maydonlargina to'ldiriladi, qolganlari o'z holicha qoladi
+  /* Bosilgan mehmon — turish tarixi oynasi shu bilan ochiladi */
+  const [historyGuest, setHistoryGuest] = useState<Guest | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const MRZ_COUNTRY: Record<string, string> = {
     UZB: "O'zbekiston",
@@ -530,7 +533,20 @@ export const GuestsPage = () => {
           </div>
         ) : (
           filtered.map((guest) => (
-            <div key={guest.id} className="rounded-2xl border bg-white p-3.5">
+            <div
+              key={guest.id}
+              role="button"
+              tabIndex={0}
+              title="Turish tarixi"
+              onClick={() => setHistoryGuest(guest)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setHistoryGuest(guest);
+                }
+              }}
+              className="cursor-pointer rounded-2xl border bg-white p-3.5 transition-colors hover:border-gray-300 hover:bg-gray-50/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-semibold text-white shadow-sm">
@@ -593,7 +609,16 @@ export const GuestsPage = () => {
 
               {canEdit && (
                 <div className="mt-3 flex justify-end border-t border-gray-100 pt-2.5">
-                  <Button variant="ghost" size="sm" onClick={() => openEdit(guest)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    /* Bosilishi kartaga o'tmasin: aks holda tahrirlash
+                       bilan birga tarix oynasi ham ochilardi */
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(guest);
+                    }}
+                  >
                     <Pencil className="h-3.5 w-3.5 mr-1" />
                     Tahrirlash
                   </Button>
@@ -632,7 +657,12 @@ export const GuestsPage = () => {
               </TableRow>
             ) : (
               filtered.map((guest) => (
-                <TableRow key={guest.id}>
+                <TableRow
+                  key={guest.id}
+                  title="Turish tarixi"
+                  onClick={() => setHistoryGuest(guest)}
+                  className="cursor-pointer"
+                >
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-semibold text-white shadow-sm">
@@ -684,7 +714,16 @@ export const GuestsPage = () => {
                   </TableCell>
                   {canEdit && (
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(guest)}>
+                      <Button
+                    variant="ghost"
+                    size="sm"
+                    /* Bosilishi kartaga o'tmasin: aks holda tahrirlash
+                       bilan birga tarix oynasi ham ochilardi */
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(guest);
+                    }}
+                  >
                         <Pencil className="h-3.5 w-3.5 mr-1" />
                         Tahrirlash
                       </Button>
@@ -696,6 +735,12 @@ export const GuestsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Mehmon ustiga bosilganda — turish tarixi */}
+      <GuestHistoryDialog
+        guest={historyGuest}
+        onClose={() => setHistoryGuest(null)}
+      />
 
       {/* Mehmon qo'shish/tahrirlash modali */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
