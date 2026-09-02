@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ReservationReceiptButton } from "@/features/reservations/components/ReservationReceiptButton"
-import { GuestContactEditor } from "@/features/guests/components/GuestContactEditor"
+import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
 import { cn } from "@/lib/utils"
 import type { RoomReservation, ReservationOccupant } from "../api/rooms"
 import {
@@ -225,13 +225,8 @@ const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
         <Fact icon={StickyNote} value={person.notes} title="Mehmon haqida izoh" />
       </div>
 
-      {/* Telefon va passportni shu yerning o'zida to'g'rilash */}
-      <GuestContactEditor
-        guestId={person.guest_id}
-        phone={person.phone}
-        passport={person.passport_number}
-        className="mt-1.5"
-      />
+      {/* Ma'lumotni shu yerning o'zida to'g'rilash */}
+      <GuestQuickEdit guest={person} className="mt-1.5" />
 
       {/* Bronda ismi bor, lekin bazada topilmagan hamroh: o'chirilgan
           bo'lishi mumkin. Yozuv yo'qolmagani, faqat kartochkasi yo'qligi

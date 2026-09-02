@@ -8,7 +8,12 @@ import {
   GUEST_PHOTO_ACCEPT,
   GUEST_PHOTO_MAX_BYTES,
 } from "../api/guests";
-import { NATIONALITIES, DEFAULT_NATIONALITY } from "../constants";
+import {
+  NATIONALITIES,
+  DEFAULT_NATIONALITY,
+  DOC_TYPES,
+  sanitizePassport,
+} from "../constants";
 import { BirthDateSelect } from "../components/BirthDateSelect";
 import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog";
@@ -27,15 +32,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-const DOC_TYPES = [
-  { value: "", label: "Tanlang" },
-  { value: "PASSPORT", label: "Passport" },
-  { value: "ID_CARD", label: "ID karta" },
-  { value: "DRIVER_LICENSE", label: "Haydovchilik guvohnomasi" },
-  { value: "BIRTH_CERTIFICATE", label: "Tug'ilganlik guvohnomasi" },
-  { value: "OTHER", label: "Boshqa" },
-];
-
 const emptyForm = {
   first_name: "",
   last_name: "",
@@ -47,10 +43,6 @@ const emptyForm = {
   nationality: DEFAULT_NATIONALITY,
   address: "",
 };
-
-function sanitizePassport(v: string): string {
-  return v.toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
 
 // Jadvaldagi avatar uchun ism-familiya bosh harflari
 function initials(first?: string, last?: string): string {

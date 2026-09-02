@@ -271,6 +271,9 @@ export const useUpdateRoomStatus = () => {
 export interface ReservationOccupant {
   guest_id?: string | null;
   name?: string | null;
+  /** Ism va familiya alohida — tahrirlash shakli ularni bo'lingan so'raydi */
+  first_name?: string | null;
+  last_name?: string | null;
   is_primary: boolean;
   phone?: string | null;
   email?: string | null;

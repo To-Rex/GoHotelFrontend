@@ -53,3 +53,20 @@ export const NATIONALITIES: string[] = [
   "Braziliya",
   "Boshqa",
 ];
+
+/* Hujjat turlari. Mehmonlar sahifasi va tez tahrirlash oynasi bir xil
+   ro'yxatdan foydalanadi — aks holda bir joyda bor tur ikkinchisida yo'q
+   bo'lib qolardi. */
+export const DOC_TYPES = [
+  { value: "", label: "Tanlang" },
+  { value: "PASSPORT", label: "Passport" },
+  { value: "ID_CARD", label: "ID karta" },
+  { value: "DRIVER_LICENSE", label: "Haydovchilik guvohnomasi" },
+  { value: "BIRTH_CERTIFICATE", label: "Tug'ilganlik guvohnomasi" },
+  { value: "OTHER", label: "Boshqa" },
+];
+
+/** Passport raqami: faqat lotin harflari va raqamlar, katta harfda. */
+export function sanitizePassport(v: string): string {
+  return v.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
