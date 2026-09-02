@@ -53,6 +53,11 @@ import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
 import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
 import {
+  parseAmount,
+  rebalanceFirstAmount,
+  restoreFirstAmount,
+} from "../lib/splitPayments"
+import {
   fetchSightingFile,
   useEnrollSighting,
   type SightingGroup,
@@ -814,10 +819,38 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     index: number,
     patch: Partial<{ amount: string; method: string }>
   ) => {
+    /* Summa o'zgarsa — BIRINCHI qatordan ayiramiz, ya'ni jami o'zgarmaydi.
+       Xodim odatda jami summani birinchi qatorga yozadi, so'ng mijoz
+       "bir qismini karta bilan" deydi. Ilgari birinchi qatorni qo'lda
+       kamaytirish kerak edi va bu unutilardi — bron ortiqcha to'langan
+       bo'lib qolardi. Batafsil izoh `lib/splitPayments.ts` da. */
+    if (patch.amount !== undefined) {
+      const previous = parseAmount(extraPayments[index]?.amount)
+      const next = parseAmount(patch.amount)
+      if (next !== previous) {
+        setValue(
+          "payment_amount",
+          rebalanceFirstAmount(
+            parseAmount(getValues("payment_amount")),
+            previous,
+            next
+          )
+        )
+      }
+    }
     setExtraPayments((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)))
   }
 
   const removeExtraPayment = (index: number) => {
+    // Qator o'chirilsa puli birinchisiga qaytadi — "jami o'zgarmaydi"
+    // qoidasi o'chirishda ham buzilmasin
+    const removed = parseAmount(extraPayments[index]?.amount)
+    if (removed > 0) {
+      setValue(
+        "payment_amount",
+        restoreFirstAmount(parseAmount(getValues("payment_amount")), removed)
+      )
+    }
     setExtraPayments((prev) => prev.filter((_, i) => i !== index))
   }
 
