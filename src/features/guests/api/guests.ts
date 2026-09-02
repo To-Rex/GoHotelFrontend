@@ -46,6 +46,9 @@ export const useUpdateGuest = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guests'] });
+      // Mehmon kartochkasi xona bandlovlari javobida ham keladi — telefon
+      // yoki passport o'zgarsa o'sha oynada ham darhol yangilansin
+      queryClient.invalidateQueries({ queryKey: ['roomReservations'] });
     },
   });
 };

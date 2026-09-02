@@ -128,10 +128,15 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
   const [showMore, setShowMore] = useState(false)
   const patch = (part: Partial<ReservationFilters>) =>
     setFilters((prev) => ({ ...prev, ...part }))
-  /* Bosilgan band — to'liq ma'lumot oynasi shu bilan ochiladi. Yozuvning
-     o'zi saqlanadi, ID emas: ro'yxat yangilanib qolsa ham oyna ochiq
-     turgan bandni yo'qotmaydi. */
-  const [detail, setDetail] = useState<RoomReservation | null>(null)
+  /* Bosilgan bandning ID'si — to'liq ma'lumot oynasi shu bilan ochiladi.
+     Yozuvning nusxasi emas, aynan ID: oynada mehmonning telefoni yoki
+     passporti tahrirlansa ro'yxat qayta so'raladi va oyna YANGI yozuvni
+     ko'rsatishi kerak. Nusxa saqlansa u eskirib qolardi. */
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const detail = useMemo(
+    () => reservations.find((r) => r.id === detailId) || null,
+    [reservations, detailId]
+  )
 
   // Holatlar bo'yicha sonlar — filtr chiplarida ko'rsatiladi
   const statusCounts = useMemo(() => {
@@ -164,7 +169,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
   // Oyna yopilganda filtrlar keyingi xona uchun qolib ketmasin
   const close = () => {
     clearFilters()
-    setDetail(null)
+    setDetailId(null)
     onClose()
   }
 
@@ -441,7 +446,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
               key={res.id}
               res={res}
               roomNumber={room?.room_number}
-              onOpen={() => setDetail(res)}
+              onOpen={() => setDetailId(res.id)}
             />
           ))}
         </div>
@@ -451,7 +456,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
           qoladi, shuning uchun yopilgach xodim o'sha joyiga qaytadi. */}
       <ReservationDetailDialog
         reservation={detail}
-        onClose={() => setDetail(null)}
+        onClose={() => setDetailId(null)}
       />
     </Dialog>
   )
