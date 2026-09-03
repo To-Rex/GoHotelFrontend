@@ -6,6 +6,13 @@ import { RoomStatusNote } from "@/features/rooms/components/RoomStatusNote"
 import type { RoomStatusDetail } from "@/features/rooms/lib/roomStatusInfo"
 import { isBlockedAlways } from "@/features/rooms/lib/roomBookable"
 import { DEBT_BAR_CLASS, debtHint, debtLevelOf } from "../lib/booking"
+import {
+  canExtendTo,
+  extendCeiling,
+  extendTarget,
+  isExtendable,
+  nextBusyStart,
+} from "../lib/extend"
 
 const DAY_MINUTES = 24 * 60
 // Bitta soat ustunining kengligi (px) — lenta gorizontal aylantiriladi,
@@ -48,6 +55,9 @@ const roomCellAccent: Record<string, string> = {
 // Soatlik bronlar orasidagi majburiy tanaffus (daqiqa) — mijoz chiqib ketgach
 // xonani tayyorlash uchun. BookingPage va backenddagi qiymat bilan bir xil.
 const TURNOVER_MIN = 15
+// Cho'zishda vaqt shu qadamga yaxlitlanadi — piksel aniqligidagi
+// 21:07 kabi vaqtlar chiqmasligi uchun
+const EXTEND_STEP_MIN = 15
 
 export interface HourlyBoardProps {
   /** Ko'rsatilayotgan kun — "yyyy-MM-dd" */
@@ -74,6 +84,16 @@ export interface HourlyBoardProps {
   activeTaskTypeByRoom?: Record<string, string>
   /** Xona holati tafsiloti (tozalash qachon boshlangani va h.k.). */
   statusDetailByRoom?: Record<string, RoomStatusDetail | null>
+  /**
+   * Bronni surib cho'zish mumkinmi — faqat ADMINISTRATOR uchun.
+   * Boshqa rollarda dastak umuman chizilmaydi.
+   */
+  canExtend?: boolean
+  /**
+   * Cho'zish tasdiqlangach. `checkOut` — yangi tugash payti
+   * ("2026-09-03T23:00:00"), zonasiz: bu xodim ko'rgan devor soati.
+   */
+  onExtend?: (res: any, checkOut: string) => void
 }
 
 // Faol vazifa turlari yorlig'i va ranglari (BookingPage bilan bir xil)
@@ -148,6 +168,8 @@ export function HourlyBoard({
   statusColors,
   activeTaskTypeByRoom = {},
   statusDetailByRoom = {},
+  canExtend = false,
+  onExtend,
 }: HourlyBoardProps) {
   // Joriy vaqt — har 30 soniyada yangilanadi
   const [now, setNow] = useState(() => new Date())
@@ -367,18 +389,110 @@ export function HourlyBoard({
     onSlotClick(room, startAbs - dayIdx * DAY_MINUTES, endAbs - dayIdx * DAY_MINUTES, dateStr)
   }
 
-  // Blokning oyna ichidagi joylashuvi; butunlay tashqarida bo'lsa — null
-  const blockPosition = (iv: Interval) => {
-    const safeEnd = Math.max(iv.end, iv.start + 15)
+  // Blokning oyna ichidagi joylashuvi; butunlay tashqarida bo'lsa — null.
+  // `endOverride` — surish paytidagi vaqtinchalik tugash vaqti: blok
+  // sichqoncha ortidan darhol cho'ziladi, so'rov esa qo'yib yuborilganda
+  // ketadi.
+  const blockPosition = (iv: Interval, endOverride?: number) => {
+    const end = endOverride ?? iv.end
+    const safeEnd = Math.max(end, iv.start + 15)
     if (safeEnd <= winStart || iv.start >= winEnd) return null
     const left = pct(Math.max(iv.start, winStart))
     const right = pct(Math.min(safeEnd, winEnd))
     return {
       left,
       width: right - left,
-      label: `${minToTime(iv.start)} - ${minToTime(iv.end)}`,
+      label: `${minToTime(iv.start)} - ${minToTime(end)}`,
     }
   }
+
+  // --- Bronni surib cho'zish (o'ng chetdagi dastak) ---
+  //
+  // Chegara — shu xonadagi keyingi bron; u bo'lmasa lentaning oxiri.
+  // Bu yerdagi hisob faqat ko'rsatish uchun: haqiqiy ruxsatni server
+  // beradi va u ham AYNAN shu qoidaga amal qiladi.
+  const extendLimitFor = (iv: Interval): number => {
+    const others = blockingOf(iv.res.room_id).filter((b) => b.res.id !== iv.res.id)
+    return extendCeiling(nextBusyStart(others, iv.end), {
+      turnover: TURNOVER_MIN,
+      hourly: !iv.daily,
+      ceiling: winEnd,
+    })
+  }
+
+  // Soatlik taxtada faqat SOATLIK bron cho'ziladi: kunlik bron kun
+  // aniqligida o'lchanadi va uni Kalendar tabida kunlar bo'ylab surish
+  // ancha aniqroq chiqadi.
+  const canExtendInterval = (iv: Interval): boolean =>
+    canExtend &&
+    !!onExtend &&
+    !iv.daily &&
+    isExtendable(iv.res.status) &&
+    canExtendTo(iv.end, extendLimitFor(iv), EXTEND_STEP_MIN)
+
+  const [extendDrag, setExtendDrag] = useState<{
+    resId: string
+    end: number
+  } | null>(null)
+  // Surish holati refda: window hodisalari eski qiymatni ko'rmasligi uchun
+  const extendRef = useRef<{
+    iv: Interval
+    startX: number
+    limit: number
+    end: number
+  } | null>(null)
+
+  const beginExtend = (e: React.MouseEvent, iv: Interval) => {
+    if (e.button !== 0) return
+    // Lentani surish (pan) va bronni bosish ishga tushmasligi kerak
+    e.preventDefault()
+    e.stopPropagation()
+    extendRef.current = {
+      iv,
+      startX: e.clientX,
+      limit: extendLimitFor(iv),
+      end: iv.end,
+    }
+    setExtendDrag({ resId: iv.res.id, end: iv.end })
+  }
+
+  useEffect(() => {
+    if (!extendDrag) return
+
+    const onMove = (e: MouseEvent) => {
+      const st = extendRef.current
+      if (!st) return
+      const deltaMin = ((e.clientX - st.startX) / hourW) * 60
+      const next = extendTarget(st.iv.end, deltaMin, st.limit, EXTEND_STEP_MIN)
+      if (next !== st.end) {
+        st.end = next
+        setExtendDrag({ resId: st.iv.res.id, end: next })
+      }
+    }
+
+    const onUp = () => {
+      const st = extendRef.current
+      extendRef.current = null
+      setExtendDrag(null)
+      if (!st || st.end <= st.iv.end) return
+      // Dastakdan keyingi click bronni ochib yubormasin
+      suppressClick.current = true
+      setTimeout(() => {
+        suppressClick.current = false
+      }, 50)
+      const dayIdx = Math.floor(st.end / DAY_MINUTES)
+      const dateStr = dayIdx === 0 ? date : shiftDate(date, dayIdx)
+      onExtend?.(st.iv.res, `${dateStr}T${minToTime(st.end)}:00`)
+    }
+
+    window.addEventListener("mousemove", onMove)
+    window.addEventListener("mouseup", onUp)
+    return () => {
+      window.removeEventListener("mousemove", onMove)
+      window.removeEventListener("mouseup", onUp)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extendDrag?.resId, hourW])
 
   // Bosilgan soatdan keyingi bo'sh oraliq (maks. 2 soat).
   // O'tgan vaqtga bron qilinmaydi: to'liq o'tib ketgan soatlar umuman
@@ -766,8 +880,17 @@ export function HourlyBoard({
 
                           {/* Bronlar (kunlik va soatlik) */}
                           {intervals.map((iv, i) => {
-                            const pos = blockPosition(iv)
+                            const dragging = extendDrag?.resId === iv.res.id
+                            const pos = blockPosition(
+                              iv,
+                              dragging ? extendDrag.end : undefined
+                            )
                             if (!pos) return null
+                            // Juda tor blokda dastak butun blokni egallab
+                            // olardi va bronni bosib bo'lmay qolardi
+                            const wideEnough =
+                              (pos.width / 100) * timelineWidth >= 28
+                            const extendable = wideEnough && canExtendInterval(iv)
                             return (
                               <div
                                 key={`${iv.res.id}-${i}`}
@@ -776,20 +899,49 @@ export function HourlyBoard({
                                   statusColors[iv.res.status] || statusColors.PENDING,
                                   // Qarz bo'lsa qizil: chiqib ketgan va
                                   // to'lamagan bron butunlay qizil bo'ladi
-                                  DEBT_BAR_CLASS[debtLevelOf(iv.res)]
+                                  DEBT_BAR_CLASS[debtLevelOf(iv.res)],
+                                  // Surish paytida blok ajralib turadi va
+                                  // kengayish animatsiyasiz, darhol chiziladi
+                                  dragging && "ring-2 ring-primary-400 z-20 transition-none"
                                 )}
                                 style={{ left: `${pos.left}%`, width: `${pos.width}%` }}
-                                onClick={() => onReservationClick(iv.res)}
+                                onClick={() => {
+                                  if (suppressClick.current) return
+                                  onReservationClick(iv.res)
+                                }}
                                 title={`${getGuestName(iv.res)} · ${
                                   iv.daily ? "Kunlik bron" : pos.label
-                                }${debtHint(iv.res)}`}
+                                }${debtHint(iv.res)}${
+                                  extendable ? " · o'ng chetidan tortib cho'zing" : ""
+                                }`}
                               >
                                 <span className="text-[11px] font-bold leading-tight truncate">
                                   {iv.daily ? "Kunlik bron" : pos.label}
                                 </span>
                                 <span className="text-[10px] opacity-80 leading-tight truncate">
-                                  {getGuestName(iv.res)}
+                                  {dragging
+                                    ? `→ ${minToTime(extendDrag.end)}`
+                                    : getGuestName(iv.res)}
                                 </span>
+
+                                {/* Cho'zish dastagi — faqat administratorda.
+                                    Blok ichida, o'ng chetida turadi va uni
+                                    bosish bronni ochmaydi. */}
+                                {extendable && (
+                                  <span
+                                    role="separator"
+                                    aria-label="Bronni cho'zish"
+                                    onMouseDown={(e) => beginExtend(e, iv)}
+                                    className={cn(
+                                      "absolute inset-y-0 right-0 w-2.5 cursor-col-resize",
+                                      "flex items-center justify-center",
+                                      "bg-black/10 hover:bg-black/25",
+                                      dragging && "bg-black/30"
+                                    )}
+                                  >
+                                    <span className="h-4 w-0.5 rounded-full bg-white/80" />
+                                  </span>
+                                )}
                               </div>
                             )
                           })}

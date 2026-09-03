@@ -61,6 +61,36 @@ export const useUpdateReservation = () => {
   });
 };
 
+/**
+ * Bronni cho'zish — QO'SHIMCHA HAQSIZ, faqat administrator uchun.
+ *
+ * `checkOut` — bronning yangi tugash payti: soatlik bronda aniq vaqt
+ * ("2026-09-03T23:00:00"), kunlik bronda chiqish kuni boshlanishi
+ * ("2026-09-08T00:00:00"). Vaqt zonasisiz yuboriladi — loyihada bu
+ * ustunlar xodim tergan devor soatini saqlaydi.
+ *
+ * Chegarani (keyingi bron) server tekshiradi; brauzerdagi hisob faqat
+ * surish paytida ko'rsatish uchun.
+ */
+export const useExtendReservation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { id: string; checkOut: string; hotelId?: string }) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${payload.id}/extend`,
+        { check_out: payload.checkOut },
+        { params: payload.hotelId ? { hotel_id: payload.hotelId } : {} }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+    },
+  });
+};
+
 // "Mehmon chiqmoqda": farroshga tozalash vazifasi boradi, farrosh yakunlagach
 // bron avtomatik CHECKED_OUT bo'ladi
 export const useRequestCheckout = () => {

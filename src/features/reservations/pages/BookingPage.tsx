@@ -29,11 +29,13 @@ import {
   isWithinInterval,
   parseISO,
   isToday,
+  differenceInCalendarDays,
 } from "date-fns"
 
 import {
   useReservations,
   useUpdateReservation,
+  useExtendReservation,
   useCancelReservation,
   useCancellationQuote,
   useRequestCheckout,
@@ -84,6 +86,12 @@ import {
   resTimeRange,
   NON_BLOCKING_STATUSES,
 } from "../lib/booking"
+import {
+  canExtendTo,
+  extendCeiling,
+  extendTarget,
+  isExtendable,
+} from "../lib/extend"
 
 const DAY_WIDTH = 120
 const ROOM_COL_WIDTH = 200
@@ -319,6 +327,7 @@ export function BookingPage() {
   const canEditDetails = canUpdate && (isAdmin || isManager)
 
   const updateReservationMutation = useUpdateReservation()
+  const extendReservationMutation = useExtendReservation()
   const cancelReservationMutation = useCancelReservation()
 
   /* Bekor qilishda pul qaytarish.
@@ -805,6 +814,132 @@ export function BookingPage() {
     }
   }
 
+  /* --- Bronni surib CHO'ZISH (faqat administrator) ---
+
+     Mehmon qolishni so'raganda administrator bronni shu yerdan uzaytiradi:
+     qo'shimcha haq olinmaydi va boshqa hech narsa o'zgarmaydi. Chegara —
+     shu xonadagi keyingi bron; u yo'q bo'lsa cheklov ham yo'q.
+
+     Tasdiqlash so'ralmaydi (ko'chirishdan farqli): bu qaytarib bo'lmaydigan
+     amal emas — administrator bron oynasidan sanani qayta tahrirlay oladi.
+     Natija qisqa xabar bo'lib ko'rinadi, ya'ni nima bo'lgani yashirin
+     qolmaydi. */
+  const [extendNotice, setExtendNotice] = useState<string | null>(null)
+
+  const extendReservation = async (res: any, checkOut: string) => {
+    try {
+      await extendReservationMutation.mutateAsync({
+        id: res.id,
+        hotelId: res.hotel_id || undefined,
+        checkOut,
+      })
+      const isHourly = res.booking_type === "HOURLY"
+      setExtendNotice(
+        isHourly
+          ? `Bron ${checkOut.slice(11, 16)} gacha cho'zildi`
+          : `Bron ${checkOut.slice(0, 10)} gacha cho'zildi`
+      )
+      window.setTimeout(() => setExtendNotice(null), 3500)
+    } catch (error: any) {
+      setErrorDialog(apiErrorMessage(error))
+    }
+  }
+
+  /* Kalendarda kunlik bronni KUNLAR bo'ylab cho'zish.
+
+     Soatlik taxtada bu daqiqalar bilan bo'ladi (HourlyBoard), bu yerda esa
+     kunlar bilan — o'lchov birligi har bir ko'rinishning o'ziga mos.
+     Qoida ikkalasida bir xil va u `lib/extend.ts` da. */
+  const extendLimitDays = (res: any): number => {
+    const from = res.check_out_date
+    let nearest: string | null = null
+    for (const r of reservations) {
+      if (r.room_id !== res.room_id || r.id === res.id) continue
+      // Faqat xonani haqiqatan band qiladigan bronlar to'sadi
+      if (!["CONFIRMED", "CHECKED_IN"].includes(r.status)) continue
+      const start = resStartDate(r)
+      if (start >= from && (nearest === null || start < nearest)) nearest = start
+    }
+    // Keyingi bron yo'q bo'lsa ham ko'rinadigan oyning oxiridan nariga
+    // surib bo'lmaydi — keyingi oyga o'tib yana cho'zish mumkin
+    const visible = days.length
+      ? differenceInCalendarDays(days[days.length - 1], parseISO(from)) + 1
+      : 0
+    return extendCeiling(
+      nearest === null
+        ? Infinity
+        : differenceInCalendarDays(parseISO(nearest), parseISO(from)),
+      { turnover: 0, hourly: false, ceiling: Math.max(visible, 0) }
+    )
+  }
+
+  const canExtendBar = (res: any): boolean =>
+    isAdmin &&
+    res.booking_type !== "HOURLY" &&
+    isExtendable(res.status) &&
+    canExtendTo(0, extendLimitDays(res), 1)
+
+  const [barExtend, setBarExtend] = useState<{ id: string; days: number } | null>(null)
+  const barExtendRef = useRef<{
+    res: any
+    startX: number
+    limit: number
+    days: number
+  } | null>(null)
+
+  const beginBarExtend = (e: React.MouseEvent, res: any) => {
+    if (e.button !== 0) return
+    // Ko'chirish (drag-to-move) va bosish ishga tushmasligi kerak
+    e.preventDefault()
+    e.stopPropagation()
+    barExtendRef.current = {
+      res,
+      startX: e.clientX,
+      limit: extendLimitDays(res),
+      days: 0,
+    }
+    setBarExtend({ id: res.id, days: 0 })
+  }
+
+  useEffect(() => {
+    if (!barExtend) return
+
+    const onMove = (e: MouseEvent) => {
+      const st = barExtendRef.current
+      if (!st) return
+      const next = extendTarget(
+        0,
+        (e.clientX - st.startX) / DAY_WIDTH,
+        st.limit,
+        1
+      )
+      if (next !== st.days) {
+        st.days = next
+        setBarExtend({ id: st.res.id, days: next })
+      }
+    }
+
+    const onUp = () => {
+      const st = barExtendRef.current
+      barExtendRef.current = null
+      setBarExtend(null)
+      if (!st || st.days <= 0) return
+      // Kunlik bronda tugash payti — chiqish kuni boshlanishi
+      void extendReservation(
+        st.res,
+        `${addDaysStr(st.res.check_out_date, st.days)}T00:00:00`
+      )
+    }
+
+    window.addEventListener("mousemove", onMove)
+    window.addEventListener("mouseup", onUp)
+    return () => {
+      window.removeEventListener("mousemove", onMove)
+      window.removeEventListener("mouseup", onUp)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barExtend?.id])
+
   const handleBarMouseDown = (e: React.MouseEvent, res: any) => {
     if (e.button !== 0) return
     e.preventDefault()
@@ -939,6 +1074,8 @@ export function BookingPage() {
           statusColors={statusColors}
           activeTaskTypeByRoom={activeTaskTypeByRoom}
           statusDetailByRoom={statusDetailByRoom}
+          canExtend={isAdmin}
+          onExtend={extendReservation}
         />
       ) : (
       <>
@@ -1272,6 +1409,8 @@ export function BookingPage() {
                           }
                         }
 
+                        const extending = barExtend?.id === res.id
+                        const extendable = canExtendBar(res)
                         return (
                           <div
                             key={res.id}
@@ -1280,18 +1419,28 @@ export function BookingPage() {
                               dragRes?.id === res.id
                                 ? "cursor-grabbing z-30 ring-2 ring-primary-400 shadow-lg opacity-90"
                                 : "cursor-pointer hover:scale-[1.01] transition-transform",
+                              extending && "z-30 ring-2 ring-primary-400 transition-none",
                               colorClass
                             )}
                             style={{
                               left,
-                              width,
+                              // Cho'zish paytida chiziq sichqoncha ortidan
+                              // darhol kengayadi; so'rov qo'yib yuborilganda
+                              // ketadi
+                              width: extending
+                                ? width + barExtend.days * DAY_WIDTH
+                                : width,
                               transform:
                                 dragRes?.id === res.id && dragOffset !== 0
                                   ? `translateX(${dragOffset * DAY_WIDTH}px)`
                                   : undefined,
                             }}
                             onMouseDown={(e) => handleBarMouseDown(e, res)}
-                            title="Bosish: boshqarish · Surish: boshqa kunga ko'chirish"
+                            title={
+                              extendable
+                                ? "Bosish: boshqarish · Surish: boshqa kunga ko'chirish · O'ng chetidan tortish: cho'zish"
+                                : "Bosish: boshqarish · Surish: boshqa kunga ko'chirish"
+                            }
                           >
                             {res.status === "CONFIRMED" || res.status === "CHECKED_IN" ? (
                               <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
@@ -1307,9 +1456,29 @@ export function BookingPage() {
                               <p className="text-[10px] opacity-80 truncate">
                                 {res.booking_type === "HOURLY"
                                   ? `${resStartDate(res)} · ${resTimeRange(res)}`
-                                  : `${res.check_in_date} → ${res.check_out_date}`}
+                                  : extending
+                                    ? `${res.check_in_date} → ${addDaysStr(res.check_out_date, barExtend.days)}`
+                                    : `${res.check_in_date} → ${res.check_out_date}`}
                               </p>
                             </div>
+
+                            {/* Cho'zish dastagi — faqat administratorda.
+                                Ko'chirish dastasidan alohida: o'ng chetida
+                                turadi va bosilganda ko'chirish boshlanmaydi. */}
+                            {extendable && (
+                              <span
+                                role="separator"
+                                aria-label="Bronni cho'zish"
+                                onMouseDown={(e) => beginBarExtend(e, res)}
+                                className={cn(
+                                  "absolute inset-y-0 right-0 w-3 rounded-r-xl cursor-col-resize",
+                                  "flex items-center justify-center bg-black/10 hover:bg-black/25",
+                                  extending && "bg-black/30"
+                                )}
+                              >
+                                <span className="h-5 w-0.5 rounded-full bg-white/80" />
+                              </span>
+                            )}
                           </div>
                         )
                       })}
@@ -2310,6 +2479,21 @@ export function BookingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Cho'zish natijasi — dialog emas, o'tkinchi xabar: amal muvaffaqiyatli
+          bo'lganda ishni to'xtatib qo'yish shart emas, lekin nima
+          o'zgargani ko'rinib turishi kerak */}
+      {extendNotice && (
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+          <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 shadow-lg">
+            <CheckCircle2 className="h-4 w-4" />
+            {extendNotice}
+            <span className="text-xs font-normal text-emerald-600">
+              qo'shimcha haq olinmadi
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
