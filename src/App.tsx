@@ -46,12 +46,18 @@ const RootGate = () => {
   return <MainLayout />;
 };
 
+import { panelRoutes } from "./superadmin/routes";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/device-pending" element={<DevicePendingPage />} />
+
+        {/* Boshqaruv paneli — alohida tizim (src/superadmin). O'z kirishi
+            va o'z tokeni bor, mehmonxona sessiyasiga bog'liq emas. */}
+        {panelRoutes()}
         {/* Landing (marketing) sahifasi — ochiq, autentifikatsiyasiz */}
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/leanding" element={<LandingPage />} />

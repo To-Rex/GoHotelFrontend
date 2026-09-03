@@ -5,6 +5,7 @@ import * as z from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/lib/api";
+import { panelLogin } from "@/superadmin/api/panel";
 import { apiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
 import { useSeo } from "@/lib/seo";
@@ -183,6 +184,17 @@ export const LoginPage = () => {
     },
   });
 
+  /** Panel hisobi bilan kirishga urinadi. Muvaffaqiyatsizda `false`. */
+  const tryPanelLogin = async (email: string, password: string) => {
+    if (!email.includes("@")) return false; // panel hisobi — pochta manzili
+    try {
+      await panelLogin(email, password);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
@@ -208,6 +220,17 @@ export const LoginPage = () => {
       console.error("Login error", err);
       // 401 — noto'g'ri login/parol; boshqa xatolarda umumiy matn
       if (err?.response?.status === 401) {
+        /* Xodim kirishi o'tmadi — bu BOSHQARUV PANELI hisobi bo'lishi
+           mumkin. Panelning o'z ro'yxati bor va u xodimlar jadvalidan
+           alohida, shuning uchun bitta forma ikkalasini ham qabul
+           qiladi: egasi alohida manzilni eslab yurishi shart emas.
+
+           Tartib ataylab shunday: avval xodim, keyin panel. Aks holda
+           har bir muvaffaqiyatsiz urinishda panelga ham so'rov ketardi. */
+        if (await tryPanelLogin(values.username, values.password)) {
+          navigate("/panel", { replace: true });
+          return;
+        }
         setError("Login yoki parol noto'g'ri. Tekshirib, qayta urinib ko'ring.");
       } else if (err?.response?.status === 403) {
         /* Qurilma tasdiqlanmagan bo'lsa — alohida sahifaga. Login
