@@ -1,6 +1,14 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Building2, Loader2, PauseCircle, Pencil, Plus, Search } from "lucide-react"
+import {
+  Building2,
+  Loader2,
+  PauseCircle,
+  Pencil,
+  PlayCircle,
+  Plus,
+  Search,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { panelError } from "../api/client"
@@ -28,9 +36,9 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const statusStyle: Record<string, string> = {
-  ACTIVE: "bg-emerald-900/60 text-emerald-300",
-  INACTIVE: "bg-slate-800 text-slate-400",
-  SUSPENDED: "bg-amber-900/60 text-amber-300",
+  ACTIVE: "bg-emerald-500/15 text-emerald-300",
+  INACTIVE: "bg-red-500/15 text-red-300",
+  SUSPENDED: "bg-amber-500/15 text-amber-300",
 }
 
 /** Barcha mehmonxonalar: ro'yxat, qidiruv, qo'shish va tahrirlash. */
@@ -58,13 +66,28 @@ export function HotelsPage() {
   const stop = async (hotel: PanelHotel) => {
     if (
       !confirm(
-        `"${hotel.name}" to'xtatiladi. Xodimlar tizimga kira olmaydi, lekin ` +
-          `barcha ma'lumot va tarix saqlanadi. Davom etasizmi?`
+        `"${hotel.name}" to'xtatiladi.\n\n` +
+          `Xodimlar tizimga kira olmaydi — ular sabab yozilgan ekranni ` +
+          `ko'radi. Ochiq turgan sessiyalar ham darhol to'xtaydi.\n\n` +
+          `Barcha ma'lumot va tarix saqlanadi, xohlagan payt qayta ` +
+          `faollashtirasiz. Davom etasizmi?`
       )
     )
       return
+    setError(null)
     try {
       await deactivate.mutateAsync(hotel.id)
+    } catch (e) {
+      setError(panelError(e))
+    }
+  }
+
+  const resume = async (hotel: PanelHotel) => {
+    // Tiklash uchun tahrirlash oynasini ochish shart emas: bu eng
+    // ko'p kerak bo'ladigan bitta harakat
+    setError(null)
+    try {
+      await save.mutateAsync({ id: hotel.id, status: "ACTIVE" })
     } catch (e) {
       setError(panelError(e))
     }
@@ -89,7 +112,7 @@ export function HotelsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Nomi, kodi yoki shahri..."
-          className="h-9 w-full rounded-md border border-slate-700 bg-slate-950 pl-8 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
+          className="h-9 w-full rounded-lg border border-white/10 bg-slate-950/60 pl-8 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none"
         />
       </div>
 
@@ -128,7 +151,14 @@ export function HotelsPage() {
                 </span>
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-800 pt-3 text-center">
+              {hotel.status !== "ACTIVE" && (
+                <p className="mt-2 rounded-lg border border-white/5 bg-white/[0.03] px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-400">
+                  Xodimlar tizimga kira olmaydi — ular sabab yozilgan ekranni
+                  ko'radi. Ma'lumotlar saqlanmoqda.
+                </p>
+              )}
+
+              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/5 pt-3 text-center">
                 {[
                   ["Filial", hotel.branch_count],
                   ["Xona", hotel.room_count],
@@ -146,7 +176,7 @@ export function HotelsPage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
                   to={`/panel/hotels/${hotel.id}`}
-                  className="inline-flex h-8 items-center rounded-md border border-slate-700 px-2.5 text-xs text-slate-300 hover:bg-slate-800"
+                  className="inline-flex h-8 items-center rounded-lg border border-white/10 px-2.5 text-xs text-slate-300 hover:bg-white/5"
                 >
                   Boshqarish
                 </Link>
@@ -158,7 +188,7 @@ export function HotelsPage() {
                   <Pencil className="h-3.5 w-3.5" />
                   Tahrirlash
                 </PanelButton>
-                {hotel.status === "ACTIVE" && (
+                {hotel.status === "ACTIVE" ? (
                   <PanelButton
                     variant="danger"
                     className="h-8 text-xs"
@@ -166,6 +196,15 @@ export function HotelsPage() {
                   >
                     <PauseCircle className="h-3.5 w-3.5" />
                     To'xtatish
+                  </PanelButton>
+                ) : (
+                  <PanelButton
+                    className="h-8 text-xs"
+                    disabled={save.isPending}
+                    onClick={() => resume(hotel)}
+                  >
+                    <PlayCircle className="h-3.5 w-3.5" />
+                    Faollashtirish
                   </PanelButton>
                 )}
               </div>

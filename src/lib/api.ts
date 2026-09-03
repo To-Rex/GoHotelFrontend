@@ -15,6 +15,7 @@ export const api = axios.create({
   },
 });
 import { getDeviceId } from "./deviceId";
+import { HOTEL_BLOCK_MESSAGE_KEY, isHotelBlockCode } from "./hotelBlock";
 
 api.interceptors.request.use(
   (config) => {
@@ -73,6 +74,37 @@ api.interceptors.response.use(
       // bo'lsak tegmaymiz
       if (!window.location.pathname.startsWith(target.split("?")[0])) {
         window.location.replace(target);
+      }
+      return Promise.reject(error);
+    }
+
+    /* MEHMONXONA XIZMATI TO'XTATILGAN.
+
+       Panel obyektni to'xtatsa, server har bir so'rovga 403 va
+       `HOTEL_INACTIVE` (yoki `HOTEL_SUSPENDED`) qaytaradi. Ilgari bu
+       oddiy xato sifatida yutilardi: so'rovlar bittalab yiqilar, ekran
+       esa cheksiz skelet holatida qolib, dastur buzilgandek ko'rinardi.
+
+       Sessiya TOZALANMAYDI — xizmat tiklangach xodim o'sha yerdan ishini
+       davom ettiradi. Serverning matni sahifada ko'rsatish uchun
+       saqlanadi: to'liq qayta yuklashda router state yo'qoladi. */
+    const hotelCode = error.response?.data?.error_code;
+    if (
+      error.response?.status === 403 &&
+      isHotelBlockCode(hotelCode) &&
+      !isAuthPath
+    ) {
+      const detail = error.response?.data?.detail;
+      if (typeof detail === "string" && detail) {
+        try {
+          sessionStorage.setItem(HOTEL_BLOCK_MESSAGE_KEY, detail);
+        } catch {
+          /* Shaxsiy rejimda saqlash taqiqlangan bo'lishi mumkin —
+             sahifada umumiy matn baribir ko'rinadi */
+        }
+      }
+      if (!window.location.pathname.startsWith("/service-stopped")) {
+        window.location.replace(`/service-stopped?code=${hotelCode}`);
       }
       return Promise.reject(error);
     }

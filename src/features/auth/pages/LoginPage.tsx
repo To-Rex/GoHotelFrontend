@@ -5,6 +5,7 @@ import * as z from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/lib/api";
+import { isHotelBlockCode } from "@/lib/hotelBlock";
 import { panelLogin } from "@/superadmin/api/panel";
 import { apiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
@@ -246,6 +247,15 @@ export const LoginPage = () => {
           code === "DEVICE_UNKNOWN"
         ) {
           navigate("/device-pending", { state: { code } });
+          return;
+        }
+        /* Mehmonxona xizmati to'xtatilgan. Formadagi qizil qator bu
+           yerda ham yetarli emas: login va parol to'g'ri, muammo esa
+           xodimda emas — sabab alohida sahifada tushuntiriladi. */
+        if (isHotelBlockCode(code)) {
+          navigate("/service-stopped", {
+            state: { code, message: err?.response?.data?.detail },
+          });
           return;
         }
         setError(apiErrorMessage(err));

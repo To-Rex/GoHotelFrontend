@@ -3,6 +3,7 @@ import { MainLayout } from "./components/layout/MainLayout";
 import { LandingRedirect } from "./components/layout/LandingRedirect";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { DevicePendingPage } from "./features/auth/pages/DevicePendingPage";
+import { ServiceStoppedPage } from "./features/auth/pages/ServiceStoppedPage";
 import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
 import { BookingPage } from "./features/reservations/pages/BookingPage";
 import { RoomsPage } from "./features/rooms/pages/RoomsPage";
@@ -54,6 +55,9 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/device-pending" element={<DevicePendingPage />} />
+        {/* Mehmonxona xizmati to'xtatilganda ko'rinadigan sahifa —
+            himoyalangan yo'llardan tashqarida turadi */}
+        <Route path="/service-stopped" element={<ServiceStoppedPage />} />
 
         {/* Boshqaruv paneli — alohida tizim (src/superadmin). O'z kirishi
             va o'z tokeni bor, mehmonxona sessiyasiga bog'liq emas. */}
