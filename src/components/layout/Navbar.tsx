@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
 import { LiveClock } from "./LiveClock";
 import { RecognizedGuestsMenu } from "@/features/vision/components/RecognizedGuestsMenu";
+import { IncomingCallsMenu } from "@/features/reception/components/IncomingCallsMenu";
 import {
   NewBookingDialog,
   type NewBookingRequest,
@@ -224,6 +225,9 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
         </Button>
         {/* Kamera tanigan mehmonlar — xodimning o'z filiali bo'yicha */}
         <RecognizedGuestsMenu onPickGuest={openBookingFor} />
+        {/* Qabulxona telefoniga kelgan qo'ng'iroqlar: qurilma raqamni
+            yuboradi, server mehmonni topadi va u shu yerda ko'rinadi */}
+        <IncomingCallsMenu onPickGuest={openBookingFor} />
         <Button
           variant="ghost"
           size="icon"
