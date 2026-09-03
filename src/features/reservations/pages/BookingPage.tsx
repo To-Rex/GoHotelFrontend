@@ -1409,7 +1409,10 @@ export function BookingPage() {
                           }
                         }
 
-                        const extending = barExtend?.id === res.id
+                        /* Obyekt sifatida — boolean bilan TypeScript
+                           `barExtend` ni null emas deb hisoblamaydi */
+                        const extending =
+                          barExtend?.id === res.id ? barExtend : null
                         const extendable = canExtendBar(res)
                         return (
                           <div
@@ -1428,7 +1431,7 @@ export function BookingPage() {
                               // darhol kengayadi; so'rov qo'yib yuborilganda
                               // ketadi
                               width: extending
-                                ? width + barExtend.days * DAY_WIDTH
+                                ? width + extending.days * DAY_WIDTH
                                 : width,
                               transform:
                                 dragRes?.id === res.id && dragOffset !== 0
@@ -1457,7 +1460,7 @@ export function BookingPage() {
                                 {res.booking_type === "HOURLY"
                                   ? `${resStartDate(res)} · ${resTimeRange(res)}`
                                   : extending
-                                    ? `${res.check_in_date} → ${addDaysStr(res.check_out_date, barExtend.days)}`
+                                    ? `${res.check_in_date} → ${addDaysStr(res.check_out_date, extending.days)}`
                                     : `${res.check_in_date} → ${res.check_out_date}`}
                               </p>
                             </div>

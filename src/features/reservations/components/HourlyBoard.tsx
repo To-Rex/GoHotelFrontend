@@ -880,11 +880,13 @@ export function HourlyBoard({
 
                           {/* Bronlar (kunlik va soatlik) */}
                           {intervals.map((iv, i) => {
-                            const dragging = extendDrag?.resId === iv.res.id
-                            const pos = blockPosition(
-                              iv,
-                              dragging ? extendDrag.end : undefined
-                            )
+                            /* Surilayotgan holatni BOOLEAN emas, obyekt
+                               sifatida ushlaymiz: `dragging && extendDrag.end`
+                               shaklida TypeScript `extendDrag` ni null emas
+                               deb hisoblamaydi (tsc -b buni xato deb topadi). */
+                            const drag =
+                              extendDrag?.resId === iv.res.id ? extendDrag : null
+                            const pos = blockPosition(iv, drag?.end)
                             if (!pos) return null
                             // Juda tor blokda dastak butun blokni egallab
                             // olardi va bronni bosib bo'lmay qolardi
@@ -902,7 +904,7 @@ export function HourlyBoard({
                                   DEBT_BAR_CLASS[debtLevelOf(iv.res)],
                                   // Surish paytida blok ajralib turadi va
                                   // kengayish animatsiyasiz, darhol chiziladi
-                                  dragging && "ring-2 ring-primary-400 z-20 transition-none"
+                                  drag && "ring-2 ring-primary-400 z-20 transition-none"
                                 )}
                                 style={{ left: `${pos.left}%`, width: `${pos.width}%` }}
                                 onClick={() => {
@@ -919,8 +921,8 @@ export function HourlyBoard({
                                   {iv.daily ? "Kunlik bron" : pos.label}
                                 </span>
                                 <span className="text-[10px] opacity-80 leading-tight truncate">
-                                  {dragging
-                                    ? `→ ${minToTime(extendDrag.end)}`
+                                  {drag
+                                    ? `→ ${minToTime(drag.end)}`
                                     : getGuestName(iv.res)}
                                 </span>
 
@@ -936,7 +938,7 @@ export function HourlyBoard({
                                       "absolute inset-y-0 right-0 w-2.5 cursor-col-resize",
                                       "flex items-center justify-center",
                                       "bg-black/10 hover:bg-black/25",
-                                      dragging && "bg-black/30"
+                                      drag && "bg-black/30"
                                     )}
                                   >
                                     <span className="h-4 w-0.5 rounded-full bg-white/80" />
