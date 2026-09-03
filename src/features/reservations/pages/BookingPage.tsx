@@ -87,10 +87,11 @@ import {
   NON_BLOCKING_STATUSES,
 } from "../lib/booking"
 import {
-  canExtendTo,
+  canResize,
   extendCeiling,
-  extendTarget,
   isExtendable,
+  resizeTarget,
+  type ResizeBounds,
 } from "../lib/extend"
 
 const DAY_WIDTH = 120
@@ -814,11 +815,15 @@ export function BookingPage() {
     }
   }
 
-  /* --- Bronni surib CHO'ZISH (faqat administrator) ---
+  /* --- Bron muddatini surish: CHO'ZISH va QISQARTIRISH (faqat admin) ---
 
-     Mehmon qolishni so'raganda administrator bronni shu yerdan uzaytiradi:
-     qo'shimcha haq olinmaydi va boshqa hech narsa o'zgarmaydi. Chegara —
-     shu xonadagi keyingi bron; u yo'q bo'lsa cheklov ham yo'q.
+     Mehmon qolishni so'rasa administrator bronni uzaytiradi, erta ketsa
+     qisqartiradi. Ikkala yo'nalishda ham PUL O'ZGARMAYDI: cho'zishda
+     qo'shimcha haq olinmaydi, qisqartirishda avtomatik qaytarim
+     bo'lmaydi — pulni qaytarish kerak bo'lsa buning o'z yo'li bor.
+
+     Chegaralar: yuqorida — shu xonadagi keyingi bron (yo'q bo'lsa cheklov
+     ham yo'q), quyida — bronning o'z boshlanishi.
 
      Tasdiqlash so'ralmaydi (ko'chirishdan farqli): bu qaytarib bo'lmaydigan
      amal emas — administrator bron oynasidan sanani qayta tahrirlay oladi.
@@ -827,17 +832,22 @@ export function BookingPage() {
   const [extendNotice, setExtendNotice] = useState<string | null>(null)
 
   const extendReservation = async (res: any, checkOut: string) => {
+    const isHourly = res.booking_type === "HOURLY"
+    // Yo'nalishni so'rovdan OLDIN aniqlaymiz: javob kelgach `res` dagi
+    // eski qiymat bilan solishtirish chalkashtirardi
+    const previous = isHourly
+      ? res.check_out_datetime || ""
+      : `${res.check_out_date}T00:00:00`
+    const shorter = checkOut < previous
     try {
       await extendReservationMutation.mutateAsync({
         id: res.id,
         hotelId: res.hotel_id || undefined,
         checkOut,
       })
-      const isHourly = res.booking_type === "HOURLY"
+      const when = isHourly ? checkOut.slice(11, 16) : checkOut.slice(0, 10)
       setExtendNotice(
-        isHourly
-          ? `Bron ${checkOut.slice(11, 16)} gacha cho'zildi`
-          : `Bron ${checkOut.slice(0, 10)} gacha cho'zildi`
+        shorter ? `Bron ${when} gacha qisqartirildi` : `Bron ${when} gacha cho'zildi`
       )
       window.setTimeout(() => setExtendNotice(null), 3500)
     } catch (error: any) {
@@ -845,12 +855,15 @@ export function BookingPage() {
     }
   }
 
-  /* Kalendarda kunlik bronni KUNLAR bo'ylab cho'zish.
+  /* Kalendarda kunlik bron muddatini KUNLAR bo'ylab surish.
 
      Soatlik taxtada bu daqiqalar bilan bo'ladi (HourlyBoard), bu yerda esa
      kunlar bilan — o'lchov birligi har bir ko'rinishning o'ziga mos.
-     Qoida ikkalasida bir xil va u `lib/extend.ts` da. */
-  const extendLimitDays = (res: any): number => {
+     Qoida ikkalasida bir xil va u `lib/extend.ts` da.
+
+     Nol nuqta — bronning hozirgi chiqish sanasi, ya'ni chegaralar
+     KUNLARDAGI siljish bo'lib hisoblanadi. */
+  const resizeBoundsForBar = (res: any): ResizeBounds => {
     const from = res.check_out_date
     let nearest: string | null = null
     for (const r of reservations) {
@@ -865,25 +878,31 @@ export function BookingPage() {
     const visible = days.length
       ? differenceInCalendarDays(days[days.length - 1], parseISO(from)) + 1
       : 0
-    return extendCeiling(
-      nearest === null
-        ? Infinity
-        : differenceInCalendarDays(parseISO(nearest), parseISO(from)),
-      { turnover: 0, hourly: false, ceiling: Math.max(visible, 0) }
-    )
+    // Eng qisqasi bir kunlik bron: bazadagi check_out_date > check_in_date
+    const length = differenceInCalendarDays(parseISO(from), parseISO(res.check_in_date))
+    return {
+      min: 1 - length,
+      max: extendCeiling(
+        nearest === null
+          ? Infinity
+          : differenceInCalendarDays(parseISO(nearest), parseISO(from)),
+        { turnover: 0, hourly: false, ceiling: Math.max(visible, 0) }
+      ),
+      step: 1,
+    }
   }
 
   const canExtendBar = (res: any): boolean =>
     isAdmin &&
     res.booking_type !== "HOURLY" &&
     isExtendable(res.status) &&
-    canExtendTo(0, extendLimitDays(res), 1)
+    canResize(0, resizeBoundsForBar(res))
 
   const [barExtend, setBarExtend] = useState<{ id: string; days: number } | null>(null)
   const barExtendRef = useRef<{
     res: any
     startX: number
-    limit: number
+    bounds: ResizeBounds
     days: number
   } | null>(null)
 
@@ -895,7 +914,7 @@ export function BookingPage() {
     barExtendRef.current = {
       res,
       startX: e.clientX,
-      limit: extendLimitDays(res),
+      bounds: resizeBoundsForBar(res),
       days: 0,
     }
     setBarExtend({ id: res.id, days: 0 })
@@ -907,12 +926,7 @@ export function BookingPage() {
     const onMove = (e: MouseEvent) => {
       const st = barExtendRef.current
       if (!st) return
-      const next = extendTarget(
-        0,
-        (e.clientX - st.startX) / DAY_WIDTH,
-        st.limit,
-        1
-      )
+      const next = resizeTarget(0, (e.clientX - st.startX) / DAY_WIDTH, st.bounds)
       if (next !== st.days) {
         st.days = next
         setBarExtend({ id: st.res.id, days: next })
@@ -923,7 +937,8 @@ export function BookingPage() {
       const st = barExtendRef.current
       barExtendRef.current = null
       setBarExtend(null)
-      if (!st || st.days <= 0) return
+      // O'zgarish bo'lmasa so'rov ham yubormaymiz
+      if (!st || st.days === 0) return
       // Kunlik bronda tugash payti — chiqish kuni boshlanishi
       void extendReservation(
         st.res,
@@ -1441,7 +1456,7 @@ export function BookingPage() {
                             onMouseDown={(e) => handleBarMouseDown(e, res)}
                             title={
                               extendable
-                                ? "Bosish: boshqarish · Surish: boshqa kunga ko'chirish · O'ng chetidan tortish: cho'zish"
+                                ? "Bosish: boshqarish · Surish: boshqa kunga ko'chirish · O'ng chetidan tortish: cho'zish yoki qisqartirish"
                                 : "Bosish: boshqarish · Surish: boshqa kunga ko'chirish"
                             }
                           >
@@ -1471,7 +1486,7 @@ export function BookingPage() {
                             {extendable && (
                               <span
                                 role="separator"
-                                aria-label="Bronni cho'zish"
+                                aria-label="Bron muddatini o'zgartirish"
                                 onMouseDown={(e) => beginBarExtend(e, res)}
                                 className={cn(
                                   "absolute inset-y-0 right-0 w-3 rounded-r-xl cursor-col-resize",
@@ -2491,8 +2506,10 @@ export function BookingPage() {
           <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 shadow-lg">
             <CheckCircle2 className="h-4 w-4" />
             {extendNotice}
+            {/* Pul ikkala yo'nalishda ham o'zgarmaydi — xodim buni
+                so'ramasdan turib bilishi kerak */}
             <span className="text-xs font-normal text-emerald-600">
-              qo'shimcha haq olinmadi
+              summa o'zgarmadi
             </span>
           </div>
         </div>

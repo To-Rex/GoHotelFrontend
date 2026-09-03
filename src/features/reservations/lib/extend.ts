@@ -1,12 +1,17 @@
 /**
- * Bronni sichqoncha bilan cho'zish hisobi.
+ * Bron muddatini sichqoncha bilan o'zgartirish hisobi.
  *
- * Chegara bitta: shu xonadagi KEYINGI bron. Undan nariga o'tib bo'lmaydi,
- * keyingi bron bo'lmasa esa cheklov ham yo'q.
+ * Tugash vaqti ikkala tomonga suriladi: mehmon qolsa CHO'ZILADI, erta
+ * ketsa QISQARADI. Ikkita chegara bor:
  *
- * Bu yerdagi hisob faqat KO'RSATISH uchun — cho'zishga haqiqiy ruxsatni
- * server beradi (`reservation_extend.py`). Ikkalasi bir xil qoidaga
- * amal qiladi, shuning uchun surish paytida ko'rinadigan chegara serverning
+ * - YUQORI — shu xonadagi keyingi bron. Undan nariga o'tib bo'lmaydi;
+ *   keyingi bron bo'lmasa cheklov ham yo'q.
+ * - QUYI — bronning o'z boshlanishi. Eng qisqasi bir qadam (soatlik
+ *   taxtada 15 daqiqa, kalendarda bir kun).
+ *
+ * Bu yerdagi hisob faqat KO'RSATISH uchun — haqiqiy ruxsatni server
+ * beradi (`reservation_extend.py`). Ikkalasi bir xil qoidaga amal
+ * qiladi, shuning uchun surish paytida ko'rinadigan chegara serverning
  * javobiga mos tushadi.
  *
  * O'lchov birligi ataylab ko'rsatilmagan: soatlik taxtada bu daqiqa,
@@ -53,31 +58,55 @@ export function extendCeiling(
 }
 
 /**
+ * Qisqartirishning eng oxirgi nuqtasi — bron boshlanishidan bir qadam.
+ *
+ * Kunlik bronda bu bazadagi `check_out_date > check_in_date` cheklovi
+ * bilan bir xil: nol kunlik bron bo'lmaydi.
+ */
+export function resizeFloor(start: number, step: number): number {
+  return start + step
+}
+
+export interface ResizeBounds {
+  /** Quyi chegara — `resizeFloor` */
+  min: number
+  /** Yuqori chegara — `extendCeiling` */
+  max: number
+  step: number
+}
+
+/**
  * Sichqoncha siljishidan yangi tugash nuqtasi.
  *
  * `step` ga yaxlitlanadi (taxtada 15 daqiqa, kalendarda 1 kun) va
- * [hozirgi tugash ... chegara] oralig'idan chiqmaydi. Chegara hozirgi
- * tugashdan oldinda bo'lsa (keyingi bron juda yaqin) — hech qanday
- * cho'zish bo'lmaydi.
+ * [min ... max] oralig'idan chiqmaydi.
  */
-export function extendTarget(
+export function resizeTarget(
   currentEnd: number,
   delta: number,
-  limit: number,
-  step: number
+  { min, max, step }: ResizeBounds
 ): number {
-  if (limit <= currentEnd) return currentEnd
-  const proposed = currentEnd + delta
-  const snapped = Math.round(proposed / step) * step
-  return Math.min(Math.max(snapped, currentEnd), limit)
+  // Chegaralar teskari bo'lib qolsa (keyingi bron juda yaqin) hech
+  // qanday o'zgarish bo'lmaydi
+  if (max < min) return currentEnd
+  const snapped = Math.round((currentEnd + delta) / step) * step
+  return Math.min(Math.max(snapped, min), max)
 }
 
-/** Cho'zish umuman mumkinmi — dastak ko'rsatish uchun. */
-export function canExtendTo(currentEnd: number, limit: number, step: number): boolean {
-  return limit - currentEnd >= step
+/**
+ * Dastak umuman ko'rsatiladimi.
+ *
+ * Kamida bitta yo'nalishda bir qadam joy bo'lishi kerak: joysiz dastak
+ * bosiladi-yu hech narsa qilmaydi va bu chalg'itadi.
+ */
+export function canResize(
+  currentEnd: number,
+  { min, max, step }: ResizeBounds
+): boolean {
+  return max - currentEnd >= step || currentEnd - min >= step
 }
 
-//: Bron cho'zilmaydigan holatlar — serverdagi ro'yxat bilan bir xil
+//: Bron muddati o'zgartirilmaydigan holatlar — serverdagi ro'yxat bilan bir xil
 export const EXTEND_LOCKED_STATUSES = ["CHECKED_OUT", "CANCELLED", "NO_SHOW"]
 
 export function isExtendable(status?: string | null): boolean {

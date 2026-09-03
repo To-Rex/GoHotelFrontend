@@ -7,11 +7,13 @@ import type { RoomStatusDetail } from "@/features/rooms/lib/roomStatusInfo"
 import { isBlockedAlways } from "@/features/rooms/lib/roomBookable"
 import { DEBT_BAR_CLASS, debtHint, debtLevelOf } from "../lib/booking"
 import {
-  canExtendTo,
+  canResize,
   extendCeiling,
-  extendTarget,
   isExtendable,
   nextBusyStart,
+  resizeFloor,
+  resizeTarget,
+  type ResizeBounds,
 } from "../lib/extend"
 
 const DAY_MINUTES = 24 * 60
@@ -55,8 +57,8 @@ const roomCellAccent: Record<string, string> = {
 // Soatlik bronlar orasidagi majburiy tanaffus (daqiqa) — mijoz chiqib ketgach
 // xonani tayyorlash uchun. BookingPage va backenddagi qiymat bilan bir xil.
 const TURNOVER_MIN = 15
-// Cho'zishda vaqt shu qadamga yaxlitlanadi — piksel aniqligidagi
-// 21:07 kabi vaqtlar chiqmasligi uchun
+// Muddatni surishda vaqt shu qadamga yaxlitlanadi — piksel aniqligidagi
+// 21:07 kabi vaqtlar chiqmasligi uchun. Eng qisqa bron ham shuncha.
 const EXTEND_STEP_MIN = 15
 
 export interface HourlyBoardProps {
@@ -85,13 +87,14 @@ export interface HourlyBoardProps {
   /** Xona holati tafsiloti (tozalash qachon boshlangani va h.k.). */
   statusDetailByRoom?: Record<string, RoomStatusDetail | null>
   /**
-   * Bronni surib cho'zish mumkinmi — faqat ADMINISTRATOR uchun.
-   * Boshqa rollarda dastak umuman chizilmaydi.
+   * Bron muddatini surib o'zgartirish mumkinmi — faqat ADMINISTRATOR
+   * uchun. Boshqa rollarda dastak umuman chizilmaydi.
    */
   canExtend?: boolean
   /**
-   * Cho'zish tasdiqlangach. `checkOut` — yangi tugash payti
+   * Muddat o'zgarishi tasdiqlangach. `checkOut` — yangi tugash payti
    * ("2026-09-03T23:00:00"), zonasiz: bu xodim ko'rgan devor soati.
+   * Cho'zish ham, qisqartirish ham shu orqali keladi.
    */
   onExtend?: (res: any, checkOut: string) => void
 }
@@ -406,21 +409,28 @@ export function HourlyBoard({
     }
   }
 
-  // --- Bronni surib cho'zish (o'ng chetdagi dastak) ---
+  // --- Bron muddatini surish (o'ng chetdagi dastak) ---
   //
-  // Chegara — shu xonadagi keyingi bron; u bo'lmasa lentaning oxiri.
+  // O'ngga tortilsa cho'ziladi, chapga tortilsa qisqaradi. Yuqori
+  // chegara — shu xonadagi keyingi bron (u bo'lmasa lentaning oxiri),
+  // quyi chegara — bronning o'z boshlanishi.
+  //
   // Bu yerdagi hisob faqat ko'rsatish uchun: haqiqiy ruxsatni server
   // beradi va u ham AYNAN shu qoidaga amal qiladi.
-  const extendLimitFor = (iv: Interval): number => {
+  const resizeBoundsFor = (iv: Interval): ResizeBounds => {
     const others = blockingOf(iv.res.room_id).filter((b) => b.res.id !== iv.res.id)
-    return extendCeiling(nextBusyStart(others, iv.end), {
-      turnover: TURNOVER_MIN,
-      hourly: !iv.daily,
-      ceiling: winEnd,
-    })
+    return {
+      min: resizeFloor(iv.start, EXTEND_STEP_MIN),
+      max: extendCeiling(nextBusyStart(others, iv.end), {
+        turnover: TURNOVER_MIN,
+        hourly: !iv.daily,
+        ceiling: winEnd,
+      }),
+      step: EXTEND_STEP_MIN,
+    }
   }
 
-  // Soatlik taxtada faqat SOATLIK bron cho'ziladi: kunlik bron kun
+  // Soatlik taxtada faqat SOATLIK bron suriladi: kunlik bron kun
   // aniqligida o'lchanadi va uni Kalendar tabida kunlar bo'ylab surish
   // ancha aniqroq chiqadi.
   const canExtendInterval = (iv: Interval): boolean =>
@@ -428,7 +438,7 @@ export function HourlyBoard({
     !!onExtend &&
     !iv.daily &&
     isExtendable(iv.res.status) &&
-    canExtendTo(iv.end, extendLimitFor(iv), EXTEND_STEP_MIN)
+    canResize(iv.end, resizeBoundsFor(iv))
 
   const [extendDrag, setExtendDrag] = useState<{
     resId: string
@@ -438,7 +448,7 @@ export function HourlyBoard({
   const extendRef = useRef<{
     iv: Interval
     startX: number
-    limit: number
+    bounds: ResizeBounds
     end: number
   } | null>(null)
 
@@ -450,7 +460,7 @@ export function HourlyBoard({
     extendRef.current = {
       iv,
       startX: e.clientX,
-      limit: extendLimitFor(iv),
+      bounds: resizeBoundsFor(iv),
       end: iv.end,
     }
     setExtendDrag({ resId: iv.res.id, end: iv.end })
@@ -463,7 +473,7 @@ export function HourlyBoard({
       const st = extendRef.current
       if (!st) return
       const deltaMin = ((e.clientX - st.startX) / hourW) * 60
-      const next = extendTarget(st.iv.end, deltaMin, st.limit, EXTEND_STEP_MIN)
+      const next = resizeTarget(st.iv.end, deltaMin, st.bounds)
       if (next !== st.end) {
         st.end = next
         setExtendDrag({ resId: st.iv.res.id, end: next })
@@ -474,7 +484,8 @@ export function HourlyBoard({
       const st = extendRef.current
       extendRef.current = null
       setExtendDrag(null)
-      if (!st || st.end <= st.iv.end) return
+      // O'zgarish bo'lmasa so'rov ham yubormaymiz
+      if (!st || st.end === st.iv.end) return
       // Dastakdan keyingi click bronni ochib yubormasin
       suppressClick.current = true
       setTimeout(() => {
@@ -914,7 +925,9 @@ export function HourlyBoard({
                                 title={`${getGuestName(iv.res)} · ${
                                   iv.daily ? "Kunlik bron" : pos.label
                                 }${debtHint(iv.res)}${
-                                  extendable ? " · o'ng chetidan tortib cho'zing" : ""
+                                  extendable
+                                    ? " · o'ng chetidan tortib cho'zing yoki qisqartiring"
+                                    : ""
                                 }`}
                               >
                                 <span className="text-[11px] font-bold leading-tight truncate">
@@ -932,7 +945,7 @@ export function HourlyBoard({
                                 {extendable && (
                                   <span
                                     role="separator"
-                                    aria-label="Bronni cho'zish"
+                                    aria-label="Bron muddatini o'zgartirish"
                                     onMouseDown={(e) => beginExtend(e, iv)}
                                     className={cn(
                                       "absolute inset-y-0 right-0 w-2.5 cursor-col-resize",
