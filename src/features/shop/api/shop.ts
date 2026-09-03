@@ -1,5 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import {
+  PAGE_SIZE,
+  queryParams,
+  type TableState,
+} from '@/features/finance/lib/tableState';
 
 /* Do'kon API qatlamı — mahsulotlar FIFO partiyalar bilan keladi,
    sotuvlar serverda partiya narxlari bo'yicha hisoblanadi. */
@@ -97,9 +107,66 @@ export const useShopSales = (
   });
 };
 
+/**
+ * Do'kon savdosining bitta sahifasi — qidiruv va saralash bilan.
+ *
+ * Moliya sahifasidagi jadvallar uchun: u yerda savdo yozuvlari minglab
+ * bo'lishi mumkin va hammasini bir vaqtda chizish sahifani og'irlashtiradi.
+ * Yig'ma summalar `/finance/summary` dan keladi, ya'ni bu ro'yxat qisqa
+ * bo'lsa ham raqamlar to'liq qoladi.
+ */
+export const useShopSalesPage = ({
+  dateFrom,
+  dateTo,
+  state,
+  pageSize = PAGE_SIZE,
+  enabled = true,
+  ...opts
+}: ShopSalesOptions & {
+  dateFrom?: string;
+  dateTo?: string;
+  state: TableState;
+  pageSize?: number;
+}) => {
+  const params = queryParams(state, pageSize);
+  return useQuery({
+    queryKey: [
+      'shopSalesPage',
+      dateFrom,
+      dateTo,
+      opts.dateBy,
+      opts.status,
+      params,
+    ],
+    queryFn: async () => {
+      const response = await api.get<ShopSale[]>('/shop/sales', {
+        params: {
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+          date_by: opts.dateBy || undefined,
+          status: opts.status || undefined,
+          ...params,
+        },
+      });
+      const rows = Array.isArray(response.data) ? response.data : [];
+      // Sarlavha yo'q bo'lsa (eski backend yoki CORS ochmagan bo'lsa)
+      // kelgan qatorlar soni ishlatiladi
+      const raw = Number(response.headers?.['x-total-count']);
+      return {
+        rows,
+        total:
+          Number.isFinite(raw) && raw >= 0 ? raw : params.skip + rows.length,
+      };
+    },
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+};
+
 const invalidateShop = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ['shopProducts'] });
   qc.invalidateQueries({ queryKey: ['shopSales'] });
+  qc.invalidateQueries({ queryKey: ['shopSalesPage'] });
   // Do'kon savdosi kassaga tushadi — kutilgan summa qayta hisoblansin
   qc.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
 };

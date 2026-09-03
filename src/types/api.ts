@@ -245,6 +245,46 @@ export interface Expense {
   created_at?: string | null;
 }
 
+/** To'lov usuli bo'yicha bir qator (GET /finance/summary) */
+export interface FinanceMethodRow {
+  key: string;
+  pay: number;
+  shop: number;
+  expense: number;
+}
+
+/** Xarajat toifasi bo'yicha bir qator (GET /finance/summary) */
+export interface FinanceCategoryRow {
+  name: string;
+  total: number;
+  count: number;
+}
+
+/**
+ * Moliya sahifasining yig'ma ko'rsatkichlari (GET /finance/summary).
+ *
+ * Jadvallar sahifalab olinadi — davrning to'liq ro'yxati brauzerga
+ * kelmaydi, shuning uchun yig'indi serverda hisoblanadi.
+ */
+export interface FinanceSummary {
+  income: number;
+  payment_count: number;
+  refunds: number;
+  invoice_total: number;
+  invoice_discount: number;
+  invoice_paid: number;
+  invoice_count: number;
+  debt: number;
+  expense_total: number;
+  expense_count: number;
+  expense_categories: FinanceCategoryRow[];
+  shop_revenue: number;
+  shop_paid_count: number;
+  shop_debt: number;
+  shop_debt_count: number;
+  methods: FinanceMethodRow[];
+}
+
 // To'lov yozuvi (GET /finance/payments)
 export interface PaymentRecord {
   id: string;
