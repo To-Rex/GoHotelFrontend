@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
+import { FaceRequiredGate } from "@/features/auth/components/FaceRequiredGate";
 import { useAuthStore } from "@/store/auth";
 import { usePermissions } from "@/lib/permissions";
 import { LANDING_GATE_ROUTE } from "./LandingRedirect";
@@ -115,6 +116,12 @@ export const MainLayout = () => {
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Navbar onMenuClick={() => setMobileNavOpen(true)} />
+
+        {/* Yuzi yo'q xodimdan uni biriktirishni talab qiladi. Kirish ikki
+            bosqichli, lekin yuzi yo'q xodim uchun ikkinchi bosqich
+            o'tkazib yuboriladi — ya'ni parolning o'zi yetarli bo'lib
+            qoladi. Izoh komponentda. */}
+        <FaceRequiredGate />
         <main
           className={cn(
             "flex-1 min-h-0",

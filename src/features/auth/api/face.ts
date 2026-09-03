@@ -91,6 +91,32 @@ export const deleteFaceProfiles = async () => {
   return data;
 };
 
+/* Boshqa xodimning yuzini boshqarish — menejer va administrator uchun.
+
+   Nega kerak: yuz tanilmay qolsa (soqol, ko'zoynak, jarohat yoki sifatsiz
+   kadr) xodim tizimga umuman kira olmaydi — kirish uchun yuz kerak, yuzni
+   almashtirish uchun esa kirish kerak. Bu yopiq halqani faqat tashqaridan
+   uzish mumkin. */
+
+export interface FaceUser {
+  user_id: string;
+  name: string;
+  username: string;
+  user_type: string;
+  face_count: number;
+  enrolled: boolean;
+}
+
+export const getFaceUsers = async (): Promise<FaceUser[]> => {
+  const { data } = await api.get<FaceUser[]>('/auth/face/users');
+  return Array.isArray(data) ? data : [];
+};
+
+export const deleteUserFaceProfiles = async (userId: string) => {
+  const { data } = await api.delete(`/auth/face/enroll/${userId}`);
+  return data;
+};
+
 /** Backend xatosidan foydalanuvchiga ko'rsatiladigan matn */
 export const faceErrorMessage = (e: any): string => {
   const d = e?.response?.data;

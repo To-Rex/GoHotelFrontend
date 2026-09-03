@@ -40,6 +40,7 @@ import {
 import { useBranches } from "@/features/rooms/api/rooms"
 import type { Employee } from "@/types/api"
 import { usePermissions } from "@/lib/permissions"
+import { FaceUsersCard } from "@/features/auth/components/FaceUsersCard"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Button } from "@/components/ui/button"
@@ -97,7 +98,10 @@ const FormSection = ({
 )
 
 export const EmployeesPage = () => {
-  const { can, isAdmin } = usePermissions()
+  const { can, isAdmin, permissions } = usePermissions()
+  /* Menejer belgisi — `shift.force_close` ruxsati (loyihada menejer aynan
+     shu bilan ajratiladi). Administrator ham kiradi. */
+  const canResetFaces = isAdmin || permissions.includes("shift.force_close")
   const canCreate = can("employee.create")
   const canEdit = can("employee.update")
   const canDelete = can("employee.delete")
@@ -643,6 +647,26 @@ export const EmployeesPage = () => {
           </button>
         </div>
       </div>
+
+      {/* YUZ BILAN KIRISH — menejer va administrator uchun.
+
+          Yuz tanilmay qolsa (soqol, ko'zoynak, jarohat yoki sifatsiz kadr)
+          xodim tizimga umuman kira olmaydi: kirish uchun yuz kerak, yuzni
+          almashtirish uchun esa kirish kerak. Bu yopiq halqani faqat
+          tashqaridan uzish mumkin. */}
+      {canResetFaces && (
+        <details className="rounded-2xl border bg-white p-4">
+          <summary className="cursor-pointer select-none text-sm font-semibold text-gray-900">
+            Yuz bilan kirish — xodimlar holati
+            <span className="ml-2 font-normal text-gray-500">
+              yuzi tanilmay qolgan xodimning yuzini bekor qilish
+            </span>
+          </summary>
+          <div className="mt-3">
+            <FaceUsersCard />
+          </div>
+        </details>
+      )}
 
       {/* GRID ko'rinishi — xodim kartalari */}
       {viewMode === "grid" && gridCards}
