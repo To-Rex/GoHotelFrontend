@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, ChevronsUpDown, Search, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { TableHead } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import type { SortDir } from "@/features/finance/lib/tableState"
+import type { SortDir } from "@/lib/tableState"
 
 /**
  * Sahifalanadigan jadvallarning umumiy bo'laklari: saralanadigan ustun

@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { AxiosResponse } from 'axios';
 import { api } from '@/lib/api';
 import type { FinanceSummary, Invoice, PaymentRecord } from '@/types/api';
-import { PAGE_SIZE, queryParams, type TableState } from '../lib/tableState';
+import { PAGE_SIZE, queryParams, type TableState } from '@/lib/tableState';
 
 // Sana oralig'i ixtiyoriy — berilmasa avvalgidek barcha hisob-fakturalar
 // qaytadi (DashboardPage shu rejimda ishlatadi).

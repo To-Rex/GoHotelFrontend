@@ -22,7 +22,7 @@ import {
   setSearch,
   toggleSort,
   type TableState,
-} from "../lib/tableState"
+} from "@/lib/tableState"
 
 /**
  * Do'kon: bronga yozilgan qarzlar va davrdagi to'langan savdolar.

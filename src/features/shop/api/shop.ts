@@ -9,7 +9,7 @@ import {
   PAGE_SIZE,
   queryParams,
   type TableState,
-} from '@/features/finance/lib/tableState';
+} from '@/lib/tableState';
 
 /* Do'kon API qatlamı — mahsulotlar FIFO partiyalar bilan keladi,
    sotuvlar serverda partiya narxlari bo'yicha hisoblanadi. */

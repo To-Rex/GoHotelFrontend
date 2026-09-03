@@ -20,7 +20,7 @@ import {
   rangeLabel,
   setSearch,
   toggleSort,
-} from "../lib/tableState"
+} from "@/lib/tableState"
 
 /**
  * To'lovlar jadvali — sahifalab, qidirib va saralab.

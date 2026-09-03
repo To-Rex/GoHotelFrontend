@@ -19,7 +19,7 @@ import {
   rangeLabel,
   setSearch,
   toggleSort,
-} from "../lib/tableState"
+} from "@/lib/tableState"
 
 /** Hisob-fakturalar jadvali — sahifalab, qidirib va saralab. */
 
