@@ -164,6 +164,14 @@ export type HousekeepingTaskType =
 export type HousekeepingTaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 export type HousekeepingTaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+/** Vazifadagi bitta ish bandi — farrosh mobil ilovada belgilaydi */
+export interface TaskChecklistItem {
+  id: string;
+  title: string;
+  is_completed: boolean;
+  sort_order: number;
+}
+
 export interface HousekeepingTask {
   id: string;
   hotel_id: string;
@@ -182,6 +190,10 @@ export interface HousekeepingTask {
   created_by: string;
   created_at: string;
   photo_count: number;
+  /** Farrosh belgilaydigan ish bandlari — veb ekranida faqat ko'rsatiladi */
+  checklist?: TaskChecklistItem[];
+  checklist_done?: number;
+  checklist_total?: number;
   room?: { id: string; room_number: string } | null;
   assigned_user?: { id: string; first_name: string; last_name: string } | null;
   branch?: { id: string; name: string } | null;

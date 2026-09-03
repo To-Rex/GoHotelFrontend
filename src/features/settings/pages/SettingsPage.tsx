@@ -15,6 +15,7 @@ import {
   Brush,
   Wrench,
   ClipboardCheck,
+  ListChecks,
   Moon,
   Printer,
   ArrowRight,
@@ -46,6 +47,7 @@ import {
   useHkAutoSettings,
   useSaveHkAutoSettings,
 } from "@/features/housekeeping/api/housekeeping"
+import { ChecklistTemplateEditor } from "@/features/housekeeping/components/ChecklistTemplateEditor"
 import { useShiftSettings, useSaveShiftSettings } from "@/features/shifts/api/shifts"
 import {
   useEditWindowSettings,
@@ -163,10 +165,10 @@ const SETTING_GROUPS = [
   {
     key: "housekeeping",
     label: "Xo'jalik ishlari",
-    desc: "Tozalash va boshqa vazifalarni avtomatik yakunlash vaqtlari",
+    desc: "Farrosh bajaradigan ish bandlari va vazifalarni avtomatik yakunlash vaqtlari",
     icon: Timer,
     iconClass: "bg-primary-50 text-primary-600",
-    cards: ["auto-complete"],
+    cards: ["checklist-templates", "auto-complete"],
   },
   {
     key: "cameras",
@@ -1285,6 +1287,17 @@ export const SettingsPage = () => {
 
           {group === "housekeeping" && (
             <>
+              {/* Farrosh mobil ilovada belgilaydigan ish bandlari */}
+              <SettingCard
+                id="checklist-templates"
+                icon={ListChecks}
+                iconClass="bg-emerald-50 text-emerald-600"
+                title="Vazifa bandlari"
+                desc="Farrosh mobil ilovada shu ro&apos;yxatni ko&apos;radi va har bandni belgilab boradi. Hammasi belgilanganda vazifa yakunlanadi va xona bo&apos;shaydi."
+              >
+                <ChecklistTemplateEditor />
+              </SettingCard>
+
               {/* Vazifalarni avtomatik yakunlash vaqtlari */}
               <SettingCard
                 id="auto-complete"

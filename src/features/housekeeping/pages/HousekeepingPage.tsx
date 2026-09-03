@@ -10,11 +10,15 @@ import {
   Search,
   Play,
   CheckCircle2,
+  Circle,
+  AlertTriangle,
   X,
   MessageSquare,
   BarChart3,
 } from "lucide-react"
 import { CleaningReportDialog } from "../components/CleaningReportDialog";
+import { ProblemsDialog } from "../components/ProblemsDialog"
+import { useProblems } from "../api/problems"
 import {
   useHousekeepingTasks,
   useCreateHousekeepingTask,
@@ -156,13 +160,19 @@ function PhotoImage({
 }
 
 export const HousekeepingPage = () => {
-  const { can } = usePermissions()
+  const { can, isAdmin } = usePermissions()
   const canCreate = can("housekeeping.task.create")
   const canUpdate = can("housekeeping.task.update")
   const canAssign = can("housekeeping.task.assign")
   const user = useAuthStore((s) => s.user)
 
   const [reportOpen, setReportOpen] = useState(false)
+  const [problemsOpen, setProblemsOpen] = useState(false)
+  /* Ochiq muammolar soni tugmada turadi: xodim xabar berganini boshqaruv
+     sahifani ochmasdan turib ko'rishi kerak. Ro'yxatning o'zi faqat
+     oyna ochilganda yuklanadi. */
+  const { data: problems = [] } = useProblems("OPEN")
+  const openProblems = problems.length
   const [statusFilter, setStatusFilter] = useState("")
   const [search, setSearch] = useState("")
 
@@ -342,6 +352,17 @@ export const HousekeepingPage = () => {
             <BarChart3 className="h-4 w-4 mr-2" />
             Chiqish va tozalash
           </Button>
+          {/* Xodimlar mobil ilovadan yuborgan muammolar. Ilgari bu
+              xabarlar bazaga tushardi-yu, o'qiydigan ekran yo'q edi. */}
+          <Button variant="outline" onClick={() => setProblemsOpen(true)}>
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Muammolar
+            {openProblems > 0 && (
+              <span className="ml-2 rounded-full bg-red-100 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">
+                {openProblems}
+              </span>
+            )}
+          </Button>
           {canCreate && (
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4 mr-2" />
@@ -352,6 +373,12 @@ export const HousekeepingPage = () => {
       </div>
 
       <CleaningReportDialog open={reportOpen} onOpenChange={setReportOpen} />
+
+      <ProblemsDialog
+        open={problemsOpen}
+        onOpenChange={setProblemsOpen}
+        canManage={isAdmin || canUpdate}
+      />
 
       {/* Qidiruv + holat chiplari */}
       <div className="flex flex-wrap items-center gap-2.5">
@@ -882,12 +909,48 @@ export const HousekeepingPage = () => {
         <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>
-              Fotohisobot — Xona{" "}
+              Hisobot — Xona{" "}
               {photoTask
                 ? photoTask.room?.room_number || roomMap[photoTask.room_id] || "—"
                 : ""}
             </DialogTitle>
           </DialogHeader>
+
+          {/* BAJARILGAN ISHLAR — farrosh mobil ilovada belgilaganlari.
+              Bu yerda faqat ko'rsatiladi: belgilash farroshning ishi.
+              Fotosuratdan aniqroq javob beradi — qaysi ish qilinmagani
+              darhol ko'rinadi. */}
+          {photoTask && (photoTask.checklist?.length ?? 0) > 0 && (
+            <div className="rounded-xl border bg-gray-50/60 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-gray-700">
+                  Bajarilgan ishlar
+                </p>
+                <span className="text-xs font-medium tabular-nums text-gray-500">
+                  {photoTask.checklist_done ?? 0} / {photoTask.checklist_total ?? 0}
+                </span>
+              </div>
+              <ul className="space-y-1">
+                {photoTask.checklist!.map((item) => (
+                  <li key={item.id} className="flex items-start gap-2 text-sm">
+                    {item.is_completed ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+                    ) : (
+                      <Circle className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-300" />
+                    )}
+                    <span
+                      className={cn(
+                        item.is_completed ? "text-gray-700" : "text-gray-400"
+                      )}
+                    >
+                      {item.title}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="py-2">
             {photosLoading ? (
               <div className="flex items-center justify-center py-12">
