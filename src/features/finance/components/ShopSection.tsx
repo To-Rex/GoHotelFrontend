@@ -146,7 +146,7 @@ export function ShopSection({
       {(debts.total > 0 || debts.state.search) && (
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-bold tracking-tight">
+            <h2 className="text-base font-bold tracking-tight text-gray-800">
               Do'kon qarzlari (bronga yozilgan)
             </h2>
             <TableSearch
@@ -248,7 +248,7 @@ export function ShopSection({
       {/* Do'kon sotuvlari (to'langan) — davr bo'yicha */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold tracking-tight">Do'kon sotuvlari</h2>
+          <h2 className="text-base font-bold tracking-tight text-gray-800">Do'kon sotuvlari</h2>
           <TableSearch
             className="w-full sm:w-72"
             value={paid.state.search}

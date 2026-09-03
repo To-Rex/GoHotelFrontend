@@ -86,8 +86,9 @@ export function PaymentsSection({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold tracking-tight">To'lovlar</h2>
+      {/* Sarlavha bo'lim menyusining yonida yoziladi — bu yerda takrorlash
+          o'rniga faqat qidiruv turadi */}
+      <div className="flex justify-end">
         <TableSearch
           className="w-full sm:w-72"
           value={state.search}

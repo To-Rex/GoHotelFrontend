@@ -108,28 +108,26 @@ export function InvoicesSection({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold tracking-tight">Hisob-fakturalar</h2>
-        <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
-          <TableSearch
-            className="w-full sm:w-64"
-            value={state.search}
-            onChange={(value) => setState((s) => setSearch(s, value))}
-            placeholder="Hujjat raqami bo'yicha..."
-          />
-          <select
-            className={cn(selectClass, "w-auto min-w-[170px]")}
-            value={status}
-            onChange={(e) => onStatus(e.target.value)}
-          >
-            <option value="">Barcha holatlar</option>
-            {Object.entries(STATUS_LABELS).map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Sarlavha bo'lim menyusining yonida — bu yerda faqat filtrlar */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <TableSearch
+          className="w-full sm:w-64"
+          value={state.search}
+          onChange={(value) => setState((s) => setSearch(s, value))}
+          placeholder="Hujjat raqami bo'yicha..."
+        />
+        <select
+          className={cn(selectClass, "w-auto min-w-[170px]")}
+          value={status}
+          onChange={(e) => onStatus(e.target.value)}
+        >
+          <option value="">Barcha holatlar</option>
+          {Object.entries(STATUS_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
       </div>
 
       {isLoading ? (

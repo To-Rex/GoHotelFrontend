@@ -5,6 +5,7 @@ import {
   ReceiptText,
   CircleDollarSign,
   AlertCircle,
+  LayoutDashboard,
   TrendingDown,
   TrendingUp,
   Store,
@@ -32,6 +33,15 @@ import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
  * oxirigacha aylantirish kerak edi. Endi faqat ochilgan bo'lim yuklanadi
  * va chiziladi.
  *
+ * Bo'lim menyusi `/settings` dagidek: keng ekranda chapda yopishib
+ * turadigan ustun, tor ekranda tepada aylanadigan qator. Yon ustun
+ * gorizontal qatordan afzal — ro'yxat doim ko'z oldida qoladi va har
+ * bo'lim yoniga yozuvlar soni sig'adi.
+ *
+ * Sozlamalardan bitta farqi bor: u yerda bo'limlar bitta sahifada turadi
+ * va menyu faqat kerakli joyga siljitadi. Bu yerda unday qilib bo'lmaydi
+ * — sahifaning og'irligi aynan hammasini bir vaqtda chizishdan edi.
+ *
  * Yig'ma raqamlar (kartalar, sof natija, to'lov usullari, xarajat
  * toifalari) `/finance/summary` dan keladi. Ular jadvallarga BOG'LIQ
  * EMAS: jadval bir sahifa ko'rsatsa ham summalar butun davr bo'yicha
@@ -42,14 +52,102 @@ import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 
-const TABS = [
-  { key: "overview", label: "Umumiy" },
-  { key: "payments", label: "To'lovlar" },
-  { key: "shop", label: "Do'kon" },
-  { key: "invoices", label: "Hisob-fakturalar" },
+const SECTIONS = [
+  {
+    key: "overview",
+    label: "Umumiy",
+    desc: "Davr yakuni, qarzdorlar va pul harakati usullar bo'yicha",
+    icon: LayoutDashboard,
+    iconClass: "bg-primary-50 text-primary-600",
+  },
+  {
+    key: "payments",
+    label: "To'lovlar",
+    desc: "Davrda qabul qilingan to'lovlar — qidirish va saralash mumkin",
+    icon: Wallet,
+    iconClass: "bg-emerald-50 text-emerald-600",
+  },
+  {
+    key: "shop",
+    label: "Do'kon",
+    desc: "Bronga yozilgan qarzlar va davrda to'langan savdolar",
+    icon: Store,
+    iconClass: "bg-violet-50 text-violet-600",
+  },
+  {
+    key: "invoices",
+    label: "Hisob-fakturalar",
+    desc: "Hujjatlar, to'langan summa va qolgan qarz",
+    icon: ReceiptText,
+    iconClass: "bg-blue-50 text-blue-600",
+  },
 ] as const
 
-type TabKey = (typeof TABS)[number]["key"]
+type SectionKey = (typeof SECTIONS)[number]["key"]
+
+/**
+ * Bo'lim menyusi: keng ekranda chapda ustun, tor ekranda tepada qator.
+ *
+ * Yonidagi son — o'sha bo'limda nechta yozuv borligi. Xodim bo'limni
+ * ochmasdan turib unda ish bor-yo'qligini ko'radi. Tor ekranda son
+ * berkitiladi: u yerda qator siqilib qolardi.
+ */
+function FinanceNav({
+  active,
+  onSelect,
+  counts,
+}: {
+  active: SectionKey
+  onSelect: (key: SectionKey) => void
+  counts: Partial<Record<SectionKey, number>>
+}) {
+  return (
+    <nav className="flex gap-1.5 overflow-x-auto pb-1 lg:sticky lg:top-4 lg:w-60 lg:flex-shrink-0 lg:flex-col lg:overflow-visible lg:pb-0">
+      {SECTIONS.map((s) => {
+        const isActive = active === s.key
+        const count = counts[s.key]
+        return (
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => onSelect(s.key)}
+            aria-current={isActive ? "page" : undefined}
+            className={cn(
+              "flex flex-shrink-0 items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors lg:w-full",
+              isActive
+                ? "border-primary-300 bg-primary-50/60 text-primary-800"
+                : "border-transparent text-gray-600 hover:bg-gray-100"
+            )}
+          >
+            <span
+              className={cn(
+                "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg",
+                s.iconClass
+              )}
+            >
+              <s.icon className="h-4 w-4" />
+            </span>
+            <span className="whitespace-nowrap text-sm font-medium lg:whitespace-normal">
+              {s.label}
+            </span>
+            {count !== undefined && (
+              <span
+                className={cn(
+                  "ml-auto hidden flex-shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums lg:inline",
+                  isActive
+                    ? "bg-primary-100 text-primary-700"
+                    : "bg-gray-100 text-gray-500"
+                )}
+              >
+                {count}
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
 
 export const FinancePage = () => {
   const todayStr = format(new Date(), "yyyy-MM-dd")
@@ -62,7 +160,7 @@ export const FinancePage = () => {
   const [presetKey, setPresetKey] = useState<string | null>("today")
   const [custom, setCustom] = useState({ from: todayStr, to: todayStr })
   const [statusFilter, setStatusFilter] = useState("")
-  const [tab, setTab] = useState<TabKey>("overview")
+  const [section, setSection] = useState<SectionKey>("overview")
 
   // Tez tanlovlar: bugungi/kechagi kun, 7 kun, shu oy, barcha davr.
   // Kun almashsa sanalar ham yangilanadi.
@@ -147,6 +245,8 @@ export const FinancePage = () => {
     () => methodRows.find((r) => r.key === "CASH")?.net ?? 0,
     [methodRows]
   )
+
+  const activeSection = SECTIONS.find((s) => s.key === section) ?? SECTIONS[0]
 
   if (isLoading) {
     return (
@@ -309,307 +409,311 @@ export const FinancePage = () => {
         </div>
       </div>
 
-      {/* BO'LIMLAR. Faqat ochilgani chiziladi va so'rov yuboradi —
-          sahifaning og'irligi shu yerda hal bo'ladi. */}
-      <div
-        role="tablist"
-        aria-label="Moliya bo'limlari"
-        className="flex flex-wrap gap-1 overflow-x-auto rounded-lg border bg-gray-50/80 p-1"
-      >
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "flex-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              tab === t.key
-                ? "bg-white text-primary-700 shadow-sm"
-                : "text-gray-500 hover:text-gray-800"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* BO'LIM MENYUSI va tanlangan bo'lim. Faqat ochilgani chiziladi va
+          so'rov yuboradi — sahifaning og'irligi shu yerda hal bo'ladi. */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <FinanceNav
+          active={section}
+          onSelect={setSection}
+          counts={{
+            payments: summary.payment_count,
+            invoices: summary.invoice_count,
+            shop: summary.shop_paid_count + summary.shop_debt_count,
+          }}
+        />
 
-      {tab === "overview" && (
-        <div className="space-y-6">
-          {/* Hisobot kartalari */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {cards.map((c) => (
-              <div
-                key={c.label}
-                className="rounded-lg border bg-white p-4 flex items-start gap-3"
-              >
-                <span
-                  className={cn(
-                    "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg",
-                    c.accent
-                  )}
-                >
-                  <c.icon className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-500">{c.label}</p>
-                  <p className="text-lg font-bold text-gray-900 truncate">{c.value}</p>
-                  <p className="text-[11px] text-gray-400">{c.sub}</p>
-                </div>
-              </div>
-            ))}
+        <div className="min-w-0 flex-1 space-y-4">
+          {/* Bo'lim sarlavhasi — nima ko'rsatilayotgani bir qatorda */}
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-gray-900">
+              {activeSection.label}
+            </h2>
+            <p className="mt-0.5 text-sm text-gray-500">{activeSection.desc}</p>
           </div>
 
-          {/* DAVR YAKUNI — qolgan kartalardan ataylab boshqacha: bu ularning
-              xulosasi, ular bilan bir qatorda turadigan yana bitta raqam emas.
-              Shuning uchun to'liq kenglik, kattaroq shrift va belgisiga qarab
-              rang. Tarkibiy qismlari yonida yozilgan: xodim raqam qayerdan
-              chiqqanini kartalarni qo'shib chiqmasdan ko'radi. */}
-          {canExpenses && (
-            <div
-              className={cn(
-                "rounded-xl border-2 p-5",
-                netPositive
-                  ? "border-emerald-200 bg-emerald-50/60"
-                  : "border-red-200 bg-red-50/60"
-              )}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl",
-                      netPositive
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-red-100 text-red-700"
-                    )}
+          {section === "overview" && (
+            <div className="space-y-6">
+              {/* Hisobot kartalari.
+
+                  Yon menyu 240px joy oladi, shuning uchun to'rt ustun
+                  faqat xl dan boshlab: undan tor ekranda summa ustunga
+                  sig'may qisqarib qolardi. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {cards.map((c) => (
+                  <div
+                    key={c.label}
+                    className="rounded-lg border bg-white p-4 flex items-start gap-3"
                   >
-                    {netPositive ? (
-                      <TrendingUp className="h-6 w-6" />
-                    ) : (
-                      <TrendingDown className="h-6 w-6" />
-                    )}
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600">Sof natija</p>
-                    <p
+                    <span
                       className={cn(
-                        "text-2xl sm:text-3xl font-bold tabular-nums leading-tight",
-                        netPositive ? "text-emerald-700" : "text-red-700"
+                        "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg",
+                        c.accent
                       )}
                     >
-                      {fmt(netResult)} So'm
-                    </p>
+                      <c.icon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500">{c.label}</p>
+                      <p className="text-lg font-bold text-gray-900 truncate">{c.value}</p>
+                      <p className="text-[11px] text-gray-400">{c.sub}</p>
+                    </div>
                   </div>
-                </div>
-
-                {/* Hisob-kitobi — qaysi raqamlardan yig'ilgani */}
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
-                  <span className="whitespace-nowrap">
-                    Tushum{" "}
-                    <b className="font-semibold text-gray-700 tabular-nums">
-                      {fmt(summary.income)}
-                    </b>
-                  </span>
-                  <span className="text-gray-300">+</span>
-                  <span className="whitespace-nowrap">
-                    Do'kon{" "}
-                    <b className="font-semibold text-gray-700 tabular-nums">
-                      {fmt(summary.shop_revenue)}
-                    </b>
-                  </span>
-                  <span className="text-gray-300">−</span>
-                  <span className="whitespace-nowrap">
-                    Xarajat{" "}
-                    <b className="font-semibold text-gray-700 tabular-nums">
-                      {fmt(expensesTotal)}
-                    </b>
-                  </span>
-                </div>
+                ))}
               </div>
-            </div>
-          )}
 
-          {/* QARZDORLAR — sahifaning yuqori qismida, davr yakunidan keyin.
-
-              Bu olinmagan pul, ya'ni sarlavha raqamlari bilan bir qatorda
-              turadigan ma'lumot. Pastda, jadvallar orasida turganda u ko'zga
-              tashlanmasdi — xodim sahifani oxirigacha aylantirmaydi.
-
-              Tanlangan davrga BOG'LANMAGAN va bu ataylab: qarz davr hodisasi
-              emas, joriy holat. Ilgari u davr bilan cheklangan edi va "Bugun"
-              tanlanganda ro'yxat deyarli doim bo'sh chiqardi. */}
-          <DebtorsPanel title="Qarzdorlar (bronlar bo'yicha)" initialLimit={6} />
-
-          {/* To'lov usullari bo'yicha to'liq tafsilot */}
-          <div className="overflow-hidden rounded-lg border bg-white">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <h2 className="text-lg font-bold tracking-tight">
-                To'lov usullari bo'yicha
-              </h2>
-              <span className="text-xs text-gray-400">
-                qaytarimlar tushumdan ayirilgan
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px] text-sm">
-                <thead>
-                  <tr className="border-b bg-gray-50/80 text-left">
-                    <th className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                      Usul
-                    </th>
-                    <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                      Bron to'lovlari
-                    </th>
-                    <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                      Do'kon
-                    </th>
-                    <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                      Jami tushum
-                    </th>
-                    <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                      Xarajat
-                    </th>
-                    <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                      Sof
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {methodRows.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-8 text-center text-sm text-gray-400"
-                      >
-                        Tanlangan davrda pul harakati bo'lmagan
-                      </td>
-                    </tr>
-                  ) : (
-                    methodRows.map((row) => (
-                      <tr key={row.key}>
-                        <td className="px-4 py-2 font-medium text-gray-800">
-                          {row.label}
-                        </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-gray-600">
-                          {row.pay ? fmt(row.pay) : "—"}
-                        </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-gray-600">
-                          {row.shop ? fmt(row.shop) : "—"}
-                        </td>
-                        <td className="px-4 py-2 text-right font-semibold tabular-nums text-emerald-600">
-                          {fmt(row.income)}
-                        </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-red-600">
-                          {row.expense ? fmt(row.expense) : "—"}
-                        </td>
-                        <td
-                          className={cn(
-                            "px-4 py-2 text-right font-semibold tabular-nums",
-                            row.net < 0 ? "text-red-600" : "text-gray-900"
-                          )}
-                        >
-                          {fmt(row.net)}
-                        </td>
-                      </tr>
-                    ))
+              {/* DAVR YAKUNI — qolgan kartalardan ataylab boshqacha: bu ularning
+                  xulosasi, ular bilan bir qatorda turadigan yana bitta raqam emas.
+                  Shuning uchun to'liq kenglik, kattaroq shrift va belgisiga qarab
+                  rang. Tarkibiy qismlari yonida yozilgan: xodim raqam qayerdan
+                  chiqqanini kartalarni qo'shib chiqmasdan ko'radi. */}
+              {canExpenses && (
+                <div
+                  className={cn(
+                    "rounded-xl border-2 p-5",
+                    netPositive
+                      ? "border-emerald-200 bg-emerald-50/60"
+                      : "border-red-200 bg-red-50/60"
                   )}
-                </tbody>
-                {methodRows.length > 0 && (
-                  <tfoot>
-                    <tr className="border-t-2 bg-gray-50/60 font-semibold">
-                      <td className="px-4 py-2">Jami</td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        {fmt(methodTotals.pay)}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        {fmt(methodTotals.shop)}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-emerald-600">
-                        {fmt(methodTotals.income)}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-red-600">
-                        {fmt(methodTotals.expense)}
-                      </td>
-                      <td
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span
                         className={cn(
-                          "px-4 py-2 text-right tabular-nums",
-                          methodTotals.net < 0 ? "text-red-600" : "text-emerald-700"
+                          "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl",
+                          netPositive
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-red-100 text-red-700"
                         )}
                       >
-                        {fmt(methodTotals.net)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
-            </div>
-            {summary.shop_debt > 0 && (
-              <p className="border-t px-4 py-2.5 text-xs text-gray-500">
-                Bronga yozilgan {summary.shop_debt_count} ta to'lanmagan do'kon
-                savdosi ({fmt(summary.shop_debt)} so'm) tushumga kirmagan —{" "}
-                pul hali olinmagan.
-              </p>
-            )}
-          </div>
+                        {netPositive ? (
+                          <TrendingUp className="h-6 w-6" />
+                        ) : (
+                          <TrendingDown className="h-6 w-6" />
+                        )}
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600">Sof natija</p>
+                        <p
+                          className={cn(
+                            "text-2xl sm:text-3xl font-bold tabular-nums leading-tight",
+                            netPositive ? "text-emerald-700" : "text-red-700"
+                          )}
+                        >
+                          {fmt(netResult)} So'm
+                        </p>
+                      </div>
+                    </div>
 
-          {/* Xarajatlar toifalari — pul qayerga ketgani */}
-          {expenseCategories.length > 0 && (
-            <div className="overflow-hidden rounded-lg border bg-white">
-              <div className="flex items-center justify-between border-b px-4 py-3">
-                <h2 className="text-lg font-bold tracking-tight">Xarajatlar toifasi</h2>
-                <span className="text-xs text-gray-400">
-                  jami {fmt(expensesTotal)} So'm
-                </span>
+                    {/* Hisob-kitobi — qaysi raqamlardan yig'ilgani */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                      <span className="whitespace-nowrap">
+                        Tushum{" "}
+                        <b className="font-semibold text-gray-700 tabular-nums">
+                          {fmt(summary.income)}
+                        </b>
+                      </span>
+                      <span className="text-gray-300">+</span>
+                      <span className="whitespace-nowrap">
+                        Do'kon{" "}
+                        <b className="font-semibold text-gray-700 tabular-nums">
+                          {fmt(summary.shop_revenue)}
+                        </b>
+                      </span>
+                      <span className="text-gray-300">−</span>
+                      <span className="whitespace-nowrap">
+                        Xarajat{" "}
+                        <b className="font-semibold text-gray-700 tabular-nums">
+                          {fmt(expensesTotal)}
+                        </b>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* QARZDORLAR — sahifaning yuqori qismida, davr yakunidan keyin.
+
+                  Bu olinmagan pul, ya'ni sarlavha raqamlari bilan bir qatorda
+                  turadigan ma'lumot. Pastda, jadvallar orasida turganda u ko'zga
+                  tashlanmasdi — xodim sahifani oxirigacha aylantirmaydi.
+
+                  Tanlangan davrga BOG'LANMAGAN va bu ataylab: qarz davr hodisasi
+                  emas, joriy holat. Ilgari u davr bilan cheklangan edi va "Bugun"
+                  tanlanganda ro'yxat deyarli doim bo'sh chiqardi. */}
+              <DebtorsPanel title="Qarzdorlar (bronlar bo'yicha)" initialLimit={6} />
+
+              {/* To'lov usullari bo'yicha to'liq tafsilot */}
+              <div className="overflow-hidden rounded-lg border bg-white">
+                <div className="flex items-center justify-between border-b px-4 py-3">
+                  <h2 className="text-lg font-bold tracking-tight">
+                    To'lov usullari bo'yicha
+                  </h2>
+                  <span className="text-xs text-gray-400">
+                    qaytarimlar tushumdan ayirilgan
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[600px] text-sm">
+                    <thead>
+                      <tr className="border-b bg-gray-50/80 text-left">
+                        <th className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                          Usul
+                        </th>
+                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                          Bron to'lovlari
+                        </th>
+                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                          Do'kon
+                        </th>
+                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                          Jami tushum
+                        </th>
+                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                          Xarajat
+                        </th>
+                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                          Sof
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {methodRows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            className="px-4 py-8 text-center text-sm text-gray-400"
+                          >
+                            Tanlangan davrda pul harakati bo'lmagan
+                          </td>
+                        </tr>
+                      ) : (
+                        methodRows.map((row) => (
+                          <tr key={row.key}>
+                            <td className="px-4 py-2 font-medium text-gray-800">
+                              {row.label}
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums text-gray-600">
+                              {row.pay ? fmt(row.pay) : "—"}
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums text-gray-600">
+                              {row.shop ? fmt(row.shop) : "—"}
+                            </td>
+                            <td className="px-4 py-2 text-right font-semibold tabular-nums text-emerald-600">
+                              {fmt(row.income)}
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums text-red-600">
+                              {row.expense ? fmt(row.expense) : "—"}
+                            </td>
+                            <td
+                              className={cn(
+                                "px-4 py-2 text-right font-semibold tabular-nums",
+                                row.net < 0 ? "text-red-600" : "text-gray-900"
+                              )}
+                            >
+                              {fmt(row.net)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                    {methodRows.length > 0 && (
+                      <tfoot>
+                        <tr className="border-t-2 bg-gray-50/60 font-semibold">
+                          <td className="px-4 py-2">Jami</td>
+                          <td className="px-4 py-2 text-right tabular-nums">
+                            {fmt(methodTotals.pay)}
+                          </td>
+                          <td className="px-4 py-2 text-right tabular-nums">
+                            {fmt(methodTotals.shop)}
+                          </td>
+                          <td className="px-4 py-2 text-right tabular-nums text-emerald-600">
+                            {fmt(methodTotals.income)}
+                          </td>
+                          <td className="px-4 py-2 text-right tabular-nums text-red-600">
+                            {fmt(methodTotals.expense)}
+                          </td>
+                          <td
+                            className={cn(
+                              "px-4 py-2 text-right tabular-nums",
+                              methodTotals.net < 0 ? "text-red-600" : "text-emerald-700"
+                            )}
+                          >
+                            {fmt(methodTotals.net)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+                {summary.shop_debt > 0 && (
+                  <p className="border-t px-4 py-2.5 text-xs text-gray-500">
+                    Bronga yozilgan {summary.shop_debt_count} ta to'lanmagan do'kon
+                    savdosi ({fmt(summary.shop_debt)} so'm) tushumga kirmagan —{" "}
+                    pul hali olinmagan.
+                  </p>
+                )}
               </div>
-              <ul className="divide-y divide-gray-100">
-                {expenseCategories.map((c) => {
-                  const share = expensesTotal > 0 ? (c.total / expensesTotal) * 100 : 0
-                  return (
-                    <li key={c.name} className="flex items-center gap-3 px-4 py-2.5">
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-gray-800">
-                          {c.name}
-                        </span>
-                        <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                          <span
-                            className="block h-full rounded-full bg-red-400"
-                            style={{ width: `${share}%` }}
-                          />
-                        </span>
-                      </span>
-                      <span className="flex-shrink-0 text-right">
-                        <span className="block text-sm font-bold tabular-nums text-gray-900">
-                          {fmt(c.total)} So'm
-                        </span>
-                        <span className="block text-[11px] text-gray-400">
-                          {c.count} ta · {share.toFixed(0)}%
-                        </span>
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
+
+              {/* Xarajatlar toifalari — pul qayerga ketgani */}
+              {expenseCategories.length > 0 && (
+                <div className="overflow-hidden rounded-lg border bg-white">
+                  <div className="flex items-center justify-between border-b px-4 py-3">
+                    <h2 className="text-lg font-bold tracking-tight">Xarajatlar toifasi</h2>
+                    <span className="text-xs text-gray-400">
+                      jami {fmt(expensesTotal)} So'm
+                    </span>
+                  </div>
+                  <ul className="divide-y divide-gray-100">
+                    {expenseCategories.map((c) => {
+                      const share = expensesTotal > 0 ? (c.total / expensesTotal) * 100 : 0
+                      return (
+                        <li key={c.name} className="flex items-center gap-3 px-4 py-2.5">
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-gray-800">
+                              {c.name}
+                            </span>
+                            <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                              <span
+                                className="block h-full rounded-full bg-red-400"
+                                style={{ width: `${share}%` }}
+                              />
+                            </span>
+                          </span>
+                          <span className="flex-shrink-0 text-right">
+                            <span className="block text-sm font-bold tabular-nums text-gray-900">
+                              {fmt(c.total)} So'm
+                            </span>
+                            <span className="block text-[11px] text-gray-400">
+                              {c.count} ta · {share.toFixed(0)}%
+                            </span>
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
+
+          {section === "payments" && (
+            <PaymentsSection dateFrom={dateFrom} dateTo={dateTo} />
+          )}
+
+          {section === "shop" && (
+            <ShopSection dateFrom={dateFrom} dateTo={dateTo} />
+          )}
+
+          {section === "invoices" && (
+            <InvoicesSection
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              status={statusFilter}
+              onStatus={setStatusFilter}
+            />
+          )}
         </div>
-      )}
-
-      {tab === "payments" && (
-        <PaymentsSection dateFrom={dateFrom} dateTo={dateTo} />
-      )}
-
-      {tab === "shop" && <ShopSection dateFrom={dateFrom} dateTo={dateTo} />}
-
-      {tab === "invoices" && (
-        <InvoicesSection
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          status={statusFilter}
-          onStatus={setStatusFilter}
-        />
-      )}
+      </div>
     </div>
   )
 }
