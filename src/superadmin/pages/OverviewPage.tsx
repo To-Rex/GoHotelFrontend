@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom"
 import {
+  ArrowUpRight,
   BedDouble,
   Building2,
   CalendarCheck,
@@ -11,7 +13,12 @@ import {
 import { useOverview } from "../api/panel"
 import { PanelCard, PanelHeading } from "../components/ui"
 
-/** Tizim bo'yicha yig'ma raqamlar — panelning bosh sahifasi. */
+/**
+ * Tizim bo'yicha yig'ma raqamlar — panelning bosh sahifasi.
+ *
+ * Har bir karta o'z bo'limiga havola: raqamni ko'rgan odam odatda
+ * darhol tafsilotni ochmoqchi bo'ladi.
+ */
 export function OverviewPage() {
   const { data, isLoading } = useOverview()
 
@@ -21,16 +28,23 @@ export function OverviewPage() {
       value: data?.hotels,
       hint: `${data?.hotels_active ?? 0} ta faol`,
       icon: Building2,
+      to: "/panel/hotels",
     },
-    { label: "Filiallar", value: data?.branches, icon: MapPin },
-    { label: "Xonalar", value: data?.rooms, icon: BedDouble },
-    { label: "Xodimlar", value: data?.users, icon: Users },
-    { label: "Mehmonlar", value: data?.guests, icon: UserRound },
+    { label: "Filiallar", value: data?.branches, icon: MapPin, to: "/panel/hotels" },
+    { label: "Xonalar", value: data?.rooms, icon: BedDouble, to: "/panel/hotels" },
+    { label: "Xodimlar", value: data?.users, icon: Users, to: "/panel/hotels" },
+    {
+      label: "Mehmonlar",
+      value: data?.guests,
+      icon: UserRound,
+      to: "/panel/guests",
+    },
     {
       label: "Bronlar",
       value: data?.reservations,
       hint: `${data?.reservations_active ?? 0} ta faol`,
       icon: CalendarCheck,
+      to: "/panel/reservations",
     },
   ]
 
@@ -48,22 +62,27 @@ export function OverviewPage() {
       ) : (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {cards.map((card) => (
-            <PanelCard key={card.label}>
-              <div className="flex items-start gap-3">
-                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-800">
-                  <card.icon className="h-4 w-4 text-emerald-400" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400">{card.label}</p>
-                  <p className="text-xl font-bold tabular-nums text-slate-100">
-                    {card.value ?? 0}
-                  </p>
-                  {card.hint && (
-                    <p className="text-[11px] text-slate-500">{card.hint}</p>
-                  )}
+            <Link key={card.label} to={card.to} className="group block">
+              <PanelCard className="h-full">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
+                    <card.icon className="h-4 w-4 text-emerald-400" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center justify-between text-xs text-slate-400">
+                      {card.label}
+                      <ArrowUpRight className="h-3.5 w-3.5 text-slate-700 transition-colors group-hover:text-slate-400" />
+                    </p>
+                    <p className="text-2xl font-bold tabular-nums text-slate-100">
+                      {card.value ?? 0}
+                    </p>
+                    {card.hint && (
+                      <p className="text-[11px] text-slate-500">{card.hint}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </PanelCard>
+              </PanelCard>
+            </Link>
           ))}
         </div>
       )}

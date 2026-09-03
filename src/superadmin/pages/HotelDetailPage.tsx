@@ -1,12 +1,22 @@
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
-import { ArrowLeft, KeyRound, Loader2, Plus, Trash2 } from "lucide-react"
+import {
+  ArrowLeft,
+  BedDouble,
+  KeyRound,
+  Loader2,
+  Plus,
+  Trash2,
+  UserPlus,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { panelError } from "../api/client"
 import {
   useBranches,
+  useCreateStaff,
   useDeleteBranch,
+  useHotelRooms,
   useHotelStaff,
   useHotels,
   useResetStaffPassword,
@@ -23,6 +33,7 @@ import {
   PanelHeading,
   PanelInput,
   PanelNotice,
+  PanelSelect,
 } from "../components/ui"
 
 const STAFF_STATUS: Record<string, string> = {
@@ -31,10 +42,29 @@ const STAFF_STATUS: Record<string, string> = {
   TERMINATED: "Ishdan bo'shatilgan",
 }
 
+/** Xodim rollari — backend qabul qiladigan qiymatlar. */
+const USER_TYPES: [string, string][] = [
+  ["ADMIN", "Administrator"],
+  ["MANAGER", "Menejer"],
+  ["RECEPTIONIST", "Qabulxona"],
+  ["HOUSEKEEPER", "Farrosh"],
+  ["MAINTENANCE", "Usta"],
+  ["ACCOUNTANT", "Buxgalter"],
+]
+
+const ROOM_STATUS: Record<string, string> = {
+  AVAILABLE: "Bo'sh",
+  OCCUPIED: "Band",
+  RESERVED: "Bron qilingan",
+  CLEANING: "Tozalanmoqda",
+  MAINTENANCE: "Ta'mirda",
+  OUT_OF_ORDER: "Ishlamaydi",
+}
+
 /** Bitta mehmonxona: filiallari va xodimlari. */
 export function HotelDetailPage() {
   const { hotelId = "" } = useParams()
-  const [tab, setTab] = useState<"branches" | "staff">("branches")
+  const [tab, setTab] = useState<"branches" | "rooms" | "staff">("branches")
 
   // Ro'yxat allaqachon yuklangan bo'lsa nom shundan olinadi — alohida
   // so'rov yubormaymiz
@@ -58,10 +88,11 @@ export function HotelDetailPage() {
         }
       />
 
-      <div className="mb-4 flex gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1">
+      <div className="mb-4 flex gap-1 rounded-xl border border-white/5 bg-white/[0.03] p-1">
         {(
           [
             ["branches", "Filiallar"],
+            ["rooms", "Xonalar"],
             ["staff", "Xodimlar"],
           ] as const
         ).map(([key, label]) => (
@@ -70,9 +101,9 @@ export function HotelDetailPage() {
             type="button"
             onClick={() => setTab(key)}
             className={cn(
-              "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
               tab === key
-                ? "bg-slate-800 text-slate-100"
+                ? "bg-emerald-500/15 text-emerald-300"
                 : "text-slate-400 hover:text-slate-200"
             )}
           >
@@ -81,11 +112,9 @@ export function HotelDetailPage() {
         ))}
       </div>
 
-      {tab === "branches" ? (
-        <BranchesTab hotelId={hotelId} />
-      ) : (
-        <StaffTab hotelId={hotelId} />
-      )}
+      {tab === "branches" && <BranchesTab hotelId={hotelId} />}
+      {tab === "rooms" && <RoomsTab hotelId={hotelId} />}
+      {tab === "staff" && <StaffTab hotelId={hotelId} />}
     </div>
   )
 }
@@ -250,10 +279,32 @@ function StaffTab({ hotelId }: { hotelId: string }) {
   const { data: staff = [], isLoading } = useHotelStaff(hotelId)
   const setStatus = useSetStaffStatus()
   const resetPassword = useResetStaffPassword()
+  const createStaff = useCreateStaff()
   const [target, setTarget] = useState<HotelStaff | null>(null)
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [draft, setDraft] = useState<{
+    username: string
+    password: string
+    first_name: string
+    last_name: string
+    user_type: string
+  } | null>(null)
+
+  const submitNew = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!draft) return
+    setError(null)
+    try {
+      await createStaff.mutateAsync({ hotelId, ...draft })
+      setNotice(`${draft.username} qo'shildi`)
+      setDraft(null)
+      window.setTimeout(() => setNotice(null), 4000)
+    } catch (e) {
+      setError(panelError(e))
+    }
+  }
 
   const submitPassword = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -282,6 +333,23 @@ function StaffTab({ hotelId }: { hotelId: string }) {
 
   return (
     <div>
+      <div className="mb-3 flex justify-end">
+        <PanelButton
+          onClick={() =>
+            setDraft({
+              username: "",
+              password: "",
+              first_name: "",
+              last_name: "",
+              user_type: "RECEPTIONIST",
+            })
+          }
+        >
+          <UserPlus className="h-4 w-4" />
+          Xodim qo'shish
+        </PanelButton>
+      </div>
+
       {error && <PanelNotice>{error}</PanelNotice>}
       {notice && <PanelNotice tone="success">{notice}</PanelNotice>}
 
@@ -292,9 +360,9 @@ function StaffTab({ hotelId }: { hotelId: string }) {
       ) : staff.length === 0 ? (
         <PanelEmpty>Xodim yo'q</PanelEmpty>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-white/5">
           <table className="w-full text-sm">
-            <thead className="bg-slate-900 text-left text-xs text-slate-400">
+            <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
               <tr>
                 <th className="px-3 py-2 font-medium">Xodim</th>
                 <th className="px-3 py-2 font-medium">Login</th>
@@ -303,9 +371,9 @@ function StaffTab({ hotelId }: { hotelId: string }) {
                 <th className="px-3 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 bg-slate-900/40">
+            <tbody className="divide-y divide-white/5">
               {staff.map((person) => (
-                <tr key={person.id}>
+                <tr key={person.id} className="hover:bg-white/[0.02]">
                   <td className="px-3 py-2 text-slate-200">
                     {person.first_name} {person.last_name}
                   </td>
@@ -316,8 +384,8 @@ function StaffTab({ hotelId }: { hotelId: string }) {
                       className={cn(
                         "rounded-full px-2 py-0.5 text-[11px]",
                         person.status === "ACTIVE"
-                          ? "bg-emerald-900/60 text-emerald-300"
-                          : "bg-slate-800 text-slate-400"
+                          ? "bg-emerald-500/15 text-emerald-300"
+                          : "bg-white/5 text-slate-400"
                       )}
                     >
                       {STAFF_STATUS[person.status] || person.status}
@@ -348,6 +416,86 @@ function StaffTab({ hotelId }: { hotelId: string }) {
           </table>
         </div>
       )}
+
+      <PanelDialog
+        open={!!draft}
+        title="Yangi xodim"
+        onClose={() => setDraft(null)}
+      >
+        <form onSubmit={submitNew} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <PanelInput
+              label="Ism"
+              value={draft?.first_name || ""}
+              onChange={(e) =>
+                setDraft((d) => d && { ...d, first_name: e.target.value })
+              }
+              required
+            />
+            <PanelInput
+              label="Familiya"
+              value={draft?.last_name || ""}
+              onChange={(e) =>
+                setDraft((d) => d && { ...d, last_name: e.target.value })
+              }
+              required
+            />
+          </div>
+          <PanelInput
+            label="Login"
+            value={draft?.username || ""}
+            onChange={(e) =>
+              setDraft((d) => d && { ...d, username: e.target.value })
+            }
+            autoComplete="off"
+            required
+          />
+          <PanelInput
+            label="Parol"
+            type="text"
+            value={draft?.password || ""}
+            onChange={(e) =>
+              setDraft((d) => d && { ...d, password: e.target.value })
+            }
+            minLength={6}
+            autoComplete="new-password"
+            required
+          />
+          <PanelSelect
+            label="Roli"
+            value={draft?.user_type || "RECEPTIONIST"}
+            onChange={(e) =>
+              setDraft((d) => d && { ...d, user_type: e.target.value })
+            }
+          >
+            {USER_TYPES.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </PanelSelect>
+          <p className="text-[11px] text-slate-500">
+            Xodim asosiy filialga biriktiriladi va shu login bilan tizimga
+            kiradi.
+          </p>
+          {error && <PanelNotice>{error}</PanelNotice>}
+          <div className="flex justify-end gap-2 pt-1">
+            <PanelButton
+              type="button"
+              variant="ghost"
+              onClick={() => setDraft(null)}
+            >
+              Bekor qilish
+            </PanelButton>
+            <PanelButton type="submit" disabled={createStaff.isPending}>
+              {createStaff.isPending && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+              Qo'shish
+            </PanelButton>
+          </div>
+        </form>
+      </PanelDialog>
 
       <PanelDialog
         open={!!target}
@@ -385,6 +533,74 @@ function StaffTab({ hotelId }: { hotelId: string }) {
           </div>
         </form>
       </PanelDialog>
+    </div>
+  )
+}
+
+/** Mehmonxonaning barcha xonalari — faqat ko'rish uchun. */
+function RoomsTab({ hotelId }: { hotelId: string }) {
+  const { data: rooms = [], isLoading } = useHotelRooms(hotelId)
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+      </div>
+    )
+  }
+
+  if (rooms.length === 0) return <PanelEmpty>Xona yo'q</PanelEmpty>
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/5">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
+            <tr>
+              <th className="px-3 py-2.5 font-medium">Xona</th>
+              <th className="px-3 py-2.5 font-medium">Qavat</th>
+              <th className="px-3 py-2.5 font-medium">Turi</th>
+              <th className="px-3 py-2.5 font-medium">Sig'imi</th>
+              <th className="px-3 py-2.5 text-right font-medium">Narxi</th>
+              <th className="px-3 py-2.5 font-medium">Holat</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {rooms.map((room) => (
+              <tr key={room.id} className="hover:bg-white/[0.02]">
+                <td className="px-3 py-2.5 font-medium text-slate-200">
+                  <span className="inline-flex items-center gap-1.5">
+                    <BedDouble className="h-3.5 w-3.5 text-slate-600" />
+                    {room.room_number}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-slate-400">{room.floor}</td>
+                <td className="px-3 py-2.5 text-slate-400">{room.room_type}</td>
+                <td className="px-3 py-2.5 text-slate-400">
+                  {room.capacity ?? "—"}
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums text-slate-300">
+                  {room.base_price.toLocaleString("uz-UZ", {
+                    maximumFractionDigits: 0,
+                  })}
+                </td>
+                <td className="px-3 py-2.5">
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px]",
+                      room.status === "AVAILABLE"
+                        ? "bg-emerald-500/15 text-emerald-300"
+                        : "bg-white/5 text-slate-400"
+                    )}
+                  >
+                    {ROOM_STATUS[room.status] || room.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

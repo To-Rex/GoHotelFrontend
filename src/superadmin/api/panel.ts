@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import { PANEL_TOKEN_KEY, panelApi } from "./client"
 
@@ -309,3 +314,182 @@ export const useDeletePanelUser = () => {
     onSuccess: () => invalidateUsers(qc),
   })
 }
+
+/* ------------------------------------------------------------ nazorat -- */
+
+export interface PanelRoom {
+  id: string
+  room_number: string
+  floor: number
+  room_type: string
+  base_price: number
+  capacity: number | null
+  status: string
+}
+
+export interface PanelReservation {
+  id: string
+  reservation_number: string
+  hotel_id: string
+  hotel_name: string
+  guest_name: string
+  room_number: string
+  booking_type: string
+  check_in_date: string
+  check_out_date: string
+  status: string
+  payment_status: string
+  total_amount: number
+  paid_amount: number
+  created_at: string | null
+}
+
+export interface FinanceRow {
+  hotel_id: string
+  hotel_name: string
+  income: number
+  expense: number
+  net: number
+  payment_count: number
+}
+
+export interface FinanceSummary {
+  date_from: string
+  date_to: string
+  items: FinanceRow[]
+  income: number
+  expense: number
+  net: number
+}
+
+export interface AuditRow {
+  id: string
+  action: string
+  entity_type: string
+  entity_id: string | null
+  hotel_name: string | null
+  user_name: string | null
+  ip_address: string | null
+  created_at: string | null
+}
+
+export interface PanelGuest {
+  id: string
+  name: string
+  phone: string | null
+  passport_number: string | null
+  blacklisted: boolean
+  blacklist_reason: string | null
+  created_at: string | null
+}
+
+export const useHotelRooms = (hotelId?: string) =>
+  useQuery({
+    queryKey: ["panelRooms", hotelId],
+    queryFn: async () => {
+      const { data } = await panelApi.get<PanelRoom[]>(`/hotels/${hotelId}/rooms`)
+      return Array.isArray(data) ? data : []
+    },
+    enabled: !!hotelId,
+  })
+
+export const useCreateStaff = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      hotelId: string
+      username: string
+      password: string
+      first_name: string
+      last_name: string
+      user_type: string
+    }) => {
+      const { hotelId, ...body } = payload
+      const { data } = await panelApi.post<HotelStaff>(
+        `/hotels/${hotelId}/users`,
+        body
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["panelStaff"] })
+      qc.invalidateQueries({ queryKey: ["panelHotels"] })
+    },
+  })
+}
+
+export interface ReservationFilters {
+  hotel_id?: string
+  status?: string
+  date_from?: string
+  date_to?: string
+  search?: string
+  skip?: number
+  limit?: number
+}
+
+export const usePanelReservations = (filters: ReservationFilters) =>
+  useQuery({
+    queryKey: ["panelReservations", filters],
+    queryFn: async () => {
+      const { data } = await panelApi.get<{
+        total: number
+        items: PanelReservation[]
+      }>("/reservations", {
+        params: {
+          hotel_id: filters.hotel_id || undefined,
+          status: filters.status || undefined,
+          date_from: filters.date_from || undefined,
+          date_to: filters.date_to || undefined,
+          search: filters.search?.trim() || undefined,
+          skip: filters.skip ?? 0,
+          limit: filters.limit ?? 50,
+        },
+      })
+      return data
+    },
+    placeholderData: keepPreviousData,
+  })
+
+export const usePanelFinance = (
+  dateFrom: string,
+  dateTo: string,
+  hotelId?: string
+) =>
+  useQuery({
+    queryKey: ["panelFinance", dateFrom, dateTo, hotelId || ""],
+    queryFn: async () => {
+      const { data } = await panelApi.get<FinanceSummary>("/finance", {
+        params: {
+          date_from: dateFrom,
+          date_to: dateTo,
+          hotel_id: hotelId || undefined,
+        },
+      })
+      return data
+    },
+    enabled: !!dateFrom && !!dateTo,
+    placeholderData: keepPreviousData,
+  })
+
+export const usePanelAudit = (hotelId?: string) =>
+  useQuery({
+    queryKey: ["panelAudit", hotelId || ""],
+    queryFn: async () => {
+      const { data } = await panelApi.get<AuditRow[]>("/audit", {
+        params: { hotel_id: hotelId || undefined },
+      })
+      return Array.isArray(data) ? data : []
+    },
+  })
+
+export const usePanelGuests = (search?: string) =>
+  useQuery({
+    queryKey: ["panelGuests", search || ""],
+    queryFn: async () => {
+      const { data } = await panelApi.get<PanelGuest[]>("/guests", {
+        params: { search: search?.trim() || undefined },
+      })
+      return Array.isArray(data) ? data : []
+    },
+  })
