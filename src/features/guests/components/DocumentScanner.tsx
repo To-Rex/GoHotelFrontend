@@ -946,14 +946,18 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       probe = probeVideoFrame(video, frameRegion(docTypeRef.current), probe)
       const detected = probe.quality.usable && probe.document.present
       if (scanModeRef.current === "mrz") {
-        const seen =
-          detected && probe.document.mrzLines >= 2 && probe.document.steady
+        /* MRZ bandlarining o'zi yetarli dalil: "hujjat to'liq qamrovda"
+           va "turg'unlik" shartlari bu yerda ortiqcha edi — ular zatvorni
+           sekinlashtirardi. Xira (harakatdagi) kadrda shtrix o'tishlari
+           o'z-o'zidan yo'qoladi, ya'ni tiniqlik sharti detektorga ichki
+           qurilgan. */
+        const seen = probe.quality.usable && probe.document.mrzLines >= 2
         if (seen !== lastMrzSeen) {
           lastMrzSeen = seen
           setMrzSeen(seen)
         }
         stableFrames = seen ? stableFrames + 1 : 0
-        if (stableFrames >= 3) {
+        if (stableFrames >= 2) {
           guideActiveRef.current = false
           captureRef.current()
           break
@@ -968,7 +972,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         lastHint = probe.quality.hint
         setQuality(probe.quality)
       }
-      await new Promise((resolve) => window.setTimeout(resolve, 120))
+      // MRZ rejimida halqa tezroq aylanadi — zatvor "ko'rishi bilanoq"
+      // otishi kerak
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, scanModeRef.current === "mrz" ? 70 : 120)
+      )
     }
   }, [])
 

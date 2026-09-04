@@ -382,31 +382,49 @@ function analyzeGuide(
  * passportda ham aynan pastda. 2+ band = MRZ ko'rindi (TD3 — 2 qator,
  * TD1 — 3 qator).
  */
+/**
+ * MRZ shtrixlari 320 px'lik tahlil kadrida juda mayda bo'lib, xiralashadi —
+ * shu sabab bu yerda asosiy EDGE_THRESHOLD emas, yumshoqroq chegara.
+ */
+const MRZ_EDGE = 9
+
+/** Qator nechta bo'lakka bo'lib tekshiriladi (en bo'ylab bir tekislik). */
+const MRZ_SEGMENTS = 8
+
 function countMrzBands(gray: Float32Array, width: number, bounds: GuideBounds): number {
   const { x0, x1, y1 } = bounds
   const boxWidth = x1 - x0
   const boxHeight = y1 - bounds.y0
   if (boxWidth < 60 || boxHeight < 24) return 0
 
-  const startY = bounds.y0 + Math.floor(boxHeight * 0.45)
-  // OCR-B qatori bunda ancha yuqori chiqadi (belgi boshiga kamida ikki
-  // shtrix, qator esa butun en bo'ylab); qisqa yozuv/imzo yetmaydi
-  const minTransitions = Math.max(30, Math.floor(boxWidth * 0.2))
+  const startY = bounds.y0 + Math.floor(boxHeight * 0.4)
+  const minTransitions = Math.max(20, Math.floor(boxWidth * 0.1))
+  const segmentWidth = boxWidth / MRZ_SEGMENTS
 
   let bands = 0
   let run = 0
+  const segmentHits = new Uint16Array(MRZ_SEGMENTS)
   for (let y = startY; y < y1; y++) {
     const rowOffset = y * width
     let transitions = 0
+    segmentHits.fill(0)
     for (let x = x0 + 1; x < x1; x++) {
-      if (Math.abs(gray[rowOffset + x] - gray[rowOffset + x - 1]) >= EDGE_THRESHOLD) {
+      if (Math.abs(gray[rowOffset + x] - gray[rowOffset + x - 1]) >= MRZ_EDGE) {
         transitions++
+        segmentHits[Math.min(MRZ_SEGMENTS - 1, Math.floor((x - x0) / segmentWidth))]++
       }
     }
-    if (transitions >= minTransitions) {
+    /* MRZ qatorini boshqa yozuvdan ajratib turadigan narsa zichlikning
+       o'zi emas — shtrixlar QATORNING BUTUN ENI bo'ylab tekis tarqalgani.
+       Shuning uchun umumiy son yumshoq, bir tekislik esa qat'iy: 8
+       bo'lakdan kamida 6 tasida shtrix bo'lishi shart — qisqa yozuv yoki
+       imzo bu shartdan o'ta olmaydi. */
+    let spread = 0
+    for (let i = 0; i < MRZ_SEGMENTS; i++) if (segmentHits[i] >= 2) spread++
+    if (transitions >= minTransitions && spread >= 6) {
       run++
     } else {
-      // Kamida 2 qator balandlikdagi zich chiziq band hisoblanadi —
+      // Kamida 2 qator balandlikdagi chiziq band hisoblanadi —
       // bitta shovqinli qator emas
       if (run >= 2) bands++
       run = 0
