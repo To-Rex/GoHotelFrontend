@@ -508,8 +508,10 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   }
 
   const filteredGuests = useMemo(() => {
-    // Mehmonlar bazasi GLOBAL — mehmonxona bo'yicha filtrlash yo'q
-    if (!guestSearch.trim()) return guests.slice(0, 20)
+    // Mehmonlar bazasi GLOBAL — mehmonxona bo'yicha filtrlash yo'q.
+    // Qidiruv BO'SH bo'lsa hech kim ko'rsatilmaydi: butun baza ro'yxat
+    // bo'lib turishi shart emas — mijoz faqat qidirilganda chiqadi.
+    if (!guestSearch.trim()) return []
     const q = guestSearch.toLowerCase()
     return guests
       .filter(
@@ -1517,6 +1519,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                 onOpenChange={setGuestScanOpen}
                 onResult={handleGuestSearchScan}
               />
+              {guestSearch.trim() ? (
               <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md divide-y divide-gray-100">
                 {filteredGuests.map((g) => (
                   <button
@@ -1546,6 +1549,12 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                   </p>
                 )}
               </div>
+              ) : (
+                <p className="rounded-md border border-dashed border-gray-200 px-3 py-3.5 text-center text-xs text-gray-400">
+                  Mijozni topish uchun ism yoki telefon raqamini yozing —
+                  yoki hujjatini skanerlang
+                </p>
+              )}
               {canCreateGuest && (
                 <button
                   type="button"
