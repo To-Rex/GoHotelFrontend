@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   BedDouble,
   CalendarPlus,
+  ChevronDown,
   Loader2,
   Upload,
   ArrowLeft,
@@ -515,16 +516,26 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     // Mehmonlar bazasi GLOBAL — mehmonxona bo'yicha filtrlash yo'q.
     // Qidiruv BO'SH bo'lsa hech kim ko'rsatilmaydi: butun baza ro'yxat
     // bo'lib turishi shart emas — mijoz faqat qidirilganda chiqadi.
+    //
+    // Natija BITTA — eng mos mijoz. Ro'yxat emas: xodim aniq odamni
+    // qidiradi, mos kelmasa yana bir-ikki harf yozadi va natija shunga
+    // qarab almashadi. Boshidan mos kelgani ichidan mos kelganidan
+    // ustun turadi ("ali" yozilganda "Alisher" "Xalil"dan oldin).
     if (!guestSearch.trim()) return []
     const q = guestSearch.toLowerCase()
+    const rank = (g: any): number => {
+      const first = (g.first_name || "").toLowerCase()
+      const last = (g.last_name || "").toLowerCase()
+      const phone = g.phone || ""
+      if (first.startsWith(q) || last.startsWith(q) || phone.startsWith(q))
+        return 0
+      if (first.includes(q) || last.includes(q) || phone.includes(q)) return 1
+      return 2
+    }
     return guests
-      .filter(
-        (g) =>
-          g.first_name?.toLowerCase().includes(q) ||
-          g.last_name?.toLowerCase().includes(q) ||
-          g.phone?.includes(q)
-      )
-      .slice(0, 20)
+      .filter((g) => rank(g) < 2)
+      .sort((a, b) => rank(a) - rank(b))
+      .slice(0, 1)
   }, [guests, guestSearch])
 
   /* Bo'lim belgisi: dialog qabulxonachining ish tartibini takrorlaydi —
@@ -1255,27 +1266,50 @@ function SectionMark({
               </span>
             )}
           </div>
-          <select
-            className="w-full flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            {...register("room_id")}
-          >
-            <option value="">Xonani tanlang</option>
-            {rooms.map(r => (
-              <option
-                key={r.id}
-                value={r.id}
-                /* Ta'mir/tekshiruv/xizmatdan tashqari xonalar tanlanmaydi.
-                   Tozalanayotgani esa ro'yxatda qoladi — u kelgusi sanalarga
-                   bron qilinishi mumkin, faqat hozirgi payt uchun emas. */
-                disabled={isBlockedAlways(r.current_status)}
-              >
-                {r.room_number} ({r.room_type?.name}) - {getRoomPrice(r)} So'm
-                {isRestrictedStatus(r.current_status)
-                  ? ` — ${statusLabel(r.current_status)}`
+          <div className="relative">
+            <BedDouble className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary-500" />
+            <select
+              className="h-10 w-full appearance-none rounded-lg border border-input bg-background pl-9 pr-9 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              {...register("room_id")}
+            >
+              <option value="">Xonani tanlang</option>
+              {rooms.map(r => (
+                <option
+                  key={r.id}
+                  value={r.id}
+                  /* Ta'mir/tekshiruv/xizmatdan tashqari xonalar tanlanmaydi.
+                     Tozalanayotgani esa ro'yxatda qoladi — u kelgusi sanalarga
+                     bron qilinishi mumkin, faqat hozirgi payt uchun emas. */
+                  disabled={isBlockedAlways(r.current_status)}
+                >
+                  {r.room_number} · {r.room_type?.name} ·{" "}
+                  {getRoomPrice(r).toLocaleString()} so'm
+                  {isRestrictedStatus(r.current_status)
+                    ? ` — ${statusLabel(r.current_status)}`
+                    : ""}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          </div>
+          {/* Tanlangan xonaning turi va narxi — ro'yxat yopiq turganda ham
+              ko'rinib turadi */}
+          {activeRoom && (
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-primary-100 bg-primary-50/60 px-3 py-1.5 text-xs">
+              <span className="truncate text-gray-600">
+                {activeRoom.room_type?.name || "Xona"}
+                {activeRoom.floor?.floor_number != null
+                  ? ` · ${activeRoom.floor.floor_number}-qavat`
                   : ""}
-              </option>
-            ))}
-          </select>
+              </span>
+              <span className="flex-shrink-0 font-semibold tabular-nums text-primary-700">
+                {/* Soatlik bron narxi davomiylikka bog'liq emas — shuning
+                    uchun "/soat" deb yozilmaydi */}
+                {getRoomPrice(activeRoom).toLocaleString()} so'm
+                {bookingType === "HOURLY" ? "" : " / kecha"}
+              </span>
+            </div>
+          )}
           {errors.room_id && <p className="text-xs text-red-500">{errors.room_id.message}</p>}
           {/* Sabab yuborishdan oldin ko'rinadi — xodim sanani o'zgartirsa
               yoki tozalash tugasa yozuv o'zi yo'qoladi. */}
