@@ -135,3 +135,53 @@ describe("auto-shutter steadiness", () => {
     expect(second.document.motion).toBeGreaterThan(5)
   })
 })
+
+describe("MRZ band detection", () => {
+  /* MRZ qatori — deyarli butun en bo'ylab zich shtrixlar. Ikki qator
+     balandlikdagi ikki band = TD3 passport MRZ'sining karikaturasi. */
+  const guideTop = GUIDE.top * HEIGHT
+  const guideHeight = (GUIDE.bottom - GUIDE.top) * HEIGHT
+  const bandRows = new Set<number>()
+  for (const fraction of [0.78, 0.9]) {
+    const start = Math.floor(guideTop + guideHeight * fraction)
+    for (let row = start; row < start + 5; row++) bandRows.add(row)
+  }
+
+  const mrzCard = frameWith((x, y) => {
+    if (!insideGuide(x, y)) return [150, 150, 150]
+    if (bandRows.has(y)) return x % 4 < 2 ? [20, 20, 20] : [240, 240, 240]
+    // Yuqorida siyrak yozuv — hujjat sifatida tanilsin, MRZ deb emas
+    return (y - Math.floor(guideTop)) % 10 < 3 && x % 16 < 2
+      ? [60, 60, 60]
+      : [235, 235, 235]
+  })
+
+  /* Xuddi shu karta, lekin pastdagi qatorlar QISQA (enning 25 foizi) —
+     oddiy imzo/yozuv MRZ deb tanilmasligi kerak. */
+  const shortLinesCard = frameWith((x, y) => {
+    if (!insideGuide(x, y)) return [150, 150, 150]
+    const shortLine = bandRows.has(y) && x < WIDTH * (GUIDE.left + 0.25)
+    return shortLine && x % 4 < 2 ? [20, 20, 20] : [235, 235, 235]
+  })
+
+  it("sees the MRZ band pair on a document bottom", () => {
+    installCanvasDocument()
+    const probe = probeVideoFrame(mrzCard, GUIDE)
+
+    expect(probe.document.mrzLines).toBeGreaterThanOrEqual(2)
+  })
+
+  it("does not call short print lines an MRZ", () => {
+    installCanvasDocument()
+    const probe = probeVideoFrame(shortLinesCard, GUIDE)
+
+    expect(probe.document.mrzLines).toBe(0)
+  })
+
+  it("an empty background has no MRZ lines", () => {
+    installCanvasDocument()
+    const probe = probeVideoFrame(emptyDesk, GUIDE)
+
+    expect(probe.document.mrzLines).toBe(0)
+  })
+})

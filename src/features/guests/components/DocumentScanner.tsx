@@ -797,6 +797,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const [result, setResult] = useState<ScannedDoc | null>(null)
   const [quality, setQuality] = useState<ImageQuality | null>(null)
   const [docDetected, setDocDetected] = useState(false)
+  /** MRZ rejimida: kadrda MRZ qatorlari haqiqatan ko'rinyaptimi */
+  const [mrzSeen, setMrzSeen] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [torchSupported, setTorchSupported] = useState(false)
@@ -928,11 +930,13 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     let lastDetected: boolean | null = null
     let lastHint: string | null = null
     let lastUsable: boolean | null = null
-    /* MRZ rejimida zatvor tugmasi YO'Q: hujjat ramkada tanilib, ketma-ket
-       bir necha kadr barqaror tursa, surat o'zi olinadi. Sanagich shuning
-       uchun — bitta tasodifiy "yaxshi" kadrga emas, ~0.7 soniya turg'un
-       holatga ishonamiz. */
+    /* MRZ rejimida zatvor tugmasi YO'Q: surat MRZ QATORLARI kadrda
+       haqiqatan ko'ringanda — va faqat shunda — o'zi olinadi. "Hujjat
+       ko'rindi" yetarli emas: MRZ'siz tomon yoki begona qog'ozga zatvor
+       otmasligi kerak. Uch ketma-ket kadr (~0.4 s) talab qilinadi —
+       tezkor, lekin bitta tasodifiy kadrga ishonmaydi. */
     let stableFrames = 0
+    let lastMrzSeen: boolean | null = null
     while (guideActiveRef.current) {
       const video = videoRef.current
       if (!video || video.videoWidth < 100) {
@@ -942,8 +946,14 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       probe = probeVideoFrame(video, frameRegion(docTypeRef.current), probe)
       const detected = probe.quality.usable && probe.document.present
       if (scanModeRef.current === "mrz") {
-        stableFrames = detected ? stableFrames + 1 : 0
-        if (stableFrames >= 6) {
+        const seen =
+          detected && probe.document.mrzLines >= 2 && probe.document.steady
+        if (seen !== lastMrzSeen) {
+          lastMrzSeen = seen
+          setMrzSeen(seen)
+        }
+        stableFrames = seen ? stableFrames + 1 : 0
+        if (stableFrames >= 3) {
           guideActiveRef.current = false
           captureRef.current()
           break
@@ -1333,9 +1343,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                     }`}
                   >
                     {scanMode === "mrz"
-                      ? docDetected
-                        ? "Qimirlatmang — surat o'zi olinadi..."
-                        : "Hujjatni ramkaga joylang"
+                      ? mrzSeen
+                        ? "MRZ ko'rindi — qimirlatmang, surat olinmoqda..."
+                        : "MRZ qatorlari (pastdagi mayda belgilar) ramkada ko'rinsin"
                       : docDetected
                         ? "Tayyor — suratga oling"
                         : "Hujjatni ramkaga joylang"}
@@ -1362,11 +1372,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                          olinadi, bu yerda faqat holat ko'rinib turadi */
                       <div
                         className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-md text-base font-medium text-white shadow-lg transition-colors ${
-                          docDetected ? "bg-emerald-600" : "bg-black/50"
+                          mrzSeen ? "bg-emerald-600" : "bg-black/50"
                         }`}
                       >
                         <ScanLine size={20} />
-                        {docDetected ? "Olinmoqda..." : "Avtomatik skaner"}
+                        {mrzSeen ? "MRZ ko'rindi — olinmoqda..." : "MRZ kutilmoqda"}
                       </div>
                     ) : (
                     <Button

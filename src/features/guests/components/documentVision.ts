@@ -235,6 +235,13 @@ export interface DocumentPresence {
   motion: number
   /** The document has stopped moving, so a capture will not be smeared. */
   steady: boolean
+  /**
+   * MRZ'ga o'xshash qatorlar soni (0..3): hujjat PASTIDA, deyarli butun
+   * enni egallagan, juda zich qorong'i-yorug' almashinuvli chiziqlar.
+   * MRZ rejimidagi avtomatik zatvor aynan shu >= 2 bo'lgandagina otadi —
+   * shunchaki "hujjat ko'rindi" yetarli emas.
+   */
+  mrzLines: number
 }
 
 export interface FrameProbe {
@@ -300,7 +307,14 @@ function analyzeGuide(
   const boxHeight = y1 - y0
   if (boxWidth < GRID * 2 || boxHeight < GRID * 2) {
     return {
-      document: { present: false, coverage: 0, detail: 0, motion: 255, steady: false },
+      document: {
+        present: false,
+        coverage: 0,
+        detail: 0,
+        motion: 255,
+        steady: false,
+        mrzLines: 0,
+      },
       sharpness: 0,
     }
   }
@@ -347,11 +361,59 @@ function analyzeGuide(
       detail,
       motion,
       steady: motion <= 5,
+      mrzLines: countMrzBands(gray, width, bounds),
     },
     // Focus is judged on the guide alone.  Averaging in a plain background
     // dragged the variance down and made the scanner call a sharp card blurry.
     sharpness: Math.sqrt(Math.max(0, laplacianSq / samples - (laplacianSum / samples) ** 2)),
   }
+}
+
+/**
+ * MRZ bandlarini sanaydi — OCR'siz, sof piksel statistikasi.
+ *
+ * MRZ qatori boshqa har qanday yozuvdan bitta belgisi bilan ajralib
+ * turadi: OCR-B monospace matn qatorning DEYARLI BUTUN ENI bo'ylab
+ * uzluksiz davom etadi, ya'ni o'sha qator bo'ylab qorong'i-yorug'
+ * almashinishlar soni juda katta. Oddiy yozuv (ism, yorliq) qisqa va
+ * siyrak — bu chegaraga yetmaydi.
+ *
+ * Hujjat pastki qismi (45% dan pasti) qaraladi: MRZ ID kartada ham,
+ * passportda ham aynan pastda. 2+ band = MRZ ko'rindi (TD3 — 2 qator,
+ * TD1 — 3 qator).
+ */
+function countMrzBands(gray: Float32Array, width: number, bounds: GuideBounds): number {
+  const { x0, x1, y1 } = bounds
+  const boxWidth = x1 - x0
+  const boxHeight = y1 - bounds.y0
+  if (boxWidth < 60 || boxHeight < 24) return 0
+
+  const startY = bounds.y0 + Math.floor(boxHeight * 0.45)
+  // OCR-B qatori bunda ancha yuqori chiqadi (belgi boshiga kamida ikki
+  // shtrix, qator esa butun en bo'ylab); qisqa yozuv/imzo yetmaydi
+  const minTransitions = Math.max(30, Math.floor(boxWidth * 0.2))
+
+  let bands = 0
+  let run = 0
+  for (let y = startY; y < y1; y++) {
+    const rowOffset = y * width
+    let transitions = 0
+    for (let x = x0 + 1; x < x1; x++) {
+      if (Math.abs(gray[rowOffset + x] - gray[rowOffset + x - 1]) >= EDGE_THRESHOLD) {
+        transitions++
+      }
+    }
+    if (transitions >= minTransitions) {
+      run++
+    } else {
+      // Kamida 2 qator balandlikdagi zich chiziq band hisoblanadi —
+      // bitta shovqinli qator emas
+      if (run >= 2) bands++
+      run = 0
+    }
+  }
+  if (run >= 2) bands++
+  return Math.min(bands, 3)
 }
 
 const PROBE_WIDTH = 320
