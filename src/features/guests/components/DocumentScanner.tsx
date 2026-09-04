@@ -815,6 +815,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const streamRef = useRef<MediaStream | null>(null)
   const guideActiveRef = useRef(false)
   const captureRef = useRef<() => void>(() => {})
+  //: Jonli MRZ o'qish (qurilma dvigateli) uchun halqa ko'radigan holat
+  const currentSideRef = useRef<DocumentSide>("front")
+  const serverPreferredRef = useRef(true)
+  const liveMrzBusyRef = useRef(false)
   const scanAbortRef = useRef<AbortController | null>(null)
   const serverDownRef = useRef(false)
   const shotsRef = useRef<Partial<Record<DocumentSide, Shot>>>({})
@@ -823,6 +827,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
   const sides = activeSides(docType, scanMode)
   const currentSide = sides[Math.min(stepIndex, sides.length - 1)]
+  currentSideRef.current = currentSide
+  serverPreferredRef.current = serverPreferred
   const currentShot = shots[currentSide]
   const allCaptured = sides.every((side) => shots[side])
 
@@ -956,11 +962,42 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           lastMrzSeen = seen
           setMrzSeen(seen)
         }
-        stableFrames = seen ? stableFrames + 1 : 0
-        if (stableFrames >= 2) {
-          guideActiveRef.current = false
-          captureRef.current()
-          break
+        if (serverPreferredRef.current) {
+          // Server dvigateli: kadr olinadi, MRZ'ni server o'qiydi
+          stableFrames = seen ? stableFrames + 1 : 0
+          if (stableFrames >= 2) {
+            guideActiveRef.current = false
+            captureRef.current()
+            break
+          }
+        } else if (seen && !liveMrzBusyRef.current) {
+          /* QURILMA dvigateli (sozlamadan): MRZ shu yerning o'zida,
+             jonli kadrda O'QILADI. Zatvor faqat nazorat raqamlari
+             to'g'ri chiqqandagina otadi va natija serverga umuman
+             bormasdan darhol ko'rsatiladi. */
+          liveMrzBusyRef.current = true
+          const frame = videoFrameCanvas(video, CAPTURE_WIDTH)
+          const side = currentSideRef.current
+          const type = docTypeRef.current
+          void recognizeDocument(frame, type, side, "mrz", false, true, probe.quality)
+            .then((outcome) => {
+              const doc = outcome.recognition?.doc
+              if (!doc?.verified || !guideActiveRef.current) return
+              guideActiveRef.current = false
+              storeShot(side, frame)
+              stopCamera()
+              setResult({
+                ...doc,
+                documentType: type,
+                engine: "device",
+                scannedSides: [side],
+              })
+              setPhase("result")
+            })
+            .catch(() => undefined)
+            .finally(() => {
+              liveMrzBusyRef.current = false
+            })
         }
       }
       if (detected !== lastDetected) {
