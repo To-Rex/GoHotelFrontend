@@ -102,7 +102,8 @@ const TABLE_LABELS: Record<string, string> = {
   journal_entries: "Jurnal yozuvlari",
   invoices: "Hisob-fakturalar",
   reservations: "Bronlar",
-  guests: "Mehmonlar",
+  incoming_calls: "Kiruvchi qo'ng'iroqlar",
+  document_scans: "Telefon skanerlari",
   notifications: "Bildirishnomalar",
   audit_logs: "Audit loglari",
   reports: "Hisobotlar",
@@ -656,7 +657,7 @@ export const SettingsPage = () => {
       icon: Database,
       title: "Operatsion ma'lumotlarni tozalash",
       description:
-        "Bronlar, hisob-fakturalar, to'lovlar, mehmonlar, xarajatlar, xo'jalik vazifalari, do'kon (sotuvlar, mahsulotlar va ombor qoldig'i), smenalar va kassa sessiyalari, bildirishnomalar va tarix o'chiriladi.",
+        "Bronlar, hisob-fakturalar, to'lovlar, xarajatlar, xo'jalik vazifalari, do'kon (sotuvlar, mahsulotlar va ombor qoldig'i), smenalar va kassa sessiyalari, bildirishnomalar va tarix o'chiriladi. Mehmonlar bazasi va hujjatlari SAQLANADI — mehmon hech qachon o'chirilmaydi.",
       keeps: "Saqlanadi: xodimlar, ruxsatlar, xonalar, qavatlar, turlar, xizmatlar.",
     },
     {
