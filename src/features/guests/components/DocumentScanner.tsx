@@ -815,10 +815,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const streamRef = useRef<MediaStream | null>(null)
   const guideActiveRef = useRef(false)
   const captureRef = useRef<() => void>(() => {})
-  //: Jonli MRZ o'qish (qurilma dvigateli) uchun halqa ko'radigan holat
-  const currentSideRef = useRef<DocumentSide>("front")
-  const serverPreferredRef = useRef(true)
-  const liveMrzBusyRef = useRef(false)
+  //: MRZ rejimi to'liq avtomatik: kadr olingach yuborish ham o'zi bo'ladi
+  const autoSubmitRef = useRef(false)
   const scanAbortRef = useRef<AbortController | null>(null)
   const serverDownRef = useRef(false)
   const shotsRef = useRef<Partial<Record<DocumentSide, Shot>>>({})
@@ -827,8 +825,6 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
   const sides = activeSides(docType, scanMode)
   const currentSide = sides[Math.min(stepIndex, sides.length - 1)]
-  currentSideRef.current = currentSide
-  serverPreferredRef.current = serverPreferred
   const currentShot = shots[currentSide]
   const allCaptured = sides.every((side) => shots[side])
 
@@ -962,42 +958,17 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           lastMrzSeen = seen
           setMrzSeen(seen)
         }
-        if (serverPreferredRef.current) {
-          // Server dvigateli: kadr olinadi, MRZ'ni server o'qiydi
-          stableFrames = seen ? stableFrames + 1 : 0
-          if (stableFrames >= 2) {
-            guideActiveRef.current = false
-            captureRef.current()
-            break
-          }
-        } else if (seen && !liveMrzBusyRef.current) {
-          /* QURILMA dvigateli (sozlamadan): MRZ shu yerning o'zida,
-             jonli kadrda O'QILADI. Zatvor faqat nazorat raqamlari
-             to'g'ri chiqqandagina otadi va natija serverga umuman
-             bormasdan darhol ko'rsatiladi. */
-          liveMrzBusyRef.current = true
-          const frame = videoFrameCanvas(video, CAPTURE_WIDTH)
-          const side = currentSideRef.current
-          const type = docTypeRef.current
-          void recognizeDocument(frame, type, side, "mrz", false, true, probe.quality)
-            .then((outcome) => {
-              const doc = outcome.recognition?.doc
-              if (!doc?.verified || !guideActiveRef.current) return
-              guideActiveRef.current = false
-              storeShot(side, frame)
-              stopCamera()
-              setResult({
-                ...doc,
-                documentType: type,
-                engine: "device",
-                scannedSides: [side],
-              })
-              setPhase("result")
-            })
-            .catch(() => undefined)
-            .finally(() => {
-              liveMrzBusyRef.current = false
-            })
+        stableFrames = seen ? stableFrames + 1 : 0
+        if (stableFrames >= 2) {
+          /* Kadr olinadi va YUBORISH ham o'zi bo'ladi: o'qish dvigatel
+             sozlamasiga qarab serverda yoki qurilmaning to'liq (qayta
+             urinishli) quvurida bajariladi. Jonli kadrda OCR yurgizish
+             sinaldi va rad etildi — u sekin qurilmada osilib, "olinmoqda"
+             holatida qotib qolardi. */
+          guideActiveRef.current = false
+          autoSubmitRef.current = true
+          captureRef.current()
+          break
         }
       }
       if (detected !== lastDetected) {
@@ -1040,8 +1011,20 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     stopCamera()
     scanAbortRef.current?.abort()
     scanAbortRef.current = null
+    autoSubmitRef.current = false
     clearShots()
   }, [open, clearShots, stopCamera])
+
+  /* MRZ rejimi to'liq avtomatik: zatvor otgach yuborish tugmasini kutib
+     o'tirilmaydi — kadr holatga tushishi bilan yuboriladi. Xato bo'lsa
+     odatdagi xato ekrani chiqadi va undan qayta urinish mumkin. */
+  useEffect(() => {
+    if (!autoSubmitRef.current) return
+    if (phase !== "capture" || !allCaptured) return
+    autoSubmitRef.current = false
+    void submit()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, shots, allCaptured])
 
   const resetAll = useCallback(() => {
     clearShots()
