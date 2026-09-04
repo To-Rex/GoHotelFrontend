@@ -68,7 +68,8 @@ import {
   useEnrollSighting,
   type SightingGroup,
 } from "@/features/vision/api/vision"
-import { CompanionGuests, type Companion } from "./CompanionGuests"
+import { CompanionGuests, type Companion, type CompanionScan } from "./CompanionGuests"
+import { registerScanConsumer } from "@/features/reception/lib/scanRouter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -281,6 +282,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [localError, setLocalError] = useState<string | null>(null)
   // Xonadagi hamrohlar — mehmonlar soni 1 dan ko'p bo'lganda
   const [companions, setCompanions] = useState<Companion[]>([])
+  /* Oyna ochiq turganda telefondan kelgan skan — hamrohga yo'naltiriladi */
+  const [companionScan, setCompanionScan] = useState<CompanionScan | null>(null)
   const { data: bookingDefaults } = useBookingDefaults()
   const guestsRequired = bookingDefaults?.require_all_guests === true
   const { data: discountRules } = useDiscountRules()
@@ -609,6 +612,7 @@ function SectionMark({
     setGuestScanNotFound(null)
     setLocalError(null)
     setCompanions([])
+    setCompanionScan(null)
     clearGuestPhoto()
     /* Telefonda skanerlangan hujjat: mehmon bazada topilmagan bo'lsa
        yangi mijoz maydonlari o'qilgan qiymatlar bilan to'ldiriladi —
@@ -708,6 +712,36 @@ function SectionMark({
 
   /* Hamrohlar hisobi. Mehmonlar soni kamaytirilsa ortiqcha tanlovlar
      yig'ilib qolmasligi uchun ro'yxat shu yerda qirqiladi. */
+  /* Oyna ochiq turganda telefonda skanerlangan hujjat yangi oyna
+     ochmaydi — shu oynaga tushadi: asosiy mehmon hali tanlanmagan bo'lsa
+     uni to'ldiradi, aks holda HAMROH bo'ladi (birinchi skan mehmonni
+     ochgan, ikkinchisi xonadagi sherigini qo'shadi). Hamrohga joy
+     yetmasa mehmonlar soni o'zi oshiriladi. */
+  useEffect(() => {
+    if (!open) return
+    return registerScanConsumer((scan) => {
+      if (!selectedGuestId && !showNewGuest) {
+        if (scan.guest_id) {
+          setValue("guest_id", scan.guest_id)
+          setSelectedGuestId(scan.guest_id)
+          setGuestSearch("")
+        } else {
+          startNewGuestFromScan(scan.document)
+        }
+        return true
+      }
+      // Asosiy mehmonning o'zi qayta skanerlansa hamroh qilinmaydi
+      if (scan.guest_id && scan.guest_id === selectedGuestId) return true
+      const needed = companions.length + 2
+      if ((Number(getValues("adults")) || 1) < needed) {
+        setValue("adults", needed, { shouldDirty: true })
+      }
+      setCompanionScan({ doc: scan.document, guestId: scan.guest_id })
+      return true
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, selectedGuestId, showNewGuest, companions.length])
+
   const adultsCount = Math.max(Number(watch("adults")) || 1, 1)
   const trimmedCompanions = useMemo(
     () => companions.slice(0, companionSlots(adultsCount)),
@@ -1914,6 +1948,8 @@ function SectionMark({
           required={guestsRequired}
           hotelId={activeRoom?.hotel_id || user?.hotel_id || undefined}
           branchId={activeBranchId}
+          incomingScan={companionScan}
+          onIncomingScanHandled={() => setCompanionScan(null)}
           onError={showError}
         />
         {companionsMissing > 0 && guestsRequired && (

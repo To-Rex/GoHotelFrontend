@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Search, ScanLine, UserPlus, Video, X, CheckCircle2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
@@ -35,6 +35,13 @@ export interface Companion {
   name: string
 }
 
+/** Telefondan kelgan, hamrohga mo'ljallangan skan. `guestId` — server
+    hujjat raqami bo'yicha mehmonni bazadan topgan bo'lsa. */
+export interface CompanionScan {
+  doc: ScannedDoc
+  guestId?: string | null
+}
+
 interface Props {
   /** Xonadagi jami mehmonlar soni (asosiy mehmon bilan birga) */
   adults: number
@@ -49,6 +56,9 @@ interface Props {
   /** Bron qilinayotgan xonaning filiali — yuz tanlash oynasi shu bo'yicha
       filtrlanadi (asosiy mehmon formasidagi bilan bir xil) */
   branchId?: string | null
+  /** Telefondan kelgan skan — birinchi bo'sh hamroh joyiga tushadi */
+  incomingScan?: CompanionScan | null
+  onIncomingScanHandled?: () => void
   onError: (message: string) => void
 }
 
@@ -64,6 +74,8 @@ export const CompanionGuests = ({
   required,
   hotelId,
   branchId,
+  incomingScan,
+  onIncomingScanHandled,
   onError,
 }: Props) => {
   const { can } = usePermissions()
@@ -174,6 +186,31 @@ export const CompanionGuests = ({
       .sort((a, b) => rank(a) - rank(b))
       .slice(0, 1)
   }, [guests, search, takenIds])
+
+  /* Telefondan kelgan skan birinchi BO'SH joyga tushadi: mehmon server
+     yoki hujjat raqami bo'yicha bazadan topilsa darhol tanlanadi, aks
+     holda to'ldirilgan yangi mijoz formasi ochiladi — xodim tekshirib
+     "Saqlash"ni bosadi, xolos. */
+  useEffect(() => {
+    if (!incomingScan) return
+    onIncomingScanHandled?.()
+    const index = value.length
+    if (index >= slots) return
+    const { doc, guestId } = incomingScan
+    if (guestId && !takenIds.has(guestId)) {
+      const g = guests.find((x) => x.id === guestId)
+      setAt(index, {
+        id: guestId,
+        name: g
+          ? guestName(g)
+          : `${doc.firstName || ""} ${doc.lastName || ""}`.trim() || "Mehmon",
+      })
+      return
+    }
+    if (guestId) return // allaqachon asosiy mehmon yoki hamroh
+    handleScan(index, doc)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingScan])
 
   if (slots === 0) return null
 

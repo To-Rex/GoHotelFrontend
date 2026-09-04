@@ -9,6 +9,7 @@ import {
   type DocumentScan,
 } from "../api/scans"
 import { pickAutoOpen } from "../lib/scanPick"
+import { offerScan } from "../lib/scanRouter"
 
 /**
  * Telefonda skanerlangan hujjatlar — navbardagi kuzatuvchi.
@@ -75,7 +76,10 @@ export function ScannedDocsMenu({
   const pick = (scan: DocumentScan) => {
     openedRef.current.add(scan.id)
     setOpen(false)
-    onScan(scan)
+    /* Bandlov oynasi allaqachon ochiq bo'lsa skan O'SHA oynaga tushadi
+       (hamroh sifatida) — yangi oyna ochib xodim kiritganlarini yo'qotib
+       yubormaymiz. Oyna yopiq bo'lsa odatdagidek yangi bandlov ochiladi. */
+    if (!offerScan(scan)) onScan(scan)
     // Yopilgan yozuv boshqa ekranda qayta ochilmaydi
     acknowledge.mutate(scan.id)
   }
