@@ -614,6 +614,14 @@ async function scanMrzDocument(
   return best
 }
 
+/** Jonli urinish hech qachon osilib qolmasin — muddat tugasa null. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), ms)),
+  ])
+}
+
 interface ScanOutcome {
   recognition: RecognitionResult | null
   quality: ImageQuality
@@ -822,6 +830,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const currentSideRef = useRef<DocumentSide>("front")
   //: O'qilmagan urinishlar — bir necha marta o'zi qayta uradi
   const mrzRetriesRef = useRef(0)
+  //: Bir vaqtda bitta jonli MRZ o'qish urinishi
+  const mrzParseBusyRef = useRef(false)
   const scanAbortRef = useRef<AbortController | null>(null)
   const serverDownRef = useRef(false)
   const shotsRef = useRef<Partial<Record<DocumentSide, Shot>>>({})
@@ -954,36 +964,47 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       probe = probeVideoFrame(video, frameRegion(docTypeRef.current), probe)
       const detected = probe.quality.usable && probe.document.present
       if (scanModeRef.current === "mrz") {
-        /* MRZ bandlarining o'zi yetarli dalil: "hujjat to'liq qamrovda"
-           va "turg'unlik" shartlari bu yerda ortiqcha edi — ular zatvorni
-           sekinlashtirardi. Xira (harakatdagi) kadrda shtrix o'tishlari
-           o'z-o'zidan yo'qoladi, ya'ni tiniqlik sharti detektorga ichki
-           qurilgan. */
-        const seen = probe.quality.usable && probe.document.mrzLines >= 2
+        /* ZATVOR SHARTI — HAQIQIY MRZ O'QILISHI. Piksel statistikasi
+           (bandlar) faqat arzon oldindan-filtr: qachon OCR yurgizishni
+           aytadi, zatvorni esa hech qachon o'zi ota olmaydi. Kadrda
+           parseMrzText MRZ TUZILMASINI topgandagina surat qabul qilinadi —
+           shuning uchun kamera ochilishi bilan yoki begona narsaga otish
+           ILOJI yo'q: otish uchun MRZ o'qilgan bo'lishi shart. */
+        const bands = probe.quality.usable && probe.document.mrzLines >= 2
+        stableFrames = bands ? stableFrames + 1 : 0
+        const attempting = mrzParseBusyRef.current
+        const seen = bands || attempting
         if (seen !== lastMrzSeen) {
           lastMrzSeen = seen
           setMrzSeen(seen)
         }
-        stableFrames = seen ? stableFrames + 1 : 0
-        if (stableFrames >= 2) {
-          /* Zatvordan OLDIN to'liq o'lchamdagi kadrning MRZ kesimi
-             tekshiriladi: 320 px'lik jonli tahlil harakat xiraligini
-             sezmasligi mumkin, xira kadr esa serverda ham, qurilmada ham
-             o'qilmay "umuman ishlamayapti" taassurotini berardi. Kesim
-             tiniq bo'lmasa kadr TASHLANADI va kuzatuv davom etadi. */
+        if (bands && stableFrames >= 2 && !attempting) {
           const frame = videoFrameCanvas(video, CAPTURE_WIDTH)
-          const mrzZone = mrzCrops(frame, docTypeRef.current)[0]
-          if (assessImageQuality(mrzZone).usable) {
-            guideActiveRef.current = false
-            autoSubmitRef.current = true
-            // Aynan tekshirilgan kadr saqlanadi — qayta olishda
-            // xiralashishi mumkin edi
-            storeShot(currentSideRef.current, frame)
-            stopCamera()
-            break
+          const zone = mrzCrops(frame, docTypeRef.current)[0]
+          if (assessImageQuality(zone).usable) {
+            mrzParseBusyRef.current = true
+            /* Tezkor jonli o'qish + qattiq muddat: sekin qurilmada ham
+               urinish 4 soniyadan oshmaydi, tugagach yangi kadr bilan
+               yana uriniladi — "olinmoqda"da qotib qolish yo'q. */
+            void withTimeout(
+              scanMrzDocument(frame, docTypeRef.current, false, true),
+              4000
+            )
+              .then((mrzResult) => {
+                if (!mrzResult || !guideActiveRef.current) return
+                guideActiveRef.current = false
+                autoSubmitRef.current = true
+                // Aynan MRZ o'qilgan kadr yuboriladi
+                storeShot(currentSideRef.current, frame)
+                stopCamera()
+              })
+              .catch(() => undefined)
+              .finally(() => {
+                mrzParseBusyRef.current = false
+              })
+          } else {
+            stableFrames = 0
           }
-          // Kesim xira — kadr tashlanadi, kuzatuv (uxlash bilan) davom etadi
-          stableFrames = 0
         }
       }
       if (detected !== lastDetected) {
@@ -1031,6 +1052,15 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setMrzRetryNote(null)
     clearShots()
   }, [open, clearShots, stopCamera])
+
+  /* MRZ rejimida OCR worker OLDINDAN qiziydi: birinchi jonli urinish
+     worker yuklanishini kutib soniyalab turmasin. */
+  useEffect(() => {
+    if (!open || scanMode !== "mrz") return
+    void getWorker(docType === "ID_CARD" ? "mrzLatin" : "mrz").catch(
+      () => undefined
+    )
+  }, [open, scanMode, docType])
 
   /* MRZ rejimi to'liq avtomatik: zatvor otgach yuborish tugmasini kutib
      o'tirilmaydi — kadr holatga tushishi bilan yuboriladi. Xato bo'lsa
@@ -1405,7 +1435,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                   >
                     {scanMode === "mrz"
                       ? mrzSeen
-                        ? "MRZ ko'rindi — qimirlatmang, surat olinmoqda..."
+                        ? "MRZ o'qilmoqda — qimirlatmang..."
                         : mrzRetryNote ||
                           "MRZ qatorlari (pastdagi mayda belgilar) ramkada ko'rinsin"
                       : docDetected
@@ -1438,7 +1468,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                         }`}
                       >
                         <ScanLine size={20} />
-                        {mrzSeen ? "MRZ ko'rindi — olinmoqda..." : "MRZ kutilmoqda"}
+                        {mrzSeen ? "MRZ o'qilmoqda..." : "MRZ kutilmoqda"}
                       </div>
                     ) : (
                     <Button
