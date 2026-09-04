@@ -812,6 +812,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const guideActiveRef = useRef(false)
+  const captureRef = useRef<() => void>(() => {})
   const scanAbortRef = useRef<AbortController | null>(null)
   const serverDownRef = useRef(false)
   const shotsRef = useRef<Partial<Record<DocumentSide, Shot>>>({})
@@ -927,6 +928,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     let lastDetected: boolean | null = null
     let lastHint: string | null = null
     let lastUsable: boolean | null = null
+    /* MRZ rejimida zatvor tugmasi YO'Q: hujjat ramkada tanilib, ketma-ket
+       bir necha kadr barqaror tursa, surat o'zi olinadi. Sanagich shuning
+       uchun — bitta tasodifiy "yaxshi" kadrga emas, ~0.7 soniya turg'un
+       holatga ishonamiz. */
+    let stableFrames = 0
     while (guideActiveRef.current) {
       const video = videoRef.current
       if (!video || video.videoWidth < 100) {
@@ -935,6 +941,14 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       }
       probe = probeVideoFrame(video, frameRegion(docTypeRef.current), probe)
       const detected = probe.quality.usable && probe.document.present
+      if (scanModeRef.current === "mrz") {
+        stableFrames = detected ? stableFrames + 1 : 0
+        if (stableFrames >= 6) {
+          guideActiveRef.current = false
+          captureRef.current()
+          break
+        }
+      }
       if (detected !== lastDetected) {
         lastDetected = detected
         setDocDetected(detected)
@@ -1028,6 +1042,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     storeShot(currentSide, videoFrameCanvas(video, CAPTURE_WIDTH))
     stopCamera()
   }
+  // Yo'l-yo'riq halqasi barqaror callback — u eng so'nggi capture'ni shu
+  // ref orqali ko'radi (MRZ rejimidagi avtomatik suratga olish uchun)
+  captureRef.current = capture
 
   const retakeCurrent = () => {
     const shot = shotsRef.current[currentSide]
@@ -1315,7 +1332,13 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                       docDetected ? "bg-emerald-600/90" : "bg-black/65"
                     }`}
                   >
-                    {docDetected ? "Tayyor — suratga oling" : "Hujjatni ramkaga joylang"}
+                    {scanMode === "mrz"
+                      ? docDetected
+                        ? "Qimirlatmang — surat o'zi olinadi..."
+                        : "Hujjatni ramkaga joylang"
+                      : docDetected
+                        ? "Tayyor — suratga oling"
+                        : "Hujjatni ramkaga joylang"}
                   </div>
                   <p className="pointer-events-none absolute inset-x-2 bottom-12 text-center text-[11px] font-medium text-white/95">
                     {SIDE_HINTS[currentSide]}
@@ -1334,6 +1357,18 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                     >
                       <ImageUp size={18} />
                     </button>
+                    {scanMode === "mrz" ? (
+                      /* MRZ rejimi — tugmasiz: hujjat tanilganda surat o'zi
+                         olinadi, bu yerda faqat holat ko'rinib turadi */
+                      <div
+                        className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-md text-base font-medium text-white shadow-lg transition-colors ${
+                          docDetected ? "bg-emerald-600" : "bg-black/50"
+                        }`}
+                      >
+                        <ScanLine size={20} />
+                        {docDetected ? "Olinmoqda..." : "Avtomatik skaner"}
+                      </div>
+                    ) : (
                     <Button
                       onClick={capture}
                       disabled={Boolean(cameraError)}
@@ -1344,6 +1379,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                     >
                       <Camera size={20} /> Suratga olish
                     </Button>
+                    )}
                     {torchSupported ? (
                       <button
                         type="button"
