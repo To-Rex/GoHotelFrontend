@@ -8,13 +8,17 @@ import {
   X,
   CheckCircle2,
   BedDouble,
+  CalendarPlus,
   Loader2,
   Upload,
   ArrowLeft,
   Camera,
   ScanLine,
+  UserRound,
   Video,
+  Wallet,
   Ban,
+  type LucideIcon,
 } from "lucide-react"
 
 import { useCreateReservation, useReservations } from "../api/reservations"
@@ -523,7 +527,28 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       .slice(0, 20)
   }, [guests, guestSearch])
 
-  /* Berilgan xona va kun uchun birinchi bo'sh soat oralig'i.
+  /* Bo'lim belgisi: dialog qabulxonachining ish tartibini takrorlaydi —
+   joylashtirish, mehmon, to'lov. Yorliq shu bosqichni nomlaydi, ingichka
+   so'nuvchi chiziq esa bo'limlarni ohista ajratadi. */
+function SectionMark({
+  icon: Icon,
+  label,
+}: {
+  icon: LucideIcon
+  label: string
+}) {
+  return (
+    <div className="flex items-center gap-2 pt-1.5">
+      <Icon className="h-3.5 w-3.5 text-primary-500" />
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">
+        {label}
+      </span>
+      <span className="h-px flex-1 bg-gradient-to-r from-gray-200 to-transparent" />
+    </div>
+  )
+}
+
+/* Berilgan xona va kun uchun birinchi bo'sh soat oralig'i.
 
      Bugungi kun bo'lsa qidiruv HOZIRDAN boshlanadi — o'tib ketgan soatni
      taklif qilishning ma'nosi yo'q. Joy topilmasa null qaytadi va odatdagi
@@ -1139,12 +1164,27 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
     <DialogContent className="sm:max-w-[640px] max-h-[92vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>Yangi bandlov</DialogTitle>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-600/10 text-primary-600">
+            <CalendarPlus className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 text-left">
+            <DialogTitle>Yangi bandlov</DialogTitle>
+            {/* Kontekst tanlov bilan birga to'lib boradi — sarlavhaning
+                o'zi qisqa xulosa bo'lib qoladi */}
+            <p className="mt-0.5 truncate text-xs font-normal text-gray-500">
+              {bookingType === "HOURLY" ? "Soatlik" : "Kunlik"} joylashtirish
+              {activeRoom ? ` · ${activeRoom.room_number}-xona` : ""}
+            </p>
+          </div>
+        </div>
       </DialogHeader>
 
       <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-3 py-3">
+        <SectionMark icon={BedDouble} label="Joylashtirish" />
+
         {/* Bron turi: Kunlik / Soatlik */}
-        <div className="flex rounded-lg bg-gray-100 p-1">
+        <div className="flex rounded-xl bg-gray-100/80 p-1">
           {([
             { key: "DAILY", label: "Kunlik" },
             { key: "HOURLY", label: "Soatlik" },
@@ -1177,9 +1217,9 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                 setExtraPayments([])
               }}
               className={cn(
-                "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 bookingType === opt.key
-                  ? "bg-white text-primary-700 shadow-sm"
+                  ? "bg-white text-primary-700 shadow-sm ring-1 ring-black/5"
                   : "text-gray-500 hover:text-gray-700"
               )}
             >
@@ -1357,10 +1397,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
         )}
 
         {/* Guest selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Mehmon *
-          </label>
+        <div className="space-y-2">
+          <SectionMark icon={UserRound} label="Mehmon *" />
 
           {!showNewGuest ? (
             (() => {
@@ -1375,7 +1413,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                   selectedGuestObj.last_name?.[0] ?? ""
                 }`.toUpperCase()
                 return (
-                  <div className="space-y-2 rounded-lg border-2 border-primary-200 bg-primary-50 px-3 py-2.5">
+                  <div className="space-y-2 rounded-xl border border-primary-200 bg-primary-50/70 px-3 py-2.5 shadow-sm">
                   <div className="flex items-center gap-3">
                     <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
                       {initials || "?"}
@@ -1565,7 +1603,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               )
             })()
           ) : (
-            <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+            <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50/70 p-3">
               {/* Blok sarlavhasi + ro'yxatga qaytish tugmasi (forma uzun bo'lgani
                   uchun qaytish tugmasi tepada ham, pastda ham mavjud) */}
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-200">
@@ -1860,14 +1898,27 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
           </p>
         )}
 
-        <div className="p-3 bg-gray-50 rounded-lg space-y-3">
+        {/* TO'LOV — kvitansiya ko'rinishida: tepada bo'lim nomi va doim
+            ko'rinib turadigan jami, pastda esa uzuq chiziqli "yirtish"
+            ajratgichidan keyin to'lov maydonlari. */}
+        <div className="overflow-hidden rounded-xl border border-gray-200">
+          <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5">
+            <Wallet className="h-3.5 w-3.5 text-primary-500" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+              To'lov
+            </span>
+            <span className="ml-auto text-sm font-bold tabular-nums text-primary-700">
+              {finalTotal.toLocaleString()} So'm
+            </span>
+          </div>
+          <div className="space-y-3 bg-gray-50/60 p-4">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">
               {bookingType === "HOURLY"
                 ? `Xona narxi (${hourCount} soat)`
                 : `Xona narxi (${dialogNightCount} kecha)`}
             </span>
-            <span className="text-sm font-semibold text-gray-900">{effectiveTotal.toLocaleString()} So'm</span>
+            <span className="text-sm font-semibold tabular-nums text-gray-900">{effectiveTotal.toLocaleString()} So'm</span>
           </div>
 
           {/* Chegirma: so'mda yoki foizda — qoida doirasida */}
@@ -1934,13 +1985,13 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                   (−{discountAmount.toLocaleString()} So'm chegirma)
                 </span>
               </span>
-              <span className="text-sm font-bold text-primary-700">
+              <span className="text-base font-bold tabular-nums text-primary-700">
                 {finalTotal.toLocaleString()} So'm
               </span>
             </div>
           )}
 
-          <div className="border-t border-gray-200 pt-3">
+          <div className="border-t border-dashed border-gray-300 pt-3">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               To'lov summasi
             </label>
@@ -2037,6 +2088,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               )}
             </div>
           </div>
+          </div>
         </div>
 
         <DialogFooter>
@@ -2062,6 +2114,11 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
               createGuestMutation.isPending ||
               photoUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Tasdiqlash
+            {finalTotal > 0 && (
+              <span className="ml-1.5 font-semibold tabular-nums">
+                · {finalTotal.toLocaleString()} So'm
+              </span>
+            )}
           </Button>
         </DialogFooter>
       </form>
