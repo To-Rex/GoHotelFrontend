@@ -212,6 +212,27 @@ export const CompanionGuests = ({
                 >
                   Tanlash
                 </button>
+                {/* Hamroh ham mijoz — yangisini shu yerning o'zida qo'shish
+                    mumkin (ilgari bu qidiruv ichidagi kichik havola edi) */}
+                {canCreateGuest && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveSlot(index)
+                      setSearch("")
+                      setNewGuest({
+                        first_name: "",
+                        last_name: "",
+                        phone: "",
+                        passport_number: "",
+                      })
+                    }}
+                    className="flex flex-shrink-0 items-center gap-1 rounded-md border border-primary-200 bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Yangi mijoz
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setScanSlot(index)}
@@ -330,7 +351,7 @@ export const CompanionGuests = ({
                       className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                     >
                       <UserPlus className="h-3.5 w-3.5" />
-                      Yangi mehmon
+                      + Yangi mijoz qo'shish
                     </button>
                   )}
                   <button
