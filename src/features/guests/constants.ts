@@ -57,6 +57,33 @@ export const NATIONALITIES: string[] = [
 /* Hujjat turlari. Mehmonlar sahifasi va tez tahrirlash oynasi bir xil
    ro'yxatdan foydalanadi — aks holda bir joyda bor tur ikkinchisida yo'q
    bo'lib qolardi. */
+// MRZ'dagi 3 harfli davlat kodini fuqarolik ro'yxatidagi nomga o'girish
+export const MRZ_COUNTRY: Record<string, string> = {
+  UZB: "O'zbekiston",
+  KAZ: "Qozog'iston",
+  KGZ: "Qirg'iziston",
+  TJK: "Tojikiston",
+  TKM: "Turkmaniston",
+  RUS: "Rossiya",
+  AFG: "Afg'oniston",
+  AZE: "Ozarbayjon",
+  ARM: "Armaniston",
+  BLR: "Belarus",
+  GEO: "Gruziya",
+  TUR: "Turkiya",
+  CHN: "Xitoy",
+  IND: "Hindiston",
+  PAK: "Pokiston",
+  IRN: "Eron",
+  KOR: "Janubiy Koreya",
+  JPN: "Yaponiya",
+  USA: "AQSH",
+  GBR: "Buyuk Britaniya",
+  DEU: "Germaniya",
+  FRA: "Fransiya",
+  UKR: "Ukraina",
+};
+
 export const DOC_TYPES = [
   { value: "", label: "Tanlang" },
   { value: "PASSPORT", label: "Passport" },

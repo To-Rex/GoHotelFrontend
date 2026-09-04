@@ -38,7 +38,7 @@ import {
   GUEST_PHOTO_ACCEPT,
   GUEST_PHOTO_MAX_BYTES,
 } from "@/features/guests/api/guests"
-import { NATIONALITIES, DEFAULT_NATIONALITY } from "@/features/guests/constants"
+import { NATIONALITIES, DEFAULT_NATIONALITY, MRZ_COUNTRY } from "@/features/guests/constants"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { useAuthStore } from "@/store/auth"
@@ -140,32 +140,6 @@ interface Props {
   onError?: (message: string) => void
 }
 
-// MRZ'dagi 3 harfli davlat kodini fuqarolik ro'yxatidagi nomga o'girish
-const MRZ_COUNTRY: Record<string, string> = {
-  UZB: "O'zbekiston",
-  KAZ: "Qozog'iston",
-  KGZ: "Qirg'iziston",
-  TJK: "Tojikiston",
-  TKM: "Turkmaniston",
-  RUS: "Rossiya",
-  AFG: "Afg'oniston",
-  AZE: "Ozarbayjon",
-  ARM: "Armaniston",
-  BLR: "Belarus",
-  GEO: "Gruziya",
-  TUR: "Turkiya",
-  CHN: "Xitoy",
-  IND: "Hindiston",
-  PAK: "Pokiston",
-  IRN: "Eron",
-  KOR: "Janubiy Koreya",
-  JPN: "Yaponiya",
-  USA: "AQSH",
-  GBR: "Buyuk Britaniya",
-  DEU: "Germaniya",
-  FRA: "Fransiya",
-  UKR: "Ukraina",
-}
 
 const reservationSchema = z
   .object({

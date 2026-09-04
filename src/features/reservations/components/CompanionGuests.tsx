@@ -2,7 +2,14 @@ import { useMemo, useState } from "react"
 import { Search, ScanLine, UserPlus, X, CheckCircle2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
+import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { useCreateGuest } from "@/features/guests/api/guests"
+import {
+  DEFAULT_NATIONALITY,
+  DOC_TYPES,
+  MRZ_COUNTRY,
+  NATIONALITIES,
+} from "@/features/guests/constants"
 import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { sanitizePassport } from "../lib/booking"
@@ -59,12 +66,35 @@ export const CompanionGuests = ({
   const [search, setSearch] = useState("")
   const [activeSlot, setActiveSlot] = useState<number | null>(null)
   const [scanSlot, setScanSlot] = useState<number | null>(null)
+  /* Yangi hamroh formasi ASOSIY mehmon formasi bilan bir xil maydonlarga
+     ega: hamroh ham bazadagi to'la huquqli mijoz, uning yozuvi keyin
+     qidiruvda chiqadi va hujjatlari saqlanadi — chala karta yaratmaymiz. */
   const [newGuest, setNewGuest] = useState<{
     first_name: string
     last_name: string
     phone: string
     passport_number: string
+    birth_date: string
+    nationality: string
+    nationality_other: string
+    id_document_type: string
+    id_document_number: string
+    address: string
   } | null>(null)
+
+  const emptyNewGuest = () => ({
+    first_name: "",
+    last_name: "",
+    phone: "",
+    passport_number: "",
+    birth_date: "",
+    // Fuqarolik standart holda O'zbekiston bo'lib turadi
+    nationality: DEFAULT_NATIONALITY,
+    nationality_other: "",
+    id_document_type: "",
+    id_document_number: "",
+    address: "",
+  })
 
   // Allaqachon tanlanganlar va asosiy mehmon ro'yxatda ko'rinmaydi —
   // bir odam ikki marta yozilmasligi kerak
@@ -120,11 +150,23 @@ export const CompanionGuests = ({
       return
     }
     setActiveSlot(index)
+    const mapped = doc.nationality ? MRZ_COUNTRY[doc.nationality] : undefined
     setNewGuest({
+      ...emptyNewGuest(),
       first_name: doc.firstName || "",
       last_name: doc.lastName || "",
-      phone: "",
       passport_number: doc.documentNumber ? sanitizePassport(doc.documentNumber) : "",
+      birth_date: doc.birthDate || "",
+      nationality: doc.nationality
+        ? mapped && NATIONALITIES.includes(mapped)
+          ? mapped
+          : "Boshqa"
+        : DEFAULT_NATIONALITY,
+      nationality_other: mapped ? "" : doc.nationality || "",
+      id_document_type: doc.documentType || "",
+      // Xalqaro MRZ'dagi qo'shimcha maydon avtomatik JSHSHIR emas —
+      // faqat O'zbekiston hujjatida tasdiqlangan bo'lsa olinadi
+      id_document_number: doc.pinflVerified ? doc.personalNumber || "" : "",
     })
   }
 
@@ -141,6 +183,14 @@ export const CompanionGuests = ({
         passport_number: newGuest.passport_number.trim()
           ? sanitizePassport(newGuest.passport_number) || undefined
           : undefined,
+        birth_date: newGuest.birth_date || undefined,
+        nationality:
+          newGuest.nationality === "Boshqa"
+            ? newGuest.nationality_other.trim() || undefined
+            : newGuest.nationality || undefined,
+        id_document_type: newGuest.id_document_type || undefined,
+        id_document_number: newGuest.id_document_number.trim() || undefined,
+        address: newGuest.address.trim() || undefined,
         hotelId,
       })
       setAt(index, { id: created.id, name: guestName(created) })
@@ -220,12 +270,7 @@ export const CompanionGuests = ({
                     onClick={() => {
                       setActiveSlot(index)
                       setSearch("")
-                      setNewGuest({
-                        first_name: "",
-                        last_name: "",
-                        phone: "",
-                        passport_number: "",
-                      })
+                      setNewGuest(emptyNewGuest())
                     }}
                     className="flex flex-shrink-0 items-center gap-1 rounded-md border border-primary-200 bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100"
                   >
@@ -284,6 +329,91 @@ export const CompanionGuests = ({
                     }
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-0.5 block text-[11px] font-medium text-gray-500">
+                      Tug'ilgan sana
+                    </label>
+                    <BirthDateSelect
+                      value={newGuest.birth_date}
+                      onChange={(birthDate) =>
+                        setNewGuest({ ...newGuest, birth_date: birthDate })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-0.5 block text-[11px] font-medium text-gray-500">
+                      Fuqaroligi
+                    </label>
+                    <select
+                      className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={newGuest.nationality}
+                      onChange={(e) =>
+                        setNewGuest({ ...newGuest, nationality: e.target.value })
+                      }
+                    >
+                      {NATIONALITIES.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {newGuest.nationality === "Boshqa" && (
+                  <Input
+                    className="h-9"
+                    placeholder="Fuqaroligini kiriting"
+                    value={newGuest.nationality_other}
+                    onChange={(e) =>
+                      setNewGuest({ ...newGuest, nationality_other: e.target.value })
+                    }
+                  />
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-0.5 block text-[11px] font-medium text-gray-500">
+                      Hujjat turi
+                    </label>
+                    <select
+                      className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={newGuest.id_document_type}
+                      onChange={(e) =>
+                        setNewGuest({ ...newGuest, id_document_type: e.target.value })
+                      }
+                    >
+                      {DOC_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-0.5 block text-[11px] font-medium text-gray-500">
+                      Shaxsiy raqam/JSHSHIR
+                    </label>
+                    <Input
+                      className="h-9"
+                      placeholder="JSHSHIR"
+                      value={newGuest.id_document_number}
+                      onChange={(e) =>
+                        setNewGuest({
+                          ...newGuest,
+                          id_document_number: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <Input
+                  className="h-9"
+                  placeholder="Manzil"
+                  value={newGuest.address}
+                  onChange={(e) =>
+                    setNewGuest({ ...newGuest, address: e.target.value })
+                  }
+                />
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -341,12 +471,7 @@ export const CompanionGuests = ({
                     <button
                       type="button"
                       onClick={() =>
-                        setNewGuest({
-                          first_name: "",
-                          last_name: "",
-                          phone: "",
-                          passport_number: "",
-                        })
+                        setNewGuest(emptyNewGuest())
                       }
                       className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                     >
