@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -37,7 +38,10 @@ export function OverlayDialog({
 
   if (!open) return null
 
-  return (
+  /* Portal SHART: navbardagi backdrop-blur `position: fixed` uchun
+     konteyner bo'lib qoladi — portalsiz "katta oyna" navbar ichida
+     qisilib chiqardi. */
+  return createPortal(
     <div
       className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-[8vh] backdrop-blur-sm"
       onClick={onClose}
@@ -69,6 +73,7 @@ export function OverlayDialog({
         </div>
         <div className="max-h-[70vh] overflow-y-auto p-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

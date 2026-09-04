@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 
 /**
@@ -30,7 +31,11 @@ export function ImageLightbox({
 
   if (!url) return null
 
-  return (
+  /* Portal SHART: oyna navbar menyusi ichidan chaqiriladi, navbarda esa
+     backdrop-blur bor — u `position: fixed` uchun konteyner bo'lib
+     qoladi va "butun ekran" oynasi navbar ichida qisilib chiqardi.
+     body'ga ko'chirilgach surat chinakam dialog bo'lib ochiladi. */
+  return createPortal(
     <div
       className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 p-4"
       onClick={onClose}
@@ -57,6 +62,7 @@ export function ImageLightbox({
           {caption}
         </p>
       )}
-    </div>
+    </div>,
+    document.body
   )
 }
