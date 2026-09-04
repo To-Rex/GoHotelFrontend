@@ -801,6 +801,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const [mrzSeen, setMrzSeen] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  /** MRZ rejimida o'qilmay qolgan urinishdan keyingi qisqa izoh */
+  const [mrzRetryNote, setMrzRetryNote] = useState<string | null>(null)
   const [torchSupported, setTorchSupported] = useState(false)
   const [torchOn, setTorchOn] = useState(false)
   const [serverFellBack, setServerFellBack] = useState(false)
@@ -817,6 +819,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const captureRef = useRef<() => void>(() => {})
   //: MRZ rejimi to'liq avtomatik: kadr olingach yuborish ham o'zi bo'ladi
   const autoSubmitRef = useRef(false)
+  const currentSideRef = useRef<DocumentSide>("front")
+  //: O'qilmagan urinishlar — bir necha marta o'zi qayta uradi
+  const mrzRetriesRef = useRef(0)
   const scanAbortRef = useRef<AbortController | null>(null)
   const serverDownRef = useRef(false)
   const shotsRef = useRef<Partial<Record<DocumentSide, Shot>>>({})
@@ -825,6 +830,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
   const sides = activeSides(docType, scanMode)
   const currentSide = sides[Math.min(stepIndex, sides.length - 1)]
+  currentSideRef.current = currentSide
   const currentShot = shots[currentSide]
   const allCaptured = sides.every((side) => shots[side])
 
@@ -960,15 +966,24 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         }
         stableFrames = seen ? stableFrames + 1 : 0
         if (stableFrames >= 2) {
-          /* Kadr olinadi va YUBORISH ham o'zi bo'ladi: o'qish dvigatel
-             sozlamasiga qarab serverda yoki qurilmaning to'liq (qayta
-             urinishli) quvurida bajariladi. Jonli kadrda OCR yurgizish
-             sinaldi va rad etildi — u sekin qurilmada osilib, "olinmoqda"
-             holatida qotib qolardi. */
-          guideActiveRef.current = false
-          autoSubmitRef.current = true
-          captureRef.current()
-          break
+          /* Zatvordan OLDIN to'liq o'lchamdagi kadrning MRZ kesimi
+             tekshiriladi: 320 px'lik jonli tahlil harakat xiraligini
+             sezmasligi mumkin, xira kadr esa serverda ham, qurilmada ham
+             o'qilmay "umuman ishlamayapti" taassurotini berardi. Kesim
+             tiniq bo'lmasa kadr TASHLANADI va kuzatuv davom etadi. */
+          const frame = videoFrameCanvas(video, CAPTURE_WIDTH)
+          const mrzZone = mrzCrops(frame, docTypeRef.current)[0]
+          if (assessImageQuality(mrzZone).usable) {
+            guideActiveRef.current = false
+            autoSubmitRef.current = true
+            // Aynan tekshirilgan kadr saqlanadi — qayta olishda
+            // xiralashishi mumkin edi
+            storeShot(currentSideRef.current, frame)
+            stopCamera()
+            break
+          }
+          // Kesim xira — kadr tashlanadi, kuzatuv (uxlash bilan) davom etadi
+          stableFrames = 0
         }
       }
       if (detected !== lastDetected) {
@@ -1012,6 +1027,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     scanAbortRef.current?.abort()
     scanAbortRef.current = null
     autoSubmitRef.current = false
+    mrzRetriesRef.current = 0
+    setMrzRetryNote(null)
     clearShots()
   }, [open, clearShots, stopCamera])
 
@@ -1138,6 +1155,21 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     }
   }, [])
 
+  /* MRZ rejimida o'qilmagan urinish xato ekrani emas — QAYTA URINISH:
+     kadr tashlanadi, jonli kuzatuv davom etadi (QR-skaner kabi). Faqat
+     ketma-ket 4 urinish ham o'qilmasa haqiqiy xato ko'rsatiladi. */
+  const failScan = (message: string) => {
+    if (scanModeRef.current === "mrz" && mrzRetriesRef.current < 4) {
+      mrzRetriesRef.current += 1
+      setMrzRetryNote(`O'qilmadi (${mrzRetriesRef.current}) — yana urinilyapti…`)
+      clearShots()
+      setPhase("capture")
+      return
+    }
+    setErrorMsg(message)
+    setPhase("error")
+  }
+
   const submit = async () => {
     /* MRZ rejimidagi ID kartada yagona kadr ORQA tomon — u serverga ham
        aynan `back` sifatida ketishi shart, aks holda server uni old tomon
@@ -1159,6 +1191,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           docType,
           controller.signal
         )
+        mrzRetriesRef.current = 0
+        setMrzRetryNote(null)
         setResult(doc)
         setPhase("result")
         return
@@ -1168,8 +1202,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           serverDownRef.current = true
           setServerFellBack(true)
         } else {
-          setErrorMsg(apiErrorMessage(error))
-          setPhase("error")
+          failScan(apiErrorMessage(error))
           return
         }
       } finally {
@@ -1180,17 +1213,17 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     try {
       const doc = await scanOnDevice()
       if (!doc) {
-        setErrorMsg(
+        failScan(
           "Hujjat o‘qilmadi. Kadrlar tiniq, yaltirashsiz va hujjat to‘liq ramkada bo‘lsin."
         )
-        setPhase("error")
         return
       }
+      mrzRetriesRef.current = 0
+      setMrzRetryNote(null)
       setResult(doc)
       setPhase("result")
     } catch {
-      setErrorMsg("Hujjatni o‘qishda xatolik yuz berdi. Qayta urinib ko‘ring.")
-      setPhase("error")
+      failScan("Hujjatni o‘qishda xatolik yuz berdi. Qayta urinib ko‘ring.")
     }
   }
 
@@ -1373,7 +1406,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                     {scanMode === "mrz"
                       ? mrzSeen
                         ? "MRZ ko'rindi — qimirlatmang, surat olinmoqda..."
-                        : "MRZ qatorlari (pastdagi mayda belgilar) ramkada ko'rinsin"
+                        : mrzRetryNote ||
+                          "MRZ qatorlari (pastdagi mayda belgilar) ramkada ko'rinsin"
                       : docDetected
                         ? "Tayyor — suratga oling"
                         : "Hujjatni ramkaga joylang"}
