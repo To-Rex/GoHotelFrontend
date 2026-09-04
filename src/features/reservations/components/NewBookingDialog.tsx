@@ -1142,7 +1142,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
         <DialogTitle>Yangi bandlov</DialogTitle>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-4 py-4">
+      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-3 py-3">
         {/* Bron turi: Kunlik / Soatlik */}
         <div className="flex rounded-lg bg-gray-100 p-1">
           {([
@@ -1188,35 +1188,24 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
           ))}
         </div>
 
-        {/* XONA. Ilgari dialog xona bosilib ochilganda xona qat'iy edi:
-            ro'yxat umuman ko'rsatilmasdi va boshqasiga o'tish uchun dialogni
-            yopib, taxtadan boshqa xonani bosish kerak bo'lardi. Endi ro'yxat
-            doim ochiq. Yuqoridagi karta esa qoldi — u tanlangan xonani
-            (endi preset emas, AMALDAGI xonani) sana/soat xulosasi bilan
-            ko'rsatadi. */}
-        {activeRoom && (
-          <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-lg">
-            <BedDouble className="h-5 w-5 text-primary-600" />
-            <div>
-              <p className="text-sm font-semibold text-gray-900">
-                {activeRoom.room_number}
-              </p>
-              {bookingType === "HOURLY" ? (
-                <p className="text-xs text-gray-500">
-                  Soatlik bron{hourCount > 0 ? ` (${hourCount} soat)` : ""}
-                </p>
-              ) : (
-                watchFormDate && watchFormOutDate && (
-                  <p className="text-xs text-gray-500">
-                    {watchFormDate} → {watchFormOutDate} ({dialogNightCount} kecha)
-                  </p>
-                )
-              )}
-            </div>
-          </div>
-        )}
+        {/* XONA. Ro'yxat doim ochiq (xona bosilib kelinganda ham boshqasiga
+            o'tish mumkin). Ilgari tepada alohida xona kartasi turardi —
+            u ro'yxat bilan bir xil narsani takrorlab joy olardi; endi
+            sana/soat xulosasi yorliq qatorining o'zida turadi. */}
         <div className="space-y-1">
-          <label className="text-sm font-medium">Xona *</label>
+          <div className="flex items-baseline justify-between gap-2">
+            <label className="text-sm font-medium">Xona *</label>
+            {activeRoom && (
+              <span className="inline-flex items-center gap-1 truncate text-[11px] text-gray-500">
+                <BedDouble className="h-3 w-3 flex-shrink-0 text-primary-500" />
+                {bookingType === "HOURLY"
+                  ? `Soatlik${hourCount > 0 ? ` · ${hourCount} soat` : ""}`
+                  : watchFormDate && watchFormOutDate
+                    ? `${watchFormDate} → ${watchFormOutDate} · ${dialogNightCount} kecha`
+                    : activeRoom.room_number}
+              </span>
+            )}
+          </div>
           <select
             className="w-full flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             {...register("room_id")}
@@ -1250,22 +1239,30 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
 
         {bookingType === "HOURLY" ? (
           <>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Sana *</label>
-              <Input type="date" min={todayStr} {...register("check_in_date")} />
-              {errors.check_in_date && <p className="text-xs text-red-500">{errors.check_in_date.message}</p>}
+            {/* Sana va ikkala vaqt bitta qatorda — uchta alohida blok
+                keraksiz joy olardi */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Sana *</label>
+                <Input type="date" min={todayStr} {...register("check_in_date")} />
+                {errors.check_in_date && <p className="text-xs text-red-500">{errors.check_in_date.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Kirish *</label>
+                <Input type="time" {...register("check_in_time")} />
+                {errors.check_in_time && <p className="text-xs text-red-500">{errors.check_in_time.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Chiqish *</label>
+                <Input type="time" {...register("check_out_time")} />
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Kirish vaqti *</label>
-              <Input type="time" {...register("check_in_time")} />
-              {errors.check_in_time && <p className="text-xs text-red-500">{errors.check_in_time.message}</p>}
-              {watchFormDate === todayStr && (
-                <p className="text-[11px] text-gray-400">
-                  Vaqt o'tsa, kirish vaqti avtomatik joriy vaqtga suriladi —
-                  tanlangan davomiylik saqlanadi
-                </p>
-              )}
-            </div>
+            {watchFormDate === todayStr && (
+              <p className="text-[11px] text-gray-400">
+                Vaqt o'tsa, kirish vaqti avtomatik joriy vaqtga suriladi —
+                tanlangan davomiylik saqlanadi
+              </p>
+            )}
 
             {/* Davomiylikni tanlash — bir bosishda chiqish vaqti hisoblanadi */}
             <div className="space-y-1.5">
@@ -1302,11 +1299,6 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
                 Tugmani bosing yoki chiqish vaqtini qo'lda kiriting
               </p>
             </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Chiqish vaqti *</label>
-              <Input type="time" {...register("check_out_time")} />
-            </div>
             {dialogBusyTimes.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="text-gray-500">Band soatlar:</span>
@@ -1327,7 +1319,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
             )}
           </>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-sm font-medium">Kirish sanasi *</label>
               <Input type="date" min={todayStr} {...register("check_in_date")} />
@@ -1837,10 +1829,17 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
           )}
         </div>
 
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Mehmonlar soni</label>
-          <Input type="number" min="1" {...register("adults")} />
-          {errors.adults && <p className="text-xs text-red-500">{errors.adults.message}</p>}
+        {/* Soni va izoh yonma-yon — ikkalasi ham kichik maydon */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Mehmonlar soni</label>
+            <Input type="number" min="1" {...register("adults")} />
+            {errors.adults && <p className="text-xs text-red-500">{errors.adults.message}</p>}
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Qo'shimcha izoh</label>
+            <Input placeholder="Izoh..." {...register("notes")} />
+          </div>
         </div>
 
         {/* Xonadagi qolgan mehmonlar ham ro'yxatga olinadi */}
@@ -1860,11 +1859,6 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
             {companionsMissing} ta mehmon kiritilishi zarur.
           </p>
         )}
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Qo'shimcha izoh</label>
-          <Input placeholder="Izoh..." {...register("notes")} />
-        </div>
 
         <div className="p-3 bg-gray-50 rounded-lg space-y-3">
           <div className="flex justify-between items-center">
