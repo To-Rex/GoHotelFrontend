@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 import { apiErrorMessage } from "@/lib/apiError"
 import { useScanSettings, type ScanMode } from "../api/scanSettings"
 import { JPEG_QUALITY, ServerScanUnavailable, scanDocumentOnServer } from "../api/documentScan"
@@ -1149,6 +1150,29 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ScanLine size={18} /> Hujjat skaneri
+            {/* Faol rejim ko'rinib turadi — sozlama ta'sir qilyaptimi,
+                taxmin qilib o'tirilmaydi */}
+            <span className="ml-auto flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5",
+                  scanMode === "mrz"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : scanMode === "visual"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-muted text-muted-foreground"
+                )}
+              >
+                {scanMode === "mrz"
+                  ? "Rejim: MRZ"
+                  : scanMode === "visual"
+                    ? "Rejim: Vizual"
+                    : "Rejim: Avto"}
+              </span>
+              <span className="rounded-full bg-muted px-2 py-0.5">
+                {scanSettings?.engine === "device" ? "Qurilma" : "Server"}
+              </span>
+            </span>
           </DialogTitle>
         </DialogHeader>
 

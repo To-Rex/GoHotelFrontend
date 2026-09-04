@@ -35,8 +35,9 @@ export const useScanSettings = () =>
       const { data } = await api.get<ScanSettings>('/guests/scan-settings');
       return { ...DEFAULT_SCAN_SETTINGS, ...(data || {}) };
     },
-    // Rejim kamdan-kam o'zgaradi — keshda uzoq tursin (skaner tez ochilsin)
-    staleTime: 5 * 60 * 1000,
+    // Qisqa kesh: rejim boshqa tab/qurilmada o'zgartirilgan bo'lsa ham
+    // skaner ochilganda yangisi olinadi (30s — tez ochilishga yetadi)
+    staleTime: 30 * 1000,
   });
 
 export const useSaveScanSettings = () => {
