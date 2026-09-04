@@ -757,6 +757,14 @@ const DOC_SIDES: Record<DocumentType, DocumentSide[]> = {
 }
 
 /**
+ * MRZ rejimida ID kartaning FAQAT ORQA tomoni olinadi: MRZ o'sha yerda,
+ * old tomon esa bu rejimda umuman o'qilmaydi — uni suratga oldirish
+ * bekorchi qadam edi. Passport uchun farqi yo'q (MRZ bosh sahifada).
+ */
+const activeSides = (type: DocumentType, mode: ScanMode): DocumentSide[] =>
+  type === "ID_CARD" && mode === "mrz" ? ["back"] : DOC_SIDES[type]
+
+/**
  * Yuboriladigan kadr kengligi. Ramkani to'ldirgan karta bu yerda millimetriga
  * ~17 pikselni beradi — tanish modeli uchun kerakligidan ko'ra ko'proq, lekin
  * kattaroq kadr aniqlik qo'shmay, kodlash va yuklashni sekinlashtiradi.
@@ -810,7 +818,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const docTypeRef = useRef<DocumentType>(docType)
   const scanModeRef = useRef<ScanMode>(scanMode)
 
-  const sides = DOC_SIDES[docType]
+  const sides = activeSides(docType, scanMode)
   const currentSide = sides[Math.min(stepIndex, sides.length - 1)]
   const currentShot = shots[currentSide]
   const allCaptured = sides.every((side) => shots[side])
@@ -1048,7 +1056,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   /** Serverga ulanib bo'lmaganda — kadrlarni qurilmaning o'zida o'qish. */
   const scanOnDevice = useCallback(async (): Promise<ScannedDoc | null> => {
     let merged: ScannedDoc | undefined
-    for (const side of DOC_SIDES[docTypeRef.current]) {
+    for (const side of activeSides(docTypeRef.current, scanModeRef.current)) {
       const shot = shotsRef.current[side]
       if (!shot) continue
       const outcome = await recognizeDocument(
@@ -1076,9 +1084,13 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   }, [])
 
   const submit = async () => {
-    const frontSide = DOC_SIDES[docType][0]
-    const front = shots[frontSide]?.blob
-    if (!front) return
+    /* MRZ rejimidagi ID kartada yagona kadr ORQA tomon — u serverga ham
+       aynan `back` sifatida ketishi shart, aks holda server uni old tomon
+       deb bilib MRZ'ni izlamasdi. */
+    const front =
+      docType === "PASSPORT" ? shots.passport?.blob : shots.front?.blob
+    const back = docType === "ID_CARD" ? shots.back?.blob : undefined
+    if (!front && !back) return
     setErrorMsg(null)
     setProgress(0)
     setPhase("sending")
@@ -1088,7 +1100,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       scanAbortRef.current = controller
       try {
         const doc = await scanDocumentOnServer(
-          { front, back: docType === "ID_CARD" ? shots.back?.blob : undefined },
+          { front, back },
           docType,
           controller.signal
         )
@@ -1202,7 +1214,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 </span>
                 <span className="text-sm font-semibold">ID karta</span>
                 <span className="text-[11px] leading-snug text-muted-foreground">
-                  Ikkala tomoni olinadi — ular bir-birini tasdiqlaydi
+                  {scanMode === "mrz"
+                    ? "MRZ rejimi: faqat orqa tomoni olinadi"
+                    : "Ikkala tomoni olinadi — ular bir-birini tasdiqlaydi"}
                 </span>
               </button>
               <button

@@ -22,7 +22,9 @@ export class ServerScanUnavailable extends Error {}
 
 export interface DocumentShots {
   /** ID kartaning old tomoni yoki passportning ma'lumotlar sahifasi */
-  front: Blob
+  /** MRZ rejimidagi ID kartada bo'lmasligi mumkin — u holda faqat orqa
+   *  tomon yuboriladi */
+  front?: Blob
   /** Faqat ID karta uchun — MRZ joylashgan orqa tomon */
   back?: Blob
 }
@@ -40,7 +42,7 @@ export async function scanDocumentOnServer(
 ): Promise<ScannedDoc> {
   const form = new FormData()
   form.append("document_type", documentType)
-  form.append("front", shots.front, "front.jpg")
+  if (shots.front) form.append("front", shots.front, "front.jpg")
   if (shots.back) form.append("back", shots.back, "back.jpg")
   try {
     const { data } = await api.post<ScannedDoc>("/guests/scan-document", form, {
