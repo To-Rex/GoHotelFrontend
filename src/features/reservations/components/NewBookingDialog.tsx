@@ -533,17 +533,22 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
 function SectionMark({
   icon: Icon,
   label,
+  action,
 }: {
   icon: LucideIcon
   label: string
+  /** Yorliq qatorining o'ng cheti — bo'limga tegishli ixcham boshqaruv.
+   *  Alohida qator o'rniga shu yerda tursa, oyna bir qatorga qisqaradi. */
+  action?: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-2 pt-1.5">
-      <Icon className="h-3.5 w-3.5 text-primary-500" />
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">
+    <div className="flex items-center gap-2 pt-1">
+      <Icon className="h-3.5 w-3.5 flex-shrink-0 text-primary-500" />
+      <span className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">
         {label}
       </span>
       <span className="h-px flex-1 bg-gradient-to-r from-gray-200 to-transparent" />
+      {action}
     </div>
   )
 }
@@ -1180,11 +1185,13 @@ function SectionMark({
         </div>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-3 py-3">
-        <SectionMark icon={BedDouble} label="Joylashtirish" />
-
-        {/* Bron turi: Kunlik / Soatlik */}
-        <div className="flex rounded-xl bg-gray-100/80 p-1">
+      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-2.5 py-2.5">
+        {/* Bron turi yorliq qatorining o'zida — alohida qator olmaydi */}
+        <SectionMark
+          icon={BedDouble}
+          label="Joylashtirish"
+          action={
+        <div className="flex flex-shrink-0 rounded-lg bg-gray-100/80 p-0.5">
           {([
             { key: "DAILY", label: "Kunlik" },
             { key: "HOURLY", label: "Soatlik" },
@@ -1217,7 +1224,7 @@ function SectionMark({
                 setExtraPayments([])
               }}
               className={cn(
-                "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "rounded-md px-3 py-1 text-xs font-semibold transition-colors",
                 bookingType === opt.key
                   ? "bg-white text-primary-700 shadow-sm ring-1 ring-black/5"
                   : "text-gray-500 hover:text-gray-700"
@@ -1227,6 +1234,8 @@ function SectionMark({
             </button>
           ))}
         </div>
+          }
+        />
 
         {/* XONA. Ro'yxat doim ochiq (xona bosilib kelinganda ham boshqasiga
             o'tish mumkin). Ilgari tepada alohida xona kartasi turardi —
@@ -1306,7 +1315,12 @@ function SectionMark({
 
             {/* Davomiylikni tanlash — bir bosishda chiqish vaqti hisoblanadi */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Necha soat?</label>
+              <label className="text-sm font-medium">
+                Necha soat?{" "}
+                <span className="text-[11px] font-normal text-gray-400">
+                  — yoki chiqish vaqtini qo'lda kiriting
+                </span>
+              </label>
               <div className="grid grid-cols-6 gap-1.5">
                 {DURATION_OPTIONS.map((h) => {
                   const conflict = durationConflicts(h)
@@ -1317,7 +1331,7 @@ function SectionMark({
                       type="button"
                       onClick={() => applyDuration(h)}
                       className={cn(
-                        "h-9 rounded-md text-sm font-semibold border transition-colors",
+                        "h-8 rounded-md text-sm font-semibold border transition-colors",
                         active
                           ? "bg-primary-600 text-white border-primary-600"
                           : conflict
@@ -1335,9 +1349,6 @@ function SectionMark({
                   )
                 })}
               </div>
-              <p className="text-[11px] text-gray-400">
-                Tugmani bosing yoki chiqish vaqtini qo'lda kiriting
-              </p>
             </div>
             {dialogBusyTimes.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -1398,7 +1409,25 @@ function SectionMark({
 
         {/* Guest selection */}
         <div className="space-y-2">
-          <SectionMark icon={UserRound} label="Mehmon *" />
+          <SectionMark
+            icon={UserRound}
+            label="Mehmon *"
+            action={
+              !showNewGuest && canCreateGuest ? (
+                <button
+                  type="button"
+                  className="flex-shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold text-primary-600 transition-colors hover:bg-primary-50 hover:text-primary-700"
+                  onClick={() => {
+                    // Fuqarolik standart holda O'zbekiston bo'lib turadi
+                    setValue("new_guest_nationality", DEFAULT_NATIONALITY)
+                    setShowNewGuest(true)
+                  }}
+                >
+                  + Yangi mijoz
+                </button>
+              ) : undefined
+            }
+          />
 
           {!showNewGuest ? (
             (() => {
@@ -1580,23 +1609,10 @@ function SectionMark({
                 )}
               </div>
               ) : (
-                <p className="rounded-md border border-dashed border-gray-200 px-3 py-3.5 text-center text-xs text-gray-400">
-                  Mijozni topish uchun ism yoki telefon raqamini yozing —
-                  yoki hujjatini skanerlang
+                <p className="px-1 text-xs leading-relaxed text-gray-400">
+                  Mijozni topish uchun ism yoki telefon raqamini yozing — yoki
+                  hujjatini skanerlang
                 </p>
-              )}
-              {canCreateGuest && (
-                <button
-                  type="button"
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                  onClick={() => {
-                    // Fuqarolik standart holda O'zbekiston bo'lib turadi
-                    setValue("new_guest_nationality", DEFAULT_NATIONALITY)
-                    setShowNewGuest(true)
-                  }}
-                >
-                  + Yangi mijoz qo'shish
-                </button>
               )}
               {errors.guest_id && <p className="text-xs text-red-500">{errors.guest_id.message}</p>}
             </div>
@@ -1902,7 +1918,7 @@ function SectionMark({
             ko'rinib turadigan jami, pastda esa uzuq chiziqli "yirtish"
             ajratgichidan keyin to'lov maydonlari. */}
         <div className="overflow-hidden rounded-xl border border-gray-200">
-          <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5">
+          <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-3.5 py-2">
             <Wallet className="h-3.5 w-3.5 text-primary-500" />
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
               To'lov
@@ -1911,7 +1927,7 @@ function SectionMark({
               {finalTotal.toLocaleString()} So'm
             </span>
           </div>
-          <div className="space-y-3 bg-gray-50/60 p-4">
+          <div className="space-y-2.5 bg-gray-50/60 p-3.5">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">
               {bookingType === "HOURLY"
