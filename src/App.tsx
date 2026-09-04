@@ -28,6 +28,7 @@ import { ProfilePage } from "./features/profile/pages/ProfilePage";
 import { LandingPage } from "./features/landing/pages/LandingPage";
 import { WarehousePage } from "./features/shop/pages/WarehousePage";
 import { MessagesPage } from "./features/messages/pages/MessagesPage";
+import { AppsPage as AppStoreDownloadsPage } from "./features/apps/pages/AppsPage";
 import { useAuthStore } from "./store/auth";
 
 // Ildiz darvozasi: tizimga kirganlar avvalgidek boshqaruv panelini ko'radi,
@@ -78,6 +79,8 @@ function App() {
           <Route path="finance" element={<FinancePage />} />
           <Route path="expenses" element={<ExpensesPage />} />
           <Route path="devices" element={<DevicesPage />} />
+          {/* Dasturlar do'koni — panel yuklagan Android/Windows fayllari */}
+          <Route path="apps" element={<AppStoreDownloadsPage />} />
           <Route path="shop" element={<ShopPage />} />
           <Route path="my-reports" element={<MyReportsPage />} />
           <Route path="cash-reports" element={<CashReportsPage />} />

@@ -1,5 +1,6 @@
 import { Route } from "react-router-dom"
 
+import { AppStorePage } from "./pages/AppStorePage"
 import { AuditPage } from "./pages/AuditPage"
 import { FinancePage } from "./pages/FinancePage"
 import { GuestsPage } from "./pages/GuestsPage"
@@ -29,6 +30,7 @@ export function panelRoutes() {
         <Route path="hotels" element={<HotelsPage />} />
         <Route path="hotels/:hotelId" element={<HotelDetailPage />} />
         <Route path="guests" element={<GuestsPage />} />
+        <Route path="apps" element={<AppStorePage />} />
         <Route path="users" element={<PanelUsersPage />} />
         <Route path="audit" element={<AuditPage />} />
         <Route path="security" element={<SecurityPage />} />

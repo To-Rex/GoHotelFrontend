@@ -483,6 +483,68 @@ export const usePanelAudit = (hotelId?: string) =>
     },
   })
 
+/* ------------------------------------------------ dasturlar do'koni -- */
+
+export interface PanelAppRelease {
+  id: string
+  platform: "ANDROID" | "WINDOWS"
+  name: string
+  version: string | null
+  notes: string | null
+  original_name: string
+  mime_type: string
+  file_size: number
+  download_count: number
+  created_at: string | null
+}
+
+export const usePanelApps = () =>
+  useQuery({
+    queryKey: ["panelApps"],
+    queryFn: async () => {
+      const { data } = await panelApi.get<PanelAppRelease[]>("/apps")
+      return Array.isArray(data) ? data : []
+    },
+  })
+
+export const useUploadPanelApp = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      platform: string
+      name: string
+      version: string
+      notes: string
+      file: File
+    }) => {
+      const form = new FormData()
+      form.append("platform", payload.platform)
+      form.append("name", payload.name)
+      if (payload.version.trim()) form.append("version", payload.version.trim())
+      if (payload.notes.trim()) form.append("notes", payload.notes.trim())
+      form.append("file", payload.file, payload.file.name)
+      const { data } = await panelApi.post<PanelAppRelease>("/apps", form, {
+        // Content-Type ni axios FormData chegarasi bilan o'zi qo'ysin
+        headers: { "Content-Type": undefined as unknown as string },
+        // Katta o'rnatuvchi sekin tarmoqda ham ulgurishi kerak
+        timeout: 15 * 60 * 1000,
+      })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["panelApps"] }),
+  })
+}
+
+export const useDeletePanelApp = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await panelApi.delete(`/apps/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["panelApps"] }),
+  })
+}
+
 export const usePanelGuests = (search?: string) =>
   useQuery({
     queryKey: ["panelGuests", search || ""],

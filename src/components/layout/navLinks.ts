@@ -20,6 +20,7 @@ import {
   Warehouse,
   MessageSquare,
   MonitorSmartphone,
+  AppWindow,
   type LucideIcon,
 } from "lucide-react"
 import { applyNavOrder } from "@/features/settings/api/navOrder"
@@ -52,6 +53,7 @@ export const MAIN_NAV_LINKS: NavLink[] = [
   { name: "Mening hisobotim", href: "/my-reports", icon: FileBarChart },
   { name: "Xabarlar", href: "/messages", icon: MessageSquare },
   { name: "Qurilmalar", href: "/devices", icon: MonitorSmartphone },
+  { name: "Ilovalar", href: "/apps", icon: AppWindow },
   { name: "Sozlamalar", href: "/settings", icon: Settings },
 ]
 

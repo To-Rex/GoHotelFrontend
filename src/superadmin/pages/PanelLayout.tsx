@@ -8,6 +8,7 @@ import {
   Loader2,
   LogOut,
   Menu,
+  PackageOpen,
   ScrollText,
   ShieldCheck,
   UserRound,
@@ -51,6 +52,7 @@ const GROUPS = [
   {
     title: "Tizim",
     links: [
+      { to: "/panel/apps", label: "Dasturlar do'koni", icon: PackageOpen },
       { to: "/panel/users", label: "Panel foydalanuvchilari", icon: Users },
       { to: "/panel/audit", label: "Harakatlar tarixi", icon: ScrollText },
       { to: "/panel/security", label: "Xavfsizlik", icon: KeyRound },
