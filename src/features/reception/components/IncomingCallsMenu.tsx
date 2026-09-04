@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react"
-import { BedDouble, Phone, PhoneIncoming, User, X } from "lucide-react"
+import {
+  BedDouble,
+  Maximize2,
+  Phone,
+  PhoneIncoming,
+  User,
+  X,
+} from "lucide-react"
+
+import { OverlayDialog } from "@/components/ui/overlay-dialog"
 
 import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
@@ -50,6 +59,9 @@ export function IncomingCallsMenu({
 }) {
   const { can, isAdmin } = usePermissions()
   const [open, setOpen] = useState(false)
+  /* Katta ko'rinish: telefon jiringlayotganda kichik panelga engashib
+     o'qish noqulay — katta oynada raqam va ism yirik ko'rinadi */
+  const [expanded, setExpanded] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const acknowledge = useAcknowledgeCall()
 
@@ -76,11 +88,12 @@ export function IncomingCallsMenu({
   }, [open])
 
   if (!allowed || isError) return null
-  if (calls.length === 0 && !open) return null
+  if (calls.length === 0 && !open && !expanded) return null
 
   const pick = (call: IncomingCall) => {
     if (!call.guest_id) return
     setOpen(false)
+    setExpanded(false)
     onPickGuest(call.guest_id)
   }
 
@@ -119,6 +132,18 @@ export function IncomingCallsMenu({
             <span className="ml-auto text-[11px] text-muted-foreground">
               oxirgi {WINDOW_MINUTES} daqiqa
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                setExpanded(true)
+              }}
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Kattaroq ko'rish"
+              aria-label="Kattaroq ko'rish"
+            >
+              <Maximize2 size={14} />
+            </button>
           </div>
 
           {calls.length === 0 ? (
@@ -184,6 +209,76 @@ export function IncomingCallsMenu({
           )}
         </div>
       )}
+
+      <OverlayDialog
+        open={expanded}
+        onClose={() => setExpanded(false)}
+        icon={<PhoneIncoming size={18} className="text-muted-foreground" />}
+        title="Kiruvchi qo'ng'iroqlar"
+        subtitle={`Oxirgi ${WINDOW_MINUTES} daqiqa`}
+        maxWidth="max-w-xl"
+      >
+        {calls.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Yaqinda qo'ng'iroq bo'lmadi
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {calls.map((call) => (
+              <li
+                key={call.id}
+                className="flex items-center gap-3.5 rounded-xl border border-border bg-card p-3.5"
+              >
+                <span
+                  className={cn(
+                    "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full",
+                    call.matched
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  <User size={22} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold">
+                    {call.guest_name || "Notanish raqam"}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {call.phone}
+                    {call.received_at ? ` · ${timeAgo(call.received_at)}` : ""}
+                  </p>
+                  {call.room_number && (
+                    <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-primary-700">
+                      <BedDouble size={12} />
+                      {call.room_number}-xonada turibdi
+                    </p>
+                  )}
+                </div>
+
+                {call.guest_id && (
+                  <button
+                    type="button"
+                    onClick={() => pick(call)}
+                    className="rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-700"
+                  >
+                    Bandlov ochish
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => dismiss(e, call)}
+                  title="Yopish"
+                  aria-label="Yopish"
+                  className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <X size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </OverlayDialog>
     </div>
   )
 }
