@@ -141,19 +141,38 @@ export const CompanionGuests = ({
     [mainGuestId, value]
   )
 
+  /* Qidiruv asosiy Mehmon bo'limi bilan BIR XIL: bo'sh qidiruvda hech
+     kim ko'rsatilmaydi (butun baza ro'yxat bo'lib turmaydi), natija esa
+     BITTA — eng mos mijoz. Boshidan mos kelgani ichidan mos kelganidan
+     ustun turadi ("ali" yozilganda "Alisher" "Xalil"dan oldin). */
   const found = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const list = guests.filter((g) => !takenIds.has(g.id))
-    if (!q) return list.slice(0, 10)
-    return list
-      .filter(
-        (g) =>
-          g.first_name?.toLowerCase().includes(q) ||
-          g.last_name?.toLowerCase().includes(q) ||
-          g.phone?.includes(q) ||
-          g.passport_number?.toLowerCase().includes(q)
+    if (!q) return []
+    const rank = (g: any): number => {
+      const first = (g.first_name || "").toLowerCase()
+      const last = (g.last_name || "").toLowerCase()
+      const phone = g.phone || ""
+      const passport = (g.passport_number || "").toLowerCase()
+      if (
+        first.startsWith(q) ||
+        last.startsWith(q) ||
+        phone.startsWith(q) ||
+        passport.startsWith(q)
       )
-      .slice(0, 10)
+        return 0
+      if (
+        first.includes(q) ||
+        last.includes(q) ||
+        phone.includes(q) ||
+        passport.includes(q)
+      )
+        return 1
+      return 2
+    }
+    return guests
+      .filter((g) => !takenIds.has(g.id) && rank(g) < 2)
+      .sort((a, b) => rank(a) - rank(b))
+      .slice(0, 1)
   }, [guests, search, takenIds])
 
   if (slots === 0) return null
@@ -557,24 +576,31 @@ export const CompanionGuests = ({
                     autoFocus
                   />
                 </div>
-                <div className="max-h-32 divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200">
-                  {found.map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => pickExisting(index, g)}
-                      className="w-full px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-gray-50"
-                    >
-                      <span className="font-medium">{guestName(g)}</span>
-                      {g.phone && <span className="ml-2 text-gray-400">{g.phone}</span>}
-                    </button>
-                  ))}
-                  {found.length === 0 && (
-                    <p className="px-2.5 py-3 text-center text-xs text-gray-400">
-                      Mehmon topilmadi
-                    </p>
-                  )}
-                </div>
+                {search.trim() ? (
+                  <div className="max-h-32 divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200">
+                    {found.map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => pickExisting(index, g)}
+                        className="w-full px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-gray-50"
+                      >
+                        <span className="font-medium">{guestName(g)}</span>
+                        {g.phone && <span className="ml-2 text-gray-400">{g.phone}</span>}
+                      </button>
+                    ))}
+                    {found.length === 0 && (
+                      <p className="px-2.5 py-3 text-center text-xs text-gray-400">
+                        Mijoz topilmadi
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="px-1 text-xs leading-relaxed text-gray-400">
+                    Mijozni topish uchun ism, telefon yoki passport raqamini
+                    yozing — yoki hujjatini skanerlang
+                  </p>
+                )}
                 <div className="flex items-center gap-2">
                   {canCreateGuest && (
                     <button
