@@ -1913,6 +1913,7 @@ function SectionMark({
           onChange={setCompanions}
           required={guestsRequired}
           hotelId={activeRoom?.hotel_id || user?.hotel_id || undefined}
+          branchId={activeBranchId}
           onError={showError}
         />
         {companionsMissing > 0 && guestsRequired && (

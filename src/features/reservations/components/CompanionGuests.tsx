@@ -1,9 +1,15 @@
 import { useMemo, useState } from "react"
-import { Search, ScanLine, UserPlus, X, CheckCircle2, Loader2 } from "lucide-react"
+import { Search, ScanLine, UserPlus, Video, X, CheckCircle2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
-import { useCreateGuest } from "@/features/guests/api/guests"
+import { useCreateGuest, uploadGuestFile } from "@/features/guests/api/guests"
+import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
+import {
+  fetchSightingFile,
+  useEnrollSighting,
+  type SightingGroup,
+} from "@/features/vision/api/vision"
 import {
   DEFAULT_NATIONALITY,
   DOC_TYPES,
@@ -40,6 +46,9 @@ interface Props {
   /** Sozlamada majburiy qilinganmi — faqat ko'rsatish uchun */
   required: boolean
   hotelId?: string
+  /** Bron qilinayotgan xonaning filiali — yuz tanlash oynasi shu bo'yicha
+      filtrlanadi (asosiy mehmon formasidagi bilan bir xil) */
+  branchId?: string | null
   onError: (message: string) => void
 }
 
@@ -54,11 +63,13 @@ export const CompanionGuests = ({
   onChange,
   required,
   hotelId,
+  branchId,
   onError,
 }: Props) => {
   const { can } = usePermissions()
   const canCreateGuest = can("guest.create")
   const createGuestMutation = useCreateGuest()
+  const enrollFaceMutation = useEnrollSighting()
 
   // Nechta hamroh kerak — asosiy mehmondan tashqarisi
   const slots = Math.max(adults - 1, 0)
@@ -81,6 +92,33 @@ export const CompanionGuests = ({
     id_document_number: string
     address: string
   } | null>(null)
+
+  /* Filial kamerasidan tanlangan yuz. Hamroh hali yaratilmagani uchun
+     biriktirish saqlashda bo'ladi — asosiy mehmon formasidagi tartib. */
+  const [facePickerOpen, setFacePickerOpen] = useState(false)
+  const [pickedFace, setPickedFace] = useState<SightingGroup | null>(null)
+  const [faceFile, setFaceFile] = useState<File | null>(null)
+
+  const clearFace = () => {
+    setPickedFace(null)
+    setFaceFile(null)
+  }
+
+  /* Tanlangan yuzning surati mehmon kartasiga ham yuklanadi — rasm
+     yuklanmasa ham biriktirish ishlayveradi: vektor serverda saqlangan. */
+  const handleFacePicked = async (group: SightingGroup) => {
+    try {
+      const file = await fetchSightingFile(
+        group.best_sighting_id,
+        `kamera-${Date.now()}.jpg`
+      )
+      setFaceFile(file)
+    } catch {
+      setFaceFile(null)
+      onError("Surat yuklanmadi, lekin yuz baribir biriktiriladi.")
+    }
+    setPickedFace(group)
+  }
 
   const emptyNewGuest = () => ({
     first_name: "",
@@ -128,6 +166,8 @@ export const CompanionGuests = ({
     setActiveSlot(null)
     setSearch("")
     setNewGuest(null)
+    // Tanlangan yuz keyingi hamrohga meros bo'lib o'tmasligi kerak
+    clearFace()
   }
 
   const pickExisting = (index: number, g: any) =>
@@ -150,6 +190,7 @@ export const CompanionGuests = ({
       return
     }
     setActiveSlot(index)
+    clearFace()
     const mapped = doc.nationality ? MRZ_COUNTRY[doc.nationality] : undefined
     setNewGuest({
       ...emptyNewGuest(),
@@ -193,6 +234,37 @@ export const CompanionGuests = ({
         address: newGuest.address.trim() || undefined,
         hotelId,
       })
+
+      /* Yuz tanlangan bo'lsa — endi mehmon id'si bor. Surat va biriktirish
+         hamrohni BUZMAYDI: yiqilsa xodim ogohlantiriladi, yozuv esa
+         saqlangan bo'ladi (yuzni keyin qabulxona panelidan biriktirsa
+         bo'ladi) — asosiy mehmon formasidagi tartib. */
+      if (faceFile) {
+        try {
+          await uploadGuestFile(created.id, faceFile, "photo", hotelId)
+        } catch (uploadError) {
+          console.error("Surat yuklashda xatolik", uploadError)
+        }
+      }
+      if (pickedFace) {
+        try {
+          await enrollFaceMutation.mutateAsync({
+            sightingId: pickedFace.best_sighting_id,
+            // Guruhning hamma ko'rinishlari: bir necha epizoddan yig'ilgan
+            // shablon aniqroq, qolganlari ro'yxatda qolib ketmaydi
+            sightingIds: pickedFace.sighting_ids,
+            guestId: created.id,
+            // Xodim suratni ataylab tanladi — rozilik shu harakat bilan
+            consent: true,
+          })
+        } catch (enrollError) {
+          console.error("Yuzni biriktirishda xatolik", enrollError)
+          onError(
+            "Hamroh saqlandi, lekin yuz biriktirilmadi — uni qabulxona panelidan qayta biriktirishingiz mumkin."
+          )
+        }
+      }
+
       setAt(index, { id: created.id, name: guestName(created) })
     } catch (e: any) {
       onError(
@@ -270,6 +342,7 @@ export const CompanionGuests = ({
                     onClick={() => {
                       setActiveSlot(index)
                       setSearch("")
+                      clearFace()
                       setNewGuest(emptyNewGuest())
                     }}
                     className="flex flex-shrink-0 items-center gap-1 rounded-md border border-primary-200 bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100"
@@ -414,6 +487,39 @@ export const CompanionGuests = ({
                     setNewGuest({ ...newGuest, address: e.target.value })
                   }
                 />
+                {/* Filial IP kamerasidan yuz — asosiy mehmon formasidagi
+                    bilan bir xil imkoniyat: mehmon qabulxonaga kelganda
+                    kamera uni allaqachon suratga olgan bo'ladi */}
+                {pickedFace ? (
+                  <div className="flex items-center gap-2 rounded-md border border-primary-200 bg-primary-50/60 px-2.5 py-1.5">
+                    <Video className="h-4 w-4 flex-shrink-0 text-primary-600" />
+                    <span className="min-w-0 flex-1 truncate text-[11px] text-primary-700">
+                      {pickedFace.camera_name || pickedFace.camera_id} kamerasidan
+                      {pickedFace.count > 1 ? ` · ${pickedFace.count} ta surat` : ""} —
+                      hamroh saqlangach yuzi biriktiriladi
+                    </span>
+                    <button
+                      type="button"
+                      onClick={clearFace}
+                      title="Yuz tanlovini bekor qilish"
+                      className="flex-shrink-0 rounded-md p-0.5 text-primary-400 transition-colors hover:bg-primary-100 hover:text-primary-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setFacePickerOpen(true)}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-primary-300 bg-primary-50/40 px-2.5 py-2 text-xs font-medium text-primary-700 transition-colors hover:border-primary-500 hover:bg-primary-50"
+                  >
+                    <Video className="h-4 w-4 text-primary-500" />
+                    Filial kamerasidan yuz biriktirish
+                    <span className="font-normal text-primary-500/80">
+                      · keyingi tashrifda avtomatik tanaladi
+                    </span>
+                  </button>
+                )}
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -428,7 +534,10 @@ export const CompanionGuests = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setNewGuest(null)}
+                    onClick={() => {
+                      setNewGuest(null)
+                      clearFace()
+                    }}
                     className="rounded-md px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100"
                   >
                     Ro'yxatga qaytish
@@ -492,6 +601,15 @@ export const CompanionGuests = ({
           </div>
         )
       })}
+
+      {/* Filial kamerasidan yuz tanlash — filial bron qilinayotgan
+          xonadan olinadi, boshqa filial suratlari bu yerga tushmaydi */}
+      <FacePickerDialog
+        open={facePickerOpen}
+        onOpenChange={setFacePickerOpen}
+        branchId={branchId}
+        onSelect={handleFacePicked}
+      />
 
       {/* Hujjat skaneri — qaysi hamroh uchun ochilgan bo'lsa o'shanga */}
       <DocumentScanner
