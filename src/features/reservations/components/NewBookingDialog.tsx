@@ -120,6 +120,9 @@ export interface NewBookingRequest {
   /** Oldindan tanlangan mehmon. Kamera tanigan mehmon ustiga bosilganda
    *  dialog o'sha mehmon bilan ochiladi — xodim uni qaytadan qidirmaydi. */
   guestId?: string
+  /** Telefonda skanerlangan hujjat. Mehmon bazada topilmagan bo'lsa,
+   *  dialog "yangi mijoz" qismini ochib maydonlarni to'ldiradi. */
+  scannedDoc?: ScannedDoc
 }
 
 interface Props {
@@ -590,6 +593,14 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     setLocalError(null)
     setCompanions([])
     clearGuestPhoto()
+    /* Telefonda skanerlangan hujjat: mehmon bazada topilmagan bo'lsa
+       yangi mijoz maydonlari o'qilgan qiymatlar bilan to'ldiriladi —
+       xodim ularni qaytadan terib o'tirmaydi. Topilgan bo'lsa yuqorida
+       allaqachon tanlangan va bu yerga kirilmaydi. */
+    if (request.scannedDoc && !request.guestId) {
+      setShowNewGuest(true)
+      applyScannedDoc(request.scannedDoc)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request])
 

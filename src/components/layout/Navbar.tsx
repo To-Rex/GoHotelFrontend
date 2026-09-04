@@ -19,6 +19,8 @@ import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
 import { LiveClock } from "./LiveClock";
 import { RecognizedGuestsMenu } from "@/features/vision/components/RecognizedGuestsMenu";
 import { IncomingCallsMenu } from "@/features/reception/components/IncomingCallsMenu";
+import { ScannedDocsMenu } from "@/features/reception/components/ScannedDocsMenu";
+import type { DocumentScan } from "@/features/reception/api/scans";
 import {
   NewBookingDialog,
   type NewBookingRequest,
@@ -58,6 +60,19 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
       checkInDate: today,
       checkOutDate: addDaysStr(today, 1),
       guestId,
+    });
+  };
+
+  /* Telefonda skanerlangan hujjat. Mehmon bazadan topilgan bo'lsa u
+     tanlanadi, topilmagan bo'lsa o'qilgan maydonlar yangi mijoz
+     qismiga tushadi — ikkala holatda ham xodim hech narsa termaydi. */
+  const openBookingForScan = (scan: DocumentScan) => {
+    const today = todayStr();
+    setBookingRequest({
+      checkInDate: today,
+      checkOutDate: addDaysStr(today, 1),
+      guestId: scan.guest_id || undefined,
+      scannedDoc: scan.guest_id ? undefined : scan.document,
     });
   };
 
@@ -228,6 +243,9 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
         {/* Qabulxona telefoniga kelgan qo'ng'iroqlar: qurilma raqamni
             yuboradi, server mehmonni topadi va u shu yerda ko'rinadi */}
         <IncomingCallsMenu onPickGuest={openBookingFor} />
+        {/* Telefonda skanerlangan hujjat: server uni o'qiydi va bandlov
+            oynasi shu yerdan o'zi ochiladi */}
+        <ScannedDocsMenu onScan={openBookingForScan} />
         <Button
           variant="ghost"
           size="icon"
