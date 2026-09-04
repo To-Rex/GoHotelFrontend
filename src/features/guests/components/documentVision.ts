@@ -383,13 +383,22 @@ function analyzeGuide(
  * TD1 — 3 qator).
  */
 /**
- * MRZ shtrixlari 320 px'lik tahlil kadrida juda mayda bo'lib, xiralashadi —
- * shu sabab bu yerda asosiy EDGE_THRESHOLD emas, yumshoqroq chegara.
+ * MRZ shtrixlari 320 px'lik tahlil kadrida mayda bo'lib xiralashadi —
+ * shu sabab bu yerda asosiy EDGE_THRESHOLD emas, mo''tadilroq chegara.
  */
-const MRZ_EDGE = 9
+const MRZ_EDGE = 13
+
+/** Sanalgan o'tishlarning O'RTACHA kuchi shundan past bo'lsa bu siyoh
+ *  emas, mayda tekstura/shovqin: qog'ozdagi qora yozuv xiralashganda ham
+ *  bundan kuchliroq iz qoldiradi. */
+const MRZ_INK_CONTRAST = 30
 
 /** Qator nechta bo'lakka bo'lib tekshiriladi (en bo'ylab bir tekislik). */
 const MRZ_SEGMENTS = 8
+
+/** MRZ qatori tahlil kadrida bundan baland chiqmaydi — undan baland
+ *  "band" gilam yoki mato teksturasi bo'ladi. */
+const MRZ_MAX_BAND_ROWS = 12
 
 function countMrzBands(gray: Float32Array, width: number, bounds: GuideBounds): number {
   const { x0, x1, y1 } = bounds
@@ -398,39 +407,55 @@ function countMrzBands(gray: Float32Array, width: number, bounds: GuideBounds): 
   if (boxWidth < 60 || boxHeight < 24) return 0
 
   const startY = bounds.y0 + Math.floor(boxHeight * 0.4)
-  const minTransitions = Math.max(20, Math.floor(boxWidth * 0.1))
+  const scannedRows = y1 - startY
+  if (scannedRows < 8) return 0
+  const minTransitions = Math.max(22, Math.floor(boxWidth * 0.09))
   const segmentWidth = boxWidth / MRZ_SEGMENTS
 
   let bands = 0
   let run = 0
+  let busyRows = 0
   const segmentHits = new Uint16Array(MRZ_SEGMENTS)
+  const closeRun = () => {
+    // Band — 2..12 qator balandlikdagi chiziq: bitta shovqinli qator ham
+    // emas, chek-chegarasiz "qaynayotgan" tekstura ham emas
+    if (run >= 2 && run <= MRZ_MAX_BAND_ROWS) bands++
+    run = 0
+  }
   for (let y = startY; y < y1; y++) {
     const rowOffset = y * width
     let transitions = 0
+    let amplitude = 0
     segmentHits.fill(0)
     for (let x = x0 + 1; x < x1; x++) {
-      if (Math.abs(gray[rowOffset + x] - gray[rowOffset + x - 1]) >= MRZ_EDGE) {
+      const step = Math.abs(gray[rowOffset + x] - gray[rowOffset + x - 1])
+      if (step >= MRZ_EDGE) {
         transitions++
+        amplitude += step
         segmentHits[Math.min(MRZ_SEGMENTS - 1, Math.floor((x - x0) / segmentWidth))]++
       }
     }
-    /* MRZ qatorini boshqa yozuvdan ajratib turadigan narsa zichlikning
-       o'zi emas — shtrixlar QATORNING BUTUN ENI bo'ylab tekis tarqalgani.
-       Shuning uchun umumiy son yumshoq, bir tekislik esa qat'iy: 8
-       bo'lakdan kamida 6 tasida shtrix bo'lishi shart — qisqa yozuv yoki
-       imzo bu shartdan o'ta olmaydi. */
+    /* MRZ qatorining uchta imzosi birgalikda tekshiriladi:
+       1) shtrixlar soni — monospace matn zich;
+       2) BUTUN EN bo'ylab tekislik (8 bo'lakdan >= 6 tasida) — qisqa
+          yozuv/imzo o'tolmaydi;
+       3) siyoh kontrasti — sanalganlarning o'rtacha kuchi baland bo'lishi
+          shart, mayda tekstura va sensor shovqini bunga yetmaydi. */
     let spread = 0
     for (let i = 0; i < MRZ_SEGMENTS; i++) if (segmentHits[i] >= 2) spread++
-    if (transitions >= minTransitions && spread >= 6) {
+    const inky = transitions > 0 && amplitude / transitions >= MRZ_INK_CONTRAST
+    if (transitions >= minTransitions && spread >= 6 && inky) {
       run++
+      busyRows++
     } else {
-      // Kamida 2 qator balandlikdagi chiziq band hisoblanadi —
-      // bitta shovqinli qator emas
-      if (run >= 2) bands++
-      run = 0
+      closeRun()
     }
   }
-  if (run >= 2) bands++
+  closeRun()
+  /* Pastki qismning yarmidan ko'pi "MRZ'dek" ko'rinsa — bu gilam, mato
+     yoki shaxmat teksturasi: haqiqiy MRZ 2-3 ingichka chiziq, xolos.
+     Bunday kadrda zatvor otmasligi kerak. */
+  if (busyRows > scannedRows * 0.55) return 0
   return Math.min(bands, 3)
 }
 

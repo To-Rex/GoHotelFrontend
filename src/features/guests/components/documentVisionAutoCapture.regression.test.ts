@@ -185,3 +185,44 @@ describe("MRZ band detection", () => {
     expect(probe.document.mrzLines).toBe(0)
   })
 })
+
+describe("MRZ detection false-positive guards", () => {
+  /* Butun pastki qism mayda shaxmat teksturasi — gilam/mato ustidagi
+     kamera. Har qator "zich" ko'rinadi, lekin bu MRZ emas va zatvor
+     otmasligi kerak. */
+  const texturedDesk = frameWith((x, y) => {
+    if (!insideGuide(x, y)) return [150, 150, 150]
+    return Math.floor(x / 2) % 2 === Math.floor(y / 2) % 2
+      ? [40, 40, 40]
+      : [210, 210, 210]
+  })
+
+  /* Xira, past kontrastli chiziqlar — sensor shovqini yoki soya:
+     siyoh kontrasti shartidan o'tmasligi kerak. */
+  const guideTop2 = GUIDE.top * HEIGHT
+  const guideHeight2 = (GUIDE.bottom - GUIDE.top) * HEIGHT
+  const faintRows = new Set<number>()
+  for (const fraction of [0.78, 0.9]) {
+    const start = Math.floor(guideTop2 + guideHeight2 * fraction)
+    for (let row = start; row < start + 5; row++) faintRows.add(row)
+  }
+  const faintNoise = frameWith((x, y) => {
+    if (!insideGuide(x, y)) return [150, 150, 150]
+    if (faintRows.has(y)) return x % 4 < 2 ? [180, 180, 180] : [200, 200, 200]
+    return [235, 235, 235]
+  })
+
+  it("does not fire on an all-over fine texture", () => {
+    installCanvasDocument()
+    const probe = probeVideoFrame(texturedDesk, GUIDE)
+
+    expect(probe.document.mrzLines).toBe(0)
+  })
+
+  it("does not mistake faint low-contrast stripes for ink", () => {
+    installCanvasDocument()
+    const probe = probeVideoFrame(faintNoise, GUIDE)
+
+    expect(probe.document.mrzLines).toBe(0)
+  })
+})
