@@ -483,6 +483,65 @@ export const usePanelAudit = (hotelId?: string) =>
     },
   })
 
+/* --------------------------------------------------- push (Firebase) -- */
+
+export interface PushStatus {
+  enabled: boolean
+  configured: boolean
+  credential_source: string
+  error: string | null
+  panel_key_stored: boolean
+  panel_key_readable: boolean
+  project_id: string | null
+  updated_at: string | null
+}
+
+export const usePushStatus = () =>
+  useQuery({
+    queryKey: ["panelPushStatus"],
+    queryFn: async () => {
+      const { data } = await panelApi.get<PushStatus>("/push")
+      return data
+    },
+  })
+
+const invalidatePush = (qc: ReturnType<typeof useQueryClient>) =>
+  qc.invalidateQueries({ queryKey: ["panelPushStatus"] })
+
+export const useSavePushCredentials = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (credentials: string) => {
+      const { data } = await panelApi.post<PushStatus>("/push/credentials", {
+        credentials,
+      })
+      return data
+    },
+    onSuccess: () => invalidatePush(qc),
+  })
+}
+
+export const useDeletePushCredentials = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await panelApi.delete<PushStatus>("/push/credentials")
+      return data
+    },
+    onSuccess: () => invalidatePush(qc),
+  })
+}
+
+export const useTestPush = () =>
+  useMutation({
+    mutationFn: async (fcmToken: string) => {
+      const { data } = await panelApi.post<{ sent: number }>("/push/test", {
+        fcm_token: fcmToken,
+      })
+      return data
+    },
+  })
+
 /* ------------------------------------------------ dasturlar do'koni -- */
 
 export interface PanelAppRelease {

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { KeyRound, Loader2, ShieldCheck } from "lucide-react"
 
 import { panelError } from "../api/client"
+import { PushConfigCard } from "../components/PushConfigCard"
 import { useChangeOwnPassword } from "../api/panel"
 import {
   PanelButton,
@@ -46,7 +47,7 @@ export function SecurityPage() {
 
   return (
     <div className="max-w-lg">
-      <PanelHeading title="Xavfsizlik" subtitle="Kirish parolini boshqarish" />
+      <PanelHeading title="Xavfsizlik" subtitle="Kirish paroli va push kaliti" />
 
       <PanelCard>
         <form onSubmit={submit} className="space-y-3">
@@ -114,6 +115,9 @@ export function SecurityPage() {
           </div>
         </div>
       </PanelCard>
+
+      {/* Push (Firebase) kalitini boshqarish */}
+      <PushConfigCard />
     </div>
   )
 }
