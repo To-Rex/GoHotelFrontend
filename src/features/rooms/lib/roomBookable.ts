@@ -1,12 +1,12 @@
 /**
  * Xona holati bron qilishga yo'l qo'yadimi.
  *
- * Ikki daraja bor, chunki ikki holat bir xil emas. Ta'mir, tekshiruv va
- * xizmatdan chiqarish — xona umuman ishlatilmaydi va bu qachon tugashi
- * noma'lum, shuning uchun kelgusi sanalarga ham bron qilinmaydi: avval holat
- * almashtirilishi kerak. Tozalash esa qisqa va o'z-o'zidan tugaydi, kelgusi
- * sanalarga to'sqinlik qilmaydi — faqat mehmon AYNAN HOZIR kirmoqchi bo'lsa
- * to'sadi.
+ * To'rttala texnik holat — tozalanmoqda, ta'mirda, tekshiruvda va
+ * xizmatdan tashqari — xonani BUTUNLAY yopadi: hech qanday sanaga bron
+ * qilinmaydi. Farq faqat xabarda: tozalash o'zi tugab xona ochiladi,
+ * qolganlarida holat almashtirilishi kerak. Holatdan tashqari faol
+ * xo'jalik VAZIFASI ham tekshiriladi (`blockingTaskMap`) — xona "bo'sh"
+ * ko'rinsa ham ochiq ish bron qilishga yo'l qo'ymaydi.
  *
  * Bu qoida serverda ham bor (`reservation_service._assert_room_bookable`) —
  * u haqiqiy himoya, bu esa xodim so'rov yuborishdan oldin sababni ko'rishi
@@ -21,7 +21,7 @@ export const BLOCKED_ALWAYS = [
   "OUT_OF_SERVICE",
 ] as const
 
-/** Faqat hozirgi paytni qamraydigan bron uchun yopiq. */
+/** Ish tugashi bilan O'ZI ochiladigan holat — xabari boshqacha. */
 export const BLOCKED_NOW = ["CLEANING"] as const
 
 const STATUS_LABEL: Record<string, string> = {
@@ -98,16 +98,28 @@ export function windowCoversNow(w: BookingWindow, now: Date): boolean {
 
 /** Faol bo'lsa xonani bron uchun butunlay yopadigan vazifa turlari.
 
-    Xona holati "tozalashda" yoki hatto "bo'sh" bo'lishi mumkin, lekin
-    unda tugallanmagan ta'mir yoki tekshiruv VAZIFASI turgan bo'lsa —
-    bron ish yakunlangunga qadar yopiq. Server ham xuddi shu qoidani
-    tekshiradi (`reservation_service._active_blocking_task`). */
-export const BLOCKING_TASK_TYPES = ["MAINTENANCE", "INSPECTION"] as const
+    Xona holati hatto "bo'sh" bo'lishi mumkin, lekin unda tugallanmagan
+    VAZIFA — ta'mir, tekshiruv yoki har qanday tozalash — turgan bo'lsa,
+    bron ish yakunlangunga qadar yopiq. TURN_DOWN ro'yxatda yo'q: u
+    mehmon ichkarida turganda bajariladi va xonani band qilmaydi. Server
+    ham xuddi shu qoidani tekshiradi
+    (`reservation_service._active_blocking_task`). */
+export const BLOCKING_TASK_TYPES = [
+  "MAINTENANCE",
+  "INSPECTION",
+  "CLEANING",
+  "DEEP_CLEANING",
+] as const
 
 const TASK_WORK_LABEL: Record<string, string> = {
   MAINTENANCE: "ta'mirlash ishi",
   INSPECTION: "tekshiruv ishi",
+  CLEANING: "tozalash ishi",
+  DEEP_CLEANING: "chuqur tozalash ishi",
 }
+
+//: Bir xonada bir nechta faol vazifa bo'lsa — og'irrog'i ustun
+const TASK_PRIORITY = BLOCKING_TASK_TYPES as readonly string[]
 
 export function taskWorkLabel(taskType: string): string {
   return TASK_WORK_LABEL[taskType] || taskType
@@ -140,7 +152,11 @@ export function blockingTaskMap(
     if (!(BLOCKING_TASK_TYPES as readonly string[]).includes(t.task_type)) continue
     if (t.status !== "OPEN" && t.status !== "IN_PROGRESS") continue
     if (t.scheduled_date && String(t.scheduled_date).slice(0, 10) > today) continue
-    if (t.task_type === "MAINTENANCE" || !map[t.room_id]) {
+    const current = map[t.room_id]
+    if (
+      !current ||
+      TASK_PRIORITY.indexOf(t.task_type) < TASK_PRIORITY.indexOf(current)
+    ) {
       map[t.room_id] = t.task_type
     }
   }
@@ -155,9 +171,12 @@ export function blockingTaskMap(
  */
 export function roomBookingBlock(
   room: BookableRoom,
-  window: BookingWindow | null,
-  now: Date,
-  /** Xonadagi faol ta'mir/tekshiruv vazifasi turi (`blockingTaskMap`dan). */
+  /* Davr va vaqt endi qarorga ta'sir qilmaydi (to'rttala holat ham har
+     qanday sanaga yopiq) — imzo chaqiruvchilar va testlar buzilmasligi
+     uchun saqlangan */
+  _window: BookingWindow | null,
+  _now: Date,
+  /** Xonadagi faol xo'jalik vazifasi turi (`blockingTaskMap`dan). */
   blockingTask?: string | null
 ): string | null {
   const status = room.current_status
@@ -174,10 +193,8 @@ export function roomBookingBlock(
     return `${where}da ${taskWorkLabel(blockingTask)} tugallanmagan — ish yakunlangach bron qilish mumkin bo'ladi.`
   }
 
-  if (!window || !isBlockedNow(status)) return null
-
-  if (windowCoversNow(window, now)) {
-    return `${where} hozir ${label} — tozalash yakunlangach bron qilish mumkin. Kelgusi sanalarga hozir ham bron qilsa bo'ladi.`
+  if (isBlockedNow(status)) {
+    return `${where} hozir ${label} — tozalash yakunlangach bron qilish mumkin bo'ladi.`
   }
 
   return null

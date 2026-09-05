@@ -26,7 +26,6 @@ import { useCreateReservation, useCheckInReservation, useReservations } from "..
 import { useRooms, useRoomTypes } from "@/features/rooms/api/rooms"
 import {
   blockingTaskMap,
-  isBlockedAlways,
   isRestrictedStatus,
   roomBookingBlock,
   taskWorkLabel,
@@ -1345,11 +1344,11 @@ function SectionMark({
                 <option
                   key={r.id}
                   value={r.id}
-                  /* Ta'mir/tekshiruv/xizmatdan tashqari xonalar tanlanmaydi.
-                     Tozalanayotgani esa ro'yxatda qoladi — u kelgusi sanalarga
-                     bron qilinishi mumkin, faqat hozirgi payt uchun emas. */
+                  /* To'rttala texnik holat ham (tozalanmoqda, ta'mirda,
+                     tekshiruvda, xizmatdan tashqari) va faol xo'jalik
+                     vazifasi — xona tanlanmaydi, sababi yonida yoziladi */
                   disabled={
-                    isBlockedAlways(r.current_status) || !!hkTaskBlocks[r.id]
+                    isRestrictedStatus(r.current_status) || !!hkTaskBlocks[r.id]
                   }
                 >
                   {r.room_number} · {r.room_type?.name} ·{" "}

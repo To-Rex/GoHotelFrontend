@@ -10,8 +10,8 @@ import {
 } from "./roomBookable"
 
 /* Bu qoida serverdagi `_assert_room_bookable` bilan bir xil bo'lishi kerak.
-   Asosiy nozik joy — tozalash bilan ta'mir orasidagi farq: tozalash faqat
-   hozirni to'sadi, ta'mir esa hamma vaqtni. */
+   To'rttala texnik holat ham xonani butunlay yopadi; tozalashning farqi
+   faqat xabarda — u o'zi tugab xona ochiladi. */
 
 const now = new Date(2026, 8, 1, 12, 0) // 1-sentabr, soat 12:00
 const room = (status: string) => ({ room_number: "101", current_status: status })
@@ -172,18 +172,22 @@ describe("roomBookingBlock", () => {
       now
     )
     expect(msg).toContain("tozalanmoqda")
+    expect(msg).toContain("tozalash yakunlangach")
   })
 
-  it("tozalanayotgan xona kelgusi sanaga OCHIQ", () => {
-    // Asosiy farq: tozalash tugaydi, ta'mir esa qachon tugashi noma'lum
-    expect(
-      roomBookingBlock(room("CLEANING"), daily("2026-09-05", "2026-09-06"), now)
-    ).toBeNull()
+  it("tozalanayotgan xona kelgusi sanaga ham yopiq", () => {
+    // Tozalash tugashi bilan xona o'zi ochiladi — xabar shuni aytadi
+    const msg = roomBookingBlock(
+      room("CLEANING"),
+      daily("2026-09-05", "2026-09-06"),
+      now
+    )
+    expect(msg).toContain("tozalash yakunlangach")
   })
 
-  it("davr berilmasa faqat butunlay yopiqlar belgilanadi", () => {
-    // Ro'yxatlarda sanalar hali ma'lum emas
-    expect(roomBookingBlock(room("CLEANING"), null, now)).toBeNull()
+  it("davr berilmasa ham to'rttala holat belgilanadi", () => {
+    // Ro'yxatlarda sanalar hali ma'lum emas — baribir yopiq
+    expect(roomBookingBlock(room("CLEANING"), null, now)).not.toBeNull()
     expect(roomBookingBlock(room("MAINTENANCE"), null, now)).not.toBeNull()
   })
 
@@ -227,13 +231,14 @@ describe("faol vazifa to'sig'i", () => {
     ).toEqual({})
   })
 
-  it("tozalash turlari bu to'siqqa kirmaydi", () => {
+  it("tozalash vazifasi ham to'sadi, TURN_DOWN esa yo'q", () => {
     expect(
       blockingTaskMap(
         [task({ task_type: "CLEANING" }), task({ task_type: "TURN_DOWN" })],
         now
       )
-    ).toEqual({})
+    ).toEqual({ r1: "CLEANING" })
+    expect(blockingTaskMap([task({ task_type: "TURN_DOWN" })], now)).toEqual({})
   })
 
   it("kelgusi sanaga rejalashtirilgani yopmaydi, bugungisi yopadi", () => {
@@ -245,13 +250,16 @@ describe("faol vazifa to'sig'i", () => {
     ).toEqual({ r1: "MAINTENANCE" })
   })
 
-  it("ta'mir tekshiruvdan ustun", () => {
+  it("ta'mir tekshiruvdan, tekshiruv tozalashdan ustun", () => {
+    expect(
+      blockingTaskMap([task({ task_type: "INSPECTION" }), task()], now)
+    ).toEqual({ r1: "MAINTENANCE" })
     expect(
       blockingTaskMap(
-        [task({ task_type: "INSPECTION" }), task()],
+        [task({ task_type: "CLEANING" }), task({ task_type: "INSPECTION" })],
         now
       )
-    ).toEqual({ r1: "MAINTENANCE" })
+    ).toEqual({ r1: "INSPECTION" })
   })
 
   it("roomBookingBlock vazifa sababini qaytaradi", () => {
@@ -264,13 +272,15 @@ describe("faol vazifa to'sig'i", () => {
     expect(reason).toContain("holat o'zgartirilmaguncha")
   })
 
-  it("vazifasiz xatti-harakat avvalgidek", () => {
-    expect(roomBookingBlock(room("CLEANING"), null, now)).toBeNull()
+  it("vazifasiz bo'sh xona ochiq", () => {
     expect(roomBookingBlock(room("AVAILABLE"), null, now)).toBeNull()
+    expect(roomBookingBlock(room("OCCUPIED"), null, now)).toBeNull()
   })
 
   it("yorliqlar", () => {
     expect(taskWorkLabel("MAINTENANCE")).toBe("ta'mirlash ishi")
     expect(taskWorkLabel("INSPECTION")).toBe("tekshiruv ishi")
+    expect(taskWorkLabel("CLEANING")).toBe("tozalash ishi")
+    expect(taskWorkLabel("DEEP_CLEANING")).toBe("chuqur tozalash ishi")
   })
 })
