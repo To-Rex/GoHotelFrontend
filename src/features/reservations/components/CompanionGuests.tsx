@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
-import { Search, ScanLine, UserPlus, Video, X, CheckCircle2, Loader2 } from "lucide-react"
+import { ChevronDown, Search, ScanLine, UserPlus, Video, X, CheckCircle2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { useCreateGuest, uploadGuestFile } from "@/features/guests/api/guests"
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
+import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
+import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
 import {
   fetchSightingFile,
   useEnrollSighting,
@@ -88,6 +90,8 @@ export const CompanionGuests = ({
 
   const [search, setSearch] = useState("")
   const [activeSlot, setActiveSlot] = useState<number | null>(null)
+  /* Tanlangan hamrohning ochiq turgan paneli (tahrirlash + yuz) */
+  const [expandedSlot, setExpandedSlot] = useState<number | null>(null)
   const [scanSlot, setScanSlot] = useState<number | null>(null)
   /* Yangi hamroh formasi ASOSIY mehmon formasi bilan bir xil maydonlarga
      ega: hamroh ham bazadagi to'la huquqli mijoz, uning yozuvi keyin
@@ -220,6 +224,8 @@ export const CompanionGuests = ({
     else next.splice(index, 1)
     onChange(next.filter(Boolean))
     setActiveSlot(null)
+    // Qatorlar surilganda panel boshqa hamrohga ochilib qolmasin
+    setExpandedSlot(null)
     setSearch("")
     setNewGuest(null)
     // Tanlangan yuz keyingi hamrohga meros bo'lib o'tmasligi kerak
@@ -344,23 +350,58 @@ export const CompanionGuests = ({
       {Array.from({ length: slots }).map((_, index) => {
         const picked = value[index]
         if (picked) {
+          /* Hamroh ham asosiy mehmon kabi to'la huquqli mijoz: qatori
+             ochilganda xuddi Mehmon qismidagi imkoniyatlar chiqadi —
+             joyida tahrirlash va filial kamerasidan yuz biriktirish.
+             Ism bazadagi jonli yozuvdan olinadi: tahrirdan keyin
+             qatordagi nom ham darhol yangilanadi. */
+          const live = guests.find((g) => g.id === picked.id)
+          const expanded = expandedSlot === index
           return (
-            <div
-              key={index}
-              className="flex items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-3 py-2"
-            >
-              <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600" />
-              <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
-                {picked.name}
-              </span>
-              <button
-                type="button"
-                onClick={() => setAt(index, null)}
-                title="Ro'yxatdan olib tashlash"
-                className="flex-shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
+            <div key={index} className="rounded-lg border border-gray-200 bg-white">
+              <div className="flex items-center gap-2.5 px-3 py-2">
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600" />
+                <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
+                  {live ? guestName(live) : picked.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setExpandedSlot(expanded ? null : index)}
+                  title="Tahrirlash va yuz biriktirish"
+                  className="flex-shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                >
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      expanded && "rotate-180"
+                    )}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAt(index, null)}
+                  title="Ro'yxatdan olib tashlash"
+                  className="flex-shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              {expanded && (
+                <div className="space-y-2 border-t border-gray-100 px-3 pb-2.5 pt-2">
+                  {/* Xato ma'lumot mehmon qarshingda turganda bilinadi —
+                      shu yerning o'zida to'g'rilanadi */}
+                  <GuestQuickEdit
+                    guest={{ ...(live || {}), guest_id: picked.id }}
+                  />
+                  {/* Yuzi bo'lmasa — hoziroq biriktirish. Hamroh allaqachon
+                      bazada bor, shuning uchun biriktirish darhol bajariladi */}
+                  <GuestFaceRow
+                    guestId={picked.id}
+                    branchId={branchId}
+                    className="border-t border-gray-100 pt-2"
+                  />
+                </div>
+              )}
             </div>
           )
         }
