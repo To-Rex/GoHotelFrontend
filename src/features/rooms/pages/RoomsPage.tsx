@@ -15,7 +15,7 @@ import type { Room } from "@/types/api"
 import { RoomReservationsDialog } from "../components/RoomReservationsDialog"
 import { RoomStatusNote } from "../components/RoomStatusNote"
 import { activeTaskFor, roomStatusDetail } from "../lib/roomStatusInfo"
-import { roomBookingBlock } from "../lib/roomBookable"
+import { blockingTaskMap, roomBookingBlock } from "../lib/roomBookable"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
 import {
   NewBookingDialog,
@@ -309,6 +309,9 @@ export const RoomsPage = () => {
      o'nlab so'rovga bo'lib yuborardi. Vaqt `nowTick` bilan yangilanadi,
      shunda "35 daqiqa" yozuvi ekranda qotib qolmaydi. */
   const { data: hkTasks = [] } = useHousekeepingTasks()
+  //: Faol ta'mir/tekshiruv vazifasi bor xonalar ham yopiq — holati
+  //: "tozalashda" ko'rinsa ham ish tugamaguncha bron qilinmaydi
+  const hkTaskBlocks = useMemo(() => blockingTaskMap(hkTasks, new Date()), [hkTasks])
   const [nowTick, setNowTick] = useState(() => Date.now())
   useEffect(() => {
     const timer = setInterval(() => setNowTick(Date.now()), 60_000)
@@ -577,7 +580,8 @@ export const RoomsPage = () => {
      ochilmaydi — u baribir rad etilardi. Sanalar bu yerda ma'lum emas,
      shuning uchun faqat "har qanday vaqt uchun yopiq" holatlar tekshiriladi;
      tozalanayotgan xona ochiladi va dialog sanaga qarab qaror qiladi. */
-  const bookBlockFor = (room: Room) => roomBookingBlock(room, null, new Date())
+  const bookBlockFor = (room: Room) =>
+    roomBookingBlock(room, null, new Date(), hkTaskBlocks[room.id])
 
   const freeCount = rooms.filter((r) => r.current_status === "AVAILABLE").length
   const busyCount = rooms.filter((r) =>

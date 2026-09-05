@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest"
 import {
+  blockingTaskMap,
   isBlockedAlways,
   isBlockedNow,
   isRestrictedStatus,
   roomBookingBlock,
+  taskWorkLabel,
   windowCoversNow,
 } from "./roomBookable"
 
@@ -188,5 +190,87 @@ describe("roomBookingBlock", () => {
   it("xona raqami bo'lmasa ham xabar tushunarli", () => {
     const msg = roomBookingBlock({ current_status: "INSPECTION" }, null, now)
     expect(msg).toContain("Xona tekshiruvda")
+  })
+})
+
+/* Faol ta'mir/tekshiruv VAZIFASI xonani yopadi — holati "tozalashda"
+   ko'rinsa ham. Server qoidasi bilan bir xil
+   (`reservation_service._active_blocking_task`). */
+describe("faol vazifa to'sig'i", () => {
+  const task = (over: Record<string, unknown> = {}) => ({
+    room_id: "r1",
+    task_type: "MAINTENANCE",
+    status: "OPEN",
+    scheduled_date: null as string | null,
+    ...over,
+  })
+
+  it("ochiq ta'mir xonani yopadi", () => {
+    expect(blockingTaskMap([task()], now)).toEqual({ r1: "MAINTENANCE" })
+  })
+
+  it("boshlangan tekshiruv ham yopadi", () => {
+    expect(
+      blockingTaskMap(
+        [task({ task_type: "INSPECTION", status: "IN_PROGRESS" })],
+        now
+      )
+    ).toEqual({ r1: "INSPECTION" })
+  })
+
+  it("yakunlangan yoki bekor qilingan vazifa yopmaydi", () => {
+    expect(
+      blockingTaskMap(
+        [task({ status: "COMPLETED" }), task({ status: "CANCELLED" })],
+        now
+      )
+    ).toEqual({})
+  })
+
+  it("tozalash turlari bu to'siqqa kirmaydi", () => {
+    expect(
+      blockingTaskMap(
+        [task({ task_type: "CLEANING" }), task({ task_type: "TURN_DOWN" })],
+        now
+      )
+    ).toEqual({})
+  })
+
+  it("kelgusi sanaga rejalashtirilgani yopmaydi, bugungisi yopadi", () => {
+    expect(
+      blockingTaskMap([task({ scheduled_date: "2026-09-10" })], now)
+    ).toEqual({})
+    expect(
+      blockingTaskMap([task({ scheduled_date: "2026-09-01" })], now)
+    ).toEqual({ r1: "MAINTENANCE" })
+  })
+
+  it("ta'mir tekshiruvdan ustun", () => {
+    expect(
+      blockingTaskMap(
+        [task({ task_type: "INSPECTION" }), task()],
+        now
+      )
+    ).toEqual({ r1: "MAINTENANCE" })
+  })
+
+  it("roomBookingBlock vazifa sababini qaytaradi", () => {
+    const reason = roomBookingBlock(room("CLEANING"), null, now, "MAINTENANCE")
+    expect(reason).toContain("ta'mirlash ishi tugallanmagan")
+  })
+
+  it("holat taqiqi vazifa sababidan ustun", () => {
+    const reason = roomBookingBlock(room("MAINTENANCE"), null, now, "INSPECTION")
+    expect(reason).toContain("holat o'zgartirilmaguncha")
+  })
+
+  it("vazifasiz xatti-harakat avvalgidek", () => {
+    expect(roomBookingBlock(room("CLEANING"), null, now)).toBeNull()
+    expect(roomBookingBlock(room("AVAILABLE"), null, now)).toBeNull()
+  })
+
+  it("yorliqlar", () => {
+    expect(taskWorkLabel("MAINTENANCE")).toBe("ta'mirlash ishi")
+    expect(taskWorkLabel("INSPECTION")).toBe("tekshiruv ishi")
   })
 })

@@ -25,9 +25,11 @@ import {
 import { useCreateReservation, useCheckInReservation, useReservations } from "../api/reservations"
 import { useRooms, useRoomTypes } from "@/features/rooms/api/rooms"
 import {
+  blockingTaskMap,
   isBlockedAlways,
   isRestrictedStatus,
   roomBookingBlock,
+  taskWorkLabel,
   statusLabel,
   type BookingWindow,
 } from "@/features/rooms/lib/roomBookable"
@@ -41,6 +43,7 @@ import {
 import { NATIONALITIES, DEFAULT_NATIONALITY, MRZ_COUNTRY } from "@/features/guests/constants"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
+import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
 import { useAuthStore } from "@/store/auth"
 import { usePermissions } from "@/lib/permissions"
 import {
@@ -210,6 +213,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const { data: reservations = [] } = useReservations()
   const { data: guests = [] } = useGuests()
   const { data: roomTypesData = [] } = useRoomTypes()
+  const { data: hkTasksData = [] } = useHousekeepingTasks()
   const { user } = useAuthStore()
   const { can } = usePermissions()
   const canCreateGuest = can("guest.create")
@@ -218,6 +222,13 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const checkInMutation = useCheckInReservation()
   const createGuestMutation = useCreateGuest()
   const enrollFaceMutation = useEnrollSighting()
+
+  /* Faol ta'mir/tekshiruv vazifasi bor xonalar — bron yopiq: holati
+     "tozalashda" ko'rinsa ham ish tugamaguncha tanlab bo'lmaydi */
+  const hkTaskBlocks = useMemo(
+    () => blockingTaskMap(hkTasksData, new Date()),
+    [hkTasksData]
+  )
 
   const priceMap = useMemo(() => {
     const map: Record<string, number> = {}
@@ -707,7 +718,8 @@ function SectionMark({
         // Ro'yxatdagi yangi nusxa ustun — preset eskirgan bo'lishi mumkin
         rooms.find((r) => r.id === activeRoom.id) || activeRoom,
         bookingWindow,
-        new Date()
+        new Date(),
+        hkTaskBlocks[activeRoom.id]
       )
     : null
 
@@ -999,7 +1011,12 @@ function SectionMark({
       // Xona holati yo'l qo'yadimi. Server ham tekshiradi, lekin sabab shu
       // yerda aniqroq aytiladi — xodim nima qilishini biladi.
       const blocked = chosenRoom
-        ? roomBookingBlock(chosenRoom, bookingWindow, new Date())
+        ? roomBookingBlock(
+            chosenRoom,
+            bookingWindow,
+            new Date(),
+            hkTaskBlocks[chosenRoom.id]
+          )
         : null
       if (blocked) {
         showError(blocked)
@@ -1331,13 +1348,17 @@ function SectionMark({
                   /* Ta'mir/tekshiruv/xizmatdan tashqari xonalar tanlanmaydi.
                      Tozalanayotgani esa ro'yxatda qoladi — u kelgusi sanalarga
                      bron qilinishi mumkin, faqat hozirgi payt uchun emas. */
-                  disabled={isBlockedAlways(r.current_status)}
+                  disabled={
+                    isBlockedAlways(r.current_status) || !!hkTaskBlocks[r.id]
+                  }
                 >
                   {r.room_number} · {r.room_type?.name} ·{" "}
                   {getRoomPrice(r).toLocaleString()} so'm
                   {isRestrictedStatus(r.current_status)
                     ? ` — ${statusLabel(r.current_status)}`
-                    : ""}
+                    : hkTaskBlocks[r.id]
+                      ? ` — ${taskWorkLabel(hkTaskBlocks[r.id])} tugallanmagan`
+                      : ""}
                 </option>
               ))}
             </select>

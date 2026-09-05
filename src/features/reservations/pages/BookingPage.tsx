@@ -51,7 +51,7 @@ import {
   activeTaskFor,
   roomStatusDetail,
 } from "@/features/rooms/lib/roomStatusInfo"
-import { isBlockedAlways, statusLabel } from "@/features/rooms/lib/roomBookable"
+import { blockingTaskMap, isBlockedAlways, statusLabel, taskWorkLabel } from "@/features/rooms/lib/roomBookable"
 import { useGuests } from "@/features/guests/api/guests"
 import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
 import {
@@ -285,6 +285,10 @@ export function BookingPage() {
   // /housekeeping da vazifa yaratilsa, bu yerda xona belgisi sifatida chiqadi.
   // Kesh kaliti bir xil bo'lgani uchun vazifa o'zgarishi darhol aks etadi.
   const { data: hkTasks = [] } = useHousekeepingTasks()
+  /* Faol ta'mir/tekshiruv vazifasi bor xonalar — holati "tozalashda"
+     bo'lsa ham bron yopiq: ish yakunlangach o'zi ochiladi (server ham
+     xuddi shu qoidani tekshiradi) */
+  const hkTaskBlocks = useMemo(() => blockingTaskMap(hkTasks, new Date()), [hkTasks])
 
   /* Holat tafsiloti: tozalash qachon boshlangani, kim biriktirilgani.
      Belgining o'zi ("Tozalanmoqda") xona nega band ekanini aytadi, lekin
@@ -1320,7 +1324,10 @@ export function BookingPage() {
                         key={day.toISOString()}
                         className={cn(
                           "flex-shrink-0 border-r border-gray-50 h-full",
-                          canCreate && !isPastDay(day) && !isBlockedAlways(room.current_status)
+                          canCreate &&
+                            !isPastDay(day) &&
+                            !isBlockedAlways(room.current_status) &&
+                            !hkTaskBlocks[room.id]
                             ? "cursor-pointer"
                             : "cursor-default",
                           isPastDay(day) && "bg-gray-100/60",
@@ -1333,10 +1340,13 @@ export function BookingPage() {
                         title={
                           isBlockedAlways(room.current_status)
                             ? `${room.room_number}-xona ${statusLabel(room.current_status)} — bron qilib bo'lmaydi`
-                            : undefined
+                            : hkTaskBlocks[room.id]
+                              ? `${room.room_number}-xonada ${taskWorkLabel(hkTaskBlocks[room.id])} tugallanmagan — ish yakunlangach bron qilish mumkin`
+                              : undefined
                         }
                         onClick={
-                          isBlockedAlways(room.current_status)
+                          isBlockedAlways(room.current_status) ||
+                          hkTaskBlocks[room.id]
                             ? undefined
                             : () => handleCellClick(room, day)
                         }

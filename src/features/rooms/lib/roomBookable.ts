@@ -96,6 +96,57 @@ export function windowCoversNow(w: BookingWindow, now: Date): boolean {
   return w.checkInDate <= today && today < w.checkOutDate
 }
 
+/** Faol bo'lsa xonani bron uchun butunlay yopadigan vazifa turlari.
+
+    Xona holati "tozalashda" yoki hatto "bo'sh" bo'lishi mumkin, lekin
+    unda tugallanmagan ta'mir yoki tekshiruv VAZIFASI turgan bo'lsa —
+    bron ish yakunlangunga qadar yopiq. Server ham xuddi shu qoidani
+    tekshiradi (`reservation_service._active_blocking_task`). */
+export const BLOCKING_TASK_TYPES = ["MAINTENANCE", "INSPECTION"] as const
+
+const TASK_WORK_LABEL: Record<string, string> = {
+  MAINTENANCE: "ta'mirlash ishi",
+  INSPECTION: "tekshiruv ishi",
+}
+
+export function taskWorkLabel(taskType: string): string {
+  return TASK_WORK_LABEL[taskType] || taskType
+}
+
+/** Vazifaning bron to'sig'ini hisoblash uchun kerak bo'lgan qismi. */
+export interface RoomTaskLike {
+  room_id: string
+  task_type: string
+  status: string
+  scheduled_date?: string | null
+}
+
+/**
+ * Xona -> uni yopadigan faol vazifa turi.
+ *
+ * Faqat OCHIQ yoki BOSHLANGAN ta'mir/tekshiruv hisobga olinadi; kelgusi
+ * sanaga rejalashtirilgani xonani hozirdan yopmaydi (mavjud "kelgusi
+ * vazifa xonani band qilmaydi" qoidasi bilan bir xil). Bitta xonada
+ * ikkalasi bo'lsa ta'mir ustun.
+ */
+export function blockingTaskMap(
+  tasks: readonly RoomTaskLike[],
+  now: Date
+): Record<string, string> {
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+  const map: Record<string, string> = {}
+  for (const t of tasks) {
+    if (!(BLOCKING_TASK_TYPES as readonly string[]).includes(t.task_type)) continue
+    if (t.status !== "OPEN" && t.status !== "IN_PROGRESS") continue
+    if (t.scheduled_date && String(t.scheduled_date).slice(0, 10) > today) continue
+    if (t.task_type === "MAINTENANCE" || !map[t.room_id]) {
+      map[t.room_id] = t.task_type
+    }
+  }
+  return map
+}
+
 /**
  * Bron qilishga to'siq bo'lsa — sababi, bo'lmasa null.
  *
@@ -105,7 +156,9 @@ export function windowCoversNow(w: BookingWindow, now: Date): boolean {
 export function roomBookingBlock(
   room: BookableRoom,
   window: BookingWindow | null,
-  now: Date
+  now: Date,
+  /** Xonadagi faol ta'mir/tekshiruv vazifasi turi (`blockingTaskMap`dan). */
+  blockingTask?: string | null
 ): string | null {
   const status = room.current_status
   const where = room.room_number ? `${room.room_number}-xona` : "Xona"
@@ -113,6 +166,12 @@ export function roomBookingBlock(
 
   if (isBlockedAlways(status)) {
     return `${where} ${label} — holat o'zgartirilmaguncha hech qanday sanaga bron qilib bo'lmaydi.`
+  }
+
+  // Holat yumshoq bo'lsa ham tugallanmagan ta'mir/tekshiruv vazifasi
+  // xonani yopadi — ish yakunlangach o'zi ochiladi
+  if (blockingTask) {
+    return `${where}da ${taskWorkLabel(blockingTask)} tugallanmagan — ish yakunlangach bron qilish mumkin bo'ladi.`
   }
 
   if (!window || !isBlockedNow(status)) return null
