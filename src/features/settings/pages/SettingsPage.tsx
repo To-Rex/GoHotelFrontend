@@ -28,6 +28,7 @@ import {
   Percent,
   Video,
   Monitor,
+  MessageSquareText,
   type LucideIcon,
   Undo2,
   Ban,
@@ -37,6 +38,7 @@ import { NavOrderCard } from "../components/NavOrderCard"
 import { VisionCamerasCard } from "@/features/vision/components/VisionCamerasCard"
 import { VisionDevicesCard } from "@/features/vision/components/VisionDevicesCard"
 import { DiscountRulesCard } from "../components/DiscountRulesCard"
+import { SmsKeysCard } from "../components/SmsKeysCard"
 import {
   useBookingDefaults,
   useSaveBookingDefaults,
@@ -186,6 +188,14 @@ const SETTING_GROUPS = [
     icon: ListOrdered,
     iconClass: "bg-amber-50 text-amber-600",
     cards: ["nav-order"],
+  },
+  {
+    key: "sms",
+    label: "SMS xabarnomalar",
+    desc: "Har filial uchun Xabarchi API kaliti — bron va to'lovda mijozga SMS",
+    icon: MessageSquareText,
+    iconClass: "bg-teal-50 text-teal-600",
+    cards: ["sms-keys"],
   },
   {
     key: "danger",
@@ -1387,6 +1397,8 @@ export const SettingsPage = () => {
 
             </>
           )}
+
+          {group === "sms" && <SmsKeysCard />}
 
           {group === "danger" && (
             <>
