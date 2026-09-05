@@ -22,7 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import { useCreateReservation, useReservations } from "../api/reservations"
+import { useCreateReservation, useCheckInReservation, useReservations } from "../api/reservations"
 import { useRooms, useRoomTypes } from "@/features/rooms/api/rooms"
 import {
   isBlockedAlways,
@@ -215,6 +215,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const canCreateGuest = can("guest.create")
 
   const createReservationMutation = useCreateReservation()
+  const checkInMutation = useCheckInReservation()
   const createGuestMutation = useCreateGuest()
   const enrollFaceMutation = useEnrollSighting()
 
@@ -1089,6 +1090,12 @@ function SectionMark({
         discount_amount: discountType === "AMOUNT" ? discountAmount : 0,
       }
 
+      /* Bron HOZIR boshlanadimi — mehmon shu yerda turibdi, demak
+         "Mehmon keldi — kirishni rasmiylashtirish" tugmasini o'zimiz
+         bosamiz. Kelajakka (boshqa kun yoki keyingi soat) bo'lsa
+         avvalgidek qo'lda bosiladi. */
+      let startsNow = false
+
       let payload: any
       if (values.booking_type === "HOURLY") {
         let inTime = normalizeTime(values.check_in_time)
@@ -1109,6 +1116,13 @@ function SectionMark({
             setValue("check_out_time", outTime)
           }
         }
+
+        // Boshlanishi yetib kelgan (yoki hozirga surilgan) soatlik bron —
+        // hozir uchun; +1 daqiqa soat farqi uchun
+        startsNow =
+          values.check_in_date === format(submitNow, "yyyy-MM-dd") &&
+          timeToMin(inTime) <=
+            submitNow.getHours() * 60 + submitNow.getMinutes() + 1
 
         // Chiqish vaqti kirishdan kichik/teng bo'lsa keyingi kunga o'tadi
         const overnight = outTime <= inTime
@@ -1144,6 +1158,10 @@ function SectionMark({
           )
           return
         }
+        // Kunlik bron: bugunga bo'lsa mehmon hozir kirmoqda (o'tgan
+        // sanaga bron forma qoidasi bilan taqiqlangan)
+        startsNow = values.check_in_date <= format(new Date(), "yyyy-MM-dd")
+
         payload = {
           ...basePayload,
           booking_type: "DAILY",
@@ -1152,7 +1170,27 @@ function SectionMark({
         }
       }
 
-      await createReservationMutation.mutateAsync(payload)
+      const createdReservation = await createReservationMutation.mutateAsync(payload)
+
+      /* Avtomatik kirish. Bron BUZILMAYDI: rasmiylashtirish alohida qadam,
+         yiqilsa (masalan xona hali tayyor bo'lmasa) bron saqlangan qoladi
+         va odatdagi "Mehmon keldi" tugmasi bilan qo'lda rasmiylashtiriladi. */
+      let autoCheckInFailed = false
+      if (
+        startsNow &&
+        createdReservation?.id &&
+        createdReservation.status === "CONFIRMED"
+      ) {
+        try {
+          await checkInMutation.mutateAsync({
+            id: createdReservation.id,
+            hotelId: createdReservation.hotel_id || hotelId || undefined,
+          })
+        } catch (checkInError) {
+          console.error("Avtomatik kirishda xatolik", checkInError)
+          autoCheckInFailed = true
+        }
+      }
 
       setShowNewGuest(false)
       setSelectedGuestId("")
@@ -1175,6 +1213,11 @@ function SectionMark({
         showError(
           "Bron va mehmon saqlandi, lekin yuz biriktirilmadi — keyingi tashrifda avtomatik tanilmaydi. " +
             "Yuzni qabulxona panelidan qayta biriktirishingiz mumkin."
+        )
+      } else if (autoCheckInFailed) {
+        showError(
+          "Bron saqlandi, lekin kirish avtomatik rasmiylashmadi. " +
+            "Bron oynasidagi \"Mehmon keldi — kirishni rasmiylashtirish\" tugmasi bilan qo'lda rasmiylashtiring."
         )
       }
     } catch (error: any) {
