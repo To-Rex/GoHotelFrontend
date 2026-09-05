@@ -1,12 +1,11 @@
 import axios from "axios";
 
-// Dev rejimida nisbiy "/api/v1" ishlatiladi (vite dev-server proxy backendga uzatadi).
-// Production buildda esa proxy bo'lmaydi — shuning uchun backendning to'liq manzili
-// ishlatiladi (VITE_API_URL to'liq URL qilib berilsa, o'sha ustun turadi).
-const PROD_URL = "https://gohotel-gohotel-backend-lhyen5-ecceab-13-140-185-49.sslip.io";
-const envUrl = import.meta.env.VITE_API_URL || "/api/v1";
-export const API_URL =
-  import.meta.env.DEV || envUrl.startsWith("http") ? envUrl : `${PROD_URL}${envUrl}`;
+// Backend manzili FAQAT .env dan olinadi (VITE_API_URL) — kodda qattiq
+// yozilgan domen yo'q. Standart qiymat nisbiy "/api/v1": frontend va backend
+// bitta domenda (gohotels.uz, /api yo'li backendga) — CORS ham kerak emas.
+// Dev rejimida ham shu nisbiy yo'l ishlaydi: vite dev-server proxy'si uni
+// VITE_API_BASE dagi serverga uzatadi (vite.config.ts).
+export const API_URL = import.meta.env.VITE_API_URL || "/api/v1";
 
 export const api = axios.create({
   baseURL: API_URL,
