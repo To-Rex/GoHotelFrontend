@@ -1,5 +1,6 @@
 import { Route } from "react-router-dom"
 
+import { ApiLogsPage } from "./pages/ApiLogsPage"
 import { AppStorePage } from "./pages/AppStorePage"
 import { AuditPage } from "./pages/AuditPage"
 import { FinancePage } from "./pages/FinancePage"
@@ -33,6 +34,7 @@ export function panelRoutes() {
         <Route path="apps" element={<AppStorePage />} />
         <Route path="users" element={<PanelUsersPage />} />
         <Route path="audit" element={<AuditPage />} />
+        <Route path="api-logs" element={<ApiLogsPage />} />
         <Route path="security" element={<SecurityPage />} />
       </Route>
     </>

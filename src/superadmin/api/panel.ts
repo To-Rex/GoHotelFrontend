@@ -614,3 +614,55 @@ export const usePanelGuests = (search?: string) =>
       return Array.isArray(data) ? data : []
     },
   })
+
+/* --- So'rovlar jurnali (oxirgi 500 ta, faqat server xotirasida) ------ */
+
+export interface ApiLogEntry {
+  id: number
+  ts: string
+  method: string
+  path: string
+  status: number
+  duration_ms: number
+  ip?: string | null
+  request_body?: string | null
+  response_body?: string | null
+}
+
+export interface ApiLogList {
+  items: ApiLogEntry[]
+  captured_total: number
+  max_entries: number
+}
+
+/** Jurnal — sahifa ochiq va pauza bosilmagan bo'lsa har 3 soniyada
+    yangilanadi; oldingi natija almashinuv paytida ushlab turiladi. */
+export const useApiLogs = (
+  filters: { method?: string; status?: string; q?: string },
+  live: boolean
+) =>
+  useQuery({
+    queryKey: ["panelApiLogs", filters],
+    queryFn: async () => {
+      const { data } = await panelApi.get<ApiLogList>("/api-logs", {
+        params: {
+          method: filters.method || undefined,
+          status: filters.status || undefined,
+          q: filters.q?.trim() || undefined,
+        },
+      })
+      return data
+    },
+    refetchInterval: live ? 3000 : false,
+    placeholderData: (prev: ApiLogList | undefined) => prev,
+  })
+
+export const useClearApiLogs = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      await panelApi.delete("/api-logs")
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["panelApiLogs"] }),
+  })
+}
