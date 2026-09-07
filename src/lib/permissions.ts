@@ -84,6 +84,20 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   "/profile": [],
   // Xabarlar — barcha xodimlar (farrosh ham) yuboradi/ko'radi
   "/messages": [],
+  // Talab, taklif va shikoyatlar — mehmon bilan ishlaydiganlar: qabulxona
+  // (reservation.*), menejer (shift.force_close), admin (bypass) va alohida
+  // feedback.* berilganlar. Ro'yxat backend feedback_service.VIEW_CODES
+  // bilan bir xil. Farrosh/texnik ko'rmaydi — murojaatda mehmon ismi va
+  // telefoni bor.
+  "/feedback": [
+    "feedback.view",
+    "feedback.create",
+    "feedback.manage",
+    "reservation.create",
+    "reservation.update",
+    "reservation.view",
+    "shift.force_close",
+  ],
 };
 
 // Faqat ADMIN/SUPER_ADMIN uchun ochiq marshrutlar (avvalgi xatti-harakat saqlangan).

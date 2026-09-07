@@ -74,6 +74,8 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
       "service.view",
       "finance.invoice.create",
       "finance.payment.create",
+      // Mehmon murojaatlari kitobi — qabulxona yozadi va javob beradi
+      "feedback.*",
     ],
   },
   {
@@ -93,6 +95,7 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
       "finance.invoice.*",
       "finance.payment.*",
       "expense.*",
+      "feedback.*",
       "employee.view",
       "employee.create",
       "employee.update",

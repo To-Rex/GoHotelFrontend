@@ -21,6 +21,7 @@ import {
   MessageSquare,
   MonitorSmartphone,
   AppWindow,
+  BookOpenText,
   type LucideIcon,
 } from "lucide-react"
 import { applyNavOrder } from "@/features/settings/api/navOrder"
@@ -52,6 +53,7 @@ export const MAIN_NAV_LINKS: NavLink[] = [
   { name: "Kassa hisobotlari", href: "/cash-reports", icon: Banknote },
   { name: "Mening hisobotim", href: "/my-reports", icon: FileBarChart },
   { name: "Xabarlar", href: "/messages", icon: MessageSquare },
+  { name: "Taklif va shikoyatlar", href: "/feedback", icon: BookOpenText },
   { name: "Qurilmalar", href: "/devices", icon: MonitorSmartphone },
   { name: "Ilovalar", href: "/apps", icon: AppWindow },
   { name: "Sozlamalar", href: "/settings", icon: Settings },

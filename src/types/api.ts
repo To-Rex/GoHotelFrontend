@@ -329,3 +329,40 @@ export interface Invoice {
   created_at: string;
   updated_at: string;
 }
+
+// --- Talab, taklif va shikoyatlar (GET /feedback/) ---
+// Qiymatlar backend app/domain/enums.py (FeedbackType/Status/Priority) bilan bir xil
+export type FeedbackType = 'REQUEST' | 'SUGGESTION' | 'COMPLAINT';
+export type FeedbackStatus = 'NEW' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
+export type FeedbackPriority = 'LOW' | 'MEDIUM' | 'HIGH';
+
+/** Mehmon murojaati — kitobdagi bitta yozuv */
+export interface GuestFeedback {
+  id: string;
+  hotel_id: string;
+  branch_id?: string | null;
+  guest_id?: string | null;
+  reservation_id?: string | null;
+  reservation_number?: string | null;
+  room_id?: string | null;
+  /** Nusxa — xona qayta nomlansa ham yozuvda eski raqam qoladi */
+  room_number?: string | null;
+  feedback_type: FeedbackType;
+  status: FeedbackStatus;
+  priority: FeedbackPriority;
+  subject: string;
+  body: string;
+  guest_name?: string | null;
+  guest_phone?: string | null;
+  assigned_to?: string | null;
+  assigned_to_name?: string | null;
+  /** Javob / qaror — yopishda shart */
+  resolution?: string | null;
+  resolved_at?: string | null;
+  resolved_by?: string | null;
+  resolved_by_name?: string | null;
+  created_by: string;
+  created_by_name?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}

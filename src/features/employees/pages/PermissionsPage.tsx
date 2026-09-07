@@ -37,6 +37,7 @@ export const MODULE_LABELS: Record<string, string> = {
   audit: "Audit",
   file: "Fayllar",
   expense: "Xarajatlar",
+  feedback: "Talab, taklif va shikoyatlar",
 }
 
 // Menejer (EMPLOYEE, permission.assign ruxsati bilan) faqat shu shablon
@@ -47,6 +48,11 @@ const HOUSEKEEPER_TEMPLATE = PERMISSION_TEMPLATES.find((t) => t.id === "housekee
 // Ma'lum kodlar uchun tabiiy ibora; ro'yxatda yo'qlari uchun kod bo'laklaridan
 // avtomatik yasaladi (pastdagi uzPermissionLabel)
 export const UZ_PERMISSION_LABELS: Record<string, string> = {
+  // Talab, taklif va shikoyatlar — qabulxona/menejer bu kodlarsiz ham kiradi,
+  // kodlar boshqa rollarga (masalan buxgalter) alohida berish uchun
+  "feedback.view": "Murojaatlarni ko'rish",
+  "feedback.create": "Murojaat kiritish",
+  "feedback.manage": "Murojaatlarni boshqarish (javob, holat, o'chirish)",
   "reservation.create": "Bron yaratish",
   "reservation.update": "Bronni tahrirlash",
   "reservation.view": "Bronlarni ko'rish",
@@ -147,6 +153,7 @@ const UZ_SUBJECTS: Record<string, string> = {
   audit: "Audit",
   file: "Fayl",
   expense: "Xarajat",
+  feedback: "Murojaat",
   status: "holat",
   amenity: "Qulaylik",
 }

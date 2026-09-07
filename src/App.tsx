@@ -28,6 +28,7 @@ import { ProfilePage } from "./features/profile/pages/ProfilePage";
 import { LandingPage } from "./features/landing/pages/LandingPage";
 import { WarehousePage } from "./features/shop/pages/WarehousePage";
 import { MessagesPage } from "./features/messages/pages/MessagesPage";
+import { FeedbackPage } from "./features/feedback/pages/FeedbackPage";
 import { AppsPage as AppStoreDownloadsPage } from "./features/apps/pages/AppsPage";
 import { useAuthStore } from "./store/auth";
 
@@ -88,6 +89,8 @@ function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="warehouse" element={<WarehousePage />} />
           <Route path="messages" element={<MessagesPage />} />
+          {/* Talab, taklif va shikoyatlar — mehmon murojaatlari kitobi */}
+          <Route path="feedback" element={<FeedbackPage />} />
           {/* Boshqaruv bo'limlari (admin/menejer) */}
           <Route path="room-types" element={<RoomTypesPage />} />
           <Route path="amenities" element={<AmenitiesPage />} />
