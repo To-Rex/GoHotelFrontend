@@ -15,10 +15,19 @@ export const useHousekeepingTasks = (status?: string) => {
   });
 };
 
-/* Avto-yakunlash vaqtlari (vazifa turi -> daqiqa, 0 = o'chirilgan) */
+/* Avto-yakunlash: umumiy o'chirgich + vaqtlar (vazifa turi -> daqiqa,
+   0 = shu tur uchun o'chirilgan). `enabled: false` — rejalashtiruvchi hech
+   qanday vazifani o'zi yopmaydi, daqiqalar saqlanib qoladi. */
 export interface HkAutoSettings {
+  enabled: boolean;
   durations: Record<string, number>;
   defaults: Record<string, number>;
+}
+
+export interface HkAutoSettingsPayload {
+  durations?: Record<string, number>;
+  /** Yuborilmasa o'zgarmaydi */
+  enabled?: boolean;
 }
 
 export const useHkAutoSettings = () => {
@@ -36,10 +45,10 @@ export const useHkAutoSettings = () => {
 export const useSaveHkAutoSettings = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (durations: Record<string, number>) => {
+    mutationFn: async (payload: HkAutoSettingsPayload) => {
       const { data } = await api.put<HkAutoSettings>(
         '/housekeeping/auto-complete-settings',
-        { durations }
+        payload
       );
       return data;
     },

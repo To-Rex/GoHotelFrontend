@@ -364,6 +364,10 @@ export const SettingsPage = () => {
   const { data: hkSettings } = useHkAutoSettings()
   const saveHkMutation = useSaveHkAutoSettings()
   const [durations, setDurations] = useState<Record<string, string>>({})
+  // Umumiy o'chirgich: o'chirilganda tizim hech qanday vazifani o'zi
+  // yopmaydi — xona holati faqat farrosh/menejer yakunlaganda o'zgaradi.
+  // Daqiqalar saqlanib qoladi (qayta yoqilganda tiklanadi).
+  const [hkEnabled, setHkEnabled] = useState(true)
   const [hkSaved, setHkSaved] = useState(false)
   const [hkError, setHkError] = useState<string | null>(null)
 
@@ -375,6 +379,8 @@ export const SettingsPage = () => {
         )
       )
     }
+    // Eski backend `enabled` qaytarmasa — yoqilgan deb olinadi
+    if (hkSettings) setHkEnabled(hkSettings.enabled !== false)
   }, [hkSettings])
 
   const onSaveHk = async () => {
@@ -386,7 +392,7 @@ export const SettingsPage = () => {
         const n = parseInt(v, 10)
         payload[k] = isNaN(n) || n < 0 ? 0 : Math.min(n, 1440)
       }
-      await saveHkMutation.mutateAsync(payload)
+      await saveHkMutation.mutateAsync({ durations: payload, enabled: hkEnabled })
       setHkSaved(true)
       window.setTimeout(() => setHkSaved(false), 3000)
     } catch (e) {
@@ -1315,9 +1321,34 @@ export const SettingsPage = () => {
                 icon={Timer}
                 iconClass="bg-primary-50 text-primary-600"
                 title="Vazifalarni avtomatik yakunlash"
-                desc='Belgilangan vaqt ichida qo&apos;lda yakunlanmagan xo&apos;jalik vazifasini tizim o&apos;zi yopadi (jadvalda "avto" belgisi bilan). 0 — o&apos;chirilgan.'
+                desc='Belgilangan vaqt ichida qo&apos;lda yakunlanmagan xo&apos;jalik vazifasini tizim o&apos;zi yopadi (jadvalda "avto" belgisi bilan). 0 — shu tur uchun o&apos;chirilgan.'
               >
-                <div className="grid gap-2.5 grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
+                {/* Umumiy o'chirgich — o'chirilganda quyidagi vaqtlar ishlamaydi,
+                    lekin saqlanib turadi */}
+                <label className="mb-4 flex cursor-pointer items-start gap-2.5">
+                  <Checkbox
+                    checked={hkEnabled}
+                    onCheckedChange={(v) => setHkEnabled(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm">
+                    <b className="font-medium text-gray-900">
+                      Vazifalar avtomatik yakunlansin
+                    </b>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                      {hkEnabled
+                        ? "Quyidagi vaqt o'tgach tizim vazifani o'zi yopadi va xona holatini yangilaydi."
+                        : "O'chirilgan: tizim hech qanday vazifani o'zi yopmaydi. Xona holati faqat farrosh yoki menejer/admin vazifani yakunlaganda o'zgaradi. Vaqtlar saqlanib turadi — qayta yoqilganda tiklanadi."}
+                    </span>
+                  </span>
+                </label>
+                <div
+                  className={cn(
+                    "grid gap-2.5 grid-cols-[repeat(auto-fit,minmax(160px,1fr))]",
+                    !hkEnabled && "pointer-events-none opacity-50"
+                  )}
+                  aria-disabled={!hkEnabled}
+                >
                   {HK_TYPES.map((t) => (
                     <div
                       key={t.key}
@@ -1333,6 +1364,7 @@ export const SettingsPage = () => {
                           min={0}
                           max={1440}
                           className="h-9"
+                          disabled={!hkEnabled}
                           value={durations[t.key] ?? ""}
                           onChange={(e) =>
                             setDurations((d) => ({ ...d, [t.key]: e.target.value }))
