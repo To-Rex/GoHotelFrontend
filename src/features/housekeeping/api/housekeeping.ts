@@ -42,6 +42,45 @@ export const useHkAutoSettings = () => {
   });
 };
 
+/* Vazifa taqsimlash rejimi.
+
+   `queue`  — navbat bo'yicha bitta farroshga biriktiriladi (standart);
+   `claim`  — biriktirilmaydi, ish vaqtidagi barcha farroshlarga ko'rinadi
+              va kim birinchi "Boshlash"ni bossa, o'shanga o'tadi. */
+export type HkAssignMode = 'queue' | 'claim';
+
+export interface HkAssignSettings {
+  mode: HkAssignMode;
+  modes: HkAssignMode[];
+  default: HkAssignMode;
+}
+
+export const useHkAssignMode = () => {
+  return useQuery({
+    queryKey: ['hkAssignMode'],
+    queryFn: async () => {
+      const { data } = await api.get<HkAssignSettings>(
+        '/housekeeping/assignment-settings'
+      );
+      return data;
+    },
+  });
+};
+
+export const useSaveHkAssignMode = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (mode: HkAssignMode) => {
+      const { data } = await api.put<HkAssignSettings>(
+        '/housekeeping/assignment-settings',
+        { mode }
+      );
+      return data;
+    },
+    onSuccess: (data) => qc.setQueryData(['hkAssignMode'], data),
+  });
+};
+
 export const useSaveHkAutoSettings = () => {
   const qc = useQueryClient();
   return useMutation({

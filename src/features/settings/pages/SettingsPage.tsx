@@ -47,7 +47,10 @@ import {
 } from "../api/bookingDefaults"
 import {
   useHkAutoSettings,
+  useHkAssignMode,
+  useSaveHkAssignMode,
   useSaveHkAutoSettings,
+  type HkAssignMode,
 } from "@/features/housekeeping/api/housekeeping"
 import { ChecklistTemplateEditor } from "@/features/housekeeping/components/ChecklistTemplateEditor"
 import { useShiftSettings, useSaveShiftSettings } from "@/features/shifts/api/shifts"
@@ -168,10 +171,10 @@ const SETTING_GROUPS = [
   {
     key: "housekeeping",
     label: "Xo'jalik ishlari",
-    desc: "Farrosh bajaradigan ish bandlari va vazifalarni avtomatik yakunlash vaqtlari",
+    desc: "Vazifalarni farroshlarga taqsimlash, ish bandlari va avtomatik yakunlash vaqtlari",
     icon: Timer,
     iconClass: "bg-primary-50 text-primary-600",
-    cards: ["checklist-templates", "auto-complete"],
+    cards: ["assign-mode", "checklist-templates", "auto-complete"],
   },
   {
     key: "cameras",
@@ -359,6 +362,30 @@ export const SettingsPage = () => {
 
   const user = useAuthStore((s) => s.user)
   const resetMutation = useResetData()
+
+  // --- Vazifa taqsimlash rejimi (navbat / hammaga) ---
+  const { data: assignSettings } = useHkAssignMode()
+  const saveAssignMutation = useSaveHkAssignMode()
+  const [assignMode, setAssignMode] = useState<HkAssignMode>("queue")
+  const [assignSaved, setAssignSaved] = useState(false)
+  const [assignError, setAssignError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Eski backend bu endpointni bilmasa — standart "queue" qoladi
+    if (assignSettings?.mode) setAssignMode(assignSettings.mode)
+  }, [assignSettings])
+
+  const onSaveAssignMode = async () => {
+    setAssignError(null)
+    setAssignSaved(false)
+    try {
+      await saveAssignMutation.mutateAsync(assignMode)
+      setAssignSaved(true)
+      window.setTimeout(() => setAssignSaved(false), 3000)
+    } catch (e) {
+      setAssignError(apiErrorMessage(e))
+    }
+  }
 
   // --- Vazifalarni avtomatik yakunlash vaqtlari ---
   const { data: hkSettings } = useHkAutoSettings()
@@ -1304,6 +1331,54 @@ export const SettingsPage = () => {
 
           {group === "housekeeping" && (
             <>
+              {/* Vazifa qaysi farroshga tushishi */}
+              <SettingCard
+                id="assign-mode"
+                icon={Users}
+                iconClass="bg-violet-50 text-violet-600"
+                title="Vazifalarni taqsimlash"
+                desc="Tozalash vazifasi yaratilganda u qaysi farroshga tushadi. Ikkala rejimda ham faqat ish vaqtidagi farroshlar hisobga olinadi."
+              >
+                <div className="grid gap-3 md:grid-cols-2">
+                  {[
+                    {
+                      key: "queue" as const,
+                      title: "Navbat bilan biriktirish",
+                      text: "Vazifa bitta farroshga biriktiriladi: avval bo'sh turgani, band bo'lsa eng kam vazifalisi, teng bo'lsa navbatdagisi. Xabar faqat o'shanga boradi.",
+                    },
+                    {
+                      key: "claim" as const,
+                      title: "Hammaga yuborish — kim birinchi olsa",
+                      text: "Vazifa biriktirilmaydi: ish vaqtidagi barcha farroshlarga xabar va ro'yxatda ko'rinadi. Kim birinchi «Boshlash»ni bossa, vazifa o'shanga o'tadi.",
+                    },
+                  ].map((m) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => setAssignMode(m.key)}
+                      className={cn(
+                        "relative rounded-xl border p-4 text-left transition-all",
+                        assignMode === m.key
+                          ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                          : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                      )}
+                    >
+                      {assignMode === m.key && (
+                        <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary-600" />
+                      )}
+                      <p className="pr-6 text-sm font-semibold text-gray-900">{m.title}</p>
+                      <p className="mt-1 text-xs leading-snug text-gray-600">{m.text}</p>
+                    </button>
+                  ))}
+                </div>
+                <SaveRow
+                  onSave={onSaveAssignMode}
+                  pending={saveAssignMutation.isPending}
+                  saved={assignSaved}
+                  error={assignError}
+                />
+              </SettingCard>
+
               {/* Farrosh mobil ilovada belgilaydigan ish bandlari */}
               <SettingCard
                 id="checklist-templates"
