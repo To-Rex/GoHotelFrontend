@@ -174,7 +174,15 @@ export function occupantsOf(res: RoomReservation): ReservationOccupant[] {
   }
   for (const c of res.companions || []) {
     const name = (c?.name || "").trim()
-    if (name) fallback.push({ guest_id: c.guest_id, name, is_primary: false })
+    if (!name) continue
+    // Turish davomida ketgan hamroh — belgisi bilan qoladi
+    fallback.push({
+      guest_id: c.guest_id,
+      name,
+      is_primary: false,
+      left_at: c.left_at ?? null,
+      is_present: !c.left_at,
+    })
   }
   return fallback
 }

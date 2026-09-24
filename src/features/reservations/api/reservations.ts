@@ -357,3 +357,95 @@ export const useCancelReservation = () => {
     },
   });
 };
+
+/* ------------------------------------------ hamrohlar (turish davomida) --
+
+   Mehmon kirib ketgach hamroh ketishi, o'rniga boshqasi kelishi mumkin.
+   Bron shartnomasi (sana, narx, mehmonlar soni) o'zgarmaydi — pul
+   harakati yo'q, shuning uchun kassa/hisob-faktura keshi tegilmaydi.
+   Hammasi yangilangan bronni qaytaradi — ochiq modal shu bilan yangilanadi.
+   Kesh: bronlar ro'yxati, xona bandlovlari (occupants) va mehmon tarixi. */
+
+const invalidateCompanionViews = (queryClient: ReturnType<typeof useQueryClient>) => {
+  queryClient.invalidateQueries({ queryKey: ['reservations'] });
+  queryClient.invalidateQueries({ queryKey: ['roomReservations'] });
+  queryClient.invalidateQueries({ queryKey: ['guestHistory'] });
+};
+
+interface CompanionTarget {
+  id: string;
+  guestId: string;
+  /** SUPER_ADMIN uchun — bronning mehmonxonasi */
+  hotelId?: string;
+}
+
+const companionParams = (hotelId?: string) => ({
+  params: hotelId ? { hotel_id: hotelId } : {},
+});
+
+/** Yangi hamroh — bo'sh joyga yoki ketgan o'rniga (CONFIRMED / CHECKED_IN) */
+export const useAddCompanion = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, guestId, hotelId }: CompanionTarget) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${id}/companions`,
+        { guest_id: guestId },
+        companionParams(hotelId)
+      );
+      return data;
+    },
+    onSuccess: () => invalidateCompanionViews(queryClient),
+  });
+};
+
+/** Hamroh xonadan ketdi — yozuv qoladi, "ketdi" belgisi qo'yiladi */
+export const useCompanionLeave = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, guestId, hotelId }: CompanionTarget) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${id}/companions/${guestId}/leave`,
+        null,
+        companionParams(hotelId)
+      );
+      return data;
+    },
+    onSuccess: () => invalidateCompanionViews(queryClient),
+  });
+};
+
+/** "Ketdi" belgisini bekor qilish — adashib bosilgan bo'lsa */
+export const useCompanionReturn = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, guestId, hotelId }: CompanionTarget) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${id}/companions/${guestId}/return`,
+        null,
+        companionParams(hotelId)
+      );
+      return data;
+    },
+    onSuccess: () => invalidateCompanionViews(queryClient),
+  });
+};
+
+/** Ro'yxatdan olib tashlash — faqat kirishdan oldin (CONFIRMED) */
+export const useRemoveCompanion = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, guestId, hotelId }: CompanionTarget) => {
+      const { data } = await api.delete<Reservation>(
+        `/reservations/${id}/companions/${guestId}`,
+        companionParams(hotelId)
+      );
+      return data;
+    },
+    onSuccess: () => invalidateCompanionViews(queryClient),
+  });
+};

@@ -62,6 +62,11 @@ interface Props {
   incomingScan?: CompanionScan | null
   onIncomingScanHandled?: () => void
   onError: (message: string) => void
+  /** "Hamrohlar (0/1)" sarlavhasini yashirish — bron boshqarish panelida
+      o'zining sarlavhasi bor (turish davomida hamroh qo'shish) */
+  hideHeader?: boolean
+  /** Bo'sh joy matni; standart "N-mehmon tanlanmagan" */
+  slotLabel?: (index: number) => string
 }
 
 const guestName = (g: any) =>
@@ -79,6 +84,8 @@ export const CompanionGuests = ({
   incomingScan,
   onIncomingScanHandled,
   onError,
+  hideHeader = false,
+  slotLabel,
 }: Props) => {
   const { can } = usePermissions()
   const canCreateGuest = can("guest.create")
@@ -337,15 +344,17 @@ export const CompanionGuests = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <label className="text-sm font-medium text-gray-700">
-          Hamrohlar{" "}
-          <span className={cn("text-xs", required ? "text-red-500" : "text-gray-400")}>
-            ({value.length}/{slots}
-            {required ? " — majburiy" : ""})
-          </span>
-        </label>
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-sm font-medium text-gray-700">
+            Hamrohlar{" "}
+            <span className={cn("text-xs", required ? "text-red-500" : "text-gray-400")}>
+              ({value.length}/{slots}
+              {required ? " — majburiy" : ""})
+            </span>
+          </label>
+        </div>
+      )}
 
       {Array.from({ length: slots }).map((_, index) => {
         const picked = value[index]
@@ -418,7 +427,7 @@ export const CompanionGuests = ({
             {!isActive ? (
               <div className="flex items-center gap-2">
                 <span className="min-w-0 flex-1 truncate text-sm text-gray-500">
-                  {index + 2}-mehmon tanlanmagan
+                  {slotLabel ? slotLabel(index) : `${index + 2}-mehmon tanlanmagan`}
                 </span>
                 <button
                   type="button"

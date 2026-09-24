@@ -54,6 +54,7 @@ import {
 import { blockingTaskMap, roomBookingBlock } from "@/features/rooms/lib/roomBookable"
 import { useGuests } from "@/features/guests/api/guests"
 import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
+import { ReservationCompanionsPanel } from "../components/ReservationCompanionsPanel"
 import {
   NewBookingDialog,
   type NewBookingRequest,
@@ -1652,6 +1653,23 @@ export function BookingPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* XONADAGI MEHMONLAR — asosiy mehmon va hamrohlar. Kirgan
+                      bronda hamroh ketganini belgilash va bo'shagan joyga
+                      yangisini joylashtirish shu yerda: bron shartnomasi
+                      (sana, narx, mehmonlar soni) o'zgarmaydi, shuning uchun
+                      tahrirlash rejimidan alohida. Server yangilangan bronni
+                      qaytaradi — ochiq oyna eskirmasin */}
+                  {!editMode && !cancelMode && (
+                    <ReservationCompanionsPanel
+                      reservation={res}
+                      mainGuestName={getGuestName(res)}
+                      guests={guests}
+                      canManage={canUpdate && !isCleaner}
+                      branchId={roomObj?.branch_id}
+                      onUpdated={(updated) => setSelectedReservation(updated)}
+                    />
+                  )}
 
                   {/* MEHMON KELDI (check-in) — tasdiqlangan bron, kirish sanasi
                       kelgan bo'lsa. Bron "Kirgan" (CHECKED_IN), xona esa

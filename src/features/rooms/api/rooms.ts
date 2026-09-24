@@ -286,6 +286,12 @@ export interface ReservationOccupant {
   notes?: string | null;
   /** Yuz biriktirilgan — kamera taniydi */
   has_face?: boolean;
+  /** Turish davomidagi harakat (hamrohlarda): qo'shilgan / ketgan vaqti.
+      `is_present` — hozir xonadami; asosiy mehmonda va eski javobda
+      kelmasa — ichkarida deb olinadi */
+  added_at?: string | null;
+  left_at?: string | null;
+  is_present?: boolean;
 }
 
 export interface RoomReservation {
@@ -310,8 +316,15 @@ export interface RoomReservation {
   notes?: string | null;
   cancelled_reason?: string | null;
   discount_percent?: number;
-  /** Xonada turgan qolgan mehmonlar */
-  companions?: Array<{ guest_id: string; name?: string | null }> | null;
+  /** Xonada turgan qolgan mehmonlar. Yozuv o'chirilmaydi: turish davomida
+      ketgani `left_at` bilan belgilanadi, keyin qo'shilgani — `added_at` */
+  companions?: Array<{
+    guest_id: string;
+    name?: string | null;
+    added_at?: string | null;
+    left_at?: string | null;
+    returned_at?: string | null;
+  }> | null;
   created_at: string;
 
   /* Tafsilot oynasi uchun: kim, qachon, qayerda. Ro'yxatning o'zi bularsiz

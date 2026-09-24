@@ -99,9 +99,27 @@ export interface Reservation {
   checkout_requested_at?: string | null;
   /** Xona ko'chirishlar auditi — kim, qachon, qaysi xonadan qaysinisiga */
   room_moves?: RoomMove[] | null;
+  /** Hamrohlar — bron yaratilganda va turish davomida qo'shilganlar.
+      Yozuv o'chirilmaydi: ketgani `left_at` bilan belgilanadi. */
+  companions?: ReservationCompanion[] | null;
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+/** Bron hamrohi. Kirish rasmiylashtirilgach xonadagilar o'zgarishi mumkin:
+    `left_at` — ketdi (yozuv tarix uchun qoladi), `added_at` — turish
+    davomida qo'shildi, `returned_at` — ketib yana qaytdi. Eski yozuvlarda
+    faqat guest_id va name bor — ular "ichkarida" deb hisoblanadi. */
+export interface ReservationCompanion {
+  guest_id: string;
+  name?: string | null;
+  added_at?: string | null;
+  added_by?: string | null;
+  left_at?: string | null;
+  left_by?: string | null;
+  returned_at?: string | null;
+  returned_by?: string | null;
 }
 
 export interface RoomMove {

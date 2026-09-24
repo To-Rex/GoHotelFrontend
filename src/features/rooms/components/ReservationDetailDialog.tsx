@@ -181,8 +181,18 @@ const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
       .filter(Boolean)
       .join(" ") || null
 
+  // Turish davomida xonadan ketgan hamroh: yozuv tarix uchun qoladi,
+  // lekin hozir ichkarida emas — kartochka xiraroq, belgisi bilan
+  const departed = person.is_present === false
+  const leftAt = departed ? formatDateTime(person.left_at) : null
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-2.5">
+    <div
+      className={cn(
+        "rounded-lg border border-gray-200 bg-gray-50/60 p-2.5",
+        departed && "opacity-70"
+      )}
+    >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className="font-semibold leading-tight text-gray-900">
           {person.name || "Ism ko'rsatilmagan"}
@@ -197,6 +207,14 @@ const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
         >
           {person.is_primary ? "Asosiy mehmon" : "Hamroh"}
         </span>
+        {departed && (
+          <span
+            title="Turish davomida xonadan ketgan — o'rniga boshqa hamroh joylashishi mumkin"
+            className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"
+          >
+            Ketdi{leftAt ? ` · ${leftAt}` : ""}
+          </span>
+        )}
         {person.has_face && (
           <span
             title="Yuz biriktirilgan — kamera taniydi"

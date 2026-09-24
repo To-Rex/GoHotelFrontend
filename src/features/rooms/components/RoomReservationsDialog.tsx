@@ -556,7 +556,8 @@ const ReservationItem = ({
         <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-gray-500">
           <Users className="h-3.5 w-3.5 text-gray-400" />
           {res.companions
-            .map((c) => c.name || "Ismsiz mehmon")
+            // Turish davomida ketgani ham ro'yxatda qoladi — belgisi bilan
+            .map((c) => (c.name || "Ismsiz mehmon") + (c.left_at ? " (ketdi)" : ""))
             .join(", ")}
         </p>
       )}
