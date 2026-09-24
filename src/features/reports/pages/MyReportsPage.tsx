@@ -42,6 +42,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { buildDatePresets, resolveDateRange } from "@/lib/datePresets"
+import { usePermissions } from "@/lib/permissions"
+import { effectivePresetKey, visiblePresets } from "../lib/reportPeriod"
 
 /* Shaxsiy hisobot: joriy xodimning tanlangan kunlardagi ishi.
 
@@ -238,16 +240,30 @@ export const MyReportsPage = () => {
     initialTableState("expense_date")
   )
 
-  const presets = useMemo(
+  const allPresets = useMemo(
     () =>
       buildDatePresets(new Date(todayStr), { withYesterday: true }).filter(
         (p) => p.key !== "all"
       ),
     [todayStr]
   )
+
+  /* Davr tanlash kimga qanchalik ochiq. Qabulxona va boshqa xodimlar faqat
+     o'z smenasini ko'radi — "Bugun" va "Kecha"; haftalik/oylik kesim va
+     ixtiyoriy sana oralig'i administrator va menejerga (loyihada menejer
+     belgisi — `shift.force_close`, ShiftPanel bilan bir xil). `can` ruxsatlar
+     hali kelmaganda ochiq qaytaradi — menyu bilan bir xil qoida. */
+  const { isAdmin, can } = usePermissions()
+  const fullRangeAccess = isAdmin || can("shift.force_close")
+  const presets = useMemo(
+    () => visiblePresets(allPresets, fullRangeAccess),
+    [allPresets, fullRangeAccess]
+  )
+  // Cheklangan xodimda yopiq davr/qo'lda oraliq "Bugun"ga qaytadi
+  const activeKey = effectivePresetKey(presetKey, presets, fullRangeAccess)
   const { from: dateFrom, to: dateTo } = resolveDateRange(
     presets,
-    presetKey,
+    activeKey,
     custom
   )
 
@@ -449,7 +465,9 @@ export const MyReportsPage = () => {
         </div>
       </div>
 
-      {/* Davr tanlash: tez tugmalar + "dan / gacha" sanalar */}
+      {/* Davr tanlash: tez tugmalar + "dan / gacha" sanalar.
+          Qabulxona va boshqa xodimlarga faqat "Bugun" va "Kecha" ko'rinadi;
+          sana maydonlari — administrator va menejerga. */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-wrap gap-1.5">
           {presets.map((p) => (
@@ -457,10 +475,10 @@ export const MyReportsPage = () => {
               key={p.key}
               type="button"
               onClick={() => selectPreset(p)}
-              aria-pressed={presetKey === p.key}
+              aria-pressed={activeKey === p.key}
               className={cn(
                 "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
-                presetKey === p.key
+                activeKey === p.key
                   ? "border-primary-600 bg-primary-50 text-primary-700"
                   : "border-gray-200 text-gray-600 hover:bg-gray-50"
               )}
@@ -469,28 +487,30 @@ export const MyReportsPage = () => {
             </button>
           ))}
         </div>
-        <div className="flex items-end gap-2">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Sanadan</label>
-            <Input
-              type="date"
-              className="w-40"
-              value={dateFrom}
-              max={dateTo || undefined}
-              onChange={(e) => editRange({ from: e.target.value, to: dateTo })}
-            />
+        {fullRangeAccess && (
+          <div className="flex items-end gap-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-500">Sanadan</label>
+              <Input
+                type="date"
+                className="w-40"
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(e) => editRange({ from: e.target.value, to: dateTo })}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-500">Sanagacha</label>
+              <Input
+                type="date"
+                className="w-40"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(e) => editRange({ from: dateFrom, to: e.target.value })}
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Sanagacha</label>
-            <Input
-              type="date"
-              className="w-40"
-              value={dateTo}
-              min={dateFrom || undefined}
-              onChange={(e) => editRange({ from: dateFrom, to: e.target.value })}
-            />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Ma'lumot kelmasa — nol emas, sabab ko'rsatiladi */}
