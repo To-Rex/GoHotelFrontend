@@ -13,7 +13,12 @@ import {
 } from "lucide-react"
 import { useShopSales, type ShopSale } from "@/features/shop/api/shop"
 import { DebtorsPanel } from "@/features/finance/components/DebtorsPanel"
-import { useMyReport, METHOD_COLUMNS } from "../api/myReport"
+import {
+  useMyReport,
+  METHOD_COLUMNS,
+  METHOD_LABEL,
+  paymentMethodsLabel,
+} from "../api/myReport"
 import { SortableHead, TablePager, TableSearch } from "@/components/ui/table-tools"
 import {
   initialTableState,
@@ -320,6 +325,8 @@ export const MyReportsPage = () => {
           (r) => r.guest_name,
           (r) => r.reservation_number,
           (r) => r.room_number,
+          // "naqd" deb yozilsa naqd to'langan bronlar topilsin
+          (r) => paymentMethodsLabel(r),
         ],
         sort: {
           created_at: (r) => r.created_at,
@@ -329,6 +336,7 @@ export const MyReportsPage = () => {
           status: (r) => r.status,
           total_amount: (r) => r.total_amount,
           paid_amount: (r) => r.paid_amount,
+          payment_method: (r) => paymentMethodsLabel(r),
         },
       }),
     [myReservations, resTable]
@@ -813,6 +821,11 @@ export const MyReportsPage = () => {
                                 <p className="text-[11px] text-muted-foreground">
                                   To'langan: {fmt(r.paid_amount)}
                                 </p>
+                                {paymentMethodsLabel(r) && (
+                                  <p className="text-[11px] text-muted-foreground">
+                                    To'lov: {paymentMethodsLabel(r)}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -833,6 +846,9 @@ export const MyReportsPage = () => {
                               </SortHead>
                               <SortHead {...resHead} column="paid_amount" align="right">
                                 To'langan
+                              </SortHead>
+                              <SortHead {...resHead} column="payment_method">
+                                To'lov turi
                               </SortHead>
                             </TableRow>
                           </TableHeader>
@@ -873,6 +889,32 @@ export const MyReportsPage = () => {
                                 </TableCell>
                                 <TableCell className="whitespace-nowrap text-right text-sm">
                                   {fmt(r.paid_amount)}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {/* Bitta usul — nomi; bir nechta (bo'lib to'langan) —
+                                      har biri o'z summasi bilan, kattasi birinchi */}
+                                  {!r.payment_methods?.length ? (
+                                    <span className="text-muted-foreground">—</span>
+                                  ) : r.payment_methods.length === 1 ? (
+                                    <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">
+                                      {METHOD_LABEL[r.payment_methods[0].method] ??
+                                        r.payment_methods[0].method}
+                                    </span>
+                                  ) : (
+                                    <div className="flex flex-wrap gap-1">
+                                      {r.payment_methods.map((p) => (
+                                        <span
+                                          key={p.method}
+                                          className="inline-flex whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium"
+                                        >
+                                          {METHOD_LABEL[p.method] ?? p.method}{" "}
+                                          <span className="ml-1 text-muted-foreground">
+                                            {fmt(p.amount)}
+                                          </span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </TableCell>
                               </TableRow>
                             ))}

@@ -37,6 +37,17 @@ export const METHOD_COLUMNS: Array<{ key: keyof MethodBreakdown; label: string }
   { key: "other", label: "Boshqa" },
 ]
 
+/** Usul kodi → to'lov oynasidagi nomi ("cash" → "Naqd pul") */
+export const METHOD_LABEL: Record<string, string> = Object.fromEntries(
+  METHOD_COLUMNS.map((c) => [c.key, c.label])
+)
+
+/** Bron bo'yicha bitta to'lov usuli va shu usulda to'langan summa */
+export interface ReservationPaymentMethod {
+  method: keyof MethodBreakdown
+  amount: number
+}
+
 export interface MyReportReservationRow {
   id: string
   reservation_number: string | null
@@ -48,6 +59,21 @@ export interface MyReportReservationRow {
   check_in_date: string | null
   check_out_date: string | null
   created_at: string
+  /** To'lov turi(lari) — summasi kattasi birinchi; to'lanmagan bron — bo'sh.
+   *  `paid_amount` bilan bir xil manba: bronning barcha to'lovlari.
+   *  Eski backend bu maydonni bermasa — undefined, ustunda "—" ko'rinadi. */
+  payment_methods?: ReservationPaymentMethod[]
+}
+
+/** "To'lov turi" matni: bitta usul — nomi; bir nechta — "Naqd pul · Bank
+ *  kartasi" (summa kattasi birinchi); to'lov yo'q — null. Jadvaldagi
+ *  qidiruv va saralash ham shu matn bo'yicha. */
+export function paymentMethodsLabel(
+  row: Pick<MyReportReservationRow, "payment_methods">
+): string | null {
+  const list = row.payment_methods ?? []
+  if (list.length === 0) return null
+  return list.map((p) => METHOD_LABEL[p.method] ?? p.method).join(" · ")
 }
 
 export interface MyReportExpenseRow {
