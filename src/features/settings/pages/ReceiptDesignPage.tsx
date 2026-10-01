@@ -292,7 +292,7 @@ export const ReceiptDesignPage = () => {
                 label={tr("QR-kod havolasi")}
                 value={form.qr_url}
                 onChange={(v) => set("qr_url", v)}
-                placeholder="https://instagram.com/mehmonxona"
+                placeholder={tr("https://instagram.com/mehmonxona")}
                 hint={tr("Bo'sh bo'lmasa chek oxirida QR-kod chiqadi")}
                 maxLength={300}
               />
@@ -400,7 +400,7 @@ export const ReceiptDesignPage = () => {
                 <>
                   <div className="flex justify-between gap-2">
                     <span>{tr("Bron:")}</span>
-                    <span>RES-NAMUNA</span>
+                    <span>{tr("RES-NAMUNA")}</span>
                   </div>
                   <div className="flex justify-between gap-2">
                     <span>{tr("Mehmon:")}</span>

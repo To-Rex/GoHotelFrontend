@@ -654,7 +654,7 @@ export const LandingPage = () => {
           <Link
             to="/login"
             className={cn(
-              "rounded-full px-4 py-2 text-sm font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 sm:px-5",
+              "whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 sm:px-5",
               night
                 ? "bg-white text-zinc-900 shadow-white/10"
                 : "bg-zinc-900 text-white shadow-zinc-900/20"

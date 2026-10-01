@@ -1279,11 +1279,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex flex-wrap items-center gap-2 pr-8">
             <ScanLine size={18} />{" "}{tr("Hujjat skaneri")}
             {/* Faol rejim ko'rinib turadi — sozlama ta'sir qilyaptimi,
                 taxmin qilib o'tirilmaydi */}
-            <span className="ml-auto flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+            <span className="ml-auto flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium text-muted-foreground">
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5",

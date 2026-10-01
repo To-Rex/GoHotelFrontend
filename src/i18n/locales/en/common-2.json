@@ -94,7 +94,7 @@
   "Xona *": "Room *",
   "Izoh...": "Notes...",
   "Xonani almashtirish": "Change room",
-  "Boshqaruv paneli": "Dashboard",
+  "Boshqaruv paneli": "Control panel",
   "Kirilgan": "Checked in",
   "Soatlik": "Hourly",
   "Smenalar tarixi": "Shift history",
@@ -220,5 +220,6 @@
   "Ortiqcha:": "Overpaid:",
   "{{money}} So'm": "{{money}} UZS",
   "To'liq to'langan": "Paid in full",
-  "Holat:": "Status:"
+  "Holat:": "Status:",
+  "RES-NAMUNA": "RES-SAMPLE"
 }

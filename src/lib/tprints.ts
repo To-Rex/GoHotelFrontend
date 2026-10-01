@@ -300,7 +300,7 @@ export const printSampleReceipt = async (
   const sample: ShopSale = {
     id: "namuna01-0000-0000-0000-000000000000",
     reservation_id: null,
-    reservation_number: "RES-NAMUNA",
+    reservation_number: tr("RES-NAMUNA"),
     guest_name: tr("Jasur Toshmatov"),
     total_amount: 57000,
     payment_method: "CASH",

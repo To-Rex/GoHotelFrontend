@@ -54,7 +54,7 @@
   "Hozircha muammo xabari yo'q": "No problem reports yet",
   "Shoshilinch": "Urgent",
   "Vazifani bekor qilasizmi?": "Cancel the task?",
-  "Tozalash, ta'mirlash va boshqa vazifalar · ko'rsatilmoqda: {{count}} ta": "Cleaning, maintenance and other tasks · showing: {{count}}",
+  "Tozalash, ta'mirlash va boshqa vazifalar · ko'rsatilmoqda: {{count}} ta": "Cleaning, maintenance and other tasks · {{count}} shown",
   "Xabar yuborish": "Send message",
   "Chiqish va tozalash": "Check-outs and cleaning",
   "Vazifa qo'shish": "Add task",
