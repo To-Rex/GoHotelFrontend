@@ -92,6 +92,9 @@ export interface Reservation {
   payment_status: string;
   discount_amount: number;
   discount_percent: number;
+  /** Qimmatroq xonaga ko'chirishda berilgan chegirma (so'm), bron
+      chegirmasidan alohida. Eski server javobida bo'lmasligi mumkin */
+  move_discount_amount?: number;
   notes?: string;
   cancelled_reason?: string;
   cancelled_at?: string;
@@ -129,6 +132,14 @@ export interface RoomMove {
   to_room_number?: string | null;
   old_total: number;
   new_total: number;
+  /** Shu ko'chirishning narx farqi (eski yozuvlarda yo'q) */
+  price_increase?: number;
+  /** Shu ko'chirishda berilgan chegirma, so'm (eski yozuvlarda yo'q) */
+  discount_amount?: number;
+  /** Ko'chirishdan keyingi jami ko'chirish chegirmasi (eski yozuvlarda yo'q) */
+  move_discount_total?: number;
+  /** Chegirma qaysi (arzon) xona narxidan hisoblangani — undan kam to'lanmaydi */
+  discount_baseline_price?: number | null;
   moved_by: string;
   moved_by_name?: string | null;
   moved_at: string;

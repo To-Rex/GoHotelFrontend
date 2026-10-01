@@ -274,5 +274,14 @@
   "Ha, ko'chirish": "Да, перенести",
   "{{room}} xona · {{date}} — bronlar ({{count}})": "Номер {{room}} · {{date}} — брони ({{count}})",
   "Bronlar topilmadi": "Брони не найдены",
-  "summa o'zgarmadi": "сумма не изменилась"
+  "summa o'zgarmadi": "сумма не изменилась",
+  "Chegirma summasini to'g'ri kiriting": "Введите сумму скидки правильно",
+  "Chegirma: −{{amount}} So'm": "Скидка: −{{amount}} сум",
+  "Chegirma (narx farqidan)": "Скидка (с разницы в цене)",
+  "farq {{increase}} · ko'pi bilan {{max}} So'm": "разница {{increase}} · не более {{max}} сум",
+  "Farqning yarmi": "Половина разницы",
+  "Eng ko'p": "Максимум",
+  "Chegirmasiz": "Без скидки",
+  "Xona almashtirishda chegirma berish o'chirilgan": "Скидка при смене номера отключена",
+  "· chegirma {{amount}} So'm": "· скидка {{amount}} сум"
 }

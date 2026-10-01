@@ -160,5 +160,8 @@
   "Masalan: Standart, Lyuks": "E.g. Standard, Deluxe",
   "Sig'im (kishi) *": "Capacity (guests) *",
   "Asosiy narx (So'm) *": "Base price (UZS) *",
-  "Masalan: 500000": "E.g. 500000"
+  "Masalan: 500000": "E.g. 500000",
+  "Xona almashtirish chegirmasi": "Room change discount",
+  "{{amount}} so'm": "{{amount}} UZS",
+  "· chegirma {{amount}} so'm": "· discount {{amount}} UZS"
 }

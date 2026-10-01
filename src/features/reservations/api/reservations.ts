@@ -156,15 +156,31 @@ export const useCheckInReservation = () => {
   });
 };
 
-// Bronni boshqa xonaga ko'chirish (vaqt oynasi va bandlik backend'da tekshiriladi)
+// Bronni boshqa xonaga ko'chirish (vaqt oynasi va bandlik backend'da tekshiriladi).
+// `discountAmount` — qimmatroq xonaga o'tishda narx farqidan chegirma (so'm);
+// 0 yoki berilmasa so'rov avvalgidek faqat new_room_id bilan ketadi
+export const moveRoomBody = (newRoomId: string, discountAmount?: number) =>
+  discountAmount && discountAmount > 0
+    ? { new_room_id: newRoomId, discount_amount: discountAmount }
+    : { new_room_id: newRoomId };
+
 export const useMoveRoom = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, newRoomId }: { id: string; newRoomId: string }) => {
-      const { data } = await api.post<Reservation>(`/reservations/${id}/move-room`, {
-        new_room_id: newRoomId,
-      });
+    mutationFn: async ({
+      id,
+      newRoomId,
+      discountAmount,
+    }: {
+      id: string;
+      newRoomId: string;
+      discountAmount?: number;
+    }) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${id}/move-room`,
+        moveRoomBody(newRoomId, discountAmount)
+      );
       return data;
     },
     onSuccess: () => {

@@ -265,5 +265,14 @@
   "Ha, ko'chirish": "Yes, move",
   "{{room}} xona · {{date}} — bronlar ({{count}})": "Room {{room}} · {{date}} — bookings ({{count}})",
   "Bronlar topilmadi": "No bookings found",
-  "summa o'zgarmadi": "amount unchanged"
+  "summa o'zgarmadi": "amount unchanged",
+  "Chegirma summasini to'g'ri kiriting": "Enter a valid discount amount",
+  "Chegirma: −{{amount}} So'm": "Discount: −{{amount}} UZS",
+  "Chegirma (narx farqidan)": "Discount (off the price difference)",
+  "farq {{increase}} · ko'pi bilan {{max}} So'm": "difference {{increase}} · up to {{max}} UZS",
+  "Farqning yarmi": "Half the difference",
+  "Eng ko'p": "Maximum",
+  "Chegirmasiz": "No discount",
+  "Xona almashtirishda chegirma berish o'chirilgan": "Discounts on room changes are turned off",
+  "· chegirma {{amount}} So'm": "· discount {{amount}} UZS"
 }

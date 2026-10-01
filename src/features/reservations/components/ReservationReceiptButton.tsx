@@ -25,6 +25,9 @@ export interface ReceiptReservation {
   total_amount: number
   paid_amount: number
   discount_amount: number
+  /** Qimmatroq xonaga ko'chirishda berilgan chegirma — chekda umumiy
+   *  chegirmaga qo'shiladi (eski server javobida bo'lmasligi mumkin) */
+  move_discount_amount?: number | null
   created_at: string
   status: string
 }
@@ -106,7 +109,9 @@ export const ReservationReceiptButton = ({
       children: reservation.children,
       total_amount: Number(reservation.total_amount || 0),
       paid_amount: Number(reservation.paid_amount || 0),
-      discount_amount: Number(reservation.discount_amount || 0),
+      discount_amount:
+        Number(reservation.discount_amount || 0) +
+        Number(reservation.move_discount_amount || 0),
       services,
       created_at: reservation.created_at,
       created_by_name: createdByName,

@@ -316,6 +316,8 @@ export interface RoomReservation {
   notes?: string | null;
   cancelled_reason?: string | null;
   discount_percent?: number;
+  /** Qimmatroq xonaga ko'chirishda berilgan chegirma (so'm) */
+  move_discount_amount?: number;
   /** Xonada turgan qolgan mehmonlar. Yozuv o'chirilmaydi: turish davomida
       ketgani `left_at` bilan belgilanadi, keyin qo'shilgani — `added_at` */
   companions?: Array<{
@@ -348,6 +350,8 @@ export interface RoomReservation {
     to_room_number?: string | null;
     old_total?: number | null;
     new_total?: number | null;
+    /** Shu ko'chirishda berilgan chegirma, so'm (eski yozuvlarda yo'q) */
+    discount_amount?: number | null;
     moved_by_name?: string | null;
     moved_at?: string | null;
   }> | null;

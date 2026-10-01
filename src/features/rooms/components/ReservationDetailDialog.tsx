@@ -407,6 +407,15 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
                 }
               />
               <Row
+                label={tr("Xona almashtirish chegirmasi")}
+                value={
+                  Number(res.move_discount_amount || 0) > 0
+                    ? tr("{{amount}} so'm", { amount: fmt(Number(res.move_discount_amount)) })
+                    : null
+                }
+                accent="text-emerald-600"
+              />
+              <Row
                 label={tr("To'langan")}
                 value={tr("{{paid_amount}} so'm", { paid_amount: fmt(res.paid_amount) })}
                 accent="text-emerald-600"
@@ -454,6 +463,11 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
                   {Number(m.old_total) !== Number(m.new_total) && (
                     <span className="text-xs tabular-nums text-gray-500">
                       {tr("· {{fmt}} → {{fmt2}} so'm", { fmt: fmt(Number(m.old_total)), fmt2: fmt(Number(m.new_total)) })}
+                    </span>
+                  )}
+                  {Number(m.discount_amount || 0) > 0 && (
+                    <span className="text-xs font-medium tabular-nums text-emerald-600">
+                      {tr("· chegirma {{amount}} so'm", { amount: fmt(Number(m.discount_amount)) })}
                     </span>
                   )}
                 </li>

@@ -17,6 +17,7 @@ import {
   ArrowRightLeft,
   Sparkles,
   Banknote,
+  Percent,
 } from "lucide-react"
 import {
   startOfMonth,
@@ -70,6 +71,16 @@ import {
   useBookingDefaults,
   resolveBookingType,
 } from "@/features/settings/api/bookingDefaults"
+import {
+  useMoveDiscountSettings,
+  maxMoveDiscount,
+  carryOverMoveDiscount,
+  clampMoveDiscount,
+  discountBaseline,
+  netIncrease,
+  moveDiscountProblem,
+  moveDiscountHint,
+} from "@/features/settings/api/moveDiscount"
 import {
   DEBT_BAR_CLASS,
   PAYMENT_METHOD_OPTIONS,
@@ -210,6 +221,8 @@ export function BookingPage() {
   const [moveMode, setMoveMode] = useState(false)
   const [moveRoomId, setMoveRoomId] = useState("")
   const [moveError, setMoveError] = useState<string | null>(null)
+  // Qimmatroq xonaga o'tishda narx farqidan chegirma (so'm, bo'sh — yo'q)
+  const [moveDiscount, setMoveDiscount] = useState("")
   // Almashtirish oynasining qolgan vaqti jonli yangilanishi uchun tick
   const [, setMoveTick] = useState(0)
   useEffect(() => {
@@ -363,6 +376,8 @@ export function BookingPage() {
   const checkInMutation = useCheckInReservation()
   // Bron tahriri vaqt oynasi (default 10 daqiqa; 0 — cheklovsiz; admin bypass)
   const { data: editWindow } = useEditWindowSettings()
+  // Qimmatroq xonaga o'tishda chegirma: xodimga ruxsat va chegara (admin doim)
+  const { data: moveDiscountSettings } = useMoveDiscountSettings()
 
   // Ro'yxat dialogidagi bronlar — reservations o'zgarsa (tahrir/bekor) yangilanadi
   const dayListItems = useMemo(() => {
@@ -598,6 +613,7 @@ export function BookingPage() {
     setMoveMode(false)
     setMoveRoomId("")
     setMoveError(null)
+    setMoveDiscount("")
   }
 
   // Bronni tanlangan xonaga ko'chirish — server bandlik, vaqt oynasi va
@@ -616,10 +632,29 @@ export function BookingPage() {
     }
   }
 
-  const handleMoveRoom = async () => {
+  // `increase` — tanlangan xonaning narx farqi (oldindan ko'rish hisobidan);
+  // chegirma qoidaga sig'masa server ham rad etadi, bu yerda — darhol izoh
+  const handleMoveRoom = async (increase = 0, discountVisible = false) => {
     if (!selectedReservation) return
     if (!moveRoomId) {
       setMoveError(tr("Yangi xonani tanlang"))
+      return
+    }
+    // Chegirma maydoni ko'rinmasa — chegirmasiz (avvalgi so'rov aynan)
+    const discountValue =
+      !discountVisible || moveDiscount.trim() === "" ? 0 : Number(moveDiscount)
+    if (!Number.isFinite(discountValue) || discountValue < 0) {
+      setMoveError(tr("Chegirma summasini to'g'ri kiriting"))
+      return
+    }
+    const discountProblem = moveDiscountProblem(
+      moveDiscountSettings,
+      increase,
+      isAdmin,
+      discountValue
+    )
+    if (discountProblem) {
+      setMoveError(discountProblem)
       return
     }
     setMoveError(null)
@@ -627,10 +662,12 @@ export function BookingPage() {
       const updated = await moveRoomMutation.mutateAsync({
         id: selectedReservation.id,
         newRoomId: moveRoomId,
+        discountAmount: Math.round(discountValue),
       })
       setSelectedReservation(updated)
       setMoveMode(false)
       setMoveRoomId("")
+      setMoveDiscount("")
       // Yangi narx bo'yicha balans ochiq qolsa, hisob-kitob paneli toza chiqadi
       setSettleAmount("")
       setSettleError(null)
@@ -1802,6 +1839,7 @@ export function BookingPage() {
                                 setMoveMode(true)
                                 setMoveRoomId("")
                                 setMoveError(null)
+                                setMoveDiscount("")
                               }}
                               className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-100"
                             >
@@ -1856,13 +1894,19 @@ export function BookingPage() {
                           isRoomFree(r.id)
                       )
 
-                      // Taxminiy yangi jami (server aynan shu formula bilan hisoblaydi)
-                      const previewTotal = (r: any): number => {
+                      // Taxminiy yangi jami (server aynan shu formula bilan hisoblaydi).
+                      // `increase` — shu ko'chirishning narx farqi: qolgan davr
+                      // eski xonada qolsa qancha bo'lardi. `given` — xodim
+                      // kiritgan chegirma; oldingi ko'chirishlardagi chegirma
+                      // arzonroq xonaga qaytilsa avval kamayadi (server bilan bir xil)
+                      const previewMove = (r: any, given: number) => {
                         const newBase = Number(r.base_price || 0)
                         const oldBase = Number(roomObj?.base_price || 0)
                         let charge: number
+                        let oldCharge: number
                         if (res.booking_type === "HOURLY") {
                           charge = Math.round(newBase)
+                          oldCharge = Math.round(oldBase)
                         } else {
                           const nights = Math.max(
                             Math.round(
@@ -1872,6 +1916,7 @@ export function BookingPage() {
                             ),
                             1
                           )
+                          oldCharge = oldBase * nights
                           if (res.status === "CHECKED_IN") {
                             const stayed = Math.min(
                               Math.max(
@@ -1896,17 +1941,84 @@ export function BookingPage() {
                                 (charge * Number(res.discount_percent)) / 100
                               )
                             : Number(res.discount_amount || 0)
-                        return Math.max(charge - discount, 0)
+                        // Sof farq: bron chegirmasi foizda bo'lsa, farq ham kamayadi
+                        const increase = netIncrease(
+                          charge - oldCharge,
+                          Number(res.discount_percent || 0)
+                        )
+                        const carried = carryOverMoveDiscount(
+                          Number(res.move_discount_amount || 0),
+                          increase
+                        )
+                        // Boshlang'ich (arzon) xona narxi — undan kam to'lanmaydi
+                        const baseline =
+                          carried > 0
+                            ? discountBaseline(res.room_moves)
+                            : given > 0
+                              ? oldBase
+                              : null
+                        let moveDisc = carried + given
+                        if (baseline !== null) {
+                          const baselineCharge =
+                            res.booking_type === "HOURLY"
+                              ? Math.round(baseline)
+                              : baseline *
+                                Math.max(
+                                  Math.round(
+                                    (new Date(res.check_out_date).getTime() -
+                                      new Date(res.check_in_date).getTime()) /
+                                      86400000
+                                  ),
+                                  1
+                                )
+                          moveDisc = clampMoveDiscount(
+                            moveDisc,
+                            charge,
+                            baselineCharge,
+                            Number(res.discount_percent || 0)
+                          )
+                        }
+                        return {
+                          increase,
+                          total: Math.max(charge - discount - moveDisc, 0),
+                        }
                       }
 
                       const chosen = availableRooms.find(
                         (r: any) => r.id === moveRoomId
                       )
-                      const newTotal = chosen ? previewTotal(chosen) : null
+                      const typedDiscount =
+                        moveDiscount.trim() === "" ? 0 : Math.round(Number(moveDiscount))
+                      const increase = chosen ? previewMove(chosen, 0).increase : 0
+                      // Chegirma faqat qimmatroq xonaga o'tishda; xodimga
+                      // ruxsat va chegara sozlamada, admin — farqning hammasigacha
+                      const maxDiscount = chosen
+                        ? maxMoveDiscount(moveDiscountSettings, increase, isAdmin)
+                        : 0
+                      // Maydon ko'rinmasa (masalan sozlama endigina o'chirildi)
+                      // kiritilgan qiymat hisobga olinmaydi va yuborilmaydi
+                      const discountPanel = !!chosen && increase > 0 && maxDiscount > 0
+                      const givenDiscount =
+                        discountPanel && Number.isFinite(typedDiscount) && typedDiscount > 0
+                          ? typedDiscount
+                          : 0
+                      const discountIssue = discountPanel
+                        ? moveDiscountProblem(
+                            moveDiscountSettings,
+                            increase,
+                            isAdmin,
+                            givenDiscount
+                          )
+                        : null
+                      // Qoidaga sig'magan chegirma jamiga qo'shilmaydi
+                      const newTotal = chosen
+                        ? previewMove(chosen, discountIssue ? 0 : givenDiscount).total
+                        : null
                       const diff =
                         newTotal !== null
                           ? newTotal - Number(res.total_amount || 0)
                           : null
+                      const halfDiscount = Math.floor(increase / 2)
 
                       return (
                         <div className="space-y-2.5 rounded-lg border border-violet-200 bg-violet-50/50 p-3">
@@ -1923,7 +2035,12 @@ export function BookingPage() {
                             <select
                               className="w-full flex h-10 items-center rounded-md border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                               value={moveRoomId}
-                              onChange={(e) => setMoveRoomId(e.target.value)}
+                              onChange={(e) => {
+                                setMoveRoomId(e.target.value)
+                                // Farq xonaga bog'liq — chegirma qaytadan kiritiladi
+                                setMoveDiscount("")
+                                setMoveError(null)
+                              }}
                             >
                               <option value="">{tr("Yangi xonani tanlang")}</option>
                               {availableRooms.map((r: any) => (
@@ -1944,6 +2061,11 @@ export function BookingPage() {
                                   {tr("{{newTotal}} So'm", { newTotal: newTotal.toLocaleString() })}
                                 </b>
                               </p>
+                              {givenDiscount > 0 && !discountIssue && (
+                                <p className="text-xs font-semibold text-emerald-600">
+                                  {tr("Chegirma: −{{amount}} So'm", { amount: givenDiscount.toLocaleString() })}
+                                </p>
+                              )}
                               {diff !== null && diff !== 0 && (
                                 <p
                                   className={cn(
@@ -1957,6 +2079,76 @@ export function BookingPage() {
                                 </p>
                               )}
                             </div>
+                          )}
+                          {/* CHEGIRMA — mehmon qimmatroq xonaga o'tmoqda:
+                              narx farqidan chegirma (sozlamadagi chegarada) */}
+                          {discountPanel && (
+                            <div className="space-y-2 rounded-md bg-white px-3 py-2.5 ring-1 ring-violet-200">
+                              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+                                <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+                                  <Percent className="h-3.5 w-3.5 text-violet-600" />
+                                  {tr("Chegirma (narx farqidan)")}
+                                </span>
+                                <span className="text-[11px] tabular-nums text-gray-400">
+                                  {tr("farq {{increase}} · ko'pi bilan {{max}} So'm", { increase: increase.toLocaleString(), max: maxDiscount.toLocaleString() })}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={maxDiscount}
+                                  inputMode="numeric"
+                                  value={moveDiscount}
+                                  onChange={(e) => {
+                                    setMoveDiscount(e.target.value)
+                                    setMoveError(null)
+                                  }}
+                                  placeholder="0"
+                                  className="h-9 w-32 bg-white"
+                                />
+                                {halfDiscount > 0 && halfDiscount < maxDiscount && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setMoveDiscount(String(halfDiscount))}
+                                    className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
+                                  >
+                                    {tr("Farqning yarmi")}
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setMoveDiscount(String(maxDiscount))}
+                                  className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
+                                >
+                                  {tr("Eng ko'p")}
+                                </button>
+                                {moveDiscount !== "" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setMoveDiscount("")}
+                                    className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-500 ring-1 ring-gray-200 hover:bg-gray-50"
+                                  >
+                                    {tr("Chegirmasiz")}
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-[11px] leading-snug text-gray-400">
+                                {moveDiscountHint(moveDiscountSettings, isAdmin)}
+                              </p>
+                              {discountIssue && (
+                                <p className="text-xs font-medium text-red-600">{discountIssue}</p>
+                              )}
+                            </div>
+                          )}
+                          {chosen &&
+                            increase > 0 &&
+                            maxDiscount === 0 &&
+                            !isAdmin &&
+                            moveDiscountSettings !== undefined && (
+                            <p className="text-center text-[11px] text-gray-400">
+                              {tr("Xona almashtirishda chegirma berish o'chirilgan")}
+                            </p>
                           )}
                           {moveError && (
                             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
@@ -1972,6 +2164,7 @@ export function BookingPage() {
                               onClick={() => {
                                 setMoveMode(false)
                                 setMoveError(null)
+                                setMoveDiscount("")
                               }}
                             >
                               {tr("Bekor qilish")}
@@ -1980,8 +2173,10 @@ export function BookingPage() {
                               type="button"
                               size="sm"
                               className="flex-1"
-                              onClick={handleMoveRoom}
-                              disabled={moveRoomMutation.isPending || !moveRoomId}
+                              onClick={() => handleMoveRoom(increase, discountPanel)}
+                              disabled={
+                                moveRoomMutation.isPending || !moveRoomId || !!discountIssue
+                              }
                             >
                               {moveRoomMutation.isPending && (
                                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -2014,6 +2209,11 @@ export function BookingPage() {
                               {m.old_total !== m.new_total && (
                                 <span className="ml-1 font-semibold">
                                   {tr("({{from}} → {{to}} So'm)", { from: Number(m.old_total || 0).toLocaleString(), to: Number(m.new_total || 0).toLocaleString() })}
+                                </span>
+                              )}
+                              {Number(m.discount_amount || 0) > 0 && (
+                                <span className="ml-1 font-semibold text-emerald-700">
+                                  {tr("· chegirma {{amount}} So'm", { amount: Number(m.discount_amount).toLocaleString() })}
                                 </span>
                               )}
                             </p>

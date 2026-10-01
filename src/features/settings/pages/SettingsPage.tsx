@@ -34,12 +34,14 @@ import {
   Ban,
   Clock,
   UserCog,
+  ArrowRightLeft,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
 import { VisionCamerasCard } from "@/features/vision/components/VisionCamerasCard"
 import { VisionDevicesCard } from "@/features/vision/components/VisionDevicesCard"
 import { DiscountRulesCard } from "../components/DiscountRulesCard"
+import { MoveDiscountCard } from "../components/MoveDiscountCard"
 import { SmsKeysCard } from "../components/SmsKeysCard"
 import {
   useBookingDefaults,
@@ -157,7 +159,7 @@ const SETTING_GROUPS = [
     desc: tr("Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash va hujjat skaneri"),
     icon: CalendarClock,
     iconClass: "bg-indigo-50 text-indigo-600",
-    cards: ["booking-default", "discount-rules", "booking-edit", "scanner"],
+    cards: ["booking-default", "discount-rules", "booking-edit", "move-discount", "scanner"],
   },
   {
     key: "cash",
@@ -909,6 +911,18 @@ export const SettingsPage = () => {
                   saved={editWinSaved}
                   error={editWinError}
                 />
+              </SettingCard>
+
+              {/* Xona almashtirishda chegirma — qimmatroq xonaga o'tganda
+                  resepshn narx farqidan chegirma bera oladimi va qancha */}
+              <SettingCard
+                id="move-discount"
+                icon={ArrowRightLeft}
+                iconClass="bg-violet-50 text-violet-600"
+                title={tr("Xona almashtirishda chegirma")}
+                desc={tr("Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.")}
+              >
+                <MoveDiscountCard />
               </SettingCard>
 
               {/* Qora ro'yxat qoidasi */}

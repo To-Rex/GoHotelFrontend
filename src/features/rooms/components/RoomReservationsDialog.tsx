@@ -587,9 +587,10 @@ const ReservationItem = ({
             {fmt(res.total_amount)}{" "}
             <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
           </p>
-          {Number(res.discount_amount || 0) > 0 && (
+          {/* Bron chegirmasi + xona almashtirishdagi chegirma */}
+          {Number(res.discount_amount || 0) + Number(res.move_discount_amount || 0) > 0 && (
             <p className="mt-0.5 text-xs leading-tight text-red-500">
-              {tr("Chegirma: −{{discount_amount}}", { discount_amount: fmt(res.discount_amount) })}
+              {tr("Chegirma: −{{discount_amount}}", { discount_amount: fmt(Number(res.discount_amount || 0) + Number(res.move_discount_amount || 0)) })}
             </p>
           )}
           {Number(res.paid_amount || 0) > 0 &&
