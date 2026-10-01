@@ -321,7 +321,7 @@ export function FacePickerDialog({
                     uchun qabulxona xodimiga u yerga borishni aytish foydasiz —
                     kimga murojaat qilishini aytamiz. */}
                 <p className="max-w-sm text-xs text-gray-400">
-                  {tr("Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan bo'lishi mumkin; administratordan so'rang (Sozlamalar → Kameralar).")}
+                  {tr("Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan bo'lishi mumkin; administratorga ayting (kamerani sozlovchi biriktiradi).")}
                 </p>
               </div>
             ) : (

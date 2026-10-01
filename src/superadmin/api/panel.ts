@@ -252,6 +252,76 @@ export const useResetStaffPassword = () =>
     },
   })
 
+/* ------------------------------------------------------ sozlovchilar -- */
+
+/** Sozlovchi — mehmonxonaga bog'lanmagan hisob: asosiy tizimga login va
+ *  parol bilan kiradi, istalgan mehmonxona va filialni tanlab sozlaydi.
+ *  Holati va paroli xodimlarniki kabi (`/staff/{id}/...`). */
+export interface Configurator {
+  id: string
+  username: string
+  first_name: string
+  last_name: string
+  user_type: string
+  status: string
+  email?: string | null
+  phone?: string | null
+  created_at?: string | null
+  last_login_at?: string | null
+}
+
+export const useConfigurators = () =>
+  useQuery({
+    queryKey: ["panelConfigurators"],
+    queryFn: async () => {
+      const { data } = await panelApi.get<Configurator[]>("/configurators")
+      return Array.isArray(data) ? data : []
+    },
+  })
+
+const invalidateConfigurators = (qc: ReturnType<typeof useQueryClient>) =>
+  qc.invalidateQueries({ queryKey: ["panelConfigurators"] })
+
+export const useCreateConfigurator = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      username: string
+      password: string
+      first_name: string
+      last_name?: string
+      phone?: string
+    }) => {
+      const { data } = await panelApi.post<Configurator>("/configurators", payload)
+      return data
+    },
+    onSuccess: () => invalidateConfigurators(qc),
+  })
+}
+
+export const useSetConfiguratorStatus = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { id: string; status: "ACTIVE" | "INACTIVE" }) => {
+      const { data } = await panelApi.patch(`/staff/${payload.id}/status`, {
+        status: payload.status,
+      })
+      return data
+    },
+    onSuccess: () => invalidateConfigurators(qc),
+  })
+}
+
+export const useDeleteConfigurator = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await panelApi.delete(`/configurators/${id}`)
+    },
+    onSuccess: () => invalidateConfigurators(qc),
+  })
+}
+
 /* ------------------------------------------- panel foydalanuvchilari -- */
 
 export const usePanelUsers = () =>

@@ -342,7 +342,10 @@ function SaveRow({
 }
 
 export const SettingsPage = () => {
-  const { isAdmin } = usePermissions()
+  // Sozlamalar — faqat sozlovchi va tizim ma'muri (marshrut ham yopiq;
+  // bu yerdagi tekshiruv qo'shimcha himoya). Server ham faqat shularga
+  // o'zgartirishga ruxsat beradi.
+  const { canManageSettings } = usePermissions()
 
   /* Ochiq bo'lim. Sahifaga `#receipt` kabi havola bilan kelingan bo'lsa —
      eski havolalar ishlashda davom etishi uchun — o'sha karta joylashgan
@@ -724,12 +727,12 @@ export const SettingsPage = () => {
     setTpMsg({ ok: true, text: tr("Tanlandi va saqlandi: {{u}}", { u }) })
   }
 
-  if (!isAdmin) {
+  if (!canManageSettings) {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-bold tracking-tight">{tr("Sozlamalar")}</h1>
         <p className="text-sm text-gray-500">
-          {tr("Bu sahifa faqat administratorlar uchun.")}
+          {tr("Bu sahifa faqat sozlovchi uchun.")}
         </p>
       </div>
     )

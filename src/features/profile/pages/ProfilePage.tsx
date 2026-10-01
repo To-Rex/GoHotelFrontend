@@ -24,6 +24,7 @@ import { tr } from "@/i18n"
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: tr("Super administrator"),
+  CONFIGURATOR: tr("Sozlovchi"),
   ADMIN: tr("Administrator"),
   EMPLOYEE: tr("Xodim"),
 }
@@ -218,10 +219,14 @@ export const ProfilePage = () => {
               <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
               <div>
                 <p className="text-sm font-bold text-emerald-800">
-                  {tr("Administrator — to'liq ruxsat")}
+                  {user?.user_type === "CONFIGURATOR"
+                    ? tr("Sozlovchi — to'liq ruxsat va sozlamalar")
+                    : tr("Administrator — to'liq ruxsat")}
                 </p>
                 <p className="text-xs text-emerald-700/80">
-                  {tr("Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.")}
+                  {user?.user_type === "CONFIGURATOR"
+                    ? tr("Tanlangan mehmonxonaning barcha bo'limlari va sozlamalari sizga ochiq. Boshqa mehmonxonaga yuqoridagi mehmonxona tugmasi orqali o'tasiz.")
+                    : tr("Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.")}
                 </p>
               </div>
             </div>

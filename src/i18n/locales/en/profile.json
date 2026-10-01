@@ -9,5 +9,7 @@
   "Mening ruxsatlarim": "My permissions",
   "Administrator — to'liq ruxsat": "Administrator — full access",
   "Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.": "You have unrestricted access to all sections and actions of the system.",
-  "Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.": "No permissions have been assigned to you yet — contact an administrator."
+  "Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.": "No permissions have been assigned to you yet — contact an administrator.",
+  "Sozlovchi — to'liq ruxsat va sozlamalar": "Configurator — full access and settings",
+  "Tanlangan mehmonxonaning barcha bo'limlari va sozlamalari sizga ochiq. Boshqa mehmonxonaga yuqoridagi mehmonxona tugmasi orqali o'tasiz.": "All sections and settings of the selected hotel are open to you. Switch to another hotel with the hotel button at the top."
 }

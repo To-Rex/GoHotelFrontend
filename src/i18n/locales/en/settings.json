@@ -112,7 +112,6 @@
   },
   "TPrints topilmadi — kassa kompyuterida dastur ishlab turganini tekshiring": "TPrints not found — check that the app is running on the cash desk computer",
   "Tanlandi va saqlandi: {{u}}": "Selected and saved: {{u}}",
-  "Bu sahifa faqat administratorlar uchun.": "This page is for administrators only.",
   "Operatsion ma'lumotlarni tozalash": "Clear operational data",
   "Bronlar, hisob-fakturalar, to'lovlar, xarajatlar, xo'jalik vazifalari, do'kon (sotuvlar, mahsulotlar va ombor qoldig'i), smenalar va kassa sessiyalari, bildirishnomalar va tarix o'chiriladi. Mehmonlar bazasi va hujjatlari SAQLANADI — mehmon hech qachon o'chirilmaydi.": "Deletes bookings, invoices, payments, expenses, housekeeping tasks, the shop (sales, products and stock), shifts and cash desk sessions, notifications and history. The guest database and guest documents are KEPT — guests are never deleted.",
   "Saqlanadi: xodimlar, ruxsatlar, xonalar, qavatlar, turlar, xizmatlar.": "Kept: employees, permissions, rooms, floors, room types, services.",
@@ -241,5 +240,6 @@
   "Administrator bu sozlamaga bog'lanmaydi — narx farqining hammasigacha chegirma bera oladi.": "Administrators are not bound by this setting — they can give a discount up to the full price difference.",
   "Chegirma bron tarixida kim bergani bilan yoziladi va hisob-fakturada umumiy chegirmaga qo'shiladi.": "The discount is recorded in the booking history with who gave it, and is added to the total discount on the invoice.",
   "Xona almashtirishda chegirma": "Discount on room change",
-  "Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.": "Whether reception can give a discount off the price difference when a guest dislikes the room and moves to a more expensive one, and how much at most."
+  "Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.": "Whether reception can give a discount off the price difference when a guest dislikes the room and moves to a more expensive one, and how much at most.",
+  "Bu sahifa faqat sozlovchi uchun.": "This page is for the configurator only."
 }

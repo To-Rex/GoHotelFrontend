@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type Role = "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE";
+// CONFIGURATOR — Sozlovchi: mehmonxonaga bog'lanmagan, istalgan mehmonxona va
+// filialni tanlab (Navbar → mehmonxona), uni sozlab beradi. Tanlangan
+// mehmonxonada administrator kabi ishlaydi; Sozlamalar faqat unga va
+// SUPER_ADMIN ga ochiq.
+export type Role = "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE" | "CONFIGURATOR";
 
 export interface User {
   id: string;
@@ -14,6 +18,8 @@ export interface User {
   // Mehmonxona nomi (/auth/me dan) — brauzer tab sarlavhasida ko'rsatiladi
   hotel_name?: string;
   branch_id?: string;
+  // Filial nomi — sozlovchi / tizim ma'muri tanlagan filial (boshqalarda bo'sh)
+  branch_name?: string | null;
   // Backend `/auth/me` da qaytaradigan ruxsat kodlari (faqat EMPLOYEE uchun to'ladi).
   // `undefined` — profil hali yuklanmagan (eski sessiya).
   permissions?: string[];

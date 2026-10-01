@@ -12,6 +12,7 @@ import {
   Activity,
   ScrollText,
   ShieldCheck,
+  SlidersHorizontal,
   UserRound,
   Users,
   Wallet,
@@ -50,6 +51,8 @@ const GROUPS = [
     links: [
       { to: "/panel/hotels", label: tr("Mehmonxonalar"), icon: Building2 },
       { to: "/panel/guests", label: tr("Mehmonlar"), icon: UserRound },
+      // Mehmonxonalarni sozlab beradigan hisoblar (asosiy tizimda ishlaydi)
+      { to: "/panel/configurators", label: tr("Sozlovchilar"), icon: SlidersHorizontal },
     ],
   },
   {

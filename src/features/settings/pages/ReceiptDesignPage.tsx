@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, Navigate } from "react-router-dom"
 import {
   ArrowLeft,
   Printer,
@@ -18,6 +18,7 @@ import {
 } from "@/features/shop/api/shop"
 import { printSampleReceipt } from "@/lib/tprints"
 import { useAuthStore } from "@/store/auth"
+import { usePermissions } from "@/lib/permissions"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -104,7 +105,15 @@ function ToggleRow({
   )
 }
 
+// Chek dizayni — Sozlamalar qismi: faqat sozlovchi va tizim ma'muri
+// (marshrut ham yopiq; bu qo'shimcha himoya, server ham saqlashni rad etadi)
 export const ReceiptDesignPage = () => {
+  const { canManageSettings } = usePermissions()
+  if (!canManageSettings) return <Navigate to="/start" replace />
+  return <ReceiptDesignContent />
+}
+
+const ReceiptDesignContent = () => {
   const user = useAuthStore((s) => s.user)
   const hotelName = user?.hotel_name || "GoHotel"
 

@@ -20,7 +20,6 @@
   "Suratlar filial bo'yicha ajratiladi — boshqa filialning kameralaridan kelgan yuzlar bu yerda ko'rinmaydi.": "Photos are separated by branch — faces from another branch's cameras aren't shown here.",
   "Suratlarni olishda xatolik. Kamera agenti ishlayaptimi va kameralar filialga biriktirilganmi — tekshiring.": "Failed to load photos. Check that the camera agent is running and the cameras are assigned to a branch.",
   "Bu filialda yangi yuz yo'q": "No new faces in this branch",
-  "Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan bo'lishi mumkin; administratordan so'rang (Sozlamalar → Kameralar).": "When a guest walks past the camera, the photo appears here within a few seconds. If it stays empty, the camera may not be assigned to this branch — ask your administrator (Settings → Cameras).",
   "{{count}} ta surat biriktiriladi — bir nechtasidan yig'ilgan shablon aniqroq ishlaydi.": {
     "one": "{{count}} photo will be linked — a template built from several photos is more accurate.",
     "other": "{{count}} photos will be linked — a template built from several photos is more accurate."
@@ -106,5 +105,6 @@
   "agent::Token": "Token",
   "agent::Tekshirish": "Test",
   "agent::Saqlash": "Save",
-  "revoke::Bekor qilish": "Revoke"
+  "revoke::Bekor qilish": "Revoke",
+  "Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan bo'lishi mumkin; administratorga ayting (kamerani sozlovchi biriktiradi).": "When a guest passes the camera, the photo appears here within a few seconds. If it stays empty, the camera may not be assigned to this branch; tell the administrator (the configurator assigns cameras)."
 }

@@ -77,6 +77,7 @@ const statusBadge: Record<string, string> = {
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: tr("Super admin"),
+  CONFIGURATOR: tr("Sozlovchi"),
   ADMIN: tr("Administrator"),
   EMPLOYEE: tr("Xodim"),
 }
@@ -1069,7 +1070,7 @@ export const EmployeesPage = () => {
                       {workHoursSettings && !workHoursSettings.enforce && (
                         <>
                           {" "}
-                          {tr("Hozir nazorat o'chirilgan (Sozlamalar → Xodimlar) — belgi u yoqilgandagina ahamiyatga ega.")}
+                          {tr("Hozir nazorat o'chirilgan (uni sozlovchi yoqadi) — belgi u yoqilgandagina ahamiyatga ega.")}
                         </>
                       )}
                     </span>

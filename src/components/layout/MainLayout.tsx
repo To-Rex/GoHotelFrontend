@@ -15,6 +15,8 @@ import {
 } from "@/features/shifts/api/shifts";
 import { api } from "@/lib/api";
 import { OFF_HOURS_ROUTE, isWorkHoursBlocked } from "@/lib/workHoursBlock";
+import { ContextPickerScreen } from "@/features/auth/pages/ContextPickerScreen";
+import { needsReloadForToken } from "@/lib/tokenClaims";
 import { cn } from "@/lib/utils";
 import { useSeo } from "@/lib/seo";
 import { tr } from "@/i18n";
@@ -78,6 +80,21 @@ export const MainLayout = () => {
     };
   }, [isAuthenticated, setUser]);
 
+  // Boshqa tabda mehmonxona almashtirildi (sozlovchi / tizim ma'muri):
+  // token barcha tablar uchun umumiy, shuning uchun bu tab eski mehmonxona
+  // nomi ostida yangisining ma'lumotini ko'rsatib (va sozlamani noto'g'ri
+  // mehmonxonaga yozib) qolmasligi uchun o'zini qayta yuklaydi.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      const current = useAuthStore.getState().user?.hotel_id;
+      if (needsReloadForToken(event.key, event.newValue, current)) {
+        window.location.reload();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -88,6 +105,12 @@ export const MainLayout = () => {
   // to'smaydi — uning "Davom etish" oqimi avvalgidek ishlaydi.
   if (offHours) {
     return <Navigate to={OFF_HOURS_ROUTE} replace />;
+  }
+
+  // Sozlovchi hali mehmonxona tanlamagan — ilovaning boshqa hech bir qismi
+  // ochilmaydi (server ham mehmonxonasiz so'rovni rad etadi): avval tanlaydi
+  if (user?.user_type === "CONFIGURATOR" && !user.hotel_id) {
+    return <ContextPickerScreen />;
   }
 
   // Ruxsati yo'q sahifaga to'g'ridan-to'g'ri URL orqali kirilsa (yoki xodim

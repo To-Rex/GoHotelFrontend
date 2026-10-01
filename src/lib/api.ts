@@ -145,6 +145,10 @@ api.interceptors.response.use(
 
         const { data } = await axios.post(`${API_URL}/auth/refresh`, { refresh_token: refreshToken });
         localStorage.setItem("accessToken", data.access_token);
+        // Server har yangilashda eski sessiyani yopib YANGI refresh token
+        // beradi — u saqlanmasa keyingi yangilash "sessiya yopilgan" bilan
+        // tugab, foydalanuvchi tizimdan chiqib ketardi
+        if (data.refresh_token) localStorage.setItem("refreshToken", data.refresh_token);
 
         originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
         return api(originalRequest);

@@ -68,9 +68,11 @@ export const Sidebar = () => {
   const roleLabel =
     user?.user_type === "SUPER_ADMIN"
       ? tr("Super admin")
-      : user?.user_type === "ADMIN"
-        ? tr("Administrator")
-        : tr("Xodim");
+      : user?.user_type === "CONFIGURATOR"
+        ? tr("Sozlovchi")
+        : user?.user_type === "ADMIN"
+          ? tr("Administrator")
+          : tr("Xodim");
 
   // Bitta havolani chizish — asosiy va administratsiya guruhlari uchun umumiy.
   // badge — ochiq xabar/so'rovlar soni kabi jonli ko'rsatkich (0 da yashirin)

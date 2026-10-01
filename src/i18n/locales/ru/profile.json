@@ -11,5 +11,7 @@
   "Mening ruxsatlarim": "Мои права доступа",
   "Administrator — to'liq ruxsat": "Администратор — полный доступ",
   "Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.": "У вас неограниченный доступ ко всем разделам и действиям системы.",
-  "Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.": "Вам ещё не назначены права доступа — обратитесь к администратору."
+  "Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.": "Вам ещё не назначены права доступа — обратитесь к администратору.",
+  "Sozlovchi — to'liq ruxsat va sozlamalar": "Настройщик — полный доступ и настройки",
+  "Tanlangan mehmonxonaning barcha bo'limlari va sozlamalari sizga ochiq. Boshqa mehmonxonaga yuqoridagi mehmonxona tugmasi orqali o'tasiz.": "Вам открыты все разделы и настройки выбранной гостиницы. В другую гостиницу можно перейти кнопкой гостиницы вверху."
 }

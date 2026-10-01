@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest"
-import { ROUTE_PERMISSIONS, ADMIN_ONLY_ROUTES } from "./permissions"
+import {
+  ROUTE_PERMISSIONS,
+  ADMIN_ONLY_ROUTES,
+  SETTINGS_ROUTES,
+  isAdminType,
+  canManageSettingsType,
+  canSwitchContextType,
+  normalizeRoute,
+} from "./permissions"
 
 /* Marshrut ruxsatlari.
 
@@ -12,6 +20,7 @@ const MANAGER = "shift.force_close"
 
 // `usePermissions.canRoute` bilan bir xil qoida (admin bypass alohida)
 const employeeCanSee = (path: string, codes: string[]): boolean => {
+  if (SETTINGS_ROUTES.includes(path)) return false
   if (ADMIN_ONLY_ROUTES.includes(path)) return false
   const required = ROUTE_PERMISSIONS[path] ?? []
   if (required.length === 0) return true
@@ -81,8 +90,43 @@ describe("Menejer marshrutlari bir xil belgida", () => {
     expect(employeeCanSee("/shifts", MANAGER_CODES)).toBe(true)
   })
 
-  it("sozlamalar faqat administrator uchun", () => {
-    expect(ADMIN_ONLY_ROUTES).toContain("/settings")
+  it("sozlamalar faqat sozlovchi va tizim ma'muri uchun", () => {
+    expect(SETTINGS_ROUTES).toEqual(["/settings", "/settings/receipt"])
     expect(employeeCanSee("/settings", MANAGER_CODES)).toBe(false)
+    expect(employeeCanSee("/settings/receipt", MANAGER_CODES)).toBe(false)
+    expect(canManageSettingsType("CONFIGURATOR")).toBe(true)
+    expect(canManageSettingsType("SUPER_ADMIN")).toBe(true)
+    // Mehmonxona administratori ham ko'rmaydi
+    expect(canManageSettingsType("ADMIN")).toBe(false)
+    expect(canManageSettingsType("EMPLOYEE")).toBe(false)
+    expect(canManageSettingsType(undefined)).toBe(false)
+  })
+
+  it("yo'l varianti bilan ham sozlamalar yopiq qoladi", () => {
+    expect(normalizeRoute("/Settings/receipt/")).toBe("/settings/receipt")
+    expect(normalizeRoute("/settings//")).toBe("/settings")
+    expect(normalizeRoute("/")).toBe("/")
+    expect(normalizeRoute("")).toBe("/")
+    expect(SETTINGS_ROUTES).toContain(normalizeRoute("/SETTINGS"))
+  })
+
+  it("qurilmalar va ilovalar avvalgidek administratorlarda", () => {
+    expect(ADMIN_ONLY_ROUTES).toEqual(["/devices", "/apps"])
+  })
+})
+
+describe("sozlovchi (CONFIGURATOR)", () => {
+  it("tanlangan mehmonxonada administrator kabi", () => {
+    expect(isAdminType("CONFIGURATOR")).toBe(true)
+    expect(isAdminType("ADMIN")).toBe(true)
+    expect(isAdminType("SUPER_ADMIN")).toBe(true)
+    expect(isAdminType("EMPLOYEE")).toBe(false)
+  })
+
+  it("mehmonxona/filialni faqat sozlovchi va tizim ma'muri tanlaydi", () => {
+    expect(canSwitchContextType("CONFIGURATOR")).toBe(true)
+    expect(canSwitchContextType("SUPER_ADMIN")).toBe(true)
+    expect(canSwitchContextType("ADMIN")).toBe(false)
+    expect(canSwitchContextType("EMPLOYEE")).toBe(false)
   })
 })

@@ -21,7 +21,6 @@
   "Suratlar filial bo'yicha ajratiladi — boshqa filialning kameralaridan kelgan yuzlar bu yerda ko'rinmaydi.": "Фото разделяются по филиалам — лица с камер другого филиала здесь не показываются.",
   "Suratlarni olishda xatolik. Kamera agenti ishlayaptimi va kameralar filialga biriktirilganmi — tekshiring.": "Ошибка при получении фото. Проверьте, работает ли агент камер и привязаны ли камеры к филиалу.",
   "Bu filialda yangi yuz yo'q": "В этом филиале нет новых лиц",
-  "Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan bo'lishi mumkin; administratordan so'rang (Sozlamalar → Kameralar).": "Когда гость пройдёт перед камерой, фото появится здесь через несколько секунд. Если список остаётся пустым — возможно, камера не привязана к этому филиалу; спросите администратора (Настройки → Камеры).",
   "{{count}} ta surat biriktiriladi — bir nechtasidan yig'ilgan shablon aniqroq ishlaydi.": "Будет привязано {{count}} фото — шаблон, собранный из нескольких, работает точнее.",
   "{{count}} ta surat biriktirildi": "Привязано {{count}} фото",
   "Yuz biriktirildi": "Лицо привязано",
@@ -109,5 +108,6 @@
   "agent::Token": "Token",
   "agent::Tekshirish": "Test",
   "agent::Saqlash": "Save",
-  "revoke::Bekor qilish": "Отозвать"
+  "revoke::Bekor qilish": "Отозвать",
+  "Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan bo'lishi mumkin; administratorga ayting (kamerani sozlovchi biriktiradi).": "Когда гость проходит перед камерой, снимок появляется здесь через несколько секунд. Если пусто — камера, возможно, не привязана к этому филиалу; сообщите администратору (камеру привязывает настройщик)."
 }

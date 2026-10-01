@@ -29,6 +29,7 @@ import { addDaysStr, todayStr } from "@/features/reservations/lib/booking";
 import { cn } from "@/lib/utils";
 import { tr, trc } from "@/i18n";
 import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { ContextSwitcher } from "@/features/auth/components/ContextSwitcher";
 
 // Qolgan daqiqalarni odam o'qiydigan ko'rinishga keltiradi: "2 soat 15 daq"
 const formatMinutes = (mins: number): string => {
@@ -228,6 +229,9 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             {refreshing ? tr("Yangilanmoqda...") : tr("Yangilash")}
           </span>
         </button>
+        {/* Sozlovchi / tizim ma'muri: qaysi mehmonxona va filialda ishlayapti
+            (boshqa rollarda ko'rinmaydi) */}
+        <ContextSwitcher />
         {/* Interfeys tili: o'zbekcha / ruscha / inglizcha */}
         <LanguageSwitcher />
         <Button

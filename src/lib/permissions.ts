@@ -100,21 +100,39 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
-// Faqat ADMIN/SUPER_ADMIN uchun ochiq marshrutlar (avvalgi xatti-harakat saqlangan).
+// Faqat ADMIN/SUPER_ADMIN (va mehmonxona tanlagan sozlovchi) uchun ochiq marshrutlar.
 // Qurilmalar ro'yxati kirish huquqini beradi — uni tahrirlash tizimga
 // kirish huquqini tarqatish bilan barobar, shuning uchun faqat admin
 // "/apps" — o'rnatish fayllari: tarqatish administratorning ishi
-export const ADMIN_ONLY_ROUTES = [
-  "/settings",
-  "/settings/receipt",
-  "/devices",
-  "/apps",
-];
+export const ADMIN_ONLY_ROUTES = ["/devices", "/apps"];
+
+// Sozlamalar — FAQAT sozlovchi (CONFIGURATOR) va tizim ma'muri (SUPER_ADMIN).
+// Mehmonxona administratori ham, xodimlar ham bu sahifalarni umuman
+// ko'rmaydi; server ham sozlamani o'zgartirishni faqat shularga beradi.
+export const SETTINGS_ROUTES = ["/settings", "/settings/receipt"];
+
+/** Yo'lni marshrutlash qanday tushunsa shunday: kichik harf, oxirgi "/" siz. */
+export const normalizeRoute = (path: string): string =>
+  (path || "/").toLowerCase().replace(/\/+$/, "") || "/";
+
+/** Tanlangan mehmonxonada administrator kabi ishlaydigan turlar. */
+export const isAdminType = (type?: string | null): boolean =>
+  type === "ADMIN" || type === "SUPER_ADMIN" || type === "CONFIGURATOR";
+
+/** Sozlamalarni ko'ra va o'zgartira oladiganlar. */
+export const canManageSettingsType = (type?: string | null): boolean =>
+  type === "CONFIGURATOR" || type === "SUPER_ADMIN";
+
+/** Mehmonxona va filialni o'zi tanlay oladiganlar (Navbar'dagi tanlagich). */
+export const canSwitchContextType = (type?: string | null): boolean =>
+  type === "CONFIGURATOR" || type === "SUPER_ADMIN";
 
 export function usePermissions() {
   const user = useAuthStore((s) => s.user);
 
-  const isAdmin = user?.user_type === "ADMIN" || user?.user_type === "SUPER_ADMIN";
+  const isAdmin = isAdminType(user?.user_type);
+  const canManageSettings = canManageSettingsType(user?.user_type);
+  const isConfigurator = user?.user_type === "CONFIGURATOR";
 
   // `undefined` — profil hali yangilanmagan (eski sessiya). Bunday holatda
   // hech narsani yashirmaymiz, aks holda /auth/me javobi kelguncha menyu
@@ -129,8 +147,12 @@ export function usePermissions() {
   };
 
   const canRoute = (path: string): boolean => {
-    if (ADMIN_ONLY_ROUTES.includes(path)) return !!isAdmin;
-    return can(...(ROUTE_PERMISSIONS[path] ?? []));
+    // Marshrutlash katta-kichik harf va oxirgi "/" ga qaramaydi
+    // ("/Settings/receipt/" ham o'sha sahifa) — tekshiruv ham shunday
+    const route = normalizeRoute(path);
+    if (SETTINGS_ROUTES.includes(route)) return canManageSettings;
+    if (ADMIN_ONLY_ROUTES.includes(route)) return !!isAdmin;
+    return can(...(ROUTE_PERMISSIONS[route] ?? []));
   };
 
   // Ruxsat berilmagan sahifaga kirishga urinilganda yo'naltiriladigan manzil.
@@ -148,5 +170,13 @@ export function usePermissions() {
     return order.find((p) => canRoute(p)) ?? "/";
   };
 
-  return { isAdmin, permissions: codes ?? [], can, canRoute, firstAllowedRoute };
+  return {
+    isAdmin,
+    canManageSettings,
+    isConfigurator,
+    permissions: codes ?? [],
+    can,
+    canRoute,
+    firstAllowedRoute,
+  };
 }

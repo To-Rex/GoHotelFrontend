@@ -3,6 +3,7 @@ import { Route } from "react-router-dom"
 import { ApiLogsPage } from "./pages/ApiLogsPage"
 import { AppStorePage } from "./pages/AppStorePage"
 import { AuditPage } from "./pages/AuditPage"
+import { ConfiguratorsPage } from "./pages/ConfiguratorsPage"
 import { FinancePage } from "./pages/FinancePage"
 import { GuestsPage } from "./pages/GuestsPage"
 import { HotelDetailPage } from "./pages/HotelDetailPage"
@@ -33,6 +34,7 @@ export function panelRoutes() {
         <Route path="guests" element={<GuestsPage />} />
         <Route path="apps" element={<AppStorePage />} />
         <Route path="users" element={<PanelUsersPage />} />
+        <Route path="configurators" element={<ConfiguratorsPage />} />
         <Route path="audit" element={<AuditPage />} />
         <Route path="api-logs" element={<ApiLogsPage />} />
         <Route path="security" element={<SecurityPage />} />

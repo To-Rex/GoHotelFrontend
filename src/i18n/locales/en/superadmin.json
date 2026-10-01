@@ -160,5 +160,15 @@
   "count::Xona": "Rooms",
   "count::Xodim": "Employees",
   "Xavfsizlik": "Security",
-  "pochta@example.com": "name@example.com"
+  "pochta@example.com": "name@example.com",
+  "Sozlovchi qo'shildi — u asosiy tizimga shu login va parol bilan kiradi": "Configurator added — they sign in to the main system with this username and password",
+  "{{name}} sozlovchilar ro'yxatidan o'chiriladi. Davom etasizmi?": "{{name}} will be removed from the configurators list. Continue?",
+  "Sozlovchilar": "Configurators",
+  "Istalgan mehmonxona va filialga o'tib, uni talabiga ko'ra sozlab beradigan hisoblar": "Accounts that switch to any hotel and branch and set it up to its requirements",
+  "Sozlovchi asosiy tizimga kiradi, mehmonxona va filialni tanlaydi va o'sha mehmonxonada administrator kabi ishlaydi. Sozlamalar sahifasi faqat sozlovchiga ochiq — mehmonxona administratori va xodimlar uni ko'rmaydi.": "The configurator signs in to the main system, chooses a hotel and branch and works there like an administrator. The Settings page is open only to the configurator — the hotel administrator and staff do not see it.",
+  "Hozircha sozlovchi yo'q": "No configurators yet",
+  "Sozlovchi qo'shish": "Add configurator",
+  "Familiya (ixtiyoriy)": "Last name (optional)",
+  "Telefon (ixtiyoriy)": "Phone (optional)",
+  "Login va parolni odamga o'zingiz yetkazasiz. U asosiy tizimga (panelga emas) kiradi va mehmonxonani tanlaydi.": "You hand the username and password to the person yourself. They sign in to the main system (not the panel) and choose a hotel."
 }

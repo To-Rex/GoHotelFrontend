@@ -114,7 +114,6 @@
   },
   "TPrints topilmadi — kassa kompyuterida dastur ishlab turganini tekshiring": "TPrints не найден — проверьте, что программа запущена на кассовом компьютере",
   "Tanlandi va saqlandi: {{u}}": "Выбрано и сохранено: {{u}}",
-  "Bu sahifa faqat administratorlar uchun.": "Эта страница доступна только администраторам.",
   "Operatsion ma'lumotlarni tozalash": "Очистка операционных данных",
   "Bronlar, hisob-fakturalar, to'lovlar, xarajatlar, xo'jalik vazifalari, do'kon (sotuvlar, mahsulotlar va ombor qoldig'i), smenalar va kassa sessiyalari, bildirishnomalar va tarix o'chiriladi. Mehmonlar bazasi va hujjatlari SAQLANADI — mehmon hech qachon o'chirilmaydi.": "Удаляются брони, счета, оплаты, расходы, задачи хозяйственной службы, магазин (продажи, товары и складские остатки), смены и кассовые сессии, уведомления и история. База гостей и их документы СОХРАНЯЮТСЯ — гости никогда не удаляются.",
   "Saqlanadi: xodimlar, ruxsatlar, xonalar, qavatlar, turlar, xizmatlar.": "Сохраняются: сотрудники, права доступа, номера, этажи, типы номеров, услуги.",
@@ -243,5 +242,6 @@
   "Administrator bu sozlamaga bog'lanmaydi — narx farqining hammasigacha chegirma bera oladi.": "Администратора эта настройка не ограничивает — он может дать скидку вплоть до всей разницы в цене.",
   "Chegirma bron tarixida kim bergani bilan yoziladi va hisob-fakturada umumiy chegirmaga qo'shiladi.": "Скидка записывается в историю брони с указанием, кто её дал, и добавляется к общей скидке в счёте.",
   "Xona almashtirishda chegirma": "Скидка при смене номера",
-  "Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.": "Может ли ресепшн дать скидку с разницы в цене, когда гостю не понравился номер и он переселяется в более дорогой, и какую максимум."
+  "Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.": "Может ли ресепшн дать скидку с разницы в цене, когда гостю не понравился номер и он переселяется в более дорогой, и какую максимум.",
+  "Bu sahifa faqat sozlovchi uchun.": "Эта страница только для настройщика."
 }
