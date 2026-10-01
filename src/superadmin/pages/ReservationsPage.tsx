@@ -13,16 +13,17 @@ import {
   PanelHeading,
   PanelSelect,
 } from "../components/ui"
+import { tr } from "@/i18n"
 
 const PAGE_SIZE = 50
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Joylashgan",
-  CHECKED_OUT: "Chiqib ketgan",
-  CANCELLED: "Bekor qilingan",
-  NO_SHOW: "Kelmagan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Joylashgan"),
+  CHECKED_OUT: tr("Chiqib ketgan"),
+  CANCELLED: tr("Bekor qilingan"),
+  NO_SHOW: tr("Kelmagan"),
 }
 
 const statusStyle: Record<string, string> = {
@@ -65,8 +66,8 @@ export function ReservationsPage() {
   return (
     <div>
       <PanelHeading
-        title="Bronlar"
-        subtitle={`Barcha mehmonxonalar bo'yicha · ${total} ta`}
+        title={tr("Bronlar")}
+        subtitle={tr("Barcha mehmonxonalar bo'yicha · {{total}} ta", { total })}
       />
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -74,7 +75,7 @@ export function ReservationsPage() {
           value={filters.hotel_id || ""}
           onChange={(e) => patch({ hotel_id: e.target.value || undefined })}
         >
-          <option value="">Barcha mehmonxonalar</option>
+          <option value="">{tr("Barcha mehmonxonalar")}</option>
           {hotels.map((hotel) => (
             <option key={hotel.id} value={hotel.id}>
               {hotel.name}
@@ -86,7 +87,7 @@ export function ReservationsPage() {
           value={filters.status || ""}
           onChange={(e) => patch({ status: e.target.value || undefined })}
         >
-          <option value="">Barcha holatlar</option>
+          <option value="">{tr("Barcha holatlar")}</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -105,7 +106,7 @@ export function ReservationsPage() {
           <input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Mehmon, bron raqami yoki xona..."
+            placeholder={tr("Mehmon, bron raqami yoki xona...")}
             className="h-9 w-full rounded-lg border border-white/10 bg-slate-950/60 pl-8 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none"
           />
         </form>
@@ -116,20 +117,20 @@ export function ReservationsPage() {
           <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
         </div>
       ) : rows.length === 0 ? (
-        <PanelEmpty>Bron topilmadi</PanelEmpty>
+        <PanelEmpty>{tr("Bron topilmadi")}</PanelEmpty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-white/5">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-sm">
               <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
                 <tr>
-                  <th className="px-3 py-2.5 font-medium">Bron</th>
-                  <th className="px-3 py-2.5 font-medium">Mehmonxona</th>
-                  <th className="px-3 py-2.5 font-medium">Mehmon</th>
-                  <th className="px-3 py-2.5 font-medium">Xona</th>
-                  <th className="px-3 py-2.5 font-medium">Muddat</th>
-                  <th className="px-3 py-2.5 font-medium">Holat</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Summa</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Bron")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Mehmonxona")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Mehmon")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Xona")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Muddat")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Holat")}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{tr("Summa")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -162,7 +163,7 @@ export function ReservationsPage() {
                       </span>
                       {r.paid_amount < r.total_amount && (
                         <span className="block text-[11px] text-amber-400">
-                          qoldiq {money(r.total_amount - r.paid_amount)}
+                          {tr("qoldiq {{money}}", { money: money(r.total_amount - r.paid_amount) })}
                         </span>
                       )}
                     </td>
@@ -189,7 +190,7 @@ export function ReservationsPage() {
                     }))
                   }
                 >
-                  Oldingi
+                  {tr("Oldingi")}
                 </PanelButton>
                 <span className="tabular-nums">
                   {page + 1} / {pageCount}
@@ -202,7 +203,7 @@ export function ReservationsPage() {
                     setFilters((f) => ({ ...f, skip: (f.skip ?? 0) + PAGE_SIZE }))
                   }
                 >
-                  Keyingi
+                  {tr("Keyingi")}
                 </PanelButton>
               </div>
             )}

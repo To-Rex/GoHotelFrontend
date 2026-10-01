@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api"
+import { tr, trc } from "@/i18n"
 
 /**
  * Xodim xabar bergan muammolar (`/problems`).
@@ -26,18 +27,18 @@ export interface Problem {
 
 /** Muammo turlari — mobil ilovadagi ro'yxat bilan bir xil. */
 export const PROBLEM_CATEGORIES: Record<string, string> = {
-  MAINTENANCE: "Ta'mir kerak",
-  EQUIPMENT: "Jihoz nosozligi",
-  SUPPLIES: "Buyum tugagan",
-  CLEANING: "Tozalash muammosi",
-  SAFETY: "Xavfsizlik",
-  OTHER: "Boshqa",
+  MAINTENANCE: tr("Ta'mir kerak"),
+  EQUIPMENT: tr("Jihoz nosozligi"),
+  SUPPLIES: tr("Buyum tugagan"),
+  CLEANING: tr("Tozalash muammosi"),
+  SAFETY: trc("problem", "Xavfsizlik"),
+  OTHER: tr("Boshqa"),
 }
 
 export const PROBLEM_STATUSES: Array<{ key: ProblemStatus; label: string }> = [
-  { key: "OPEN", label: "Ochiq" },
-  { key: "IN_PROGRESS", label: "Bajarilmoqda" },
-  { key: "RESOLVED", label: "Hal qilindi" },
+  { key: "OPEN", label: tr("Ochiq") },
+  { key: "IN_PROGRESS", label: tr("Bajarilmoqda") },
+  { key: "RESOLVED", label: tr("Hal qilindi") },
 ]
 
 export const useProblems = (status?: ProblemStatus | "", enabled = true) =>

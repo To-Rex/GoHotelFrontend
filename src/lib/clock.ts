@@ -1,3 +1,4 @@
+import { tr } from "@/i18n"
 /**
  * Navbar soati uchun formatlash.
  *
@@ -7,11 +8,14 @@
  * bilan qulflaydi; komponent esa brauzersiz sinab bo'lmaydi.
  */
 
+// i18n:keys — ro'yxat o'zbekcha qoladi (test shu nomlarni tekshiradi);
+// ekranda tr(nom) bilan tarjima qilinadi
 export const UZ_MONTHS = [
   "yanvar", "fevral", "mart", "aprel", "may", "iyun",
   "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr",
 ] as const
 
+// i18n:keys
 export const UZ_DAYS = [
   "yakshanba", "dushanba", "seshanba", "chorshanba",
   "payshanba", "juma", "shanba",
@@ -32,9 +36,11 @@ export function clockParts(date: Date): ClockParts {
   return {
     hhmm: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
     ss: pad(date.getSeconds()),
-    dateLabel: `${date.getDate()}-${UZ_MONTHS[date.getMonth()]}, ${
-      UZ_DAYS[date.getDay()]
-    }`,
+    dateLabel: tr("{{day}}-{{month}}, {{weekday}}", {
+      day: date.getDate(),
+      month: tr(UZ_MONTHS[date.getMonth()]),
+      weekday: tr(UZ_DAYS[date.getDay()]),
+    }),
   }
 }
 

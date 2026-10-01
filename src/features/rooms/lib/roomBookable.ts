@@ -1,3 +1,4 @@
+import { tr } from "@/i18n"
 /**
  * Xona holati bron qilishga yo'l qo'yadimi.
  *
@@ -25,10 +26,10 @@ export const BLOCKED_ALWAYS = [
 export const BLOCKED_NOW = ["CLEANING"] as const
 
 const STATUS_LABEL: Record<string, string> = {
-  CLEANING: "tozalanmoqda",
-  MAINTENANCE: "ta'mirda",
-  INSPECTION: "tekshiruvda",
-  OUT_OF_SERVICE: "xizmatdan tashqari",
+  CLEANING: tr("tozalanmoqda"),
+  MAINTENANCE: tr("ta'mirda"),
+  INSPECTION: tr("tekshiruvda"),
+  OUT_OF_SERVICE: tr("xizmatdan tashqari"),
 }
 
 export interface BookableRoom {
@@ -112,10 +113,10 @@ export const BLOCKING_TASK_TYPES = [
 ] as const
 
 const TASK_WORK_LABEL: Record<string, string> = {
-  MAINTENANCE: "ta'mirlash ishi",
-  INSPECTION: "tekshiruv ishi",
-  CLEANING: "tozalash ishi",
-  DEEP_CLEANING: "chuqur tozalash ishi",
+  MAINTENANCE: tr("ta'mirlash ishi"),
+  INSPECTION: tr("tekshiruv ishi"),
+  CLEANING: tr("tozalash ishi"),
+  DEEP_CLEANING: tr("chuqur tozalash ishi"),
 }
 
 //: Bir xonada bir nechta faol vazifa bo'lsa — og'irrog'i ustun
@@ -180,21 +181,21 @@ export function roomBookingBlock(
   blockingTask?: string | null
 ): string | null {
   const status = room.current_status
-  const where = room.room_number ? `${room.room_number}-xona` : "Xona"
+  const where = room.room_number ? tr("{{room_number}}-xona", { room_number: room.room_number }) : tr("Xona")
   const label = statusLabel(status)
 
   if (isBlockedAlways(status)) {
-    return `${where} ${label} — holat o'zgartirilmaguncha hech qanday sanaga bron qilib bo'lmaydi.`
+    return tr("{{where}} {{label}} — holat o'zgartirilmaguncha hech qanday sanaga bron qilib bo'lmaydi.", { where, label })
   }
 
   // Holat yumshoq bo'lsa ham tugallanmagan ta'mir/tekshiruv vazifasi
   // xonani yopadi — ish yakunlangach o'zi ochiladi
   if (blockingTask) {
-    return `${where}da ${taskWorkLabel(blockingTask)} tugallanmagan — ish yakunlangach bron qilish mumkin bo'ladi.`
+    return tr("{{where}}da {{blockingTask}} tugallanmagan — ish yakunlangach bron qilish mumkin bo'ladi.", { where, blockingTask: taskWorkLabel(blockingTask) })
   }
 
   if (isBlockedNow(status)) {
-    return `${where} hozir ${label} — tozalash yakunlangach bron qilish mumkin bo'ladi.`
+    return tr("{{where}} hozir {{label}} — tozalash yakunlangach bron qilish mumkin bo'ladi.", { where, label })
   }
 
   return null

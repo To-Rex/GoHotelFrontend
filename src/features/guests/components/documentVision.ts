@@ -1,4 +1,5 @@
 import type { DocumentType } from "./documentScannerTypes"
+import { tr } from "@/i18n"
 
 export interface ImageQuality {
   score: number
@@ -187,11 +188,11 @@ function qualityFromStats(stats: LuminanceStats, count: number, sharpness: numbe
   const glarePenalty = glare > 0.7 && contrast < 25 ? 0.45 : glare > 0.88 ? 0.2 : 0
   const score = Math.max(0, Math.min(1, sharpScore * 0.5 + contrastScore * 0.25 + lightScore * 0.25 - glarePenalty))
 
-  let hint = "Hujjatni ramkada qimirlatmay turing"
-  if (sharpness < 8) hint = "Fokus past — kamerani biroz uzoqlashtirib, ravshanlashtiring"
-  else if (brightness < 55) hint = "Yorug‘lik kam — hujjatni yorug‘roq joyga olib boring"
-  else if (brightness > 230 || (glare > 0.7 && contrast < 25)) hint = "Yaltirash bor — kamerani yoki hujjat burchagini ozgina o‘zgartiring"
-  else if (contrast < 18) hint = "Kontrast past — soyani kamaytiring"
+  let hint = tr("Hujjatni ramkada qimirlatmay turing")
+  if (sharpness < 8) hint = tr("Fokus past — kamerani biroz uzoqlashtirib, ravshanlashtiring")
+  else if (brightness < 55) hint = tr("Yorug‘lik kam — hujjatni yorug‘roq joyga olib boring")
+  else if (brightness > 230 || (glare > 0.7 && contrast < 25)) hint = tr("Yaltirash bor — kamerani yoki hujjat burchagini ozgina o‘zgartiring")
+  else if (contrast < 18) hint = tr("Kontrast past — soyani kamaytiring")
 
   return { score, sharpness, brightness, contrast, glare, usable: score >= 0.48, hint }
 }
@@ -588,7 +589,7 @@ async function getOpenCv() {
       if (candidate instanceof Promise) return candidate
       if (candidate?.Mat) return candidate
       await new Promise<void>((resolve, reject) => {
-        const timeout = window.setTimeout(() => reject(new Error("OpenCV yuklanmadi")), 12000)
+        const timeout = window.setTimeout(() => reject(new Error(tr("OpenCV yuklanmadi"))), 12000)
         candidate.onRuntimeInitialized = () => {
           window.clearTimeout(timeout)
           resolve()

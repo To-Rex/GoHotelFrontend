@@ -1,6 +1,7 @@
 import { parse } from "mrz"
 import type { DocumentType, RecognitionResult, ScannedDoc } from "./documentScannerTypes"
 import { isLikelyUzbekPinfl } from "./documentScannerTypes"
+import { tr } from "@/i18n"
 
 type MrzFormat = "TD1" | "TD2" | "TD3"
 
@@ -161,10 +162,10 @@ export function parseMrzText(text: string, expectedType?: DocumentType): Recogni
       const pinfl = extractUzbekPinfl(fields)
       const pinflVerified = Boolean(pinfl)
       const warnings: string[] = []
-      if (autocorrected) warnings.push("MRZ OCR belgilarini tuzatdi — tekshirib tasdiqlang")
-      if (!parsed?.valid) warnings.push("MRZ nazorat raqamlari to‘liq tasdiqlanmadi")
+      if (autocorrected) warnings.push(tr("MRZ OCR belgilarini tuzatdi — tekshirib tasdiqlang"))
+      if (!parsed?.valid) warnings.push(tr("MRZ nazorat raqamlari to‘liq tasdiqlanmadi"))
       if (!pinflVerified && rawPersonal) {
-        warnings.push("MRZ ixtiyoriy raqami JSHSHIR sifatida qo‘llanmadi")
+        warnings.push(tr("MRZ ixtiyoriy raqami JSHSHIR sifatida qo‘llanmadi"))
       }
 
       const doc: ScannedDoc = {

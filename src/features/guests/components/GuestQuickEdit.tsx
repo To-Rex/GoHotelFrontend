@@ -20,6 +20,7 @@ import {
   NATIONALITIES,
   sanitizePassport,
 } from "../constants"
+import { tr } from "@/i18n"
 
 /**
  * Mehmonni ish joyidan chiqmasdan tahrirlash.
@@ -114,7 +115,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
 
   const save = async () => {
     if (!form.first_name.trim()) {
-      setError("Ism kiritilishi shart")
+      setError(tr("Ism kiritilishi shart"))
       return
     }
     setError(null)
@@ -151,25 +152,25 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
       <button
         type="button"
         onClick={start}
-        title="Mehmon ma'lumotlarini tahrirlash"
+        title={tr("Mehmon ma'lumotlarini tahrirlash")}
         className={cn(
           "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-white hover:text-primary-700",
           className
         )}
       >
         <Pencil className="h-3 w-3" />
-        Tahrirlash
+        {tr("Tahrirlash")}
       </button>
 
       <Dialog open={open} onOpenChange={(o) => !o && setOpen(false)}>
         <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
-            <DialogTitle>Mehmon ma'lumotlari</DialogTitle>
+            <DialogTitle>{tr("Mehmon ma'lumotlari")}</DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">Ism *</label>
+              <label className="text-xs font-medium text-gray-500">{tr("Ism *")}</label>
               <Input
                 className={field}
                 value={form.first_name}
@@ -177,7 +178,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">Familiya</label>
+              <label className="text-xs font-medium text-gray-500">{tr("Familiya")}</label>
               <Input
                 className={field}
                 value={form.last_name}
@@ -185,7 +186,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">Telefon</label>
+              <label className="text-xs font-medium text-gray-500">{tr("Telefon")}</label>
               <Input
                 className={field}
                 value={form.phone}
@@ -195,7 +196,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500">
-                Tug'ilgan sana
+                {tr("Tug'ilgan sana")}
               </label>
               <Input
                 type="date"
@@ -206,7 +207,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500">
-                Passport raqami
+                {tr("Passport raqami")}
               </label>
               <Input
                 className={field}
@@ -216,7 +217,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">Fuqarolik</label>
+              <label className="text-xs font-medium text-gray-500">{tr("Fuqarolik")}</label>
               <select
                 className={selectClass}
                 value={form.nationality}
@@ -225,18 +226,18 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
                 {/* Ro'yxatda yo'q qiymat ham saqlanib qolsin — eski
                     yozuvlarda uchraydi va tahrirlash uni yo'qotmasligi kerak */}
                 {form.nationality && !NATIONALITIES.includes(form.nationality) && (
-                  <option value={form.nationality}>{form.nationality}</option>
+                  <option value={form.nationality}>{tr(form.nationality)}</option>
                 )}
                 {NATIONALITIES.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {tr(c)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500">
-                Hujjat turi
+                {tr("Hujjat turi")}
               </label>
               <select
                 className={selectClass}
@@ -252,7 +253,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500">
-                Hujjat raqami
+                {tr("Hujjat raqami")}
               </label>
               <Input
                 className={field}
@@ -261,7 +262,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
               />
             </div>
             <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs font-medium text-gray-500">Manzil</label>
+              <label className="text-xs font-medium text-gray-500">{tr("Manzil")}</label>
               <Input
                 className={field}
                 value={form.address}
@@ -277,8 +278,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
           )}
 
           <p className="text-[11px] text-gray-400">
-            Bo'sh qoldirilgan ixtiyoriy maydon tozalanadi. Familiya bo'sh
-            qoldirilsa avvalgi qiymati saqlanadi.
+            {tr("Bo'sh qoldirilgan ixtiyoriy maydon tozalanadi. Familiya bo'sh qoldirilsa avvalgi qiymati saqlanadi.")}
           </p>
 
           <DialogFooter className="flex-wrap gap-2">
@@ -289,7 +289,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
               disabled={updateGuest.isPending}
             >
               <X className="mr-1.5 h-4 w-4" />
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button type="button" onClick={save} disabled={updateGuest.isPending}>
               {updateGuest.isPending ? (
@@ -297,7 +297,7 @@ export function GuestQuickEdit({ guest, onSaved, className }: Props) {
               ) : (
                 <Check className="mr-1.5 h-4 w-4" />
               )}
-              Saqlash
+              {tr("Saqlash")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { tr } from "@/i18n"
 
 /**
  * Xodimning shaxsiy hisoboti — serverda hisoblanadi.
@@ -30,11 +31,11 @@ export interface MethodBreakdown {
 
 /** Ustunlar tartibi va nomlari — to'lov oynasidagi nomlar bilan bir xil */
 export const METHOD_COLUMNS: Array<{ key: keyof MethodBreakdown; label: string }> = [
-  { key: "cash", label: "Naqd pul" },
-  { key: "card", label: "Bank kartasi" },
-  { key: "online", label: "Online to'lov" },
-  { key: "bank_transfer", label: "Bank o'tkazmasi" },
-  { key: "other", label: "Boshqa" },
+  { key: "cash", label: tr("Naqd pul") },
+  { key: "card", label: tr("Bank kartasi") },
+  { key: "online", label: tr("Online to'lov") },
+  { key: "bank_transfer", label: tr("Bank o'tkazmasi") },
+  { key: "other", label: tr("Boshqa") },
 ]
 
 /** Usul kodi → to'lov oynasidagi nomi ("cash" → "Naqd pul") */

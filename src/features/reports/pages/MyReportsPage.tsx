@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils"
 import { buildDatePresets, resolveDateRange } from "@/lib/datePresets"
 import { usePermissions } from "@/lib/permissions"
 import { effectivePresetKey, visiblePresets } from "../lib/reportPeriod"
+import { tr } from "@/i18n"
 
 /* Shaxsiy hisobot: joriy xodimning tanlangan kunlardagi ishi.
 
@@ -61,12 +62,12 @@ import { effectivePresetKey, visiblePresets } from "../lib/reportPeriod"
    Endi faqat ochilgan bo'lim chiziladi. */
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Kirilgan",
-  CHECKED_OUT: "Chiqilgan",
-  CANCELLED: "Bekor qilingan",
-  NO_SHOW: "Kelmagan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Kirilgan"),
+  CHECKED_OUT: tr("Chiqilgan"),
+  CANCELLED: tr("Bekor qilingan"),
+  NO_SHOW: tr("Kelmagan"),
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -83,29 +84,29 @@ const fmt = (n: number) => Number(n || 0).toLocaleString()
 const SECTIONS = [
   {
     key: "overview",
-    label: "Umumiy",
-    desc: "Davr yakuni, qarzdorlarim va pul harakati usullar bo'yicha",
+    label: tr("Umumiy"),
+    desc: tr("Davr yakuni, qarzdorlarim va pul harakati usullar bo'yicha"),
     icon: LayoutDashboard,
     iconClass: "bg-primary-50 text-primary-600",
   },
   {
     key: "reservations",
-    label: "Bronlarim",
-    desc: "Tanlangan davrda siz yaratgan bronlar",
+    label: tr("Bronlarim"),
+    desc: tr("Tanlangan davrda siz yaratgan bronlar"),
     icon: CalendarCheck,
     iconClass: "bg-blue-50 text-blue-600",
   },
   {
     key: "shop",
-    label: "Do'kon sotuvlarim",
-    desc: "Siz qayd etgan do'kon savdolari — to'langan va brondagilar",
+    label: tr("Do'kon sotuvlarim"),
+    desc: tr("Siz qayd etgan do'kon savdolari — to'langan va brondagilar"),
     icon: Store,
     iconClass: "bg-violet-50 text-violet-600",
   },
   {
     key: "expenses",
-    label: "Xarajatlarim",
-    desc: "Siz kiritgan chiqimlar",
+    label: tr("Xarajatlarim"),
+    desc: tr("Siz kiritgan chiqimlar"),
     icon: TrendingDown,
     iconClass: "bg-red-50 text-red-600",
   },
@@ -396,53 +397,53 @@ export const MyReportsPage = () => {
      shuning uchun pastda to'liq kenglikdagi alohida panelda. */
   const cards = [
     {
-      label: "Yaratgan bronlarim",
-      value: `${count(resCount)} ta`,
+      label: tr("Yaratgan bronlarim"),
+      value: tr("{{resCount}} ta", { resCount: count(resCount) }),
       sub:
         cancelledCount > 0
-          ? `shundan ${cancelledCount} tasi bekor qilingan`
-          : "tanlangan davrda",
+          ? tr("shundan {{cancelledCount}} tasi bekor qilingan", { cancelledCount })
+          : tr("tanlangan davrda"),
       icon: CalendarCheck,
       accent: "bg-blue-50 text-blue-600",
     },
     {
-      label: "Bronlar summasi",
-      value: `${stat(resTotal)} So'm`,
-      sub: "bekor qilinganlarsiz · bu shartnoma qiymati, pul emas",
+      label: tr("Bronlar summasi"),
+      value: tr("{{resTotal}} So'm", { resTotal: stat(resTotal) }),
+      sub: tr("bekor qilinganlarsiz · bu shartnoma qiymati, pul emas"),
       icon: Wallet,
       accent: "bg-sky-50 text-sky-600",
     },
     {
-      label: "Qabul qilgan to'lovlarim",
-      value: `${stat(collected)} So'm`,
+      label: tr("Qabul qilgan to'lovlarim"),
+      value: tr("{{collected}} So'm", { collected: stat(collected) }),
       sub:
-        `naqd ${fmt(collectedCash)}` +
-        (refunds > 0 ? ` · qaytarilgan ${fmt(refunds)}` : ""),
+        tr("naqd {{collectedCash}}", { collectedCash: fmt(collectedCash) }) +
+        (refunds > 0 ? tr(" · qaytarilgan {{refunds}}", { refunds: fmt(refunds) }) : ""),
       icon: Banknote,
       accent: "bg-emerald-50 text-emerald-600",
     },
     {
-      label: "Do'kon sotuvlarim",
-      value: `${stat(shopTotal)} So'm`,
+      label: tr("Do'kon sotuvlarim"),
+      value: tr("{{shopTotal}} So'm", { shopTotal: stat(shopTotal) }),
       sub:
-        `${shopCount} ta to'langan` +
+        tr("{{shopCount}} ta to'langan", { shopCount }) +
         (shopPendingCount > 0
-          ? ` · bronda ${shopPendingCount} ta: ${fmt(shopPendingTotal)}`
+          ? tr(" · bronda {{shopPendingCount}} ta: {{shopPendingTotal}}", { shopPendingCount, shopPendingTotal: fmt(shopPendingTotal) })
           : ""),
       icon: Store,
       accent: "bg-violet-50 text-violet-600",
     },
     {
-      label: "Xarajatlarim",
-      value: `${stat(expTotal)} So'm`,
-      sub: `${expCount} ta yozuv`,
+      label: tr("Xarajatlarim"),
+      value: tr("{{expTotal}} So'm", { expTotal: stat(expTotal) }),
+      sub: tr("{{expCount}} ta yozuv", { expCount }),
       icon: TrendingDown,
       accent: "bg-red-50 text-red-600",
     },
     {
-      label: "Jami tushum",
-      value: `${stat(incomeTotal)} So'm`,
-      sub: `to'lovlar + do'kon · naqd qoldiq ${fmt(netCash)}`,
+      label: tr("Jami tushum"),
+      value: tr("{{incomeTotal}} So'm", { incomeTotal: stat(incomeTotal) }),
+      sub: tr("to'lovlar + do'kon · naqd qoldiq {{netCash}}", { netCash: fmt(netCash) }),
       icon: TrendingUp,
       accent: "bg-emerald-50 text-emerald-600",
     },
@@ -457,9 +458,9 @@ export const MyReportsPage = () => {
             <FileBarChart className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Mening hisobotim</h1>
+            <h1 className="text-xl font-bold tracking-tight">{tr("Mening hisobotim")}</h1>
             <p className="text-sm text-muted-foreground">
-              {user?.first_name} {user?.last_name} — shaxsiy bronlar va xarajatlar
+              {user?.first_name} {user?.last_name}{" "}{tr("— shaxsiy bronlar va xarajatlar")}
             </p>
           </div>
         </div>
@@ -490,7 +491,7 @@ export const MyReportsPage = () => {
         {fullRangeAccess && (
           <div className="flex items-end gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">Sanadan</label>
+              <label className="text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
               <Input
                 type="date"
                 className="w-40"
@@ -500,7 +501,7 @@ export const MyReportsPage = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">Sanagacha</label>
+              <label className="text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
               <Input
                 type="date"
                 className="w-40"
@@ -517,7 +518,7 @@ export const MyReportsPage = () => {
       {loadError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          Hisobotni yuklab bo'lmadi: {apiErrorMessage(loadError)}
+          {tr("Hisobotni yuklab bo'lmadi: {{loadError}}", { loadError: apiErrorMessage(loadError) })}
         </p>
       )}
 
@@ -601,7 +602,7 @@ export const MyReportsPage = () => {
                     </span>
                     <div>
                       <p className="text-sm font-semibold text-gray-600">
-                        {netPositive ? "Sof foyda" : "Zarar"}
+                        {netPositive ? tr("Sof foyda") : tr("Zarar")}
                       </p>
                       <p
                         className={cn(
@@ -609,7 +610,7 @@ export const MyReportsPage = () => {
                           netPositive ? "text-emerald-700" : "text-red-700"
                         )}
                       >
-                        {stat(Math.abs(netTotal))} So'm
+                        {tr("{{stat}} So'm", { stat: stat(Math.abs(netTotal)) })}
                       </p>
                     </div>
                   </div>
@@ -617,14 +618,14 @@ export const MyReportsPage = () => {
                   {/* Hisob-kitobi — qaysi raqamlardan yig'ilgani */}
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
                     <span className="whitespace-nowrap">
-                      Tushum{" "}
+                      {tr("Tushum")}{" "}
                       <b className="font-semibold tabular-nums text-gray-700">
                         {fmt(incomeTotal)}
                       </b>
                     </span>
                     <span className="text-gray-300">−</span>
                     <span className="whitespace-nowrap">
-                      Xarajat{" "}
+                      {tr("Xarajat")}{" "}
                       <b className="font-semibold tabular-nums text-gray-700">
                         {fmt(expTotal)}
                       </b>
@@ -637,16 +638,16 @@ export const MyReportsPage = () => {
                   Shaxsiy hisobotda savol "men kimdan pul olishim kerak",
                   shuning uchun boshqa xodimlarning bronlari bu yerga
                   kirmaydi. */}
-              <DebtorsPanel mine title="Qarzdorlarim" initialLimit={5} />
+              <DebtorsPanel mine title={tr("Qarzdorlarim")} initialLimit={5} />
 
               {/* To'lov turlari bo'yicha to'liq tafsilot */}
               <div className="overflow-hidden rounded-lg border bg-white">
                 <div className="flex items-center justify-between border-b px-4 py-3">
                   <h3 className="text-lg font-bold tracking-tight">
-                    To'lov turlari bo'yicha
+                    {tr("To'lov turlari bo'yicha")}
                   </h3>
                   <span className="text-xs text-gray-400">
-                    qaytarimlar tushumdan ayirilgan
+                    {tr("qaytarimlar tushumdan ayirilgan")}
                   </span>
                 </div>
                 <div className="overflow-x-auto">
@@ -654,22 +655,22 @@ export const MyReportsPage = () => {
                     <thead>
                       <tr className="border-b bg-gray-50/80 text-left">
                         <th className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          To'lov turi
+                          {tr("To'lov turi")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Bron to'lovlari
+                          {tr("Bron to'lovlari")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Do'kon
+                          {tr("Do'kon")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Jami tushum
+                          {tr("Jami tushum")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Xarajat
+                          {tr("Xarajat")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Sof
+                          {tr("Sof")}
                         </th>
                       </tr>
                     </thead>
@@ -717,14 +718,14 @@ export const MyReportsPage = () => {
                             colSpan={6}
                             className="px-4 py-8 text-center text-sm text-gray-400"
                           >
-                            Tanlangan davrda pul harakati bo'lmagan
+                            {tr("Tanlangan davrda pul harakati bo'lmagan")}
                           </td>
                         </tr>
                       )}
                     </tbody>
                     <tfoot>
                       <tr className="border-t-2 bg-gray-50/60 font-semibold">
-                        <td className="px-4 py-2">Jami</td>
+                        <td className="px-4 py-2">{tr("Jami")}</td>
                         <td className="px-4 py-2 text-right tabular-nums">
                           {stat(collected)}
                         </td>
@@ -751,15 +752,12 @@ export const MyReportsPage = () => {
                 </div>
                 {refunds > 0 && (
                   <p className="border-t px-4 py-2.5 text-xs text-gray-500">
-                    Davr ichida {fmt(refunds)} so'm qaytarilgan — u yuqoridagi
-                    tushumdan allaqachon ayirilgan.
+                    {tr("Davr ichida {{refunds}} so'm qaytarilgan — u yuqoridagi tushumdan allaqachon ayirilgan.", { refunds: fmt(refunds) })}
                   </p>
                 )}
                 {shopPendingCount > 0 && (
                   <p className="border-t px-4 py-2.5 text-xs text-gray-500">
-                    To'lanmagan {shopPendingCount} ta do'kon savdosi (
-                    {fmt(shopPendingTotal)} so'm) tushumga kirmagan — pul hali
-                    olinmagan.
+                    {tr("To'lanmagan {{shopPendingCount}} ta do'kon savdosi ({{shopPendingTotal}} so'm) tushumga kirmagan — pul hali olinmagan.", { shopPendingCount, shopPendingTotal: fmt(shopPendingTotal) })}
                   </p>
                 )}
               </div>
@@ -773,15 +771,15 @@ export const MyReportsPage = () => {
               {section === "reservations" && (
                 <div className="rounded-lg border bg-white">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-                    <h3 className="text-sm font-semibold">Mening bronlarim</h3>
+                    <h3 className="text-sm font-semibold">{tr("Mening bronlarim")}</h3>
                     <div className="flex flex-1 items-center justify-end gap-3">
-                      <span className="text-xs text-gray-400">{resCount} ta</span>
+                      <span className="text-xs text-gray-400">{tr("{{resCount}} ta", { resCount })}</span>
                       {myReservations.length > 0 && (
                         <TableSearch
                           className="w-full sm:w-64"
                           value={resTable.search}
                           onChange={(v) => setResTable((t) => setSearch(t, v))}
-                          placeholder="Mehmon, raqam yoki xona..."
+                          placeholder={tr("Mehmon, raqam yoki xona...")}
                         />
                       )}
                     </div>
@@ -789,8 +787,8 @@ export const MyReportsPage = () => {
                   {resView.total === 0 ? (
                     <p className="px-4 py-8 text-center text-sm text-gray-400">
                       {resTable.search
-                        ? "Qidiruv bo'yicha bron topilmadi"
-                        : "Tanlangan davrda siz yaratgan bron yo'q"}
+                        ? tr("Qidiruv bo'yicha bron topilmadi")
+                        : tr("Tanlangan davrda siz yaratgan bron yo'q")}
                     </p>
                   ) : (
                     <>
@@ -823,7 +821,7 @@ export const MyReportsPage = () => {
                             </div>
                             <div className="mt-2.5 flex items-end justify-between gap-2 border-t border-border pt-2">
                               <span className="text-sm">
-                                <span className="text-muted-foreground">Xona: </span>
+                                <span className="text-muted-foreground">{tr("Xona:")}{" "}</span>
                                 <span className="font-medium">
                                   {r.room_number || "—"}
                                 </span>
@@ -836,14 +834,14 @@ export const MyReportsPage = () => {
                                       "text-muted-foreground line-through"
                                   )}
                                 >
-                                  Jami: {fmt(r.total_amount)}
+                                  {tr("Jami: {{total_amount}}", { total_amount: fmt(r.total_amount) })}
                                 </p>
                                 <p className="text-[11px] text-muted-foreground">
-                                  To'langan: {fmt(r.paid_amount)}
+                                  {tr("To'langan: {{paid_amount}}", { paid_amount: fmt(r.paid_amount) })}
                                 </p>
                                 {paymentMethodsLabel(r) && (
                                   <p className="text-[11px] text-muted-foreground">
-                                    To'lov: {paymentMethodsLabel(r)}
+                                    {tr("To'lov:")}{" "}{paymentMethodsLabel(r)}
                                   </p>
                                 )}
                               </div>
@@ -856,19 +854,19 @@ export const MyReportsPage = () => {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <SortHead {...resHead} column="created_at">Vaqt</SortHead>
-                              <SortHead {...resHead} column="reservation_number">Raqam</SortHead>
-                              <SortHead {...resHead} column="guest_name">Mehmon</SortHead>
-                              <SortHead {...resHead} column="room_number">Xona</SortHead>
-                              <SortHead {...resHead} column="status">Holat</SortHead>
+                              <SortHead {...resHead} column="created_at">{tr("Vaqt")}</SortHead>
+                              <SortHead {...resHead} column="reservation_number">{tr("Raqam")}</SortHead>
+                              <SortHead {...resHead} column="guest_name">{tr("Mehmon")}</SortHead>
+                              <SortHead {...resHead} column="room_number">{tr("Xona")}</SortHead>
+                              <SortHead {...resHead} column="status">{tr("Holat")}</SortHead>
                               <SortHead {...resHead} column="total_amount" align="right">
-                                Jami
+                                {tr("Jami")}
                               </SortHead>
                               <SortHead {...resHead} column="paid_amount" align="right">
-                                To'langan
+                                {tr("To'langan")}
                               </SortHead>
                               <SortHead {...resHead} column="payment_method">
-                                To'lov turi
+                                {tr("To'lov turi")}
                               </SortHead>
                             </TableRow>
                           </TableHeader>
@@ -956,18 +954,18 @@ export const MyReportsPage = () => {
                 <div className="rounded-lg border bg-white">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
                     <h3 className="text-sm font-semibold">
-                      Mening do'kon sotuvlarim
+                      {tr("Mening do'kon sotuvlarim")}
                     </h3>
                     <div className="flex flex-1 items-center justify-end gap-3">
                       <span className="text-xs text-gray-400">
-                        {myShopSales.length} ta
+                        {tr("{{count}} ta", { count: myShopSales.length })}
                       </span>
                       {myShopSales.length > 0 && (
                         <TableSearch
                           className="w-full sm:w-64"
                           value={shopTable.search}
                           onChange={(v) => setShopTable((t) => setSearch(t, v))}
-                          placeholder="Bron, mijoz yoki mahsulot..."
+                          placeholder={tr("Bron, mijoz yoki mahsulot...")}
                         />
                       )}
                     </div>
@@ -975,8 +973,8 @@ export const MyReportsPage = () => {
                   {shopView.total === 0 ? (
                     <p className="px-4 py-8 text-center text-sm text-gray-400">
                       {shopTable.search
-                        ? "Qidiruv bo'yicha sotuv topilmadi"
-                        : "Tanlangan davrda siz qilgan do'kon sotuvi yo'q"}
+                        ? tr("Qidiruv bo'yicha sotuv topilmadi")
+                        : tr("Tanlangan davrda siz qilgan do'kon sotuvi yo'q")}
                     </p>
                   ) : (
                     <>
@@ -999,16 +997,16 @@ export const MyReportsPage = () => {
                                   className="flex-shrink-0 text-[11px]"
                                 >
                                   {s.payment_method === "CASH"
-                                    ? "Naqd"
+                                    ? tr("Naqd")
                                     : s.payment_method === "CARD"
-                                      ? "Karta"
+                                      ? tr("Karta")
                                       : s.payment_method === "TRANSFER"
-                                        ? "O'tkazma"
-                                        : s.payment_method || "To'langan"}
+                                        ? tr("O'tkazma")
+                                        : s.payment_method || tr("To'langan")}
                                 </Badge>
                               ) : (
                                 <Badge className="flex-shrink-0 bg-amber-100 text-[11px] text-amber-700 hover:bg-amber-100">
-                                  Bron: {s.reservation_number || "—"}
+                                  {tr("Bron: {{v}}", { v: s.reservation_number || "—" })}
                                 </Badge>
                               )}
                             </div>
@@ -1018,7 +1016,7 @@ export const MyReportsPage = () => {
                                 .join(", ")}
                             </p>
                             <p className="mt-2 border-t border-border pt-2 text-right text-sm font-semibold">
-                              {fmt(s.total_amount)} So'm
+                              {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
                             </p>
                           </div>
                         ))}
@@ -1028,11 +1026,11 @@ export const MyReportsPage = () => {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <SortHead {...shopHead} column="created_at">Vaqt</SortHead>
-                              <TableHead>Mahsulotlar</TableHead>
-                              <SortHead {...shopHead} column="status">To'lov</SortHead>
+                              <SortHead {...shopHead} column="created_at">{tr("Vaqt")}</SortHead>
+                              <TableHead>{tr("Mahsulotlar")}</TableHead>
+                              <SortHead {...shopHead} column="status">{tr("To'lov")}</SortHead>
                               <SortHead {...shopHead} column="total_amount" align="right">
-                                Summa
+                                {tr("Summa")}
                               </SortHead>
                             </TableRow>
                           </TableHeader>
@@ -1053,21 +1051,21 @@ export const MyReportsPage = () => {
                                   {s.status === "PAID" ? (
                                     <Badge variant="secondary" className="text-[11px]">
                                       {s.payment_method === "CASH"
-                                        ? "Naqd"
+                                        ? tr("Naqd")
                                         : s.payment_method === "CARD"
-                                          ? "Karta"
+                                          ? tr("Karta")
                                           : s.payment_method === "TRANSFER"
-                                            ? "O'tkazma"
-                                            : s.payment_method || "To'langan"}
+                                            ? tr("O'tkazma")
+                                            : s.payment_method || tr("To'langan")}
                                     </Badge>
                                   ) : (
                                     <Badge className="bg-amber-100 text-[11px] text-amber-700 hover:bg-amber-100">
-                                      Bron: {s.reservation_number || "—"}
+                                      {tr("Bron: {{v}}", { v: s.reservation_number || "—" })}
                                     </Badge>
                                   )}
                                 </TableCell>
                                 <TableCell className="whitespace-nowrap text-right text-sm font-semibold">
-                                  {fmt(s.total_amount)} So'm
+                                  {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -1088,15 +1086,15 @@ export const MyReportsPage = () => {
               {section === "expenses" && (
                 <div className="rounded-lg border bg-white">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-                    <h3 className="text-sm font-semibold">Mening xarajatlarim</h3>
+                    <h3 className="text-sm font-semibold">{tr("Mening xarajatlarim")}</h3>
                     <div className="flex flex-1 items-center justify-end gap-3">
-                      <span className="text-xs text-gray-400">{expCount} ta</span>
+                      <span className="text-xs text-gray-400">{tr("{{expCount}} ta", { expCount })}</span>
                       {myExpenses.length > 0 && (
                         <TableSearch
                           className="w-full sm:w-64"
                           value={expTable.search}
                           onChange={(v) => setExpTable((t) => setSearch(t, v))}
-                          placeholder="Nomi, toifasi yoki izohi..."
+                          placeholder={tr("Nomi, toifasi yoki izohi...")}
                         />
                       )}
                     </div>
@@ -1104,8 +1102,8 @@ export const MyReportsPage = () => {
                   {expView.total === 0 ? (
                     <p className="px-4 py-8 text-center text-sm text-gray-400">
                       {expTable.search
-                        ? "Qidiruv bo'yicha xarajat topilmadi"
-                        : "Tanlangan davrda siz kiritgan xarajat yo'q"}
+                        ? tr("Qidiruv bo'yicha xarajat topilmadi")
+                        : tr("Tanlangan davrda siz kiritgan xarajat yo'q")}
                     </p>
                   ) : (
                     <>
@@ -1131,7 +1129,7 @@ export const MyReportsPage = () => {
                             </div>
                             {e.category && (
                               <Badge variant="secondary" className="mt-2 text-[11px]">
-                                {e.category}
+                                {tr(e.category)}
                               </Badge>
                             )}
                           </div>
@@ -1142,11 +1140,11 @@ export const MyReportsPage = () => {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <SortHead {...expHead} column="expense_date">Sana</SortHead>
-                              <SortHead {...expHead} column="title">Nomi</SortHead>
-                              <SortHead {...expHead} column="category">Kategoriya</SortHead>
+                              <SortHead {...expHead} column="expense_date">{tr("Sana")}</SortHead>
+                              <SortHead {...expHead} column="title">{tr("Nomi")}</SortHead>
+                              <SortHead {...expHead} column="category">{tr("Kategoriya")}</SortHead>
                               <SortHead {...expHead} column="amount" align="right">
-                                Summa
+                                {tr("Summa")}
                               </SortHead>
                             </TableRow>
                           </TableHeader>
@@ -1164,7 +1162,7 @@ export const MyReportsPage = () => {
                                 <TableCell>
                                   {e.category ? (
                                     <Badge variant="secondary" className="text-[11px]">
-                                      {e.category}
+                                      {tr(e.category)}
                                     </Badge>
                                   ) : (
                                     <span className="text-sm text-muted-foreground">

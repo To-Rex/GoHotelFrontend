@@ -1,0 +1,15 @@
+{
+  "Super administrator": "Суперадминистратор",
+  "Ish jadvali": "График работы",
+  "kuniga {{work_hours_per_day}} soat": {
+    "one": "{{work_hours_per_day}} час в день",
+    "few": "{{work_hours_per_day}} часа в день",
+    "many": "{{work_hours_per_day}} часов в день",
+    "other": "{{work_hours_per_day}} часа в день"
+  },
+  "Hisobingiz haqidagi ma'lumotlar va sizga berilgan ruxsatlar": "Данные вашей учётной записи и выданные вам права доступа",
+  "Mening ruxsatlarim": "Мои права доступа",
+  "Administrator — to'liq ruxsat": "Администратор — полный доступ",
+  "Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.": "У вас неограниченный доступ ко всем разделам и действиям системы.",
+  "Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.": "Вам ещё не назначены права доступа — обратитесь к администратору."
+}

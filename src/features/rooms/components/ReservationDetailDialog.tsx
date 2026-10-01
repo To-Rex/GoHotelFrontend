@@ -45,6 +45,7 @@ import {
   overpaidOf,
   stayLabel,
 } from "../lib/reservationDetail"
+import { tr } from "@/i18n"
 
 /**
  * Bitta bandlovning to'liq ma'lumoti: kim, qachon, qayerda, qancha.
@@ -60,12 +61,12 @@ import {
  */
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Kirgan",
-  CHECKED_OUT: "Chiqgan",
-  NO_SHOW: "Kelmadi",
-  CANCELLED: "Bekor qilingan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Kirgan"),
+  CHECKED_OUT: tr("Chiqgan"),
+  NO_SHOW: tr("Kelmadi"),
+  CANCELLED: tr("Bekor qilingan"),
 }
 
 const statusBadge: Record<string, string> = {
@@ -78,10 +79,10 @@ const statusBadge: Record<string, string> = {
 }
 
 const PAY_LABELS: Record<string, string> = {
-  UNPAID: "To'lanmagan",
-  PARTIALLY_PAID: "Qisman to'langan",
-  PAID: "To'langan",
-  REFUNDED: "Qaytarilgan",
+  UNPAID: tr("To'lanmagan"),
+  PARTIALLY_PAID: tr("Qisman to'langan"),
+  PAID: tr("To'langan"),
+  REFUNDED: tr("Qaytarilgan"),
 }
 
 const payBadge: Record<string, string> = {
@@ -195,7 +196,7 @@ const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className="font-semibold leading-tight text-gray-900">
-          {person.name || "Ism ko'rsatilmagan"}
+          {person.name || tr("Ism ko'rsatilmagan")}
         </span>
         <span
           className={cn(
@@ -205,44 +206,44 @@ const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
               : "bg-gray-200 text-gray-600"
           )}
         >
-          {person.is_primary ? "Asosiy mehmon" : "Hamroh"}
+          {person.is_primary ? tr("Asosiy mehmon") : tr("Hamroh")}
         </span>
         {departed && (
           <span
-            title="Turish davomida xonadan ketgan — o'rniga boshqa hamroh joylashishi mumkin"
+            title={tr("Turish davomida xonadan ketgan — o'rniga boshqa hamroh joylashishi mumkin")}
             className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"
           >
-            Ketdi{leftAt ? ` · ${leftAt}` : ""}
+            {tr("Ketdi{{v}}", { v: leftAt ? ` · ${leftAt}` : "" })}
           </span>
         )}
         {person.has_face && (
           <span
-            title="Yuz biriktirilgan — kamera taniydi"
+            title={tr("Yuz biriktirilgan — kamera taniydi")}
             className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700"
           >
             <ScanFace className="h-3 w-3" />
-            Yuz
+            {tr("Yuz")}
           </span>
         )}
       </div>
 
       <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-        <Fact icon={Phone} value={person.phone} title="Telefon" />
-        <Fact icon={Mail} value={person.email} title="Email" />
+        <Fact icon={Phone} value={person.phone} title={tr("Telefon")} />
+        <Fact icon={Mail} value={person.email} title={tr("Email")} />
         <Fact
           icon={BadgeCheck}
           value={person.passport_number}
-          title="Passport raqami"
+          title={tr("Passport raqami")}
         />
-        <Fact icon={IdCard} value={doc} title="Hujjat" />
-        <Fact icon={Flag} value={person.nationality} title="Fuqaroligi" />
+        <Fact icon={IdCard} value={doc} title={tr("Hujjat")} />
+        <Fact icon={Flag} value={person.nationality} title={tr("Fuqaroligi")} />
         <Fact
           icon={Cake}
           value={formatDate(person.birth_date)}
-          title="Tug'ilgan sana"
+          title={tr("Tug'ilgan sana")}
         />
-        <Fact icon={MapPinned} value={person.address} title="Manzil" />
-        <Fact icon={StickyNote} value={person.notes} title="Mehmon haqida izoh" />
+        <Fact icon={MapPinned} value={person.address} title={tr("Manzil")} />
+        <Fact icon={StickyNote} value={person.notes} title={tr("Mehmon haqida izoh")} />
       </div>
 
       {/* Ma'lumotni shu yerning o'zida to'g'rilash */}
@@ -253,7 +254,7 @@ const OccupantCard = ({ person }: { person: ReservationOccupant }) => {
           aytiladi — aks holda "ma'lumot yo'q" xatoga o'xshab ko'rinardi. */}
       {!person.guest_id && (
         <p className="mt-1 text-[11px] text-gray-400">
-          Mehmonlar bazasida topilmadi — bronda saqlangan ism
+          {tr("Mehmonlar bazasida topilmadi — bronda saqlangan ism")}
         </p>
       )}
     </div>
@@ -281,7 +282,7 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
   const floorLabel =
     res.floor_name ||
     (res.floor_number !== null && res.floor_number !== undefined
-      ? `${res.floor_number}-qavat`
+      ? tr("{{floor_number}}-qavat", { floor_number: res.floor_number })
       : null)
 
   const place = [res.branch_name, floorLabel].filter(Boolean).join(" · ")
@@ -316,14 +317,13 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
 
         <div className="grid gap-3 sm:grid-cols-2">
           {/* ------------------------------------------------------ KIM */}
-          <Section icon={UserIcon} title="Xonada turganlar">
+          <Section icon={UserIcon} title={tr("Xonada turganlar")}>
             <Row
-              label="Mehmonlar soni"
+              label={tr("Mehmonlar soni")}
               value={
                 <span className="inline-flex items-center gap-1">
                   <Users className="h-3.5 w-3.5 text-gray-400" />
-                  {res.adults} kattalar
-                  {res.children ? `, ${res.children} bolalar` : ""}
+                  {tr("{{adults}} kattalar{{v}}", { adults: res.adults, v: res.children ? tr(", {{children}} bolalar", { children: res.children }) : "" })}
                 </span>
               }
             />
@@ -336,66 +336,66 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
                   <OccupantCard key={person.guest_id || `${person.name}-${i}`} person={person} />
                 ))
               ) : (
-                <p className="text-sm text-gray-400">Mehmon ko'rsatilmagan</p>
+                <p className="text-sm text-gray-400">{tr("Mehmon ko'rsatilmagan")}</p>
               )}
             </div>
           </Section>
 
           {/* --------------------------------------------------- QACHON */}
-          <Section icon={hourly ? Clock : CalendarDays} title="Muddat">
+          <Section icon={hourly ? Clock : CalendarDays} title={tr("Muddat")}>
             <p className="text-base font-semibold leading-tight text-gray-900">
               {stayLabel(res)}
             </p>
             <p className="mt-0.5 text-xs text-gray-500">
               {hourly
-                ? `Soatlik${hours ? ` · ${hours} soat` : ""}`
-                : `Kunlik${nights ? ` · ${nights} kecha` : ""}`}
+                ? tr("Soatlik{{v}}", { v: hours ? tr(" · {{hours}} soat", { hours }) : "" })
+                : tr("Kunlik{{v}}", { v: nights ? tr(" · {{nights}} kecha", { nights }) : "" })}
             </p>
             <div className="mt-2 border-t border-gray-100 pt-2">
               {/* Sanalar aniq vaqt bilan bir manbadan olinadi — soatlik
                   bronda `check_out_date` ga ishonib bo'lmaydi, izoh
                   `lib/reservationDetail.ts` da */}
-              <Row label="Kirish sanasi" value={checkInDateLabel(res)} />
-              <Row label="Chiqish sanasi" value={checkOutDateLabel(res)} />
+              <Row label={tr("Kirish sanasi")} value={checkInDateLabel(res)} />
+              <Row label={tr("Chiqish sanasi")} value={checkOutDateLabel(res)} />
               <Row
-                label="Chiqish so'ralgan"
+                label={tr("Chiqish so'ralgan")}
                 value={formatDateTime(res.checkout_requested_at)}
               />
             </div>
           </Section>
 
           {/* --------------------------------------------------- QAYERDA */}
-          <Section icon={MapPin} title="Joylashuv">
+          <Section icon={MapPin} title={tr("Joylashuv")}>
             <p className="flex items-center gap-1.5 text-base font-semibold leading-tight text-gray-900">
               <DoorOpen className="h-4 w-4 text-gray-400" />
-              {res.room_number ? `${res.room_number}-xona` : "Xona"}
+              {res.room_number ? tr("{{room_number}}-xona", { room_number: res.room_number }) : tr("Xona")}
             </p>
             <div className="mt-2 border-t border-gray-100 pt-2">
-              <Row label="Xona turi" value={res.room_type_name} />
-              <Row label="Filial" value={res.branch_name} />
-              <Row label="Qavat" value={floorLabel} />
+              <Row label={tr("Xona turi")} value={res.room_type_name} />
+              <Row label={tr("Filial")} value={res.branch_name} />
+              <Row label={tr("Qavat")} value={floorLabel} />
               {!place && !res.room_type_name && (
                 <p className="py-1 text-xs text-gray-400">
-                  Qo'shimcha ma'lumot yo'q
+                  {tr("Qo'shimcha ma'lumot yo'q")}
                 </p>
               )}
             </div>
           </Section>
 
           {/* --------------------------------------------------- QANCHA */}
-          <Section icon={Banknote} title="Hisob-kitob">
+          <Section icon={Banknote} title={tr("Hisob-kitob")}>
             <p className="text-base font-bold tabular-nums leading-tight text-gray-900">
-              {fmt(res.total_amount)} so'm
+              {tr("{{total_amount}} so'm", { total_amount: fmt(res.total_amount) })}
             </p>
-            <p className="mt-0.5 text-xs text-gray-500">Jami summa</p>
+            <p className="mt-0.5 text-xs text-gray-500">{tr("Jami summa")}</p>
             <div className="mt-2 border-t border-gray-100 pt-2">
               <Row
-                label="Chegirma"
+                label={tr("Chegirma")}
                 value={
                   Number(res.discount_amount) || Number(res.discount_percent)
                     ? [
                         Number(res.discount_amount)
-                          ? `${fmt(res.discount_amount)} so'm`
+                          ? tr("{{discount_amount}} so'm", { discount_amount: fmt(res.discount_amount) })
                           : null,
                         Number(res.discount_percent)
                           ? `${res.discount_percent}%`
@@ -407,18 +407,18 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
                 }
               />
               <Row
-                label="To'langan"
-                value={`${fmt(res.paid_amount)} so'm`}
+                label={tr("To'langan")}
+                value={tr("{{paid_amount}} so'm", { paid_amount: fmt(res.paid_amount) })}
                 accent="text-emerald-600"
               />
               <Row
-                label="Qarz"
-                value={debt ? `${fmt(debt)} so'm` : null}
+                label={tr("Qarz")}
+                value={debt ? tr("{{debt}} so'm", { debt: fmt(debt) }) : null}
                 accent="text-red-600"
               />
               <Row
-                label="Ortiqcha to'langan"
-                value={overpaid ? `${fmt(overpaid)} so'm` : null}
+                label={tr("Ortiqcha to'langan")}
+                value={overpaid ? tr("{{overpaid}} so'm", { overpaid: fmt(overpaid) }) : null}
                 accent="text-amber-600"
               />
             </div>
@@ -427,7 +427,7 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
 
         {/* ------------------------------------------ XONA KO'CHIRISHLARI */}
         {moves.length > 0 && (
-          <Section icon={History} title="Xona ko'chirishlari">
+          <Section icon={History} title={tr("Xona ko'chirishlari")}>
             <ul className="space-y-2">
               {moves.map((m, i) => (
                 <li
@@ -453,7 +453,7 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
                   )}
                   {Number(m.old_total) !== Number(m.new_total) && (
                     <span className="text-xs tabular-nums text-gray-500">
-                      · {fmt(Number(m.old_total))} → {fmt(Number(m.new_total))} so'm
+                      {tr("· {{fmt}} → {{fmt2}} so'm", { fmt: fmt(Number(m.old_total)), fmt2: fmt(Number(m.new_total)) })}
                     </span>
                   )}
                 </li>
@@ -463,9 +463,9 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
         )}
 
         {/* ----------------------------------------------- XIZMAT YOZUVI */}
-        <Section icon={FileText} title="Yozuv tarixi">
+        <Section icon={FileText} title={tr("Yozuv tarixi")}>
           <Row
-            label="Yaratilgan"
+            label={tr("Yaratilgan")}
             value={
               [formatDateTime(res.created_at), res.created_by_name]
                 .filter(Boolean)
@@ -473,7 +473,7 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
             }
           />
           <Row
-            label="O'zgartirilgan"
+            label={tr("O'zgartirilgan")}
             value={
               // Yaratilgan payt bilan bir xil bo'lsa ko'rsatishning ma'nosi yo'q
               formatDateTime(res.updated_at) !== formatDateTime(res.created_at)
@@ -482,7 +482,7 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
             }
           />
           <Row
-            label="Bekor qilingan"
+            label={tr("Bekor qilingan")}
             value={
               [formatDateTime(res.cancelled_at), res.cancelled_by_name]
                 .filter(Boolean)
@@ -490,8 +490,8 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
             }
             accent="text-red-600"
           />
-          <Row label="Bekor qilish sababi" value={res.cancelled_reason} />
-          <Row label="Izoh" value={res.notes} />
+          <Row label={tr("Bekor qilish sababi")} value={res.cancelled_reason} />
+          <Row label={tr("Izoh")} value={res.notes} />
         </Section>
 
         <DialogFooter className="flex-wrap gap-2">
@@ -502,7 +502,7 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
             roomType={res.room_type_name || undefined}
           />
           <Button variant="outline" onClick={onClose}>
-            Yopish
+            {tr("Yopish")}
           </Button>
         </DialogFooter>
       </DialogContent>

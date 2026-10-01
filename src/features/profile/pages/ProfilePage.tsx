@@ -20,17 +20,18 @@ import {
   uzPermissionLabel,
 } from "@/features/employees/pages/PermissionsPage"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: "Super administrator",
-  ADMIN: "Administrator",
-  EMPLOYEE: "Xodim",
+  SUPER_ADMIN: tr("Super administrator"),
+  ADMIN: tr("Administrator"),
+  EMPLOYEE: tr("Xodim"),
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Faol",
-  INACTIVE: "Nofaol",
-  TERMINATED: "Ishdan bo'shatilgan",
+  ACTIVE: tr("Faol"),
+  INACTIVE: tr("Nofaol"),
+  TERMINATED: tr("Ishdan bo'shatilgan"),
 }
 
 const statusBadge: Record<string, string> = {
@@ -80,37 +81,37 @@ export const ProfilePage = () => {
     {
       icon: Phone,
       accent: "text-sky-600",
-      label: "Telefon",
+      label: tr("Telefon"),
       value: user?.phone || "—",
     },
     {
       icon: Mail,
       accent: "text-violet-600",
-      label: "Email",
+      label: tr("Email"),
       value: user?.email || "—",
     },
     {
       icon: Building2,
       accent: "text-amber-600",
-      label: "Filial",
+      label: tr("Filial"),
       value: branchName,
     },
     {
       icon: Clock,
       accent: "text-emerald-600",
-      label: "Ish jadvali",
+      label: tr("Ish jadvali"),
       value:
         user?.work_start && user?.work_end
           ? `${user.work_start}–${user.work_end}`
           : "—",
       sub: user?.work_hours_per_day
-        ? `kuniga ${user.work_hours_per_day} soat`
+        ? tr("kuniga {{work_hours_per_day}} soat", { work_hours_per_day: user.work_hours_per_day })
         : undefined,
     },
     {
       icon: History,
       accent: "text-primary-600",
-      label: "Oxirgi kirish",
+      label: tr("Oxirgi kirish"),
       value: user?.last_login_at
         ? format(new Date(user.last_login_at), "dd.MM.yyyy HH:mm")
         : "—",
@@ -118,7 +119,7 @@ export const ProfilePage = () => {
     {
       icon: KeyRound,
       accent: "text-orange-600",
-      label: "Login",
+      label: tr("Login"),
       value: user?.username ? `@${user.username}` : "—",
     },
   ]
@@ -131,9 +132,9 @@ export const ProfilePage = () => {
           <UserRound className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Profil</h1>
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{tr("Profil")}</h1>
           <p className="text-sm text-gray-500">
-            Hisobingiz haqidagi ma'lumotlar va sizga berilgan ruxsatlar
+            {tr("Hisobingiz haqidagi ma'lumotlar va sizga berilgan ruxsatlar")}
           </p>
         </div>
       </div>
@@ -202,11 +203,11 @@ export const ProfilePage = () => {
         <div className="flex items-center justify-between gap-2 border-b bg-gray-50/70 px-4 py-3">
           <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            Mening ruxsatlarim
+            {tr("Mening ruxsatlarim")}
           </h2>
           {!isAdmin && (
             <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-500">
-              {permissions.length} ta
+              {tr("{{count}} ta", { count: permissions.length })}
             </span>
           )}
         </div>
@@ -217,18 +218,16 @@ export const ProfilePage = () => {
               <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
               <div>
                 <p className="text-sm font-bold text-emerald-800">
-                  Administrator — to'liq ruxsat
+                  {tr("Administrator — to'liq ruxsat")}
                 </p>
                 <p className="text-xs text-emerald-700/80">
-                  Tizimning barcha bo'limlari va amallariga cheklovsiz kirish
-                  huquqiga egasiz.
+                  {tr("Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.")}
                 </p>
               </div>
             </div>
           ) : permissions.length === 0 ? (
             <p className="rounded-xl border border-dashed px-4 py-6 text-center text-sm text-gray-400">
-              Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat
-              qiling.
+              {tr("Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.")}
             </p>
           ) : (
             <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">

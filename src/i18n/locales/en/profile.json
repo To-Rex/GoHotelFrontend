@@ -1,0 +1,13 @@
+{
+  "Super administrator": "Super administrator",
+  "Ish jadvali": "Work schedule",
+  "kuniga {{work_hours_per_day}} soat": {
+    "one": "{{work_hours_per_day}} hour per day",
+    "other": "{{work_hours_per_day}} hours per day"
+  },
+  "Hisobingiz haqidagi ma'lumotlar va sizga berilgan ruxsatlar": "Your account details and the permissions granted to you",
+  "Mening ruxsatlarim": "My permissions",
+  "Administrator — to'liq ruxsat": "Administrator — full access",
+  "Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.": "You have unrestricted access to all sections and actions of the system.",
+  "Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.": "No permissions have been assigned to you yet — contact an administrator."
+}

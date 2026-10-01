@@ -16,6 +16,7 @@ import {
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useSeo } from "@/lib/seo";
+import { tr } from "@/i18n";
 
 // Ekranni to'liq egallashi kerak bo'lgan sahifalar: bu yerda max-w-7xl cheklovi va
 // p-6 padding qo'llanmaydi, sahifaning o'zi butun bo'sh joyni boshqaradi.
@@ -31,7 +32,7 @@ export const MainLayout = () => {
   const { isAuthenticated, setUser, user } = useAuthStore();
   const { pathname } = useLocation();
   // Ichki boshqaruv sahifalari qidiruvga chiqmasligi kerak (noindex)
-  useSeo({ title: "Boshqaruv paneli — GoHotel", noindex: true });
+  useSeo({ title: tr("Boshqaruv paneli — GoHotel"), noindex: true });
   const { canRoute } = usePermissions();
 
   // Smena holati — faqat kassa bilan ishlaydigan xodimlar uchun so'raladi.

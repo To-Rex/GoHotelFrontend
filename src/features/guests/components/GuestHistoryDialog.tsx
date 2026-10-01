@@ -34,6 +34,7 @@ import {
   presenceVerdict,
   type StayDateFilter,
 } from "../lib/guestStays"
+import { tr, trc } from "@/i18n"
 
 /**
  * Mehmonning to'liq tarixi: qachon, qaysi xonada, kim bilan turgan.
@@ -48,12 +49,12 @@ import {
  */
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Kirgan",
-  CHECKED_OUT: "Chiqgan",
-  NO_SHOW: "Kelmadi",
-  CANCELLED: "Bekor qilingan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Kirgan"),
+  CHECKED_OUT: tr("Chiqgan"),
+  NO_SHOW: tr("Kelmadi"),
+  CANCELLED: tr("Bekor qilingan"),
 }
 
 const statusBadge: Record<string, string> = {
@@ -135,10 +136,10 @@ const StayCard = ({ stay }: { stay: GuestStay }) => {
   const others = stay.people.filter((p) => !p.is_self && p.name)
 
   const place = [
-    stay.room_number ? `${stay.room_number}-xona` : null,
+    stay.room_number ? tr("{{room_number}}-xona", { room_number: stay.room_number }) : null,
     stay.room_type_name,
     stay.floor_number !== null && stay.floor_number !== undefined
-      ? `${stay.floor_number}-qavat`
+      ? tr("{{floor_number}}-qavat", { floor_number: stay.floor_number })
       : null,
     stay.branch_name,
   ].filter(Boolean)
@@ -162,10 +163,10 @@ const StayCard = ({ stay }: { stay: GuestStay }) => {
             {/* Hamroh bo'lib turgan bron — bu bronni boshqa odam ochgan */}
             {stay.role === "COMPANION" && (
               <span
-                title="Bu bronni boshqa mehmon ochgan, bu odam hamroh bo'lgan"
+                title={tr("Bu bronni boshqa mehmon ochgan, bu odam hamroh bo'lgan")}
                 className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700"
               >
-                Hamroh sifatida
+                {tr("Hamroh sifatida")}
               </span>
             )}
           </div>
@@ -178,7 +179,7 @@ const StayCard = ({ stay }: { stay: GuestStay }) => {
             )}
             {hourly ? hourlyLabel(stay) : `${fmtDate(stay.check_in_date)} → ${fmtDate(stay.check_out_date)}`}
             <span className="text-xs text-gray-400">
-              {hourly ? "soatlik" : nights ? `${nights} kecha` : "kunlik"}
+              {hourly ? tr("soatlik") : nights ? tr("{{nights}} kecha", { nights }) : tr("kunlik")}
             </span>
           </p>
 
@@ -192,11 +193,10 @@ const StayCard = ({ stay }: { stay: GuestStay }) => {
 
         <div className="text-right">
           <p className="text-sm font-bold tabular-nums text-gray-900">
-            {fmt(stay.total_amount)} <span className="text-xs font-normal text-gray-400">So'm</span>
+            {fmt(stay.total_amount)} <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
           </p>
           <p className="text-[11px] text-gray-500">
-            {stay.adults} kattalar
-            {stay.children ? `, ${stay.children} bolalar` : ""}
+            {tr("{{adults}} kattalar{{v}}", { adults: stay.adults, v: stay.children ? tr(", {{children}} bolalar", { children: stay.children }) : "" })}
           </p>
         </div>
       </div>
@@ -206,7 +206,7 @@ const StayCard = ({ stay }: { stay: GuestStay }) => {
         <div className="mt-2.5 border-t border-gray-100 pt-2">
           <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">
             <Users className="h-3.5 w-3.5" />
-            Birga turganlar
+            {tr("Birga turganlar")}
           </p>
           <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
             {others.map((p, i) => (
@@ -217,7 +217,7 @@ const StayCard = ({ stay }: { stay: GuestStay }) => {
                 <span className="h-1.5 w-1.5 rounded-full bg-primary-400" />
                 {p.name}
                 {p.is_primary && (
-                  <span className="text-[11px] text-gray-400">(bron egasi)</span>
+                  <span className="text-[11px] text-gray-400">{tr("(bron egasi)")}</span>
                 )}
                 {p.phone && (
                   <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-400">
@@ -276,7 +276,7 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
         {isLoading && (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Yuklanmoqda...
+            {tr("Yuklanmoqda...")}
           </div>
         )}
 
@@ -293,13 +293,13 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
             {!!summary && summary.total_stays > 0 && (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
-                  { label: "Turishlar", value: String(summary.completed_stays) },
-                  { label: "Jami kecha", value: String(summary.total_nights) },
-                  { label: "To'langan", value: `${fmt(summary.total_paid)} so'm` },
+                  { label: tr("Turishlar"), value: String(summary.completed_stays) },
+                  { label: tr("Jami kecha"), value: String(summary.total_nights) },
+                  { label: tr("To'langan"), value: tr("{{total_paid}} so'm", { total_paid: fmt(summary.total_paid) }) },
                   {
-                    label: "Ko'p turgan xona",
+                    label: tr("Ko'p turgan xona"),
                     value: summary.favourite_room
-                      ? `${summary.favourite_room}-xona`
+                      ? tr("{{room_number}}-xona", { room_number: summary.favourite_room })
                       : "—",
                   },
                 ].map((s) => (
@@ -319,9 +319,9 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
             {!!summary && (summary.first_stay || summary.last_stay) && (
               <p className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
                 <UserCheck className="h-3.5 w-3.5 text-gray-400" />
-                Birinchi kelishi: <b className="text-gray-700">{fmtDate(summary.first_stay)}</b>
+                {tr("Birinchi kelishi:")}{" "}<b className="text-gray-700">{fmtDate(summary.first_stay)}</b>
                 <span className="text-gray-300">·</span>
-                oxirgisi: <b className="text-gray-700">{fmtDate(summary.last_stay)}</b>
+                {tr("oxirgisi:")}{" "}<b className="text-gray-700">{fmtDate(summary.last_stay)}</b>
               </p>
             )}
 
@@ -331,7 +331,7 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium text-gray-500">
-                      Sanadan
+                      {tr("Sanadan")}
                     </label>
                     <Input
                       type="date"
@@ -345,7 +345,7 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium text-gray-500">
-                      Sanagacha
+                      {tr("Sanagacha")}
                     </label>
                     <Input
                       type="date"
@@ -374,7 +374,7 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
                     }}
                   >
                     <CalendarSearch className="mr-1 h-3.5 w-3.5" />
-                    Bugun
+                    {tr("Bugun")}
                   </Button>
                   {filterOn && (
                     <Button
@@ -385,7 +385,7 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
                       onClick={() => setDateFilter(EMPTY_STAY_FILTER)}
                     >
                       <FilterX className="mr-1 h-3.5 w-3.5" />
-                      Tozalash
+                      {trc("clear", "Tozalash")}
                     </Button>
                   )}
                 </div>
@@ -409,13 +409,11 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
                     <span>
                       {verdict.day
                         ? verdict.present
-                          ? `Ha — ${fmtDate(verdict.day)} kuni bu yerda turgan${
-                              verdict.room ? `, ${verdict.room}-xonada` : ""
-                            }.`
-                          : `Yo'q — ${fmtDate(verdict.day)} kuni bu yerda turmagan.`
+                          ? tr("Ha — {{day}} kuni bu yerda turgan{{v}}.", { day: String(fmtDate(verdict.day)), v: verdict.room ? tr(", {{room}}-xonada", { room: verdict.room }) : "" })
+                          : tr("Yo'q — {{day}} kuni bu yerda turmagan.", { day: String(fmtDate(verdict.day)) })
                         : verdict.present
-                          ? `Bu davrda ${verdict.count} marta turgan.`
-                          : "Bu davrda umuman turmagan."}
+                          ? tr("Bu davrda {{count}} marta turgan.", { count: verdict.count })
+                          : tr("Bu davrda umuman turmagan.")}
                     </span>
                   </p>
                 )}
@@ -426,18 +424,18 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
               {stays.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-12 text-gray-400">
                   <BedDouble className="h-8 w-8" />
-                  <p className="text-sm">Bu mehmon hali turmagan</p>
+                  <p className="text-sm">{tr("Bu mehmon hali turmagan")}</p>
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-gray-400">
                   <CalendarSearch className="h-8 w-8" />
-                  <p className="text-sm">Tanlangan sanada turish topilmadi</p>
+                  <p className="text-sm">{tr("Tanlangan sanada turish topilmadi")}</p>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setDateFilter(EMPTY_STAY_FILTER)}
                   >
-                    Butun tarixni ko'rsatish
+                    {tr("Butun tarixni ko'rsatish")}
                   </Button>
                 </div>
               ) : (
@@ -449,7 +447,7 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Yopish
+            {tr("Yopish")}
           </Button>
         </DialogFooter>
       </DialogContent>

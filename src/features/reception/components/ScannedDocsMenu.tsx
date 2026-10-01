@@ -10,6 +10,7 @@ import {
 } from "../api/scans"
 import { pickAutoOpen } from "../lib/scanPick"
 import { offerScan } from "../lib/scanRouter"
+import { tr } from "@/i18n"
 
 /**
  * Telefonda skanerlangan hujjatlar — navbardagi kuzatuvchi.
@@ -33,8 +34,8 @@ import { offerScan } from "../lib/scanRouter"
 const POLL_MS = 6000
 
 const TYPE_LABEL: Record<string, string> = {
-  ID_CARD: "ID karta",
-  PASSPORT: "Passport",
+  ID_CARD: tr("ID karta"),
+  PASSPORT: tr("Passport"),
 }
 
 function timeAgo(iso: string | null): string {
@@ -43,10 +44,10 @@ function timeAgo(iso: string | null): string {
     0,
     Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
   )
-  if (seconds < 60) return "hozirgina"
+  if (seconds < 60) return tr("hozirgina")
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} daq. oldin`
-  return `${Math.floor(minutes / 60)} soat oldin`
+  if (minutes < 60) return tr("{{minutes}} daq. oldin", { minutes })
+  return tr("{{hours}} soat oldin", { hours: Math.floor(minutes / 60) })
 }
 
 export function ScannedDocsMenu({
@@ -123,7 +124,7 @@ export function ScannedDocsMenu({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title="Telefonda skanerlangan hujjatlar"
+        title={tr("Telefonda skanerlangan hujjatlar")}
         className={cn(
           "relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-muted",
           open && "bg-muted"
@@ -140,15 +141,15 @@ export function ScannedDocsMenu({
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
           <div className="border-b border-border px-3 py-2">
-            <p className="text-sm font-semibold">Skanerlangan hujjatlar</p>
+            <p className="text-sm font-semibold">{tr("Skanerlangan hujjatlar")}</p>
             <p className="text-[11px] text-muted-foreground">
-              Telefondan yuborilgan — bosilganda bandlov oynasi ochiladi
+              {tr("Telefondan yuborilgan — bosilganda bandlov oynasi ochiladi")}
             </p>
           </div>
 
           {scans.length === 0 ? (
             <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-              Hozircha skan yo'q
+              {tr("Hozircha skan yo'q")}
             </p>
           ) : (
             <ul className="max-h-80 divide-y divide-border overflow-y-auto">
@@ -174,7 +175,7 @@ export function ScannedDocsMenu({
 
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1 truncate text-sm font-medium">
-                        {scan.guest_name || scan.full_name || "Nomsiz hujjat"}
+                        {scan.guest_name || scan.full_name || tr("Nomsiz hujjat")}
                         {scan.verified && (
                           <BadgeCheck
                             size={13}
@@ -188,8 +189,8 @@ export function ScannedDocsMenu({
                       </p>
                       <p className="text-[11px] text-muted-foreground">
                         {scan.matched
-                          ? "Bazadan topildi — bron ochiladi"
-                          : "Yangi mijoz — maydonlar to'ldiriladi"}
+                          ? tr("Bazadan topildi — bron ochiladi")
+                          : tr("Yangi mijoz — maydonlar to'ldiriladi")}
                         {scan.created_at ? ` · ${timeAgo(scan.created_at)}` : ""}
                       </p>
                     </div>
@@ -197,7 +198,7 @@ export function ScannedDocsMenu({
                     <button
                       type="button"
                       onClick={(e) => dismiss(e, scan)}
-                      title="Yopish"
+                      title={tr("Yopish")}
                       className="rounded p-1 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
                     >
                       <X size={14} />

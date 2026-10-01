@@ -1,3 +1,4 @@
+import { tr } from "@/i18n"
 /**
  * Common document-recognition types.
  *
@@ -109,7 +110,7 @@ export function mergeScannedDocs(
   const warnings = new Set([...(first.warnings ?? []), ...(second.warnings ?? [])])
   const compare = (field: keyof Pick<ScannedDoc, "documentNumber" | "birthDate" | "personalNumber">) => {
     if (first[field] && second[field] && first[field] !== second[field]) {
-      warnings.add(`${field} ikki tomonda mos kelmadi`)
+      warnings.add(tr("{{field}} ikki tomonda mos kelmadi", { field }))
     }
   }
   compare("documentNumber")

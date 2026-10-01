@@ -18,6 +18,7 @@ import {
   useSaveBranchSms,
   useTestBranchSms,
 } from "../api/sms"
+import { tr } from "@/i18n"
 
 /**
  * SMS xabarnomalar (Xabarchi) — har filialga alohida API kalit.
@@ -41,20 +42,17 @@ export function SmsKeysCard() {
           <MessageSquareText className="h-5 w-5" />
         </span>
         <div className="min-w-0">
-          <h2 className="font-bold text-gray-900">SMS xabarnomalar</h2>
+          <h2 className="font-bold text-gray-900">{tr("SMS xabarnomalar")}</h2>
           <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
-            Har filialga Xabarchi API kaliti biriktiriladi. Kalit kiritilgan
-            filialda mijozga bron yaratilganda va to'lov qabul qilinganda SMS
-            yuboriladi. SMS'ni Xabarchi'ga ulangan telefon yuboradi — u onlayn
-            bo'lishi kerak. Kalit serverda shifrlangan holda saqlanadi.
+            {tr("Har filialga Xabarchi API kaliti biriktiriladi. Kalit kiritilgan filialda mijozga bron yaratilganda va to'lov qabul qilinganda SMS yuboriladi. SMS'ni Xabarchi'ga ulangan telefon yuboradi — u onlayn bo'lishi kerak. Kalit serverda shifrlangan holda saqlanadi.")}
           </p>
         </div>
       </div>
       <div className="space-y-3 p-5">
         {isLoading ? (
-          <p className="text-sm text-gray-400">Filiallar yuklanmoqda...</p>
+          <p className="text-sm text-gray-400">{tr("Filiallar yuklanmoqda...")}</p>
         ) : branches.length === 0 ? (
-          <p className="text-sm text-gray-400">Filiallar topilmadi</p>
+          <p className="text-sm text-gray-400">{tr("Filiallar topilmadi")}</p>
         ) : (
           branches.map((b: any) => <BranchSmsRow key={b.id} branch={b} />)
         )}
@@ -77,13 +75,13 @@ function BranchSmsRow({ branch }: { branch: any }) {
 
   const handleSave = async () => {
     if (!key.trim()) {
-      setNote({ ok: false, text: "API kalitni kiriting (xab_live_...)" })
+      setNote({ ok: false, text: tr("API kalitni kiriting (xab_live_...)") })
       return
     }
     try {
       await save.mutateAsync({ branchId: branch.id, apiKey: key.trim() })
       setKey("")
-      setNote({ ok: true, text: "Kalit saqlandi" })
+      setNote({ ok: true, text: tr("Kalit saqlandi") })
     } catch (e) {
       setNote({ ok: false, text: apiErrorMessage(e) })
     }
@@ -92,7 +90,7 @@ function BranchSmsRow({ branch }: { branch: any }) {
   const handleDelete = async () => {
     try {
       await remove.mutateAsync(branch.id)
-      setNote({ ok: true, text: "Kalit o'chirildi — bu filialda SMS yuborilmaydi" })
+      setNote({ ok: true, text: tr("Kalit o'chirildi — bu filialda SMS yuborilmaydi") })
     } catch (e) {
       setNote({ ok: false, text: apiErrorMessage(e) })
     }
@@ -100,7 +98,7 @@ function BranchSmsRow({ branch }: { branch: any }) {
 
   const handleTest = async () => {
     if (!phone.trim()) {
-      setNote({ ok: false, text: "Sinov uchun telefon raqamini kiriting" })
+      setNote({ ok: false, text: tr("Sinov uchun telefon raqamini kiriting") })
       return
     }
     try {
@@ -110,9 +108,9 @@ function BranchSmsRow({ branch }: { branch: any }) {
       setNote({
         ok: true,
         text:
-          `Sinov SMS Xabarchi navbatiga qo'yildi: ${res.phone}. ` +
-          "Ulangan telefon onlayn bo'lsa bir necha soniyada yetib boradi" +
-          (res.message_id ? ` (xabar #${res.message_id}).` : "."),
+          tr("Sinov SMS Xabarchi navbatiga qo'yildi: {{phone}}. ", { phone: res.phone }) +
+          tr("Ulangan telefon onlayn bo'lsa bir necha soniyada yetib boradi") +
+          (res.message_id ? tr(" (xabar #{{message_id}}).", { message_id: res.message_id }) : "."),
       })
     } catch (e) {
       setNote({ ok: false, text: apiErrorMessage(e) })
@@ -124,15 +122,15 @@ function BranchSmsRow({ branch }: { branch: any }) {
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-gray-900">{branch.name}</span>
         {isLoading ? (
-          <span className="text-xs text-gray-400">yuklanmoqda...</span>
+          <span className="text-xs text-gray-400">{tr("yuklanmoqda...")}</span>
         ) : status?.configured ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
             <CheckCircle2 className="h-3 w-3" />
-            Ulangan · {status.key_hint}
+            {tr("Ulangan ·")}{" "}{status.key_hint}
           </span>
         ) : (
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">
-            Ulanmagan
+            {tr("Ulanmagan")}
           </span>
         )}
         {status?.configured && (
@@ -140,11 +138,11 @@ function BranchSmsRow({ branch }: { branch: any }) {
             type="button"
             onClick={handleDelete}
             disabled={busy}
-            title="Kalitni o'chirish"
+            title={tr("Kalitni o'chirish")}
             className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            O'chirish
+            {tr("O'chirish")}
           </button>
         )}
       </div>
@@ -156,7 +154,7 @@ function BranchSmsRow({ branch }: { branch: any }) {
             className="h-9 pl-8 font-mono text-xs"
             placeholder={
               status?.configured
-                ? "Yangi kalit kiritib almashtirish mumkin"
+                ? tr("Yangi kalit kiritib almashtirish mumkin")
                 : "xab_live_..."
             }
             value={key}
@@ -170,7 +168,7 @@ function BranchSmsRow({ branch }: { branch: any }) {
           className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-primary-600 px-3.5 text-xs font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-60"
         >
           {save.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Saqlash
+          {tr("Saqlash")}
         </button>
       </div>
 
@@ -178,7 +176,7 @@ function BranchSmsRow({ branch }: { branch: any }) {
         <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
           <Input
             className="h-9 text-xs"
-            placeholder="Sinov uchun telefon: +998 90 123 45 67"
+            placeholder={tr("Sinov uchun telefon: +998 90 123 45 67")}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
@@ -193,7 +191,7 @@ function BranchSmsRow({ branch }: { branch: any }) {
             ) : (
               <Send className="h-3.5 w-3.5" />
             )}
-            Sinov SMS
+            {tr("Sinov SMS")}
           </button>
         </div>
       )}

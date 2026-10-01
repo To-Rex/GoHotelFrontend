@@ -1,0 +1,92 @@
+{
+  "Qarzdorlar": "Debtors",
+  "Jami qarz:": "Total debt:",
+  "{{total_debt}} So'm": "{{total_debt}} UZS",
+  "({{v}} ta)": "({{v}})",
+  "To'liq to'lanmagan bronlar — davr tanlovidan qat'i nazar, barcha ochiq qarzlar.": "Bookings not paid in full — all open debts, regardless of the selected period.",
+  "· {{room_number}}-xona": "· room {{room_number}}",
+  "{{reservations}} ta bron": {
+    "one": "{{reservations}} booking",
+    "other": "{{reservations}} bookings"
+  },
+  "eng eskisi:": "earliest check-out:",
+  "{{overdue}} kundan beri": {
+    "one": "for {{overdue}} day",
+    "other": "for {{overdue}} days"
+  },
+  "Yana {{v}} tasi": "{{v}} more",
+  "Qoralama": "Draft",
+  "Taqdim etilgan": "Issued",
+  "Qidiruv bo'yicha hisob-faktura topilmadi": "No invoices match your search",
+  "Tanlangan davrda hisob-fakturalar yo'q": "No invoices in the selected period",
+  "Hujjat raqami bo'yicha...": "Search by document number...",
+  "{{v}} · muddati: {{v2}}": "{{v}} · due: {{v2}}",
+  "Umumiy summa": "Total amount",
+  "To'landi": "Paid",
+  "−{{discount_amount}} So'm": "−{{discount_amount}} UZS",
+  "{{remaining}} So'm": "{{remaining}} UZS",
+  "Raqami": "Number",
+  "Muddati": "Due date",
+  "Raqam yoki izoh bo'yicha...": "Search by number or note...",
+  "Qidiruv bo'yicha to'lov topilmadi": "No payments match your search",
+  "Tanlangan davrda to'lovlar yo'q": "No payments in the selected period",
+  "Do'kon qarzlari (bronga yozilgan)": "Shop debts (charged to bookings)",
+  "Bron raqami yoki mahsulot...": "Booking number or product...",
+  "Qidiruv bo'yicha qarz topilmadi": "No debts match your search",
+  "To'lov Do'kon sahifasidagi \"To'lash\" tugmasi orqali qabul qilinadi — shundan so'ng summa tanlangan kun tushumiga qo'shiladi.": "Payment is accepted with the \"Pay\" button on the Shop page — after that the amount is added to the revenue of the selected day.",
+  "Davr yakuni, qarzdorlar va pul harakati usullar bo'yicha": "Period result, debtors and cash flow by payment method",
+  "Davrda qabul qilingan to'lovlar — qidirish va saralash mumkin": "Payments received in the period — searchable and sortable",
+  "Bronga yozilgan qarzlar va davrda to'langan savdolar": "Debts charged to bookings and sales paid in the period",
+  "Hujjatlar, to'langan summa va qolgan qarz": "Documents, amount paid and remaining debt",
+  "Tushum (to'lovlar)": "Revenue (payments)",
+  "{{payment_count}} ta to'lov": {
+    "one": "{{payment_count}} payment",
+    "other": "{{payment_count}} payments"
+  },
+  "{{invoice_count}} ta hujjat · chegirma −{{invoice_discount}} So'm": "Documents: {{invoice_count}} · discount −{{invoice_discount}} UZS",
+  "{{invoice_count}} ta hujjat": {
+    "one": "{{invoice_count}} document",
+    "other": "{{invoice_count}} documents"
+  },
+  "hisob-fakturalar bo'yicha": "on invoices",
+  "Qarzdorlik": "Outstanding",
+  "to'lanmagan qoldiq": "unpaid balance",
+  "Do'kon tushumi": "Shop revenue",
+  "{{shop_paid_count}} ta to'langan sotuv": {
+    "one": "{{shop_paid_count}} paid sale",
+    "other": "{{shop_paid_count}} paid sales"
+  },
+  "Do'kon qarzi (bronda)": "Shop debt (on bookings)",
+  "{{shop_debt_count}} ta to'lanmagan sotuv": {
+    "one": "{{shop_debt_count}} unpaid sale",
+    "other": "{{shop_debt_count}} unpaid sales"
+  },
+  "Naqd qoldiq": "Cash balance",
+  "naqd tushum − naqd xarajat": "cash revenue − cash expenses",
+  "tushumdan allaqachon ayirilgan": "already deducted from revenue",
+  "{{expense_count}} ta chiqim": {
+    "one": "{{expense_count}} expense",
+    "other": "{{expense_count}} expenses"
+  },
+  "Hisobot davri: {{v}} — {{v2}}": "Reporting period: {{v}} — {{v2}}",
+  "Hisobot davri: barcha davr": "Reporting period: all time",
+  "{{netResult}} So'm": "{{netResult}} UZS",
+  "Qarzdorlar (bronlar bo'yicha)": "Debtors (by booking)",
+  "To'lov usullari bo'yicha": "By payment method",
+  "Usul": "Method",
+  "Bronga yozilgan {{shop_debt_count}} ta to'lanmagan do'kon savdosi ({{shop_debt}} so'm) tushumga kirmagan — pul hali olinmagan.": "Unpaid shop sales charged to bookings: {{shop_debt_count}} ({{shop_debt}} UZS). They are not included in revenue — the money has not been received yet.",
+  "Xarajatlar toifasi": "Expense categories",
+  "jami {{expensesTotal}} So'm": "total {{expensesTotal}} UZS",
+  "{{count}} ta · {{share}}%": "entries: {{count}} · {{share}}%",
+  "chiqqan:": "check-out:",
+  "invoice::Bekor qilingan": "Void",
+  "{{income}} So'm": "{{income}} UZS",
+  "{{invoice_total}} So'm": "{{invoice_total}} UZS",
+  "{{invoice_paid}} So'm": "{{invoice_paid}} UZS",
+  "{{debt}} So'm": "{{debt}} UZS",
+  "{{shop_revenue}} So'm": "{{shop_revenue}} UZS",
+  "{{shop_debt}} So'm": "{{shop_debt}} UZS",
+  "{{cashOnHand}} So'm": "{{cashOnHand}} UZS",
+  "{{refunds}} So'm": "{{refunds}} UZS",
+  "{{expensesTotal}} So'm": "{{expensesTotal}} UZS"
+}

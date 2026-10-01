@@ -2,6 +2,7 @@ import { Banknote } from "lucide-react"
 import { useAuthStore } from "@/store/auth"
 import { ShiftPanel } from "../components/ShiftPanel"
 import { AcceptedShiftReport } from "../components/AcceptedShiftReport"
+import { tr } from "@/i18n"
 
 /* Kassa hisobotlari — smena va kassa bilan ishlashning yagona joyi.
 
@@ -23,9 +24,9 @@ export const CashReportsPage = () => {
           <Banknote className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Kassa hisobotlari</h1>
+          <h1 className="text-xl font-bold tracking-tight">{tr("Kassa hisobotlari")}</h1>
           <p className="text-sm text-muted-foreground">
-            {user?.first_name} {user?.last_name} — smena va kassa harakati
+            {user?.first_name} {user?.last_name}{" "}{tr("— smena va kassa harakati")}
           </p>
         </div>
       </div>

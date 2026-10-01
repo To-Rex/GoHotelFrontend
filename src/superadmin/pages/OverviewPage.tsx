@@ -12,6 +12,7 @@ import {
 
 import { useOverview } from "../api/panel"
 import { PanelCard, PanelHeading } from "../components/ui"
+import { tr } from "@/i18n"
 
 /**
  * Tizim bo'yicha yig'ma raqamlar — panelning bosh sahifasi.
@@ -24,25 +25,25 @@ export function OverviewPage() {
 
   const cards = [
     {
-      label: "Mehmonxonalar",
+      label: tr("Mehmonxonalar"),
       value: data?.hotels,
-      hint: `${data?.hotels_active ?? 0} ta faol`,
+      hint: tr("{{v}} ta faol", { v: data?.hotels_active ?? 0 }),
       icon: Building2,
       to: "/panel/hotels",
     },
-    { label: "Filiallar", value: data?.branches, icon: MapPin, to: "/panel/hotels" },
-    { label: "Xonalar", value: data?.rooms, icon: BedDouble, to: "/panel/hotels" },
-    { label: "Xodimlar", value: data?.users, icon: Users, to: "/panel/hotels" },
+    { label: tr("Filiallar"), value: data?.branches, icon: MapPin, to: "/panel/hotels" },
+    { label: tr("Xonalar"), value: data?.rooms, icon: BedDouble, to: "/panel/hotels" },
+    { label: tr("Xodimlar"), value: data?.users, icon: Users, to: "/panel/hotels" },
     {
-      label: "Mehmonlar",
+      label: tr("Mehmonlar"),
       value: data?.guests,
       icon: UserRound,
       to: "/panel/guests",
     },
     {
-      label: "Bronlar",
+      label: tr("Bronlar"),
       value: data?.reservations,
-      hint: `${data?.reservations_active ?? 0} ta faol`,
+      hint: tr("{{v}} ta faol", { v: data?.reservations_active ?? 0 }),
       icon: CalendarCheck,
       to: "/panel/reservations",
     },
@@ -51,8 +52,8 @@ export function OverviewPage() {
   return (
     <div>
       <PanelHeading
-        title="Umumiy holat"
-        subtitle="Tizimdagi barcha mehmonxonalar bo'yicha"
+        title={tr("Umumiy holat")}
+        subtitle={tr("Tizimdagi barcha mehmonxonalar bo'yicha")}
       />
 
       {isLoading ? (

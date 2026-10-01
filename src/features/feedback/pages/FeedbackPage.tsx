@@ -76,6 +76,7 @@ import {
   requiresResolution,
   type StatusTab,
 } from "../lib/feedbackRules"
+import { tr, trc } from "@/i18n"
 
 const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -95,12 +96,12 @@ const TYPE_ICONS: Record<FeedbackType, LucideIcon> = {
 // "Ochiq" — standart ko'rinish: kitob bilan ishlaydigan xodimga hali
 // yopilmaganlar kerak; yopilganlar tarix sifatida alohida tabda
 const TABS: { key: StatusTab; label: string }[] = [
-  { key: "OPEN", label: "Ochiq" },
-  { key: "NEW", label: "Yangi" },
-  { key: "IN_PROGRESS", label: "Ko'rib chiqilmoqda" },
-  { key: "RESOLVED", label: "Hal qilindi" },
-  { key: "REJECTED", label: "Rad etildi" },
-  { key: "ALL", label: "Barchasi" },
+  { key: "OPEN", label: tr("Ochiq") },
+  { key: "NEW", label: tr("Yangi") },
+  { key: "IN_PROGRESS", label: tr("Ko'rib chiqilmoqda") },
+  { key: "RESOLVED", label: tr("Hal qilindi") },
+  { key: "REJECTED", label: tr("Rad etildi") },
+  { key: "ALL", label: tr("Barchasi") },
 ]
 
 const when = (iso?: string | null) =>
@@ -136,14 +137,14 @@ const WhoWhere = ({ item }: { item: GuestFeedback }) => (
   <div className="min-w-0 text-sm">
     <p className="flex items-center gap-1.5 truncate text-gray-800">
       <UserRound className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-      {item.guest_name || <span className="text-gray-400">Mehmon ko'rsatilmagan</span>}
+      {item.guest_name || <span className="text-gray-400">{tr("Mehmon ko'rsatilmagan")}</span>}
     </p>
     {(item.room_number || item.guest_phone) && (
       <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-400">
         {item.room_number && (
           <span className="inline-flex items-center gap-1">
             <DoorOpen className="h-3 w-3" />
-            {item.room_number}-xona
+            {tr("{{room_number}}-xona", { room_number: item.room_number })}
           </span>
         )}
         {item.guest_phone && (
@@ -187,7 +188,7 @@ export const FeedbackPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Talab, taklif va shikoyatlar</h1>
+        <h1 className="text-2xl font-bold">{tr("Talab, taklif va shikoyatlar")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -198,9 +199,9 @@ export const FeedbackPage = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Talab, taklif va shikoyatlar</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("Talab, taklif va shikoyatlar")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Mehmon murojaatlari kitobi · ochiq: {counts.OPEN} · jami: {counts.ALL}
+            {tr("Mehmon murojaatlari kitobi · ochiq: {{OPEN}} · jami: {{ALL}}", { OPEN: counts.OPEN, ALL: counts.ALL })}
             {isFetching && (
               <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin text-gray-400" />
             )}
@@ -209,7 +210,7 @@ export const FeedbackPage = () => {
         {canCreate && (
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Yangi murojaat
+            {tr("Yangi murojaat")}
           </Button>
         )}
       </div>
@@ -269,7 +270,7 @@ export const FeedbackPage = () => {
                   : "border-gray-200 text-gray-600 hover:bg-gray-50"
               )}
             >
-              {t === "ALL" ? "Hamma tur" : TYPE_LABELS[t]}
+              {t === "ALL" ? tr("Hamma tur") : TYPE_LABELS[t]}
             </button>
           ))}
         </div>
@@ -277,7 +278,7 @@ export const FeedbackPage = () => {
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             className="pl-8"
-            placeholder="Qidirish: mavzu, mehmon, xona…"
+            placeholder={tr("Qidirish: mavzu, mehmon, xona…")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -288,7 +289,7 @@ export const FeedbackPage = () => {
       <div className="space-y-2.5 md:hidden">
         {shown.length === 0 ? (
           <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-            Murojaatlar yo'q
+            {tr("Murojaatlar yo'q")}
           </div>
         ) : (
           shown.map((f) => (
@@ -302,7 +303,7 @@ export const FeedbackPage = () => {
                 <TypeChip type={f.feedback_type} />
                 <StatusChip status={f.status} />
                 {f.priority === "HIGH" && (
-                  <Chip className={PRIORITY_STYLES.HIGH}>Yuqori</Chip>
+                  <Chip className={PRIORITY_STYLES.HIGH}>{tr("Yuqori")}</Chip>
                 )}
                 <span className="ml-auto text-[11px] text-gray-400">{when(f.created_at)}</span>
               </div>
@@ -321,12 +322,12 @@ export const FeedbackPage = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
-              <TableHead>Sana</TableHead>
-              <TableHead>Tur</TableHead>
-              <TableHead>Murojaat</TableHead>
-              <TableHead>Mehmon / xona</TableHead>
-              <TableHead>Holat</TableHead>
-              <TableHead>Mas'ul</TableHead>
+              <TableHead>{tr("Sana")}</TableHead>
+              <TableHead>{tr("Tur")}</TableHead>
+              <TableHead>{tr("Murojaat")}</TableHead>
+              <TableHead>{tr("Mehmon / xona")}</TableHead>
+              <TableHead>{tr("Holat")}</TableHead>
+              <TableHead>{tr("Mas'ul")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -335,7 +336,7 @@ export const FeedbackPage = () => {
                 <TableCell colSpan={6} className="py-12">
                   <div className="flex flex-col items-center gap-2 text-gray-400">
                     <BookOpenText className="h-8 w-8" />
-                    <p className="text-sm">Murojaatlar yo'q</p>
+                    <p className="text-sm">{tr("Murojaatlar yo'q")}</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -365,7 +366,7 @@ export const FeedbackPage = () => {
                     <div className="flex flex-wrap items-center gap-1">
                       <StatusChip status={f.status} />
                       {f.priority === "HIGH" && (
-                        <Chip className={PRIORITY_STYLES.HIGH}>Yuqori</Chip>
+                        <Chip className={PRIORITY_STYLES.HIGH}>{tr("Yuqori")}</Chip>
                       )}
                     </div>
                   </TableCell>
@@ -435,7 +436,7 @@ function CreateFeedbackDialog({
     return reservations
       .map((r) => {
         const room = roomNumber(r.room_id)
-        return { id: r.id, room, label: `${room}-xona — ${guestNameOf(r)}` }
+        return { id: r.id, room, label: tr("{{room}}-xona — {{r}}", { room: String(room), r: guestNameOf(r) }) }
       })
       .sort((a, b) => a.room.localeCompare(b.room, undefined, { numeric: true }))
   }, [reservations, rooms, guests])
@@ -462,11 +463,11 @@ function CreateFeedbackDialog({
 
   const submit = async () => {
     if (!subject.trim()) {
-      setError("Mavzuni kiriting")
+      setError(tr("Mavzuni kiriting"))
       return
     }
     if (!body.trim()) {
-      setError("Murojaat matnini kiriting")
+      setError(tr("Murojaat matnini kiriting"))
       return
     }
     setError(null)
@@ -496,9 +497,9 @@ function CreateFeedbackDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle>Yangi murojaat</DialogTitle>
+          <DialogTitle>{tr("Yangi murojaat")}</DialogTitle>
           <DialogDescription>
-            Mehmon aytganini kitobga yozing — shikoyat bo'lsa menejerlarga xabar ketadi.
+            {tr("Mehmon aytganini kitobga yozing — shikoyat bo'lsa menejerlarga xabar ketadi.")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -525,29 +526,29 @@ function CreateFeedbackDialog({
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Mavzu *</label>
+            <label className="text-sm font-medium">{tr("Mavzu *")}</label>
             <Input
               value={subject}
               maxLength={200}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Masalan: Konditsioner ishlamaydi"
+              placeholder={tr("Masalan: Konditsioner ishlamaydi")}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">Murojaat matni *</label>
+            <label className="text-sm font-medium">{tr("Murojaat matni *")}</label>
             <textarea
               className={textareaClass}
               rows={4}
               maxLength={5000}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              placeholder="Mehmon nima dedi — o'z so'zlari bilan"
+              placeholder={tr("Mehmon nima dedi — o'z so'zlari bilan")}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Muhimlik</label>
+              <label className="text-sm font-medium">{tr("Muhimlik")}</label>
               <select
                 className={selectClass}
                 value={priority}
@@ -562,13 +563,13 @@ function CreateFeedbackDialog({
             </div>
             {staff.length > 0 && (
               <div className="space-y-1">
-                <label className="text-sm font-medium">Mas'ul xodim</label>
+                <label className="text-sm font-medium">{tr("Mas'ul xodim")}</label>
                 <select
                   className={selectClass}
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
                 >
-                  <option value="">— keyinroq —</option>
+                  <option value="">{tr("— keyinroq —")}</option>
                   {staff.map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.first_name} {e.last_name}
@@ -581,13 +582,13 @@ function CreateFeedbackDialog({
 
           <div className="space-y-3 rounded-lg border bg-gray-50/60 p-3">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Mehmon (yashab turganlardan)</label>
+              <label className="text-sm font-medium">{tr("Mehmon (yashab turganlardan)")}</label>
               <select
                 className={selectClass}
                 value={reservationId}
                 onChange={(e) => setReservationId(e.target.value)}
               >
-                <option value="">— bog'lanmagan / qo'lda yoziladi —</option>
+                <option value="">{tr("— bog'lanmagan / qo'lda yoziladi —")}</option>
                 {stayOptions.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.label}
@@ -595,22 +596,22 @@ function CreateFeedbackDialog({
                 ))}
               </select>
               <p className="text-xs text-gray-400">
-                Tanlansa mehmon, xona va bron avtomatik bog'lanadi.
+                {tr("Tanlansa mehmon, xona va bron avtomatik bog'lanadi.")}
               </p>
             </div>
             {!reservationId && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Ism-familiya</label>
+                  <label className="text-xs font-medium text-gray-500">{tr("Ism-familiya")}</label>
                   <Input
                     value={guestName}
                     maxLength={200}
                     onChange={(e) => setGuestName(e.target.value)}
-                    placeholder="Mehmon ismi"
+                    placeholder={tr("Mehmon ismi")}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Telefon</label>
+                  <label className="text-xs font-medium text-gray-500">{tr("Telefon")}</label>
                   <Input
                     value={guestPhone}
                     maxLength={50}
@@ -619,7 +620,7 @@ function CreateFeedbackDialog({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Xona</label>
+                  <label className="text-xs font-medium text-gray-500">{tr("Xona")}</label>
                   <select
                     className={selectClass}
                     value={roomId}
@@ -641,11 +642,11 @@ function CreateFeedbackDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Bekor qilish
+            {tr("Bekor qilish")}
           </Button>
           <Button onClick={submit} disabled={createMutation.isPending}>
             {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Saqlash
+            {tr("Saqlash")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -681,7 +682,7 @@ function AssigneeSelect({ item, hotelId }: { item: GuestFeedback; hotelId?: stri
       disabled={updateMutation.isPending}
       onChange={(e) => change(e.target.value)}
     >
-      <option value="">— mas'ul yo'q —</option>
+      <option value="">{tr("— mas'ul yo'q —")}</option>
       {active.map((e) => (
         <option key={e.id} value={e.id}>
           {e.first_name} {e.last_name}
@@ -690,7 +691,7 @@ function AssigneeSelect({ item, hotelId }: { item: GuestFeedback; hotelId?: stri
       {/* Ro'yxatda bo'lmagan (masalan ishdan ketgan) mas'ul ham ko'rinsin */}
       {!knownAssignee && (
         <option value={item.assigned_to ?? ""}>
-          {item.assigned_to_name || "Noma'lum xodim"}
+          {item.assigned_to_name || tr("Noma'lum xodim")}
         </option>
       )}
     </select>
@@ -724,7 +725,7 @@ function FeedbackDetailDialog({
     // Server ham shuni talab qiladi (RESOLUTION_REQUIRED) — bu yerda
     // aniqroq matn bilan oldindan aytiladi
     if (requiresResolution(next) && !text) {
-      setError("Yopishdan oldin «Javob» qatoriga nima qilinganini yozing")
+      setError(tr("Yopishdan oldin «Javob» qatoriga nima qilinganini yozing"))
       return
     }
     setError(null)
@@ -754,7 +755,7 @@ function FeedbackDetailDialog({
   }
 
   const remove = async () => {
-    if (!confirm(`«${item.subject}» murojaatini o'chirasizmi?`)) return
+    if (!confirm(tr("«{{subject}}» murojaatini o'chirasizmi?", { subject: item.subject }))) return
     try {
       await deleteMutation.mutateAsync({ id: item.id, hotelId })
       onClose()
@@ -771,13 +772,12 @@ function FeedbackDetailDialog({
             <TypeChip type={item.feedback_type} />
             <StatusChip status={item.status} />
             <Chip className={PRIORITY_STYLES[item.priority]}>
-              Muhimlik: {PRIORITY_LABELS[item.priority]}
+              {tr("Muhimlik: {{v}}", { v: PRIORITY_LABELS[item.priority] })}
             </Chip>
           </div>
           <DialogTitle className="pr-6 leading-snug">{item.subject}</DialogTitle>
           <DialogDescription>
-            {when(item.created_at)} · kiritdi: {item.created_by_name || "Noma'lum"}
-            {item.reservation_number ? ` · ${item.reservation_number}` : ""}
+            {tr("{{created_at}} · kiritdi: {{v}}{{v2}}", { created_at: when(item.created_at), v: item.created_by_name || tr("Noma'lum"), v2: item.reservation_number ? ` · ${item.reservation_number}` : "" })}
           </DialogDescription>
         </DialogHeader>
 
@@ -788,20 +788,20 @@ function FeedbackDetailDialog({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-lg border p-3">
-              <p className="text-xs font-medium text-gray-500">Mehmon</p>
+              <p className="text-xs font-medium text-gray-500">{tr("Mehmon")}</p>
               <div className="mt-1">
                 <WhoWhere item={item} />
               </div>
             </div>
             <div className="rounded-lg border p-3">
-              <p className="text-xs font-medium text-gray-500">Mas'ul xodim</p>
+              <p className="text-xs font-medium text-gray-500">{tr("Mas'ul xodim")}</p>
               <div className="mt-1">
                 {canManage ? (
                   <AssigneeSelect item={item} hotelId={hotelId} />
                 ) : (
                   <p className="text-sm text-gray-800">
                     {item.assigned_to_name || (
-                      <span className="text-gray-400">Belgilanmagan</span>
+                      <span className="text-gray-400">{tr("Belgilanmagan")}</span>
                     )}
                   </p>
                 )}
@@ -811,9 +811,9 @@ function FeedbackDetailDialog({
 
           <div className="space-y-1">
             <label className="text-sm font-medium">
-              Javob / nima qilindi
+              {tr("Javob / nima qilindi")}
               {!isClosed(item.status) && (
-                <span className="font-normal text-gray-400"> (yopishda shart)</span>
+                <span className="font-normal text-gray-400">{" "}{tr("(yopishda shart)")}</span>
               )}
             </label>
             {canManage ? (
@@ -824,25 +824,24 @@ function FeedbackDetailDialog({
                   maxLength={5000}
                   value={resolution}
                   onChange={(e) => setResolution(e.target.value)}
-                  placeholder="Masalan: Konditsioner ta'mirlandi, mehmondan uzr so'raldi"
+                  placeholder={tr("Masalan: Konditsioner ta'mirlandi, mehmondan uzr so'raldi")}
                 />
                 {dirty && (
                   <div className="flex justify-end">
                     <Button size="sm" variant="outline" onClick={saveResolution} disabled={busy}>
-                      Javobni saqlash
+                      {tr("Javobni saqlash")}
                     </Button>
                   </div>
                 )}
               </>
             ) : (
               <p className="whitespace-pre-wrap text-sm text-gray-700">
-                {item.resolution || <span className="text-gray-400">Hali javob yo'q</span>}
+                {item.resolution || <span className="text-gray-400">{tr("Hali javob yo'q")}</span>}
               </p>
             )}
             {item.resolved_at && (
               <p className="text-xs text-gray-400">
-                Yopildi: {when(item.resolved_at)}
-                {item.resolved_by_name ? ` · ${item.resolved_by_name}` : ""}
+                {tr("Yopildi: {{resolved_at}}{{v}}", { resolved_at: when(item.resolved_at), v: item.resolved_by_name ? ` · ${item.resolved_by_name}` : "" })}
               </p>
             )}
           </div>
@@ -859,7 +858,7 @@ function FeedbackDetailDialog({
               className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-600 disabled:opacity-60 sm:mr-auto"
             >
               <Trash2 className="h-4 w-4" />
-              O'chirish
+              {tr("O'chirish")}
             </button>
           )}
           {canManage &&
@@ -867,12 +866,12 @@ function FeedbackDetailDialog({
               const reopen = s === "IN_PROGRESS" && isClosed(item.status)
               const label =
                 s === "RESOLVED"
-                  ? "Hal qilindi"
+                  ? trc("action", "Hal qilindi")
                   : s === "REJECTED"
-                    ? "Rad etish"
+                    ? tr("Rad etish")
                     : reopen
-                      ? "Qayta ochish"
-                      : "Ko'rib chiqishga olish"
+                      ? tr("Qayta ochish")
+                      : tr("Ko'rib chiqishga olish")
               const Icon =
                 s === "RESOLVED"
                   ? CircleCheck
@@ -904,7 +903,7 @@ function FeedbackDetailDialog({
               )
             })}
           <Button variant="outline" onClick={onClose}>
-            Yopish
+            {tr("Yopish")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -10,6 +10,7 @@ import {
   type SightingGroup,
 } from "../api/vision"
 import { FacePickerDialog } from "./FacePickerDialog"
+import { tr } from "@/i18n"
 
 /**
  * Mavjud mehmonning yuz holati va uni biriktirish.
@@ -71,18 +72,18 @@ export function GuestFaceRow({
       })
       setMessage(
         group.count > 1
-          ? `${group.count} ta surat biriktirildi`
-          : "Yuz biriktirildi"
+          ? tr("{{count}} ta surat biriktirildi", { count: group.count })
+          : tr("Yuz biriktirildi")
       )
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "Biriktirib bo'lmadi.")
+      setError(e?.response?.data?.detail || tr("Biriktirib bo'lmadi."))
     }
   }
 
   const drop = async () => {
     if (
       !window.confirm(
-        "Mehmonning yuz ma'lumotlari butunlay o'chirilsinmi?\n\nShablonlar ham, saqlangan suratlar ham o'chadi va u boshqa avtomatik tanilmaydi."
+        tr("Mehmonning yuz ma'lumotlari butunlay o'chirilsinmi?\n\nShablonlar ham, saqlangan suratlar ham o'chadi va u boshqa avtomatik tanilmaydi.")
       )
     )
       return
@@ -90,9 +91,9 @@ export function GuestFaceRow({
     setMessage(null)
     try {
       await remove.mutateAsync(guestId)
-      setMessage("Yuz ma'lumotlari o'chirildi")
+      setMessage(tr("Yuz ma'lumotlari o'chirildi"))
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "O'chirib bo'lmadi.")
+      setError(e?.response?.data?.detail || tr("O'chirib bo'lmadi."))
     }
   }
 
@@ -111,14 +112,14 @@ export function GuestFaceRow({
         {isLoading ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Yuz holati tekshirilmoqda…
+            {tr("Yuz holati tekshirilmoqda…")}
           </span>
         ) : enrolled ? (
           <>
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
               <ScanFace className="h-3.5 w-3.5" />
-              Yuz biriktirilgan
-              {data && data.profiles > 1 && ` (${data.profiles} ko'rinish)`}
+              {tr("Yuz biriktirilgan")}
+              {data && data.profiles > 1 && tr(" ({{profiles}} ko'rinish)", { profiles: data.profiles })}
             </span>
             {attachable && (
               <Button
@@ -129,7 +130,7 @@ export function GuestFaceRow({
                 disabled={enroll.isPending}
               >
                 <Video className="mr-1.5 h-3.5 w-3.5" />
-                Yana qo'shish
+                {tr("Yana qo'shish")}
               </Button>
             )}
             {allowRemove && (
@@ -146,7 +147,7 @@ export function GuestFaceRow({
                 ) : (
                   <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                 )}
-                O'chirish
+                {tr("O'chirish")}
               </Button>
             )}
           </>
@@ -154,7 +155,7 @@ export function GuestFaceRow({
           <>
             <span className="inline-flex items-center gap-1.5 text-xs text-gray-500">
               <ScanFace className="h-3.5 w-3.5 text-gray-400" />
-              Yuz biriktirilmagan
+              {tr("Yuz biriktirilmagan")}
             </span>
             {attachable && (
               <Button
@@ -169,7 +170,7 @@ export function GuestFaceRow({
                 ) : (
                   <Video className="mr-1.5 h-3.5 w-3.5" />
                 )}
-                Kameradan biriktirish
+                {tr("Kameradan biriktirish")}
               </Button>
             )}
           </>

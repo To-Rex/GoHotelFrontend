@@ -1,4 +1,5 @@
 import type { HousekeepingTask } from "@/types/api"
+import { tr } from "@/i18n"
 
 /**
  * Xona holati haqidagi aniq ma'lumot: qachondan beri shu holatda, kim
@@ -24,19 +25,19 @@ export const DETAILED_STATUSES = [
 
 /** Vazifa turi -> holat matnidagi nomi. */
 const TASK_ACTION: Record<string, string> = {
-  CLEANING: "Tozalash",
-  DEEP_CLEANING: "Chuqur tozalash",
-  MAINTENANCE: "Ta'mirlash",
-  INSPECTION: "Tekshiruv",
-  TURN_DOWN: "Xona tayyorlash",
+  CLEANING: tr("Tozalash"),
+  DEEP_CLEANING: tr("Chuqur tozalash"),
+  MAINTENANCE: tr("Ta'mirlash"),
+  INSPECTION: tr("Tekshiruv"),
+  TURN_DOWN: tr("Xona tayyorlash"),
 }
 
 /** Vazifasiz holatlar uchun — tarixdan olingan vaqtga sarlavha. */
 const STATUS_ACTION: Record<string, string> = {
-  CLEANING: "Tozalash",
-  MAINTENANCE: "Ta'mirlash",
-  INSPECTION: "Tekshiruv",
-  OUT_OF_SERVICE: "Xizmatdan chiqarilgan",
+  CLEANING: tr("Tozalash"),
+  MAINTENANCE: tr("Ta'mirlash"),
+  INSPECTION: tr("Tekshiruv"),
+  OUT_OF_SERVICE: tr("Xizmatdan chiqarilgan"),
 }
 
 /**
@@ -97,18 +98,18 @@ export function clockLabel(ms: number): string {
  */
 export function formatElapsed(ms: number): string {
   const totalMinutes = Math.floor(ms / 60_000)
-  if (totalMinutes < 1) return "hozir"
-  if (totalMinutes < 60) return `${totalMinutes} daqiqa`
+  if (totalMinutes < 1) return tr("hozir")
+  if (totalMinutes < 60) return tr("{{totalMinutes}} daqiqa", { totalMinutes })
 
   const totalHours = Math.floor(totalMinutes / 60)
   if (totalHours < 24) {
     const minutes = totalMinutes % 60
-    return minutes ? `${totalHours} soat ${minutes} daqiqa` : `${totalHours} soat`
+    return minutes ? tr("{{totalHours}} soat {{minutes}} daqiqa", { totalHours, minutes }) : tr("{{totalHours}} soat", { totalHours })
   }
 
   const days = Math.floor(totalHours / 24)
   const hours = totalHours % 24
-  return hours ? `${days} kun ${hours} soat` : `${days} kun`
+  return hours ? tr("{{days}} kun {{hours}} soat", { days, hours }) : tr("{{days}} kun", { days })
 }
 
 /**
@@ -172,11 +173,11 @@ export function roomStatusDetail(
   const action =
     (task ? TASK_ACTION[task.task_type] : null) ||
     STATUS_ACTION[status] ||
-    "Holat"
+    tr("Holat")
 
   let headline: string
   if (task) {
-    headline = started ? `${action} boshlandi` : `${action} kutilmoqda`
+    headline = started ? tr("{{action}} boshlandi", { action }) : tr("{{action}} kutilmoqda", { action })
   } else {
     // Vazifa yo'q — nima bo'layotganini aytolmaymiz, faqat qachondan beri
     headline = action

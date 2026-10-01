@@ -16,6 +16,7 @@ import {
   hasCamera,
 } from "@/features/auth/api/face"
 import { FaceCameraDialog } from "./FaceCameraDialog"
+import { tr, trc } from "@/i18n"
 
 /**
  * Yuzi yo'q xodimdan uni biriktirishni talab qiladi.
@@ -91,21 +92,18 @@ export function FaceRequiredGate() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-amber-600" />
-              Yuzingizni biriktiring
+              {tr("Yuzingizni biriktiring")}
             </DialogTitle>
           </DialogHeader>
 
           <p className="text-sm leading-relaxed text-gray-700">
-            Tizimga kirish ikki bosqichli: parol va yuz. Sizda hali yuz
-            biriktirilmagan, shuning uchun hisobingizni faqat parol himoya
-            qilyapti. Davom etish uchun yuzingizni biriktiring.
+            {tr("Tizimga kirish ikki bosqichli: parol va yuz. Sizda hali yuz biriktirilmagan, shuning uchun hisobingizni faqat parol himoya qilyapti. Davom etish uchun yuzingizni biriktiring.")}
           </p>
 
           {cameraMissing ? (
             <div className="space-y-3">
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                Bu qurilmada kamera topilmadi. Yuzni biriktirish uchun kamerasi
-                bor qurilmadan kiring — masalan telefon yoki noutbukdan.
+                {tr("Bu qurilmada kamera topilmadi. Yuzni biriktirish uchun kamerasi bor qurilmadan kiring — masalan telefon yoki noutbukdan.")}
               </p>
               {/* Kamerasiz biriktirib bo'lmaydi; xodimni bo'sh ekran oldida
                   qoldirish ishni to'xtatib qo'yardi */}
@@ -114,13 +112,13 @@ export function FaceRequiredGate() {
                 className="w-full"
                 onClick={() => setDismissed(true)}
               >
-                Hozircha davom etish
+                {tr("Hozircha davom etish")}
               </Button>
             </div>
           ) : (
             <Button className="w-full" onClick={() => setCameraOpen(true)}>
               <ScanFace className="mr-2 h-4 w-4" />
-              Yuzni biriktirish
+              {tr("Yuzni biriktirish")}
             </Button>
           )}
 
@@ -130,7 +128,7 @@ export function FaceRequiredGate() {
             onClick={() => logout()}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Chiqish
+            {trc("login", "Chiqish")}
           </Button>
         </DialogContent>
       </Dialog>
@@ -138,9 +136,9 @@ export function FaceRequiredGate() {
       <FaceCameraDialog
         open={cameraOpen}
         onOpenChange={setCameraOpen}
-        title="Yuzni biriktirish"
-        actionLabel="Suratga olish"
-        hint="Yuzingizni oval ramkaga joylang va yorug'likka qarab turing"
+        title={tr("Yuzni biriktirish")}
+        actionLabel={tr("Suratga olish")}
+        hint={tr("Yuzingizni oval ramkaga joylang va yorug'likka qarab turing")}
         onCapture={handleCapture}
       />
     </>

@@ -1,0 +1,19 @@
+{
+  "Qo'ng'iroqlar": "Звонки",
+  "Yaqinda qo'ng'iroq bo'lmadi": "Недавних звонков не было",
+  "Notanish raqam": "Неизвестный номер",
+  "{{room_number}}-xonada turibdi": "Проживает в номере {{room_number}}",
+  "Oxirgi {{WINDOW_MINUTES}} daqiqa": {
+    "one": "Последняя {{WINDOW_MINUTES}} минута",
+    "few": "Последние {{WINDOW_MINUTES}} минуты",
+    "many": "Последние {{WINDOW_MINUTES}} минут",
+    "other": "Последние {{WINDOW_MINUTES}} минуты"
+  },
+  "Telefonda skanerlangan hujjatlar": "Документы, отсканированные на телефоне",
+  "Skanerlangan hujjatlar": "Отсканированные документы",
+  "Telefondan yuborilgan — bosilganda bandlov oynasi ochiladi": "Отправлены с телефона — по нажатию откроется окно бронирования",
+  "Hozircha skan yo'q": "Сканов пока нет",
+  "Nomsiz hujjat": "Документ без имени",
+  "Bazadan topildi — bron ochiladi": "Есть в базе — откроется окно бронирования",
+  "Yangi mijoz — maydonlar to'ldiriladi": "Новый гость — поля заполнятся автоматически"
+}

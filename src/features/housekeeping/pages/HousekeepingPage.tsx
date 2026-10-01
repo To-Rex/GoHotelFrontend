@@ -52,30 +52,31 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr, trc } from "@/i18n"
 
 const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 
 const TASK_TYPES: Record<string, string> = {
-  CLEANING: "Tozalash",
-  DEEP_CLEANING: "Chuqur tozalash",
-  MAINTENANCE: "Ta'mirlash",
-  INSPECTION: "Tekshiruv",
-  TURN_DOWN: "Kechki tayyorlash",
+  CLEANING: tr("Tozalash"),
+  DEEP_CLEANING: tr("Chuqur tozalash"),
+  MAINTENANCE: tr("Ta'mirlash"),
+  INSPECTION: tr("Tekshiruv"),
+  TURN_DOWN: tr("Kechki tayyorlash"),
 }
 
 const PRIORITIES: Record<string, string> = {
-  LOW: "Past",
-  MEDIUM: "O'rta",
-  HIGH: "Yuqori",
-  URGENT: "Shoshilinch",
+  LOW: tr("Past"),
+  MEDIUM: tr("O'rta"),
+  HIGH: tr("Yuqori"),
+  URGENT: tr("Shoshilinch"),
 }
 
 const STATUSES: Record<string, string> = {
-  OPEN: "Ochiq",
-  IN_PROGRESS: "Jarayonda",
-  COMPLETED: "Bajarildi",
-  CANCELLED: "Bekor qilingan",
+  OPEN: tr("Ochiq"),
+  IN_PROGRESS: tr("Jarayonda"),
+  COMPLETED: tr("Bajarildi"),
+  CANCELLED: tr("Bekor qilingan"),
 }
 
 const statusBadge: Record<string, string> = {
@@ -245,11 +246,11 @@ export const HousekeepingPage = () => {
 
   const onSubmit = async () => {
     if (!branchId) {
-      setErrorMsg("Filialni tanlang")
+      setErrorMsg(tr("Filialni tanlang"))
       return
     }
     if (!roomId) {
-      setErrorMsg("Xonani tanlang")
+      setErrorMsg(tr("Xonani tanlang"))
       return
     }
     try {
@@ -289,7 +290,7 @@ export const HousekeepingPage = () => {
 
   const onAssign = async () => {
     if (!assignTask || !assignUserId) {
-      setAssignError("Xodimni tanlang")
+      setAssignError(tr("Xodimni tanlang"))
       return
     }
     try {
@@ -302,7 +303,7 @@ export const HousekeepingPage = () => {
 
   const onStatusChange = async (t: HousekeepingTask, status: string) => {
     if (!status || status === t.status) return
-    if (status === "CANCELLED" && !confirm("Vazifani bekor qilasizmi?")) return
+    if (status === "CANCELLED" && !confirm(tr("Vazifani bekor qilasizmi?"))) return
     try {
       await statusMutation.mutateAsync({ id: t.id, status })
     } catch (e) {
@@ -313,7 +314,7 @@ export const HousekeepingPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Xo'jalik ishlari</h1>
+        <h1 className="text-2xl font-bold">{tr("Xo'jalik ishlari")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -329,11 +330,10 @@ export const HousekeepingPage = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-              Xo'jalik ishlari
+              {tr("Xo'jalik ishlari")}
             </h1>
             <p className="text-sm text-gray-500">
-              Tozalash, ta'mirlash va boshqa vazifalar · ko'rsatilmoqda:{" "}
-              {filtered.length} ta
+              {tr("Tozalash, ta'mirlash va boshqa vazifalar · ko'rsatilmoqda: {{count}} ta", { count: filtered.length })}
             </p>
           </div>
         </div>
@@ -342,7 +342,7 @@ export const HousekeepingPage = () => {
           <Button asChild variant="outline" className="gap-2">
             <Link to="/messages">
               <MessageSquare className="h-4 w-4" />
-              Xabar yuborish
+              {tr("Xabar yuborish")}
             </Link>
           </Button>
           {/* Chiqishlar bilan tozalashlarni solishtirish. Vazifalar
@@ -350,13 +350,13 @@ export const HousekeepingPage = () => {
               ko'rsatadi, chiqishlar bilan taqqoslamaydi. */}
           <Button variant="outline" onClick={() => setReportOpen(true)}>
             <BarChart3 className="h-4 w-4 mr-2" />
-            Chiqish va tozalash
+            {tr("Chiqish va tozalash")}
           </Button>
           {/* Xodimlar mobil ilovadan yuborgan muammolar. Ilgari bu
               xabarlar bazaga tushardi-yu, o'qiydigan ekran yo'q edi. */}
           <Button variant="outline" onClick={() => setProblemsOpen(true)}>
             <AlertTriangle className="h-4 w-4 mr-2" />
-            Muammolar
+            {tr("Muammolar")}
             {openProblems > 0 && (
               <span className="ml-2 rounded-full bg-red-100 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">
                 {openProblems}
@@ -366,7 +366,7 @@ export const HousekeepingPage = () => {
           {canCreate && (
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4 mr-2" />
-              Vazifa qo'shish
+              {tr("Vazifa qo'shish")}
             </Button>
           )}
         </div>
@@ -386,7 +386,7 @@ export const HousekeepingPage = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             className="pl-9"
-            placeholder="Xona, tur yoki mas'ul bo'yicha qidirish..."
+            placeholder={tr("Xona, tur yoki mas'ul bo'yicha qidirish...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -402,7 +402,7 @@ export const HousekeepingPage = () => {
                 : "border-gray-200 text-gray-600 hover:bg-gray-50"
             )}
           >
-            Barchasi
+            {tr("Barchasi")}
           </button>
           {Object.entries(STATUSES).map(([value, label]) => (
             <button
@@ -427,7 +427,7 @@ export const HousekeepingPage = () => {
       <div className="space-y-2.5 md:hidden">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-            Vazifalar topilmadi
+            {tr("Vazifalar topilmadi")}
           </div>
         ) : (
           filtered.map((t) => {
@@ -458,7 +458,7 @@ export const HousekeepingPage = () => {
                       <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
                         {t.scheduled_date || "—"}
                         {t.created_at &&
-                          ` · yaratilgan: ${format(new Date(t.created_at), "dd.MM HH:mm")}`}
+                          tr(" · yaratilgan: {{format}}", { format: format(new Date(t.created_at), "dd.MM HH:mm") })}
                       </p>
                     </div>
                   </div>
@@ -474,10 +474,10 @@ export const HousekeepingPage = () => {
                       </span>
                       {t.auto_completed && (
                         <span
-                          title="Belgilangan vaqt ichida qo'lda yakunlanmagani uchun tizim avtomatik yopdi"
+                          title={tr("Belgilangan vaqt ichida qo'lda yakunlanmagani uchun tizim avtomatik yopdi")}
                           className="rounded-full border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
                         >
-                          avto
+                          {tr("avto")}
                         </span>
                       )}
                     </span>
@@ -508,7 +508,7 @@ export const HousekeepingPage = () => {
                     </>
                   ) : (
                     <span className="text-xs italic text-gray-400">
-                      Biriktirilmagan
+                      {tr("Biriktirilmagan")}
                     </span>
                   )}
                 </div>
@@ -516,7 +516,7 @@ export const HousekeepingPage = () => {
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-2.5">
                   <button
                     type="button"
-                    title="Fotohisobotni ko'rish"
+                    title={tr("Fotohisobotni ko'rish")}
                     onClick={() => setPhotoTask(t)}
                     className={cn(
                       "relative rounded-lg p-1.5 transition-colors",
@@ -538,7 +538,7 @@ export const HousekeepingPage = () => {
                       onClick={() => onStatusChange(t, "IN_PROGRESS")}
                       className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100"
                     >
-                      <Play className="h-3 w-3" /> Boshlash
+                      <Play className="h-3 w-3" />{" "}{tr("Boshlash")}
                     </button>
                   )}
                   {canUpdate && t.status === "IN_PROGRESS" && (
@@ -547,19 +547,19 @@ export const HousekeepingPage = () => {
                       onClick={() => onStatusChange(t, "COMPLETED")}
                       className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
                     >
-                      <CheckCircle2 className="h-3 w-3" /> Yakunlash
+                      <CheckCircle2 className="h-3 w-3" />{" "}{tr("Yakunlash")}
                     </button>
                   )}
                   {canAssign && active && (
                     <Button variant="ghost" size="sm" onClick={() => openAssign(t)}>
                       <UserPlus className="mr-1 h-3.5 w-3.5" />
-                      Mas'ul
+                      {trc("action", "Mas'ul")}
                     </Button>
                   )}
                   {canUpdate && active && (
                     <button
                       type="button"
-                      title="Bekor qilish"
+                      title={tr("Bekor qilish")}
                       onClick={() => onStatusChange(t, "CANCELLED")}
                       className="ml-auto rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
                     >
@@ -578,20 +578,20 @@ export const HousekeepingPage = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Xona</TableHead>
-              <TableHead>Turi</TableHead>
-              <TableHead>Muhimlik</TableHead>
-              <TableHead>Holat</TableHead>
-              <TableHead>Mas'ul</TableHead>
-              <TableHead>Sana</TableHead>
-              <TableHead className="text-right">Amallar</TableHead>
+              <TableHead>{tr("Xona")}</TableHead>
+              <TableHead>{tr("Turi")}</TableHead>
+              <TableHead>{tr("Muhimlik")}</TableHead>
+              <TableHead>{tr("Holat")}</TableHead>
+              <TableHead>{tr("Mas'ul")}</TableHead>
+              <TableHead>{tr("Sana")}</TableHead>
+              <TableHead className="text-right">{tr("Amallar")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-6 text-gray-400">
-                  Vazifalar topilmadi
+                  {tr("Vazifalar topilmadi")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -647,10 +647,10 @@ export const HousekeepingPage = () => {
                         {/* Scheduler avtomatik yopgan vazifa alohida belgilanadi */}
                         {t.auto_completed && (
                           <span
-                            title="Belgilangan vaqt ichida qo'lda yakunlanmagani uchun tizim avtomatik yopdi"
+                            title={tr("Belgilangan vaqt ichida qo'lda yakunlanmagani uchun tizim avtomatik yopdi")}
                             className="rounded-full border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
                           >
-                            avto
+                            {tr("avto")}
                           </span>
                         )}
                       </span>
@@ -664,7 +664,7 @@ export const HousekeepingPage = () => {
                           <span className="truncate text-gray-700">{assignee}</span>
                         </span>
                       ) : (
-                        <span className="text-xs italic text-gray-400">Biriktirilmagan</span>
+                        <span className="text-xs italic text-gray-400">{tr("Biriktirilmagan")}</span>
                       )}
                     </TableCell>
                     <TableCell className="text-gray-600">
@@ -672,7 +672,7 @@ export const HousekeepingPage = () => {
                       {/* Vazifa qachon (soati bilan) yaratilgani */}
                       {t.created_at && (
                         <p className="mt-0.5 text-xs text-gray-400 leading-tight">
-                          Yaratilgan: {format(new Date(t.created_at), "dd.MM HH:mm")}
+                          {tr("Yaratilgan: {{format}}", { format: format(new Date(t.created_at), "dd.MM HH:mm") })}
                         </p>
                       )}
                     </TableCell>
@@ -681,7 +681,7 @@ export const HousekeepingPage = () => {
                         {/* Fotohisobot — suratlar soni badge bilan, doim ko'rinadi */}
                         <button
                           type="button"
-                          title="Fotohisobotni ko'rish"
+                          title={tr("Fotohisobotni ko'rish")}
                           onClick={() => setPhotoTask(t)}
                           className={cn(
                             "relative p-1.5 rounded-lg transition-colors",
@@ -704,7 +704,7 @@ export const HousekeepingPage = () => {
                             onClick={() => onStatusChange(t, "IN_PROGRESS")}
                             className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100"
                           >
-                            <Play className="h-3 w-3" /> Boshlash
+                            <Play className="h-3 w-3" />{" "}{tr("Boshlash")}
                           </button>
                         )}
                         {canUpdate && t.status === "IN_PROGRESS" && (
@@ -713,13 +713,13 @@ export const HousekeepingPage = () => {
                             onClick={() => onStatusChange(t, "COMPLETED")}
                             className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
                           >
-                            <CheckCircle2 className="h-3 w-3" /> Yakunlash
+                            <CheckCircle2 className="h-3 w-3" />{" "}{tr("Yakunlash")}
                           </button>
                         )}
                         {canUpdate && active && (
                           <button
                             type="button"
-                            title="Bekor qilish"
+                            title={tr("Bekor qilish")}
                             onClick={() => onStatusChange(t, "CANCELLED")}
                             className="rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
                           >
@@ -729,7 +729,7 @@ export const HousekeepingPage = () => {
                         {canAssign && active && (
                           <Button variant="ghost" size="sm" onClick={() => openAssign(t)}>
                             <UserPlus className="h-3.5 w-3.5 mr-1" />
-                            Mas'ul
+                            {trc("action", "Mas'ul")}
                           </Button>
                         )}
                       </div>
@@ -746,12 +746,12 @@ export const HousekeepingPage = () => {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[460px]">
           <DialogHeader>
-            <DialogTitle>Yangi vazifa</DialogTitle>
+            <DialogTitle>{tr("Yangi vazifa")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             {branches.length > 1 && (
               <div className="space-y-1">
-                <label className="text-sm font-medium">Filial *</label>
+                <label className="text-sm font-medium">{tr("Filial *")}</label>
                 <select
                   className={selectClass}
                   value={branchId}
@@ -769,13 +769,13 @@ export const HousekeepingPage = () => {
               </div>
             )}
             <div className="space-y-1">
-              <label className="text-sm font-medium">Xona *</label>
+              <label className="text-sm font-medium">{tr("Xona *")}</label>
               <select
                 className={selectClass}
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
               >
-                <option value="">Xonani tanlang</option>
+                <option value="">{tr("Xonani tanlang")}</option>
                 {branchRooms.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.room_number}
@@ -785,7 +785,7 @@ export const HousekeepingPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Vazifa turi *</label>
+                <label className="text-sm font-medium">{tr("Vazifa turi *")}</label>
                 <select
                   className={selectClass}
                   value={taskType}
@@ -799,7 +799,7 @@ export const HousekeepingPage = () => {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Muhimlik</label>
+                <label className="text-sm font-medium">{tr("Muhimlik")}</label>
                 <select
                   className={selectClass}
                   value={priority}
@@ -814,13 +814,13 @@ export const HousekeepingPage = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Mas'ul xodim</label>
+              <label className="text-sm font-medium">{tr("Mas'ul xodim")}</label>
               <select
                 className={selectClass}
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
               >
-                <option value="">Biriktirilmagan</option>
+                <option value="">{tr("Biriktirilmagan")}</option>
                 {employees.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.first_name} {e.last_name} (@{e.username})
@@ -830,7 +830,7 @@ export const HousekeepingPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Rejalashtirilgan sana</label>
+                <label className="text-sm font-medium">{tr("Rejalashtirilgan sana")}</label>
                 <Input
                   type="date"
                   value={scheduledDate}
@@ -838,11 +838,11 @@ export const HousekeepingPage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Izoh</label>
+                <label className="text-sm font-medium">{tr("Izoh")}</label>
                 <Input
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Izoh..."
+                  placeholder={tr("Izoh...")}
                 />
               </div>
             </div>
@@ -852,13 +852,13 @@ export const HousekeepingPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={onSubmit} disabled={createMutation.isPending}>
               {createMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Qo'shish
+              {tr("Qo'shish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -868,17 +868,17 @@ export const HousekeepingPage = () => {
       <Dialog open={!!assignTask} onOpenChange={(o) => !o && setAssignTask(null)}>
         <DialogContent className="sm:max-w-[380px]">
           <DialogHeader>
-            <DialogTitle>Mas'ul biriktirish</DialogTitle>
+            <DialogTitle>{tr("Mas'ul biriktirish")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Xodim *</label>
+              <label className="text-sm font-medium">{tr("Xodim *")}</label>
               <select
                 className={selectClass}
                 value={assignUserId}
                 onChange={(e) => setAssignUserId(e.target.value)}
               >
-                <option value="">Xodimni tanlang</option>
+                <option value="">{tr("Xodimni tanlang")}</option>
                 {employees.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.first_name} {e.last_name} (@{e.username})
@@ -892,13 +892,13 @@ export const HousekeepingPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignTask(null)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={onAssign} disabled={assignMutation.isPending}>
               {assignMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Biriktirish
+              {tr("Biriktirish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -909,10 +909,9 @@ export const HousekeepingPage = () => {
         <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>
-              Hisobot — Xona{" "}
-              {photoTask
+              {tr("Hisobot — Xona {{v}}", { v: photoTask
                 ? photoTask.room?.room_number || roomMap[photoTask.room_id] || "—"
-                : ""}
+                : "" })}
             </DialogTitle>
           </DialogHeader>
 
@@ -924,7 +923,7 @@ export const HousekeepingPage = () => {
             <div className="rounded-xl border bg-gray-50/60 p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-gray-700">
-                  Bajarilgan ishlar
+                  {tr("Bajarilgan ishlar")}
                 </p>
                 <span className="text-xs font-medium tabular-nums text-gray-500">
                   {photoTask.checklist_done ?? 0} / {photoTask.checklist_total ?? 0}
@@ -959,7 +958,7 @@ export const HousekeepingPage = () => {
             ) : taskPhotos.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-gray-400">
                 <ImageIcon className="h-8 w-8" />
-                <p className="text-sm">Bu vazifa uchun fotohisobotlar yo'q</p>
+                <p className="text-sm">{tr("Bu vazifa uchun fotohisobotlar yo'q")}</p>
               </div>
             ) : (
               <div className="grid max-h-[60vh] grid-cols-1 gap-4 overflow-y-auto pr-1 sm:grid-cols-2 md:grid-cols-3">

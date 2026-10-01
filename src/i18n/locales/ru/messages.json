@@ -1,0 +1,29 @@
+{
+  "bugun {{d}}": "сегодня {{d}}",
+  "Xabar matnini kiriting": "Введите текст сообщения",
+  "Xodimlar o'rtasidagi so'rov va xabarlar": "Запросы и сообщения между сотрудниками",
+  "{{openCount}} ta ochiq": "открытых: {{openCount}}",
+  "Yangi xabar yoki so'rov": "Новое сообщение или запрос",
+  "Masalan: 104-xona bo'shaganini tekshirib qo'ying...": "Например: проверьте, освободился ли номер 104...",
+  "Xona (ixtiyoriy)": "Номер (необязательно)",
+  "Yuborish": "Отправить",
+  "Ochiq ({{openCount}})": "Открытые ({{openCount}})",
+  "Bajarilgan ({{doneCount}})": "Выполненные ({{doneCount}})",
+  "Faqat oxirgi ikki kunlik xabarlarni ko'rsatish": "Показывать только сообщения за последние два дня",
+  "Ikki kundan avvalgi xabarlarni ham ko'rsatish": "Показать также сообщения старше двух дней",
+  "Oxirgi 2 kun": "Последние 2 дня",
+  "Avvalgilarini ko'rsatish": "Показать более ранние",
+  "Barcha xabarlar ko'rsatilmoqda": "Показаны все сообщения",
+  "Oxirgi {{DEFAULT_MESSAGE_DAYS}} kunlik xabarlar · bajarilmagan so'rovlar muddatidan qat'i nazar ko'rinadi": {
+    "one": "Сообщения за последний {{DEFAULT_MESSAGE_DAYS}} день · невыполненные запросы видны независимо от давности",
+    "few": "Сообщения за последние {{DEFAULT_MESSAGE_DAYS}} дня · невыполненные запросы видны независимо от давности",
+    "many": "Сообщения за последние {{DEFAULT_MESSAGE_DAYS}} дней · невыполненные запросы видны независимо от давности",
+    "other": "Сообщения за последние {{DEFAULT_MESSAGE_DAYS}} дня · невыполненные запросы видны независимо от давности"
+  },
+  "Hozircha xabarlar yo'q": "Сообщений пока нет",
+  "Bu bo'limda xabar yo'q": "В этом разделе нет сообщений",
+  "Avvalgi xabarlarni ko'rsatish": "Показать более ранние сообщения",
+  "(siz)": "(вы)",
+  "{{v}} bajardi{{v2}}": "Выполнено: {{v}}{{v2}}",
+  "action::Bajarildi": "Отметить выполненным"
+}

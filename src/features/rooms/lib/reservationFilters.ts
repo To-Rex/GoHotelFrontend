@@ -1,5 +1,6 @@
 import type { RoomReservation } from "../api/rooms"
 import { reservationStartMs } from "./roomReservations"
+import { tr } from "@/i18n"
 
 /**
  * Xona bandlovlari ro'yxatining filtri va tartibi.
@@ -21,12 +22,12 @@ export type ReservationSort =
   | "debt"
 
 export const SORT_LABELS: Record<ReservationSort, string> = {
-  newest: "Avval yangilari",
-  oldest: "Avval eskilari",
-  amount_desc: "Summa: ko'pdan kamga",
-  amount_asc: "Summa: kamdan ko'pga",
-  debt: "Qarzi ko'plari",
-  guest: "Mehmon ismi (A–Z)",
+  newest: tr("Avval yangilari"),
+  oldest: tr("Avval eskilari"),
+  amount_desc: tr("Summa: ko'pdan kamga"),
+  amount_asc: tr("Summa: kamdan ko'pga"),
+  debt: tr("Qarzi ko'plari"),
+  guest: tr("Mehmon ismi (A–Z)"),
 }
 
 export interface ReservationFilters {

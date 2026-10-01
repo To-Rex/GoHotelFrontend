@@ -34,11 +34,14 @@ import {
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
 } from "@/lib/paymentMethods"
+import { tr } from "@/i18n"
 
 const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 
 // Tez-tez ishlatiladigan kategoriyalar — istalgan matn ham kiritsa bo'ladi
+// i18n:keys — kategoriya bazaga o'zbekcha yoziladi (hisobotlar shu nom
+// bo'yicha guruhlaydi); ekranda tr(kategoriya) bilan tarjima qilinadi
 const CATEGORY_SUGGESTIONS = [
   "Oziq-ovqat",
   "Kommunal to'lovlar",
@@ -129,7 +132,7 @@ export const ExpensesPage = () => {
   const byCategory = useMemo(() => {
     const m: Record<string, number> = {}
     for (const e of filtered) {
-      const key = e.category || "Boshqa"
+      const key = e.category || /* i18n:skip */ "Boshqa"
       m[key] = (m[key] || 0) + Number(e.amount || 0)
     }
     return Object.entries(m).sort(([, a], [, b]) => b - a)
@@ -158,12 +161,12 @@ export const ExpensesPage = () => {
 
   const onSubmit = async () => {
     if (!title.trim()) {
-      setErrorMsg("Xarajat nomini kiriting")
+      setErrorMsg(tr("Xarajat nomini kiriting"))
       return
     }
     const amt = Number(amount)
     if (!amt || amt <= 0) {
-      setErrorMsg("Summani to'g'ri kiriting (0 dan katta)")
+      setErrorMsg(tr("Summani to'g'ri kiriting (0 dan katta)"))
       return
     }
     try {
@@ -183,7 +186,7 @@ export const ExpensesPage = () => {
   }
 
   const onDelete = async (e: Expense) => {
-    if (!confirm(`"${e.title}" xarajatini o'chirasizmi?`)) return
+    if (!confirm(tr("\"{{title}}\" xarajatini o'chirasizmi?", { title: e.title }))) return
     try {
       await deleteMutation.mutateAsync({ id: e.id, hotelId: user?.hotel_id })
     } catch (err) {
@@ -194,7 +197,7 @@ export const ExpensesPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Xarajatlar</h1>
+        <h1 className="text-2xl font-bold">{tr("Xarajatlar")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -205,12 +208,11 @@ export const ExpensesPage = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Xarajatlar</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("Xarajatlar")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {dateFrom || dateTo
-              ? `Davr: ${dateFrom || "..."} — ${dateTo || "..."}`
-              : "Davr: barcha davr"}{" "}
-            · {filtered.length} ta chiqim
+            {tr("{{v}} · {{count}} ta chiqim", { v: dateFrom || dateTo
+              ? tr("Davr: {{v}} — {{v2}}", { v: dateFrom || "...", v2: dateTo || "..." })
+              : tr("Davr: barcha davr"), count: filtered.length })}
             {/* Davr almashganda eski ro'yxat joyida qoladi, shuning uchun
                 yangilanayotganini shu kichik belgi bildiradi. */}
             {isFetching && (
@@ -221,7 +223,7 @@ export const ExpensesPage = () => {
         {canCreate && (
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
-            Xarajat qo'shish
+            {tr("Xarajat qo'shish")}
           </Button>
         )}
       </div>
@@ -248,7 +250,7 @@ export const ExpensesPage = () => {
         </div>
         <div className="flex items-end gap-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Sanadan</label>
+            <label className="text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
             <Input
               type="date"
               className="w-40"
@@ -258,7 +260,7 @@ export const ExpensesPage = () => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Sanagacha</label>
+            <label className="text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
             <Input
               type="date"
               className="w-40"
@@ -275,8 +277,7 @@ export const ExpensesPage = () => {
           xarajat yozilmaganini bildirayotgandek tuyuladi. */}
       {rangeInverted && (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          Boshlanish sanasi tugash sanasidan keyin turibdi — shuning uchun
-          ro'yxat bo'sh. Sanalarni almashtirib ko'ring.
+          {tr("Boshlanish sanasi tugash sanasidan keyin turibdi — shuning uchun ro'yxat bo'sh. Sanalarni almashtirib ko'ring.")}
         </p>
       )}
 
@@ -287,8 +288,8 @@ export const ExpensesPage = () => {
             <TrendingDown className="h-4.5 w-4.5" size={18} />
           </span>
           <div>
-            <p className="text-xs text-gray-500">Jami xarajat</p>
-            <p className="text-lg font-bold text-gray-900">{fmt(total)} So'm</p>
+            <p className="text-xs text-gray-500">{tr("Jami xarajat")}</p>
+            <p className="text-lg font-bold text-gray-900">{tr("{{total}} So'm", { total: fmt(total) })}</p>
           </div>
         </div>
         {byCategory.length > 0 && (
@@ -298,8 +299,8 @@ export const ExpensesPage = () => {
                 key={cat}
                 className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600"
               >
-                <span className="font-medium">{cat}:</span>
-                <span className="font-semibold text-gray-900">{fmt(sum)} So'm</span>
+                <span className="font-medium">{tr(cat)}:</span>
+                <span className="font-semibold text-gray-900">{tr("{{sum}} So'm", { sum: fmt(sum) })}</span>
               </span>
             ))}
           </div>
@@ -310,7 +311,7 @@ export const ExpensesPage = () => {
       <div className="space-y-2.5 md:hidden">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-            Tanlangan davrda xarajatlar yo'q
+            {tr("Tanlangan davrda xarajatlar yo'q")}
           </div>
         ) : (
           filtered.map((e) => (
@@ -330,11 +331,11 @@ export const ExpensesPage = () => {
                 <div className="flex flex-shrink-0 flex-col items-end gap-1">
                   <span className="font-semibold text-red-600">
                     −{fmt(e.amount)}{" "}
-                    <span className="text-xs font-normal text-gray-400">So'm</span>
+                    <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
                   </span>
                   {e.category ? (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                      {e.category}
+                      {tr(e.category)}
                     </span>
                   ) : (
                     <span className="text-gray-300">—</span>
@@ -351,12 +352,12 @@ export const ExpensesPage = () => {
                   )}
                 </span>
                 <span className="truncate text-sm text-gray-700">
-                  {e.created_by_name || "Noma'lum"}
+                  {e.created_by_name || tr("Noma'lum")}
                 </span>
                 {canDelete && (
                   <button
                     type="button"
-                    title="O'chirish"
+                    title={tr("O'chirish")}
                     onClick={() => onDelete(e)}
                     className="ml-auto p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
                   >
@@ -374,13 +375,13 @@ export const ExpensesPage = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
-              <TableHead>Sana</TableHead>
-              <TableHead>Xarajat</TableHead>
-              <TableHead>Kategoriya</TableHead>
-              <TableHead>To'lov turi</TableHead>
-              <TableHead>Kim kiritgan</TableHead>
-              <TableHead className="text-right">Summa</TableHead>
-              {canDelete && <TableHead className="text-right">Amallar</TableHead>}
+              <TableHead>{tr("Sana")}</TableHead>
+              <TableHead>{tr("Xarajat")}</TableHead>
+              <TableHead>{tr("Kategoriya")}</TableHead>
+              <TableHead>{tr("To'lov turi")}</TableHead>
+              <TableHead>{tr("Kim kiritgan")}</TableHead>
+              <TableHead className="text-right">{tr("Summa")}</TableHead>
+              {canDelete && <TableHead className="text-right">{tr("Amallar")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -389,7 +390,7 @@ export const ExpensesPage = () => {
                 <TableCell colSpan={canDelete ? 7 : 6} className="py-12">
                   <div className="flex flex-col items-center gap-2 text-gray-400">
                     <TrendingDown className="h-8 w-8" />
-                    <p className="text-sm">Tanlangan davrda xarajatlar yo'q</p>
+                    <p className="text-sm">{tr("Tanlangan davrda xarajatlar yo'q")}</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -408,7 +409,7 @@ export const ExpensesPage = () => {
                   <TableCell>
                     {e.category ? (
                       <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                        {e.category}
+                        {tr(e.category)}
                       </span>
                     ) : (
                       <span className="text-gray-300">—</span>
@@ -427,19 +428,19 @@ export const ExpensesPage = () => {
                         )}
                       </span>
                       <span className="text-gray-700">
-                        {e.created_by_name || "Noma'lum"}
+                        {e.created_by_name || tr("Noma'lum")}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-semibold text-red-600">
                     −{fmt(e.amount)}{" "}
-                    <span className="text-xs font-normal text-gray-400">So'm</span>
+                    <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
                   </TableCell>
                   {canDelete && (
                     <TableCell className="text-right">
                       <button
                         type="button"
-                        title="O'chirish"
+                        title={tr("O'chirish")}
                         onClick={() => onDelete(e)}
                         className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
                       >
@@ -458,30 +459,30 @@ export const ExpensesPage = () => {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[460px]">
           <DialogHeader>
-            <DialogTitle>Yangi xarajat</DialogTitle>
+            <DialogTitle>{tr("Yangi xarajat")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Xarajat nomi *</label>
+              <label className="text-sm font-medium">{tr("Xarajat nomi *")}</label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Masalan: Kir yuvish vositalari"
+                placeholder={tr("Masalan: Kir yuvish vositalari")}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Summa (So'm) *</label>
+                <label className="text-sm font-medium">{tr("Summa (So'm) *")}</label>
                 <Input
                   type="number"
                   min={0}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Masalan: 150000"
+                  placeholder={tr("Masalan: 150000")}
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Sana</label>
+                <label className="text-sm font-medium">{tr("Sana")}</label>
                 <Input
                   type="date"
                   max={todayStr}
@@ -492,21 +493,22 @@ export const ExpensesPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Kategoriya</label>
+                <label className="text-sm font-medium">{tr("Kategoriya")}</label>
                 <Input
                   list="expense-categories"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  placeholder="Tanlang yoki yozing"
+                  placeholder={tr("Tanlang yoki yozing")}
                 />
                 <datalist id="expense-categories">
                   {CATEGORY_SUGGESTIONS.map((c) => (
-                    <option key={c} value={c} />
+                    // Qiymat o'zbekcha saqlanadi; boshqa tilda yonida tarjimasi turadi
+                    <option key={c} value={c} label={tr(c) !== c ? tr(c) : undefined} />
                   ))}
                 </datalist>
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">To'lov turi</label>
+                <label className="text-sm font-medium">{tr("To'lov turi")}</label>
                 <select
                   className={selectClass}
                   value={method}
@@ -521,11 +523,11 @@ export const ExpensesPage = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Izoh</label>
+              <label className="text-sm font-medium">{tr("Izoh")}</label>
               <Input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Qo'shimcha izoh..."
+                placeholder={tr("Qo'shimcha izoh...")}
               />
             </div>
             {errorMsg && (
@@ -534,13 +536,13 @@ export const ExpensesPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={onSubmit} disabled={createMutation.isPending}>
               {createMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Saqlash
+              {tr("Saqlash")}
             </Button>
           </DialogFooter>
         </DialogContent>

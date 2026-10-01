@@ -21,6 +21,7 @@ import { apiErrorMessage } from "@/lib/apiError"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr, trc } from "@/i18n"
 
 const initialsOf = (name: string | null | undefined) =>
   (name || "?")
@@ -35,7 +36,7 @@ const timeLabel = (iso: string | null) => {
   const d = new Date(iso)
   const today = format(new Date(), "yyyy-MM-dd")
   return format(d, "yyyy-MM-dd") === today
-    ? `bugun ${format(d, "HH:mm")}`
+    ? tr("bugun {{d}}", { d: format(d, "HH:mm") })
     : format(d, "dd.MM HH:mm")
 }
 
@@ -80,7 +81,7 @@ export const MessagesPage = () => {
 
   const onSend = async () => {
     if (!body.trim()) {
-      setSendError("Xabar matnini kiriting")
+      setSendError(tr("Xabar matnini kiriting"))
       return
     }
     setSendError(null)
@@ -113,13 +114,13 @@ export const MessagesPage = () => {
             <MessageSquare className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Xabarlar</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{tr("Xabarlar")}</h1>
             <p className="text-sm text-gray-500">
-              Xodimlar o'rtasidagi so'rov va xabarlar
+              {tr("Xodimlar o'rtasidagi so'rov va xabarlar")}
               {openCount > 0 && (
                 <>
                   {" "}
-                  · <span className="font-semibold text-amber-600">{openCount} ta ochiq</span>
+                  · <span className="font-semibold text-amber-600">{tr("{{openCount}} ta ochiq", { openCount })}</span>
                 </>
               )}
             </p>
@@ -133,14 +134,14 @@ export const MessagesPage = () => {
         style={{ animationDelay: "60ms" }}
       >
         <label className="text-xs font-medium text-gray-600">
-          Yangi xabar yoki so'rov
+          {tr("Yangi xabar yoki so'rov")}
         </label>
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={2}
           maxLength={500}
-          placeholder="Masalan: 104-xona bo'shaganini tekshirib qo'ying..."
+          placeholder={tr("Masalan: 104-xona bo'shaganini tekshirib qo'ying...")}
           className="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         />
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -150,10 +151,10 @@ export const MessagesPage = () => {
               onChange={(e) => setRoomId(e.target.value)}
               className="flex h-9 items-center rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Xona (ixtiyoriy)</option>
+              <option value="">{tr("Xona (ixtiyoriy)")}</option>
               {sortedRooms.map((r: any) => (
                 <option key={r.id} value={r.id}>
-                  {r.room_number}-xona
+                  {tr("{{room_number}}-xona", { room_number: r.room_number })}
                 </option>
               ))}
             </select>
@@ -169,7 +170,7 @@ export const MessagesPage = () => {
             ) : (
               <Send className="h-4 w-4" />
             )}
-            Yuborish
+            {tr("Yuborish")}
           </Button>
         </div>
         {sendError && (
@@ -186,9 +187,9 @@ export const MessagesPage = () => {
       >
         {(
           [
-            { key: "ALL", label: `Barchasi (${messages.length})` },
-            { key: "OPEN", label: `Ochiq (${openCount})` },
-            { key: "DONE", label: `Bajarilgan (${doneCount})` },
+            { key: "ALL", label: tr("Barchasi ({{count}})", { count: messages.length }) },
+            { key: "OPEN", label: tr("Ochiq ({{openCount}})", { openCount }) },
+            { key: "DONE", label: tr("Bajarilgan ({{doneCount}})", { doneCount }) },
           ] as const
         ).map((f) => (
           <button
@@ -214,11 +215,11 @@ export const MessagesPage = () => {
           className="ml-auto rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
           title={
             showAll
-              ? "Faqat oxirgi ikki kunlik xabarlarni ko'rsatish"
-              : "Ikki kundan avvalgi xabarlarni ham ko'rsatish"
+              ? tr("Faqat oxirgi ikki kunlik xabarlarni ko'rsatish")
+              : tr("Ikki kundan avvalgi xabarlarni ham ko'rsatish")
           }
         >
-          {showAll ? "Oxirgi 2 kun" : "Avvalgilarini ko'rsatish"}
+          {showAll ? tr("Oxirgi 2 kun") : tr("Avvalgilarini ko'rsatish")}
         </button>
       </div>
 
@@ -227,8 +228,8 @@ export const MessagesPage = () => {
       {!isLoading && (
         <p className="-mt-1 text-[11px] text-gray-400">
           {showAll
-            ? "Barcha xabarlar ko'rsatilmoqda"
-            : `Oxirgi ${DEFAULT_MESSAGE_DAYS} kunlik xabarlar · bajarilmagan so'rovlar muddatidan qat'i nazar ko'rinadi`}
+            ? tr("Barcha xabarlar ko'rsatilmoqda")
+            : tr("Oxirgi {{DEFAULT_MESSAGE_DAYS}} kunlik xabarlar · bajarilmagan so'rovlar muddatidan qat'i nazar ko'rinadi", { DEFAULT_MESSAGE_DAYS })}
         </p>
       )}
 
@@ -244,7 +245,7 @@ export const MessagesPage = () => {
               <MessageSquare className="h-7 w-7" />
             </span>
             <p className="text-sm">
-              {filter === "ALL" ? "Hozircha xabarlar yo'q" : "Bu bo'limda xabar yo'q"}
+              {filter === "ALL" ? tr("Hozircha xabarlar yo'q") : tr("Bu bo'limda xabar yo'q")}
             </p>
             {!showAll && (
               <button
@@ -252,7 +253,7 @@ export const MessagesPage = () => {
                 onClick={() => setShowAll(true)}
                 className="text-xs font-medium text-primary-600 hover:text-primary-700"
               >
-                Avvalgi xabarlarni ko'rsatish
+                {tr("Avvalgi xabarlarni ko'rsatish")}
               </button>
             )}
           </div>
@@ -279,10 +280,10 @@ export const MessagesPage = () => {
                     {initialsOf(m.created_by_name)}
                   </span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {m.created_by_name || "Xodim"}
+                    {m.created_by_name || tr("Xodim")}
                     {mine && (
                       <span className="ml-1 text-[11px] font-normal text-gray-400">
-                        (siz)
+                        {tr("(siz)")}
                       </span>
                     )}
                   </span>
@@ -293,7 +294,7 @@ export const MessagesPage = () => {
                   {m.room_number && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
                       <DoorOpen className="h-3 w-3" />
-                      {m.room_number}-xona
+                      {tr("{{room_number}}-xona", { room_number: m.room_number })}
                     </span>
                   )}
                   <span
@@ -304,7 +305,7 @@ export const MessagesPage = () => {
                         : "bg-emerald-100 text-emerald-700"
                     )}
                   >
-                    {m.status === "OPEN" ? "Ochiq" : "Bajarildi"}
+                    {m.status === "OPEN" ? tr("Ochiq") : tr("Bajarildi")}
                   </span>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-900">
@@ -314,8 +315,7 @@ export const MessagesPage = () => {
                   {m.status === "DONE" ? (
                     <p className="flex items-center gap-1 text-[11px] text-emerald-600">
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      {m.done_by_name || "Xodim"} bajardi
-                      {m.done_at ? ` · ${timeLabel(m.done_at)}` : ""}
+                      {tr("{{v}} bajardi{{v2}}", { v: m.done_by_name || tr("Xodim"), v2: m.done_at ? ` · ${timeLabel(m.done_at)}` : "" })}
                     </p>
                   ) : (
                     <span />
@@ -333,7 +333,7 @@ export const MessagesPage = () => {
                       ) : (
                         <CheckCircle2 className="h-3.5 w-3.5" />
                       )}
-                      Bajarildi
+                      {trc("action", "Bajarildi")}
                     </Button>
                   )}
                 </div>

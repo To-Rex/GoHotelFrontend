@@ -18,6 +18,7 @@ import {
   type Problem,
   type ProblemStatus,
 } from "../api/problems"
+import { tr } from "@/i18n"
 
 /**
  * Xodimlar xabar bergan muammolar.
@@ -84,10 +85,10 @@ export function ProblemsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-600" />
-            Xabar berilgan muammolar
+            {tr("Xabar berilgan muammolar")}
             {openCount > 0 && (
               <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
-                {openCount} ochiq
+                {tr("{{openCount}} ochiq", { openCount })}
               </span>
             )}
           </DialogTitle>
@@ -95,7 +96,7 @@ export function ProblemsDialog({
 
         <div className="flex flex-wrap gap-1.5">
           <FilterChip active={filter === ""} onClick={() => setFilter("")}>
-            Barchasi
+            {tr("Barchasi")}
           </FilterChip>
           {PROBLEM_STATUSES.map((s) => (
             <FilterChip
@@ -121,7 +122,7 @@ export function ProblemsDialog({
           </div>
         ) : sorted.length === 0 ? (
           <p className="py-10 text-center text-sm text-gray-400">
-            {filter ? "Bu holatda muammo yo'q" : "Hozircha muammo xabari yo'q"}
+            {filter ? tr("Bu holatda muammo yo'q") : tr("Hozircha muammo xabari yo'q")}
           </p>
         ) : (
           <ul className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
@@ -133,12 +134,12 @@ export function ProblemsDialog({
                       {PROBLEM_CATEGORIES[p.category] || p.category}
                       {p.room_number && (
                         <span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600">
-                          {p.room_number}-xona
+                          {tr("{{room_number}}-xona", { room_number: p.room_number })}
                         </span>
                       )}
                     </p>
                     <p className="mt-0.5 text-[11px] text-gray-400">
-                      {p.reported_by_name || "Xodim"}
+                      {p.reported_by_name || tr("Xodim")}
                       {p.created_at
                         ? ` · ${p.created_at.slice(0, 10)} ${p.created_at.slice(11, 16)}`
                         : ""}

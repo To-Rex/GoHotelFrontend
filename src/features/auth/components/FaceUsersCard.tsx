@@ -10,6 +10,7 @@ import {
   getFaceUsers,
   type FaceUser,
 } from "@/features/auth/api/face"
+import { tr } from "@/i18n"
 
 /**
  * Xodimlarning yuz holati va uni bekor qilish — menejer/administrator uchun.
@@ -47,7 +48,7 @@ export function FaceUsersCard() {
   const reset = async (u: FaceUser) => {
     if (
       !confirm(
-        `${u.name} ning yuzi o'chiriladi. U parol bilan kiradi va tizim undan yangi yuz biriktirishni so'raydi. Davom etasizmi?`
+        tr("{{name}} ning yuzi o'chiriladi. U parol bilan kiradi va tizim undan yangi yuz biriktirishni so'raydi. Davom etasizmi?", { name: u.name })
       )
     )
       return
@@ -55,7 +56,7 @@ export function FaceUsersCard() {
     setError(null)
     try {
       await deleteUserFaceProfiles(u.user_id)
-      setNotice(`${u.name} — yuz o'chirildi`)
+      setNotice(tr("{{name}} — yuz o'chirildi", { name: u.name }))
       window.setTimeout(() => setNotice(null), 3000)
       await load()
     } catch (e) {
@@ -77,7 +78,7 @@ export function FaceUsersCard() {
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-gray-400">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Yuklanmoqda...
+        {tr("Yuklanmoqda...")}
       </div>
     )
   }
@@ -98,7 +99,7 @@ export function FaceUsersCard() {
       {users.length > 5 && (
         <Input
           className="h-9"
-          placeholder="Xodim ismi yoki logini..."
+          placeholder={tr("Xodim ismi yoki logini...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -121,7 +122,7 @@ export function FaceUsersCard() {
                       : "bg-gray-100 text-gray-500"
                   )}
                 >
-                  {u.enrolled ? `Yuz bor (${u.face_count})` : "Yuz yo'q"}
+                  {u.enrolled ? tr("Yuz bor ({{face_count}})", { face_count: u.face_count }) : tr("Yuz yo'q")}
                 </span>
               </p>
               <p className="text-[11px] leading-tight text-gray-400">
@@ -142,14 +143,14 @@ export function FaceUsersCard() {
                 ) : (
                   <Trash2 className="mr-1 h-3.5 w-3.5" />
                 )}
-                Yuzni o'chirish
+                {tr("Yuzni o'chirish")}
               </Button>
             ) : (
               /* Yuzi yo'q xodimdan tizim keyingi kirishida o'zi so'raydi —
                  bu yerda qiladigan ish yo'q */
               <span className="inline-flex items-center gap-1 text-[11px] text-gray-400">
                 <ScanFace className="h-3.5 w-3.5" />
-                Kirganda so'raladi
+                {tr("Kirganda so'raladi")}
               </span>
             )}
           </li>
@@ -159,7 +160,7 @@ export function FaceUsersCard() {
       {shown.length === 0 && (
         <p className="flex items-center gap-2 py-4 text-sm text-gray-400">
           <ShieldOff className="h-4 w-4" />
-          {q ? "Xodim topilmadi" : "Xodimlar ro'yxati bo'sh"}
+          {q ? tr("Xodim topilmadi") : tr("Xodimlar ro'yxati bo'sh")}
         </p>
       )}
     </div>

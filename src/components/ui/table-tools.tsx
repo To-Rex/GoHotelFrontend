@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { TableHead } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import type { SortDir } from "@/lib/tableState"
+import { tr } from "@/i18n"
 
 /**
  * Sahifalanadigan jadvallarning umumiy bo'laklari: saralanadigan ustun
@@ -72,7 +73,7 @@ interface TableSearchProps {
 export function TableSearch({
   value,
   onChange,
-  placeholder = "Qidirish...",
+  placeholder = tr("Qidirish..."),
   className,
 }: TableSearchProps) {
   return (
@@ -88,7 +89,7 @@ export function TableSearch({
         <button
           type="button"
           onClick={() => onChange("")}
-          aria-label="Qidiruvni tozalash"
+          aria-label={tr("Qidiruvni tozalash")}
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
         >
           <X className="h-3.5 w-3.5" />
@@ -126,7 +127,7 @@ export function TablePager({
             disabled={busy || page <= 0}
             onClick={() => onPage(page - 1)}
           >
-            Oldingi
+            {tr("Oldingi")}
           </PagerButton>
           <span className="px-1.5 tabular-nums">
             {page + 1} / {pageCount}
@@ -135,7 +136,7 @@ export function TablePager({
             disabled={busy || page >= pageCount - 1}
             onClick={() => onPage(page + 1)}
           >
-            Keyingi
+            {tr("Keyingi")}
           </PagerButton>
         </div>
       )}

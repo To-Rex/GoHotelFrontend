@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api"
+import { tr } from "@/i18n"
 
 /**
  * Vazifa bandlari — farrosh mobil ilovada belgilaydigan ish ro'yxati.
@@ -23,11 +24,11 @@ export interface ChecklistTemplate {
 
 /** Vazifa turlari — backenddagi `TASK_TYPES` bilan bir xil. */
 export const CHECKLIST_TASK_TYPES = [
-  { key: "CLEANING", label: "Tozalash" },
-  { key: "DEEP_CLEANING", label: "Chuqur tozalash" },
-  { key: "MAINTENANCE", label: "Ta'mirlash" },
-  { key: "INSPECTION", label: "Tekshiruv" },
-  { key: "TURN_DOWN", label: "Kechki tayyorlash" },
+  { key: "CLEANING", label: tr("Tozalash") },
+  { key: "DEEP_CLEANING", label: tr("Chuqur tozalash") },
+  { key: "MAINTENANCE", label: tr("Ta'mirlash") },
+  { key: "INSPECTION", label: tr("Tekshiruv") },
+  { key: "TURN_DOWN", label: tr("Kechki tayyorlash") },
 ] as const
 
 const BASE = "/housekeeping/checklist-templates"

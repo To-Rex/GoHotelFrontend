@@ -27,6 +27,7 @@ import {
   PanelNotice,
   PanelSelect,
 } from "../components/ui"
+import { dateLocale, tr } from "@/i18n"
 
 /**
  * Dasturlar do'koni — panel tomoni.
@@ -44,7 +45,7 @@ const PLATFORM_META = {
 
 function formatDate(iso: string | null): string {
   if (!iso) return ""
-  return new Date(iso).toLocaleDateString("uz-UZ", {
+  return new Date(iso).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -90,7 +91,7 @@ export function AppStorePage() {
         notes: draft.notes,
         file: draft.file,
       })
-      setNotice(`"${draft.name}" do'konga qo'shildi`)
+      setNotice(tr("\"{{name}}\" do'konga qo'shildi", { name: draft.name }))
       setDraft(null)
       window.setTimeout(() => setNotice(null), 4000)
     } catch (e) {
@@ -101,8 +102,8 @@ export function AppStorePage() {
   const drop = async (release: PanelAppRelease) => {
     if (
       !confirm(
-        `"${release.name}" do'kondan o'chiriladi. Mehmonxonalar uni boshqa ` +
-          `yuklab ololmaydi. Davom etasizmi?`
+        tr("\"{{name}}\" do'kondan o'chiriladi. Mehmonxonalar uni boshqa ", { name: release.name }) +
+          tr("yuklab ololmaydi. Davom etasizmi?")
       )
     )
       return
@@ -150,12 +151,12 @@ export function AppStorePage() {
   return (
     <div>
       <PanelHeading
-        title="Dasturlar do'koni"
-        subtitle="Mehmonxona administratorlari yuklab oladigan fayllar"
+        title={tr("Dasturlar do'koni")}
+        subtitle={tr("Mehmonxona administratorlari yuklab oladigan fayllar")}
         action={
           <PanelButton onClick={() => setDraft({ ...EMPTY_DRAFT })}>
             <Plus className="h-4 w-4" />
-            Dastur yuklash
+            {tr("Dastur yuklash")}
           </PanelButton>
         }
       />
@@ -169,7 +170,7 @@ export function AppStorePage() {
         </div>
       ) : releases.length === 0 ? (
         <PanelEmpty>
-          Do'kon bo'sh — "Dastur yuklash" bilan birinchi faylni qo'shing
+          {tr("Do'kon bo'sh — \"Dastur yuklash\" bilan birinchi faylni qo'shing")}
         </PanelEmpty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-white/5">
@@ -177,13 +178,13 @@ export function AppStorePage() {
             <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
                 <tr>
-                  <th className="px-3 py-2.5 font-medium">Dastur</th>
-                  <th className="px-3 py-2.5 font-medium">Platforma</th>
-                  <th className="px-3 py-2.5 font-medium">Fayl</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Dastur")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Platforma")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Fayl")}</th>
                   <th className="px-3 py-2.5 text-right font-medium">
-                    Yuklab olingan
+                    {tr("Yuklab olingan")}
                   </th>
-                  <th className="px-3 py-2.5 font-medium">Qo'shilgan</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Qo'shilgan")}</th>
                   <th className="px-3 py-2.5" />
                 </tr>
               </thead>
@@ -265,12 +266,12 @@ export function AppStorePage() {
 
       <PanelDialog
         open={!!draft}
-        title="Yangi dastur"
+        title={tr("Yangi dastur")}
         onClose={() => (upload.isPending ? null : setDraft(null))}
       >
         <form onSubmit={submit} className="space-y-3">
           <PanelSelect
-            label="Platforma"
+            label={tr("Platforma")}
             value={draft?.platform || "ANDROID"}
             onChange={(e) =>
               setDraft(
@@ -279,13 +280,13 @@ export function AppStorePage() {
               )
             }
           >
-            <option value="ANDROID">Android (APK)</option>
-            <option value="WINDOWS">Windows (EXE / MSI)</option>
+            <option value="ANDROID">{tr("Android (APK)")}</option>
+            <option value="WINDOWS">{tr("Windows (EXE / MSI)")}</option>
           </PanelSelect>
 
           {/* Fayl tanlash — yashirin input ustidagi katta tugma */}
           <div>
-            <span className="text-xs font-medium text-slate-400">Fayl</span>
+            <span className="text-xs font-medium text-slate-400">{tr("Fayl")}</span>
             <input
               ref={fileRef}
               type="file"
@@ -308,23 +309,23 @@ export function AppStorePage() {
                 </span>
               ) : (
                 <span className="text-slate-500">
-                  APK yoki Windows o'rnatuvchisini tanlang...
+                  {tr("APK yoki Windows o'rnatuvchisini tanlang...")}
                 </span>
               )}
             </button>
           </div>
 
           <PanelInput
-            label="Nomi"
+            label={tr("Nomi")}
             value={draft?.name || ""}
             onChange={(e) =>
               setDraft((d) => d && { ...d, name: e.target.value })
             }
-            placeholder="GoHotel Staff"
+            placeholder={tr("GoHotel Staff")}
             required
           />
           <PanelInput
-            label="Versiya (ixtiyoriy)"
+            label={tr("Versiya (ixtiyoriy)")}
             value={draft?.version || ""}
             onChange={(e) =>
               setDraft((d) => d && { ...d, version: e.target.value })
@@ -332,12 +333,12 @@ export function AppStorePage() {
             placeholder="1.4.0"
           />
           <PanelInput
-            label="Izoh (ixtiyoriy)"
+            label={tr("Izoh (ixtiyoriy)")}
             value={draft?.notes || ""}
             onChange={(e) =>
               setDraft((d) => d && { ...d, notes: e.target.value })
             }
-            placeholder="Nima o'zgardi — administratorlarga ko'rinadi"
+            placeholder={tr("Nima o'zgardi — administratorlarga ko'rinadi")}
           />
 
           {error && <PanelNotice>{error}</PanelNotice>}
@@ -349,7 +350,7 @@ export function AppStorePage() {
               disabled={upload.isPending}
               onClick={() => setDraft(null)}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </PanelButton>
             <PanelButton
               type="submit"
@@ -358,7 +359,7 @@ export function AppStorePage() {
               {upload.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
-              {upload.isPending ? "Yuklanmoqda..." : "Yuklash"}
+              {upload.isPending ? tr("Yuklanmoqda...") : tr("Yuklash")}
             </PanelButton>
           </div>
         </form>

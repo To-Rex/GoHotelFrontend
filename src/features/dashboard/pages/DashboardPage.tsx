@@ -44,6 +44,7 @@ import { useAuthStore } from "@/store/auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { canonicalMethod } from "@/lib/paymentMethods"
+import { tr } from "@/i18n"
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 
@@ -79,12 +80,12 @@ const useCountUp = (target: number, duration = 900): number => {
 // Kun vaqtiga qarab salomlashuv
 const greetingByHour = (h: number): string =>
   h >= 5 && h < 11
-    ? "Xayrli tong"
+    ? tr("Xayrli tong")
     : h >= 11 && h < 17
-      ? "Xayrli kun"
+      ? tr("Xayrli kun")
       : h >= 17 && h < 22
-        ? "Xayrli oqshom"
-        : "Xayrli tun"
+        ? tr("Xayrli oqshom")
+        : tr("Xayrli tun")
 
 // "Necha vaqtdan beri" yorlig'i — smenalar paneli uchun
 const sinceLabel = (iso: string | null | undefined): string => {
@@ -92,7 +93,7 @@ const sinceLabel = (iso: string | null | undefined): string => {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000))
   const h = Math.floor(mins / 60)
   const m = mins % 60
-  return h > 0 ? `${h} s ${m} d` : `${m} d`
+  return h > 0 ? tr("{{h}} s {{m}} d", { h, m }) : tr("{{m}} d", { m })
 }
 
 /* Bugungi to'lov usullari — ilovadagi to'rtta usul.
@@ -102,24 +103,26 @@ const sinceLabel = (iso: string | null | undefined): string => {
    qoladi. Ilgari bu yerda o'z jadvali bor edi va onlayn to'lovlar
    "Boshqa" ga tushib ketardi. */
 const METHOD_GROUPS = [
-  { key: "CASH", label: "Naqd pul", color: "#10b981", dot: "bg-emerald-500" },
-  { key: "CARD", label: "Bank kartasi", color: "#3b82f6", dot: "bg-blue-500" },
-  { key: "ONLINE", label: "Online to'lov", color: "#f59e0b", dot: "bg-amber-500" },
+  { key: "CASH", label: tr("Naqd pul"), color: "#10b981", dot: "bg-emerald-500" },
+  { key: "CARD", label: tr("Bank kartasi"), color: "#3b82f6", dot: "bg-blue-500" },
+  { key: "ONLINE", label: tr("Online to'lov"), color: "#f59e0b", dot: "bg-amber-500" },
   {
     key: "BANK_TRANSFER",
-    label: "Bank o'tkazmasi",
+    label: tr("Bank o'tkazmasi"),
     color: "#8b5cf6",
     dot: "bg-violet-500",
   },
-  { key: "OTHER", label: "Boshqa", color: "#94a3b8", dot: "bg-slate-400" },
+  { key: "OTHER", label: tr("Boshqa"), color: "#94a3b8", dot: "bg-slate-400" },
 ]
 const methodGroupKey = (m: string): string => canonicalMethod(m)
 
 // Sana sarlavhasi uchun o'zbekcha oy/hafta kunlari
+// i18n:keys
 const UZ_MONTHS = [
   "yanvar", "fevral", "mart", "aprel", "may", "iyun",
   "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr",
 ]
+// i18n:keys
 const UZ_DAYS = [
   "yakshanba", "dushanba", "seshanba", "chorshanba",
   "payshanba", "juma", "shanba",
@@ -127,22 +130,22 @@ const UZ_DAYS = [
 
 // Xona holatlari — semantik ranglar, yorliq va son bilan birga ko'rsatiladi
 const ROOM_STATUSES: Array<{ key: string; label: string; color: string; dot: string }> = [
-  { key: "AVAILABLE", label: "Bo'sh", color: "#10b981", dot: "bg-emerald-500" },
-  { key: "OCCUPIED", label: "Band", color: "#ef4444", dot: "bg-red-500" },
-  { key: "RESERVED", label: "Band qilingan", color: "#3b82f6", dot: "bg-blue-500" },
-  { key: "CLEANING", label: "Tozalanmoqda", color: "#06b6d4", dot: "bg-cyan-500" },
-  { key: "MAINTENANCE", label: "Ta'mirda", color: "#64748b", dot: "bg-slate-500" },
-  { key: "INSPECTION", label: "Tekshiruvda", color: "#a855f7", dot: "bg-purple-500" },
-  { key: "OUT_OF_SERVICE", label: "Xizmatdan tashqari", color: "#9ca3af", dot: "bg-gray-400" },
+  { key: "AVAILABLE", label: tr("Bo'sh"), color: "#10b981", dot: "bg-emerald-500" },
+  { key: "OCCUPIED", label: tr("Band"), color: "#ef4444", dot: "bg-red-500" },
+  { key: "RESERVED", label: tr("Band qilingan"), color: "#3b82f6", dot: "bg-blue-500" },
+  { key: "CLEANING", label: tr("Tozalanmoqda"), color: "#06b6d4", dot: "bg-cyan-500" },
+  { key: "MAINTENANCE", label: tr("Ta'mirda"), color: "#64748b", dot: "bg-slate-500" },
+  { key: "INSPECTION", label: tr("Tekshiruvda"), color: "#a855f7", dot: "bg-purple-500" },
+  { key: "OUT_OF_SERVICE", label: tr("Xizmatdan tashqari"), color: "#9ca3af", dot: "bg-gray-400" },
 ]
 
 const RES_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Kirgan",
-  CHECKED_OUT: "Chiqgan",
-  NO_SHOW: "Kelmadi",
-  CANCELLED: "Bekor qilingan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Kirgan"),
+  CHECKED_OUT: tr("Chiqgan"),
+  NO_SHOW: tr("Kelmadi"),
+  CANCELLED: tr("Bekor qilingan"),
 }
 
 const resStatusBadge: Record<string, string> = {
@@ -160,7 +163,7 @@ function ChartTooltip({ active, payload, label }: any) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md">
       <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm font-bold text-gray-900">{fmt(payload[0].value)} So'm</p>
+      <p className="text-sm font-bold text-gray-900">{tr("{{value}} So'm", { value: fmt(payload[0].value) })}</p>
     </div>
   )
 }
@@ -428,7 +431,7 @@ export const DashboardPage = () => {
       agg[r.created_by].total += Number(r.total_amount || 0)
     }
     return Object.entries(agg)
-      .map(([id, v]) => ({ id, name: names[id] || "Xodim", ...v }))
+      .map(([id, v]) => ({ id, name: names[id] || tr("Xodim"), ...v }))
       .sort((a, b) => b.count - a.count || b.total - a.total)
       .slice(0, 4)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -454,57 +457,61 @@ export const DashboardPage = () => {
   }
 
   const now = new Date()
-  const dateLine = `${now.getDate()}-${UZ_MONTHS[now.getMonth()]}, ${UZ_DAYS[now.getDay()]}`
+  const dateLine = tr("{{day}}-{{month}}, {{weekday}}", {
+    day: now.getDate(),
+    month: tr(UZ_MONTHS[now.getMonth()]),
+    weekday: tr(UZ_DAYS[now.getDay()]),
+  })
   const greeting = greetingByHour(now.getHours())
 
   const tiles = [
     {
-      label: "Bugungi xarajat",
-      value: `${fmt(todayExpenses)} So'm`,
-      sub: `${expenses.length} ta chiqim`,
+      label: tr("Bugungi xarajat"),
+      value: tr("{{todayExpenses}} So'm", { todayExpenses: fmt(todayExpenses) }),
+      sub: tr("{{count}} ta chiqim", { count: expenses.length }),
       icon: TrendingDown,
       iconClass: "text-red-500",
       bar: "bg-red-500",
     },
     {
-      label: "Do'kon (bugun)",
-      value: `${fmt(shopTodayRevenue)} So'm`,
+      label: tr("Do'kon (bugun)"),
+      value: tr("{{shopTodayRevenue}} So'm", { shopTodayRevenue: fmt(shopTodayRevenue) }),
       sub:
         shopDebtTotal > 0
-          ? `Bronlarda qarz: ${fmt(shopDebtTotal)} So'm`
-          : `${shopPaidToday.length} ta sotuv`,
+          ? tr("Bronlarda qarz: {{shopDebtTotal}} So'm", { shopDebtTotal: fmt(shopDebtTotal) })
+          : tr("{{count}} ta sotuv", { count: shopPaidToday.length }),
       icon: Store,
       iconClass: "text-violet-600",
       bar: "bg-violet-500",
     },
     {
-      label: "Faol bandlovlar",
+      label: tr("Faol bandlovlar"),
       value: String(activeReservations),
-      sub: `Bugun kirish: ${arrivals.length} · chiqish: ${departures.length}`,
+      sub: tr("Bugun kirish: {{count}} · chiqish: {{count2}}", { count: arrivals.length, count2: departures.length }),
       icon: CalendarCheck,
       iconClass: "text-sky-600",
       bar: "bg-sky-500",
     },
     {
-      label: "Bugungi yangi bronlar",
+      label: tr("Bugungi yangi bronlar"),
       value: String(createdToday.length),
-      sub: `Soatlik: ${createdTodayHourly} · Kunlik: ${createdToday.length - createdTodayHourly}`,
+      sub: tr("Soatlik: {{createdTodayHourly}} · Kunlik: {{v}}", { createdTodayHourly, v: createdToday.length - createdTodayHourly }),
       icon: CalendarPlus,
       iconClass: "text-indigo-600",
       bar: "bg-indigo-500",
     },
     {
-      label: "Mehmonlar",
+      label: tr("Mehmonlar"),
       value: String(guests.length),
-      sub: `Oxirgi 7 kunda: +${newGuestsWeek}`,
+      sub: tr("Oxirgi 7 kunda: +{{newGuestsWeek}}", { newGuestsWeek }),
       icon: Users,
       iconClass: "text-emerald-600",
       bar: "bg-emerald-500",
     },
     {
-      label: "Xo'jalik vazifalari",
+      label: tr("Xo'jalik vazifalari"),
       value: String(openTasks.length),
-      sub: `Bugun bajarildi: ${doneToday}`,
+      sub: tr("Bugun bajarildi: {{doneToday}}", { doneToday }),
       icon: ClipboardList,
       iconClass: "text-slate-600",
       bar: "bg-slate-500",
@@ -524,14 +531,14 @@ export const DashboardPage = () => {
             {user?.first_name ? `, ${user.first_name}` : ""}!
           </h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            {user?.hotel_name || "Mehmonxona"} — bugungi holat bir qarashda
+            {tr("{{v}} — bugungi holat bir qarashda", { v: user?.hotel_name || tr("Mehmonxona") })}
           </p>
         </div>
         <div className="text-right">
           <p className="text-3xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-4xl 2xl:text-5xl">
             {clock}
           </p>
-          <p className="text-[11px] text-gray-400">mahalliy vaqt</p>
+          <p className="text-[11px] text-gray-400">{tr("mahalliy vaqt")}</p>
         </div>
       </div>
 
@@ -543,14 +550,14 @@ export const DashboardPage = () => {
         <div className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-gray-50/70 sm:p-5">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-              Bugungi tushum
+              {tr("Bugungi tushum")}
             </p>
             <p className="mt-1 truncate text-2xl font-bold tabular-nums tracking-tight 2xl:text-3xl text-gray-900">
               {fmt(incomeAnim)}
-              <span className="ml-1 text-sm font-medium text-gray-400">So'm</span>
+              <span className="ml-1 text-sm font-medium text-gray-400">{tr("So'm")}</span>
             </p>
             <p className="mt-0.5 text-[11px] text-gray-400">
-              jami tushum: {fmt(totalRevenue)} So'm
+              {tr("jami tushum: {{totalRevenue}} So'm", { totalRevenue: fmt(totalRevenue) })}
             </p>
           </div>
           {/* 7 kunlik mini-trend — faqat keng ekranlarda (raqam qirqilmasligi uchun) */}
@@ -572,7 +579,7 @@ export const DashboardPage = () => {
 
         <div className="p-4 transition-colors hover:bg-gray-50/70 sm:p-5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-            Sof natija
+            {tr("Sof natija")}
           </p>
           <p
             className={cn(
@@ -581,16 +588,16 @@ export const DashboardPage = () => {
             )}
           >
             {fmt(netAnim)}
-            <span className="ml-1 text-sm font-medium text-gray-400">So'm</span>
+            <span className="ml-1 text-sm font-medium text-gray-400">{tr("So'm")}</span>
           </p>
           <p className="mt-0.5 text-[11px] text-gray-400">
-            tushum + do'kon − xarajat
+            {tr("tushum + do'kon − xarajat")}
           </p>
         </div>
 
         <div className="p-4 transition-colors hover:bg-gray-50/70 sm:p-5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-            Bandlik
+            {tr("Bandlik")}
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight 2xl:text-3xl text-gray-900">
             {occupancyAnim}
@@ -603,7 +610,7 @@ export const DashboardPage = () => {
             />
           </div>
           <p className="mt-1 text-[11px] text-gray-400">
-            band {occupiedRooms} · bo'sh {availableRooms} / {totalRooms} xona
+            {tr("band {{occupiedRooms}} · bo'sh {{availableRooms}} / {{totalRooms}} xona", { occupiedRooms, availableRooms, totalRooms })}
           </p>
         </div>
       </div>
@@ -651,10 +658,10 @@ export const DashboardPage = () => {
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                 <TrendingUp className="h-4 w-4" />
               </span>
-              Oxirgi 7 kun tushumi
+              {tr("Oxirgi 7 kun tushumi")}
             </h2>
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              Jami: {fmt(weekTotal)} So'm
+              {tr("Jami: {{weekTotal}} So'm", { weekTotal: fmt(weekTotal) })}
             </span>
           </div>
           <div className="h-56 sm:h-64">
@@ -673,7 +680,7 @@ export const DashboardPage = () => {
                   width={56}
                   tick={{ fontSize: 11, fill: "#9ca3af" }}
                   tickFormatter={(v: number) =>
-                    v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)
+                    v >= 1000000 ? tr("{{v}}M", { v: (v / 1000000).toFixed(1) }) : v >= 1000 ? tr("{{v}}K", { v: Math.round(v / 1000) }) : String(v)
                   }
                 />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(59,130,246,0.06)" }} />
@@ -700,9 +707,9 @@ export const DashboardPage = () => {
                           fill="#9ca3af"
                         >
                           {value >= 1000000
-                            ? `${(value / 1000000).toFixed(1)}M`
+                            ? tr("{{v}}M", { v: (value / 1000000).toFixed(1) })
                             : value >= 1000
-                              ? `${Math.round(value / 1000)}K`
+                              ? tr("{{v}}K", { v: Math.round(value / 1000) })
                               : String(value)}
                         </text>
                       )
@@ -721,11 +728,11 @@ export const DashboardPage = () => {
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                 <BedDouble className="h-4 w-4" />
               </span>
-              Xonalar holati
+              {tr("Xonalar holati")}
             </h2>
           </div>
           {totalRooms === 0 ? (
-            <p className="text-sm text-gray-400">Xonalar yo'q</p>
+            <p className="text-sm text-gray-400">{tr("Xonalar yo'q")}</p>
           ) : (
             <>
               {/* Segmentli gorizontal chiziq — ulushlar */}
@@ -733,7 +740,7 @@ export const DashboardPage = () => {
                 {presentStatuses.map((s) => (
                   <div
                     key={s.key}
-                    title={`${s.label}: ${statusCounts[s.key]} ta`}
+                    title={tr("{{label}}: {{v}} ta", { label: s.label, v: statusCounts[s.key] })}
                     className="transition-all duration-700"
                     style={{
                       width: `${(statusCounts[s.key] / totalRooms) * 100}%`,
@@ -775,7 +782,7 @@ export const DashboardPage = () => {
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
                   <History className="h-4 w-4" />
                 </span>
-                Smenalar
+                {tr("Smenalar")}
               </h2>
               {activeShifts.length > 0 && (
                 <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
@@ -783,7 +790,7 @@ export const DashboardPage = () => {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                   </span>
-                  jonli
+                  {tr("jonli")}
                 </span>
               )}
             </div>
@@ -791,7 +798,7 @@ export const DashboardPage = () => {
               to="/shifts"
               className="flex items-center gap-1 text-xs font-medium text-primary-600 transition-colors hover:text-primary-700"
             >
-              Barchasi
+              {tr("Barchasi")}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -800,10 +807,10 @@ export const DashboardPage = () => {
             {/* Hozir ishlamoqda */}
             <div className="p-4">
               <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                Hozir ishlamoqda · {activeShifts.length}
+                {tr("Hozir ishlamoqda · {{count}}", { count: activeShifts.length })}
               </p>
               {activeShifts.length === 0 ? (
-                <p className="text-sm text-gray-400">Ochiq smena yo'q</p>
+                <p className="text-sm text-gray-400">{tr("Ochiq smena yo'q")}</p>
               ) : (
                 <div className="space-y-2.5">
                   {activeShifts.slice(0, 4).map((s) => (
@@ -821,16 +828,15 @@ export const DashboardPage = () => {
                           {s.user_name}
                           {s.continue_after_end && (
                             <span className="ml-1.5 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-700">
-                              qo'shimcha vaqt
+                              {tr("qo'shimcha vaqt")}
                             </span>
                           )}
                         </p>
                         <p className="flex items-center gap-1 text-[11px] leading-tight text-gray-400">
                           <Clock className="h-3 w-3" />
-                          {s.started_at
+                          {tr("{{v}} dan beri · {{started_at}}", { v: s.started_at
                             ? format(new Date(s.started_at), "HH:mm")
-                            : "—"}{" "}
-                          dan beri · {sinceLabel(s.started_at)}
+                            : "—", started_at: sinceLabel(s.started_at) })}
                         </p>
                       </div>
                     </div>
@@ -842,10 +848,10 @@ export const DashboardPage = () => {
             {/* Topshirilmoqda */}
             <div className="p-4">
               <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                Topshirilmoqda · {pendingShifts.length}
+                {tr("Topshirilmoqda · {{count}}", { count: pendingShifts.length })}
               </p>
               {pendingShifts.length === 0 ? (
-                <p className="text-sm text-gray-400">Topshirilayotgan smena yo'q</p>
+                <p className="text-sm text-gray-400">{tr("Topshirilayotgan smena yo'q")}</p>
               ) : (
                 <div className="space-y-2.5">
                   {pendingShifts.slice(0, 4).map((s) => (
@@ -858,7 +864,7 @@ export const DashboardPage = () => {
                           {s.user_name}
                         </p>
                         <p className="text-[11px] leading-tight text-violet-600">
-                          Keyingi xodim qabul qilishi kutilmoqda
+                          {tr("Keyingi xodim qabul qilishi kutilmoqda")}
                         </p>
                       </div>
                     </div>
@@ -870,21 +876,21 @@ export const DashboardPage = () => {
             {/* Bugun yopilgan */}
             <div className="p-4">
               <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                Bugun yopilgan · {closedTodayShifts.length}
+                {tr("Bugun yopilgan · {{count}}", { count: closedTodayShifts.length })}
               </p>
               {closedTodayShifts.length === 0 ? (
-                <p className="text-sm text-gray-400">Bugun yopilgan smena yo'q</p>
+                <p className="text-sm text-gray-400">{tr("Bugun yopilgan smena yo'q")}</p>
               ) : (
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600">
-                    Jami sanalgan:{" "}
+                    {tr("Jami sanalgan:")}{" "}
                     <span className="font-bold text-gray-900">
-                      {fmt(closedTodayCounted)} So'm
+                      {tr("{{closedTodayCounted}} So'm", { closedTodayCounted: fmt(closedTodayCounted) })}
                     </span>
                   </p>
                   {diffTodayShifts.length === 0 ? (
                     <p className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                      Barcha kassalar farqsiz topshirildi
+                      {tr("Barcha kassalar farqsiz topshirildi")}
                     </p>
                   ) : (
                     <div className="space-y-1.5">
@@ -897,7 +903,7 @@ export const DashboardPage = () => {
                             {s.user_name}
                           </span>
                           <span className="flex-shrink-0 font-bold tabular-nums text-red-600">
-                            {fmt(Number(s.cash_diff || 0))} So'm
+                            {tr("{{fmt}} So'm", { fmt: fmt(Number(s.cash_diff || 0)) })}
                           </span>
                         </div>
                       ))}
@@ -915,11 +921,11 @@ export const DashboardPage = () => {
         <Panel
           icon={LogIn}
           iconClass="bg-emerald-50 text-emerald-600"
-          title="Bugungi kirishlar"
+          title={tr("Bugungi kirishlar")}
           count={arrivals.length}
         >
           {arrivals.length === 0 ? (
-            <p className="text-sm text-gray-400">Bugun kirishlar yo'q</p>
+            <p className="text-sm text-gray-400">{tr("Bugun kirishlar yo'q")}</p>
           ) : (
             <div className="space-y-2.5">
               {arrivals.slice(0, 6).map((r) => (
@@ -949,12 +955,12 @@ export const DashboardPage = () => {
         <Panel
           icon={LogOut}
           iconClass="bg-sky-50 text-sky-600"
-          title="Bugungi chiqishlar"
+          title={tr("Bugungi chiqishlar")}
           count={departures.length}
           delay={60}
         >
           {departures.length === 0 ? (
-            <p className="text-sm text-gray-400">Bugun chiqishlar yo'q</p>
+            <p className="text-sm text-gray-400">{tr("Bugun chiqishlar yo'q")}</p>
           ) : (
             <div className="space-y-2.5">
               {departures.slice(0, 6).map((r) => (
@@ -984,11 +990,11 @@ export const DashboardPage = () => {
         <Panel
           icon={CalendarCheck}
           iconClass="bg-primary-50 text-primary-600"
-          title="So'nggi bandlovlar"
+          title={tr("So'nggi bandlovlar")}
           delay={120}
         >
           {recentReservations.length === 0 ? (
-            <p className="text-sm text-gray-400">Bandlovlar yo'q</p>
+            <p className="text-sm text-gray-400">{tr("Bandlovlar yo'q")}</p>
           ) : (
             <div className="space-y-2.5">
               {recentReservations.map((r) => (
@@ -1008,7 +1014,7 @@ export const DashboardPage = () => {
                   </div>
                   <span className="flex-shrink-0 text-xs font-bold text-gray-900">
                     {fmt(r.total_amount)}{" "}
-                    <span className="font-normal text-gray-400">So'm</span>
+                    <span className="font-normal text-gray-400">{tr("So'm")}</span>
                   </span>
                 </div>
               ))}
@@ -1020,11 +1026,11 @@ export const DashboardPage = () => {
         <Panel
           icon={Wallet}
           iconClass="bg-blue-50 text-blue-600"
-          title="To'lov usullari (bugun)"
+          title={tr("To'lov usullari (bugun)")}
           delay={180}
         >
           {methodSplit.length === 0 ? (
-            <p className="text-sm text-gray-400">Bugun to'lovlar yo'q</p>
+            <p className="text-sm text-gray-400">{tr("Bugun to'lovlar yo'q")}</p>
           ) : (
             <>
               {/* Segmentli ulush chizig'i */}
@@ -1032,7 +1038,7 @@ export const DashboardPage = () => {
                 {methodSplit.map((g) => (
                   <div
                     key={g.key}
-                    title={`${g.label}: ${fmt(g.total)} So'm`}
+                    title={tr("{{label}}: {{total}} So'm", { label: g.label, total: fmt(g.total) })}
                     style={{
                       width: `${(g.total / (methodTotal || 1)) * 100}%`,
                       backgroundColor: g.color,
@@ -1050,7 +1056,7 @@ export const DashboardPage = () => {
                       <span className={cn("h-2.5 w-2.5 rounded-full", g.dot)} />
                       {g.label}
                       <span className="text-[11px] text-gray-400">
-                        {g.count} ta
+                        {tr("{{count}} ta", { count: g.count })}
                       </span>
                     </span>
                     <span className="font-bold tabular-nums text-gray-900">
@@ -1072,11 +1078,11 @@ export const DashboardPage = () => {
         <Panel
           icon={Trophy}
           iconClass="bg-violet-50 text-violet-600"
-          title="Eng faol xodimlar (bugun)"
+          title={tr("Eng faol xodimlar (bugun)")}
           delay={240}
         >
           {topStaff.length === 0 ? (
-            <p className="text-sm text-gray-400">Bugun bronlar yaratilmagan</p>
+            <p className="text-sm text-gray-400">{tr("Bugun bronlar yaratilmagan")}</p>
           ) : (
             <div className="space-y-2.5">
               {topStaff.map((st, i) => (
@@ -1102,13 +1108,13 @@ export const DashboardPage = () => {
                     <div className="min-w-0">
                       <p className="truncate leading-tight text-gray-900">{st.name}</p>
                       <p className="text-[11px] leading-tight text-gray-400">
-                        {st.count} ta bron
+                        {tr("{{count}} ta bron", { count: st.count })}
                       </p>
                     </div>
                   </div>
                   <span className="flex-shrink-0 text-xs font-bold tabular-nums text-gray-900">
                     {fmt(st.total)}{" "}
-                    <span className="font-normal text-gray-400">So'm</span>
+                    <span className="font-normal text-gray-400">{tr("So'm")}</span>
                   </span>
                 </div>
               ))}
@@ -1120,12 +1126,12 @@ export const DashboardPage = () => {
         <Panel
           icon={ClipboardList}
           iconClass="bg-slate-100 text-slate-600"
-          title="Xo'jalik vazifalari"
+          title={tr("Xo'jalik vazifalari")}
           count={openTasks.length}
           delay={300}
         >
           {openTasks.length === 0 ? (
-            <p className="text-sm text-gray-400">Ochiq vazifalar yo'q</p>
+            <p className="text-sm text-gray-400">{tr("Ochiq vazifalar yo'q")}</p>
           ) : (
             <div className="space-y-2.5">
               {openTasks.slice(0, 6).map((t: any) => (
@@ -1136,14 +1142,14 @@ export const DashboardPage = () => {
                     </span>
                     <p className="truncate leading-tight text-gray-900">
                       {t.task_type === "CLEANING"
-                        ? "Tozalash"
+                        ? tr("Tozalash")
                         : t.task_type === "DEEP_CLEANING"
-                          ? "Chuqur tozalash"
+                          ? tr("Chuqur tozalash")
                           : t.task_type === "MAINTENANCE"
-                            ? "Ta'mir"
+                            ? tr("Ta'mir")
                             : t.task_type === "INSPECTION"
-                              ? "Tekshiruv"
-                              : t.task_type || "Vazifa"}
+                              ? tr("Tekshiruv")
+                              : t.task_type || tr("Vazifa")}
                     </p>
                   </div>
                   <span
@@ -1154,7 +1160,7 @@ export const DashboardPage = () => {
                         : "bg-violet-100 text-violet-700"
                     )}
                   >
-                    {t.status === "IN_PROGRESS" ? "Jarayonda" : "Ochiq"}
+                    {t.status === "IN_PROGRESS" ? tr("Jarayonda") : tr("Ochiq")}
                   </span>
                 </div>
               ))}

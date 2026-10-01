@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { api, API_URL } from '@/lib/api';
+import { tr } from '@/i18n';
 
 /* Yuz bilan kirish API qatlami. Rasm serverga yuboriladi, u yerda embedding
    hisoblanib xodimlar profillari bilan solishtiriladi — brauzerga model
@@ -122,5 +123,5 @@ export const faceErrorMessage = (e: any): string => {
   const d = e?.response?.data;
   if (typeof d?.detail === 'string') return d.detail;
   if (typeof d?.message === 'string') return d.message;
-  return "Xatolik yuz berdi. Qayta urinib ko'ring.";
+  return tr("Xatolik yuz berdi. Qayta urinib ko'ring.");
 };

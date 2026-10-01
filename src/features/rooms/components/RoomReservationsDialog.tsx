@@ -35,6 +35,7 @@ import {
 } from "../lib/reservationFilters"
 import { buildDatePresets } from "@/lib/datePresets"
 import { ReservationDetailDialog } from "./ReservationDetailDialog"
+import { tr, trc } from "@/i18n"
 
 /* Xonaning bandlovlari.
 
@@ -47,12 +48,12 @@ import { ReservationDetailDialog } from "./ReservationDetailDialog"
    og'irlashmaydi. */
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Kirgan",
-  CHECKED_OUT: "Chiqgan",
-  NO_SHOW: "Kelmadi",
-  CANCELLED: "Bekor qilingan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Kirgan"),
+  CHECKED_OUT: tr("Chiqgan"),
+  NO_SHOW: tr("Kelmadi"),
+  CANCELLED: tr("Bekor qilingan"),
 }
 
 const statusBadge: Record<string, string> = {
@@ -83,10 +84,10 @@ const statusEdge: Record<string, string> = {
 }
 
 const PAY_LABELS: Record<string, string> = {
-  UNPAID: "To'lanmagan",
-  PARTIALLY_PAID: "Qisman",
-  PAID: "To'langan",
-  REFUNDED: "Qaytarilgan",
+  UNPAID: tr("To'lanmagan"),
+  PARTIALLY_PAID: tr("Qisman"),
+  PAID: tr("To'langan"),
+  REFUNDED: tr("Qaytarilgan"),
 }
 
 const payBadge: Record<string, string> = {
@@ -183,7 +184,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
               <CalendarCheck className="h-4 w-4" />
             </span>
-            Bandlovlar — {room?.room_number}-xona
+            {tr("Bandlovlar — {{room_number}}-xona", { room_number: room?.room_number })}
           </DialogTitle>
         </DialogHeader>
 
@@ -192,10 +193,10 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
             {/* Jamlanma — ko'rinib turgan ro'yxat bo'yicha */}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[
-                { label: "Bandlov", value: String(stats.total) },
-                { label: "Faol", value: String(stats.active) },
-                { label: "Tushum", value: `${fmt(stats.income)} so'm` },
-                { label: "Qarz", value: `${fmt(stats.debt)} so'm` },
+                { label: tr("Bandlov"), value: String(stats.total) },
+                { label: tr("Faol"), value: String(stats.active) },
+                { label: tr("Tushum"), value: tr("{{income}} so'm", { income: fmt(stats.income) }) },
+                { label: tr("Qarz"), value: tr("{{debt}} so'm", { debt: fmt(stats.debt) }) },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -216,7 +217,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
                     className="h-9 pl-9"
-                    placeholder="Bandlov raqami, mehmon yoki telefon..."
+                    placeholder={tr("Bandlov raqami, mehmon yoki telefon...")}
                     value={filters.search}
                     onChange={(e) => patch({ search: e.target.value })}
                   />
@@ -227,7 +228,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                   className="h-9 rounded-md border border-input bg-background px-2 text-xs"
                   value={sort}
                   onChange={(e) => setSort(e.target.value as ReservationSort)}
-                  title="Tartib"
+                  title={tr("Tartib")}
                 >
                   {Object.entries(SORT_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -243,7 +244,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                   onClick={() => setShowMore((v) => !v)}
                 >
                   <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-                  Filtrlar
+                  {tr("Filtrlar")}
                   <ChevronDown
                     className={cn(
                       "ml-1 h-3.5 w-3.5 transition-transform",
@@ -263,7 +264,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                   <div className="flex flex-wrap items-end gap-2">
                     <div className="space-y-1">
                       <label className="text-[11px] font-medium text-gray-500">
-                        Sanadan
+                        {tr("Sanadan")}
                       </label>
                       <Input
                         type="date"
@@ -275,7 +276,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] font-medium text-gray-500">
-                        Sanagacha
+                        {tr("Sanagacha")}
                       </label>
                       <Input
                         type="date"
@@ -287,21 +288,21 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] font-medium text-gray-500">
-                        Bron turi
+                        {tr("Bron turi")}
                       </label>
                       <select
                         className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                         value={filters.bookingType}
                         onChange={(e) => patch({ bookingType: e.target.value })}
                       >
-                        <option value="">Barchasi</option>
-                        <option value="DAILY">Kunlik</option>
-                        <option value="HOURLY">Soatlik</option>
+                        <option value="">{tr("Barchasi")}</option>
+                        <option value="DAILY">{tr("Kunlik")}</option>
+                        <option value="HOURLY">{tr("Soatlik")}</option>
                       </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] font-medium text-gray-500">
-                        To'lov
+                        {tr("To'lov")}
                       </label>
                       <select
                         className="h-8 rounded-md border border-input bg-background px-2 text-xs"
@@ -310,7 +311,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                           patch({ paymentStatus: e.target.value })
                         }
                       >
-                        <option value="">Barchasi</option>
+                        <option value="">{tr("Barchasi")}</option>
                         {Object.entries(PAY_LABELS).map(([value, label]) => (
                           <option key={value} value={value}>
                             {label}
@@ -340,8 +341,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                     ))}
                   </div>
                   <p className="text-[11px] text-gray-400">
-                    Sana oralig'i turish davri bo'yicha: davrga tegib o'tgan
-                    bandlovlar ham ko'rinadi.
+                    {tr("Sana oralig'i turish davri bo'yicha: davrga tegib o'tgan bandlovlar ham ko'rinadi.")}
                   </p>
                 </div>
               )}
@@ -356,7 +356,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                       : "border-gray-200 text-gray-600 hover:bg-gray-50"
                   )}
                 >
-                  Barchasi ({reservations.length})
+                  {tr("Barchasi ({{count}})", { count: reservations.length })}
                 </button>
                 {Object.entries(STATUS_LABELS)
                   .filter(([value]) => statusCounts[value])
@@ -391,7 +391,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                     onClick={clearFilters}
                   >
                     <FilterX className="mr-1 h-3.5 w-3.5" />
-                    Tozalash
+                    {trc("clear", "Tozalash")}
                   </Button>
                 )}
               </div>
@@ -400,11 +400,10 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
                   qisqarganini bilish kerak */}
               {hasFilters && (
                 <p className="text-[11px] text-gray-500">
-                  {reservations.length} tadan{" "}
+                  {tr("{{count}} tadan", { count: reservations.length })}{" "}
                   <span className="font-semibold text-gray-700">
                     {filtered.length}
-                  </span>{" "}
-                  ta ko'rsatilmoqda
+                  </span>{" "}{tr("ta ko'rsatilmoqda", { count: filtered.length })}
                 </p>
               )}
             </div>
@@ -415,7 +414,7 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
           {isLoading && (
             <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Yuklanmoqda...
+              {tr("Yuklanmoqda...")}
             </div>
           )}
 
@@ -430,12 +429,12 @@ export const RoomReservationsDialog = ({ room, onClose }: Props) => {
               <CalendarCheck className="h-8 w-8" />
               <p className="text-sm">
                 {hasFilters
-                  ? "Filtr bo'yicha bandlov topilmadi"
-                  : "Bu xonada hali bandlov yo'q"}
+                  ? tr("Filtr bo'yicha bandlov topilmadi")
+                  : tr("Bu xonada hali bandlov yo'q")}
               </p>
               {hasFilters && (
                 <Button variant="outline" size="sm" onClick={clearFilters}>
-                  Filtrlarni tozalash
+                  {tr("Filtrlarni tozalash")}
                 </Button>
               )}
             </div>
@@ -491,7 +490,7 @@ const ReservationItem = ({
           onOpen()
         }
       }}
-      title="To'liq ma'lumot"
+      title={tr("To'liq ma'lumot")}
       className={cn(
         "cursor-pointer rounded-2xl border border-l-4 bg-white p-3.5 transition-colors hover:border-gray-300 hover:bg-gray-50/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
         statusEdge[res.status] || "border-l-transparent"
@@ -506,11 +505,11 @@ const ReservationItem = ({
           <p className="mt-0.5 inline-flex items-center gap-1 text-xs leading-tight text-gray-400">
             {isHourly ? (
               <>
-                <Clock className="h-3 w-3" /> Soatlik
+                <Clock className="h-3 w-3" />{" "}{tr("Soatlik")}
               </>
             ) : (
               <>
-                <CalendarDays className="h-3 w-3" /> Kunlik
+                <CalendarDays className="h-3 w-3" />{" "}{tr("Kunlik")}
               </>
             )}
           </p>
@@ -557,7 +556,7 @@ const ReservationItem = ({
           <Users className="h-3.5 w-3.5 text-gray-400" />
           {res.companions
             // Turish davomida ketgani ham ro'yxatda qoladi — belgisi bilan
-            .map((c) => (c.name || "Ismsiz mehmon") + (c.left_at ? " (ketdi)" : ""))
+            .map((c) => (c.name || tr("Ismsiz mehmon")) + (c.left_at ? tr(" (ketdi)") : ""))
             .join(", ")}
         </p>
       )}
@@ -578,7 +577,7 @@ const ReservationItem = ({
                 {res.check_in_date} → {res.check_out_date}
               </p>
               <p className="mt-0.5 text-xs leading-tight text-gray-400">
-                {nightCount} kecha
+                {tr("{{nightCount}} kecha", { nightCount })}
               </p>
             </>
           )}
@@ -586,22 +585,22 @@ const ReservationItem = ({
         <div className="flex-shrink-0 text-right">
           <p className="font-semibold leading-tight tabular-nums text-gray-900">
             {fmt(res.total_amount)}{" "}
-            <span className="text-xs font-normal text-gray-400">So'm</span>
+            <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
           </p>
           {Number(res.discount_amount || 0) > 0 && (
             <p className="mt-0.5 text-xs leading-tight text-red-500">
-              Chegirma: −{fmt(res.discount_amount)}
+              {tr("Chegirma: −{{discount_amount}}", { discount_amount: fmt(res.discount_amount) })}
             </p>
           )}
           {Number(res.paid_amount || 0) > 0 &&
             Number(res.paid_amount) < Number(res.total_amount || 0) && (
               <p className="mt-0.5 text-xs leading-tight text-emerald-600">
-                To'landi: {fmt(res.paid_amount)}
+                {tr("To'landi: {{paid_amount}}", { paid_amount: fmt(res.paid_amount) })}
               </p>
             )}
           {debt > 0 && res.status !== "CANCELLED" && (
             <p className="mt-0.5 text-xs font-medium leading-tight tabular-nums text-red-600">
-              Qarz: {fmt(debt)}
+              {tr("Qarz: {{debt}}", { debt: fmt(debt) })}
             </p>
           )}
         </div>
@@ -627,13 +626,12 @@ const ReservationItem = ({
         </span>
         {(res.adults || res.children) && (
           <span className="text-xs text-gray-400">
-            {res.adults}
-            {res.children ? `+${res.children}` : ""} kishi
+            {tr("{{adults}}{{v}} kishi", { adults: res.adults, v: res.children ? `+${res.children}` : "" })}
           </span>
         )}
         {res.status === "CANCELLED" && res.cancelled_reason && (
           <span className="w-full truncate text-[11px] text-red-500">
-            Sabab: {res.cancelled_reason}
+            {tr("Sabab: {{cancelled_reason}}", { cancelled_reason: res.cancelled_reason })}
           </span>
         )}
       </div>

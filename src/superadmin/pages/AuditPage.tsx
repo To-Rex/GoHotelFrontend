@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react"
 
 import { useHotels, usePanelAudit } from "../api/panel"
 import { PanelEmpty, PanelHeading, PanelSelect } from "../components/ui"
+import { tr } from "@/i18n"
 
 /** Harakatlar tarixi — kim, nima qildi. Faqat o'qish uchun. */
 export function AuditPage() {
@@ -13,8 +14,8 @@ export function AuditPage() {
   return (
     <div>
       <PanelHeading
-        title="Harakatlar tarixi"
-        subtitle="Tizimdagi so'nggi o'zgarishlar"
+        title={tr("Harakatlar tarixi")}
+        subtitle={tr("Tizimdagi so'nggi o'zgarishlar")}
       />
 
       <div className="mb-4 max-w-xs">
@@ -22,7 +23,7 @@ export function AuditPage() {
           value={hotelId}
           onChange={(e) => setHotelId(e.target.value)}
         >
-          <option value="">Barcha mehmonxonalar</option>
+          <option value="">{tr("Barcha mehmonxonalar")}</option>
           {hotels.map((hotel) => (
             <option key={hotel.id} value={hotel.id}>
               {hotel.name}
@@ -36,18 +37,18 @@ export function AuditPage() {
           <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
         </div>
       ) : rows.length === 0 ? (
-        <PanelEmpty>Yozuv yo'q</PanelEmpty>
+        <PanelEmpty>{tr("Yozuv yo'q")}</PanelEmpty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-white/5">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
                 <tr>
-                  <th className="px-3 py-2.5 font-medium">Vaqt</th>
-                  <th className="px-3 py-2.5 font-medium">Xodim</th>
-                  <th className="px-3 py-2.5 font-medium">Mehmonxona</th>
-                  <th className="px-3 py-2.5 font-medium">Harakat</th>
-                  <th className="px-3 py-2.5 font-medium">Obyekt</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Vaqt")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Xodim")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Mehmonxona")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Harakat")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Obyekt")}</th>
                   <th className="px-3 py-2.5 font-medium">IP</th>
                 </tr>
               </thead>

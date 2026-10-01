@@ -15,6 +15,7 @@ import {
   resizeTarget,
   type ResizeBounds,
 } from "../lib/extend"
+import { tr } from "@/i18n"
 
 const DAY_MINUTES = 24 * 60
 // Bitta soat ustunining kengligi (px) — lenta gorizontal aylantiriladi,
@@ -29,10 +30,10 @@ const ROOM_COL_WIDTH = 224
 // Xonaning MAXSUS holatlari — bronlardan ko'rinmaydigan holatlar belgi bilan
 // ko'rsatiladi (Bo'sh/Band bronlardan hisoblanadi, bular esa alohida)
 const ROOM_STATUS_LABELS: Record<string, string> = {
-  CLEANING: "Tozalanmoqda",
-  MAINTENANCE: "Ta'mirda",
-  INSPECTION: "Tekshiruvda",
-  OUT_OF_SERVICE: "Xizmatdan tashqari",
+  CLEANING: tr("Tozalanmoqda"),
+  MAINTENANCE: tr("Ta'mirda"),
+  INSPECTION: tr("Tekshiruvda"),
+  OUT_OF_SERVICE: tr("Xizmatdan tashqari"),
 }
 
 const roomStatusBadge: Record<string, string> = {
@@ -101,11 +102,11 @@ export interface HourlyBoardProps {
 
 // Faol vazifa turlari yorlig'i va ranglari (BookingPage bilan bir xil)
 const TASK_TYPE_LABELS: Record<string, string> = {
-  CLEANING: "Tozalash",
-  DEEP_CLEANING: "Chuqur tozalash",
-  MAINTENANCE: "Ta'mirlash",
-  INSPECTION: "Tekshiruv",
-  TURN_DOWN: "Kechki tayyorlash",
+  CLEANING: tr("Tozalash"),
+  DEEP_CLEANING: tr("Chuqur tozalash"),
+  MAINTENANCE: tr("Ta'mirlash"),
+  INSPECTION: tr("Tekshiruv"),
+  TURN_DOWN: tr("Kechki tayyorlash"),
 }
 
 const taskTypeBadge: Record<string, string> = {
@@ -562,7 +563,7 @@ export function HourlyBoard({
             <button
               className="h-9 w-9 flex items-center justify-center text-gray-500 hover:bg-gray-50"
               onClick={() => onDateChange(shiftDate(date, -1))}
-              title="Oldingi kun"
+              title={tr("Oldingi kun")}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -575,7 +576,7 @@ export function HourlyBoard({
             <button
               className="h-9 w-9 flex items-center justify-center text-gray-500 hover:bg-gray-50"
               onClick={() => onDateChange(shiftDate(date, 1))}
-              title="Keyingi kun"
+              title={tr("Keyingi kun")}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -587,11 +588,11 @@ export function HourlyBoard({
             )}
             onClick={() => onDateChange(today)}
           >
-            Bugun
+            {tr("Bugun")}
           </button>
           {crossesMidnight && (
             <span className="text-[11px] text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-md px-2 py-1">
-              Ertangi kun soatlari ham ko'rsatilgan
+              {tr("Ertangi kun soatlari ham ko'rsatilgan")}
             </span>
           )}
         </div>
@@ -600,7 +601,7 @@ export function HourlyBoard({
           {isToday && (
             <>
               <div className="text-sm text-gray-600">
-                Hozir bo'sh: <span className="font-bold text-emerald-600">{freeNowCount}</span>
+                {tr("Hozir bo'sh:")}{" "}<span className="font-bold text-emerald-600">{freeNowCount}</span>
                 <span className="text-gray-400"> / {totalRooms}</span>
               </div>
               {/* Lentani soatlar bo'ylab surish — istalgan o'tgan/kelgusi
@@ -610,7 +611,7 @@ export function HourlyBoard({
                   type="button"
                   onClick={() => scrollByHours(-3)}
                   className="h-8 px-2 text-gray-500 hover:bg-gray-50"
-                  title="Oldingi soatlarni ko'rish"
+                  title={tr("Oldingi soatlarni ko'rish")}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -618,15 +619,15 @@ export function HourlyBoard({
                   type="button"
                   onClick={() => scrollToNow("smooth")}
                   className="h-8 px-2 text-[11px] font-medium text-primary-700 hover:bg-primary-50"
-                  title="Hozirgi vaqtga qaytish"
+                  title={tr("Hozirgi vaqtga qaytish")}
                 >
-                  Hozir
+                  {tr("Hozir")}
                 </button>
                 <button
                   type="button"
                   onClick={() => scrollByHours(3)}
                   className="h-8 px-2 text-gray-500 hover:bg-gray-50"
-                  title="Keyingi soatlarni ko'rish"
+                  title={tr("Keyingi soatlarni ko'rish")}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -637,11 +638,11 @@ export function HourlyBoard({
                 className="h-8 px-3 rounded-md text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
                 title={
                   fullDay
-                    ? "Joriy vaqt atrofidagi soatlarni ko'rsatish"
-                    : "Butun kunni (00:00-24:00) ko'rsatish"
+                    ? tr("Joriy vaqt atrofidagi soatlarni ko'rsatish")
+                    : tr("Butun kunni (00:00-24:00) ko'rsatish")
                 }
               >
-                {fullDay ? "Hozirgi vaqt" : "Butun kun"}
+                {fullDay ? tr("Hozirgi vaqt") : tr("Butun kun")}
               </button>
               <button
                 type="button"
@@ -653,15 +654,15 @@ export function HourlyBoard({
                     : "border-gray-200 text-gray-500 hover:bg-gray-50"
                 )}
               >
-                {onlyFree ? "Barcha xonalar" : "Faqat bo'sh xonalar"}
+                {onlyFree ? tr("Barcha xonalar") : tr("Faqat bo'sh xonalar")}
               </button>
             </>
           )}
           {!isToday && (
             <span className="text-xs text-gray-400">
               {isPastDate
-                ? "O'tgan sana — bron qilib bo'lmaydi, faqat ko'rish"
-                : "Tez bron faqat bugungi kun uchun ishlaydi"}
+                ? tr("O'tgan sana — bron qilib bo'lmaydi, faqat ko'rish")
+                : tr("Tez bron faqat bugungi kun uchun ishlaydi")}
             </span>
           )}
         </div>
@@ -688,7 +689,7 @@ export function HourlyBoard({
           <div className="sticky top-0 z-20 flex bg-white border-b border-gray-200 shadow-sm">
             <div className="sticky left-0 z-30 flex-shrink-0 w-56 h-10 flex items-center px-4 bg-gray-50 border-r border-gray-200">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Xonalar
+                {tr("Xonalar")}
               </span>
             </div>
             <div className="flex">
@@ -735,7 +736,7 @@ export function HourlyBoard({
                 <div
                   className="flex bg-gray-100 border-y border-gray-200 cursor-pointer hover:bg-gray-200/70 transition-colors"
                   onClick={() => onToggleFloor(group.key)}
-                  title={collapsed ? "Qavatni ochish" : "Qavatni yig'ish"}
+                  title={collapsed ? tr("Qavatni ochish") : tr("Qavatni yig'ish")}
                 >
                   <div className="sticky left-0 z-10 flex-shrink-0 w-56 flex items-center gap-2 px-4 h-8 bg-gray-100 border-r border-gray-200">
                     {collapsed ? (
@@ -780,7 +781,7 @@ export function HourlyBoard({
                           }
                           title={
                             isToday && freeNow && canCreate && freeMin > 0
-                              ? `${minToTime(quickStartFor(room.id))} dan 1 soatlik bron qilish`
+                              ? tr("{{time}} dan 1 soatlik bron qilish", { time: minToTime(quickStartFor(room.id)) })
                               : undefined
                           }
                         >
@@ -791,11 +792,11 @@ export function HourlyBoard({
                             {isToday &&
                               (freeNow ? (
                                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                  Bo'sh
+                                  {tr("Bo'sh")}
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                                  Band
+                                  {tr("Band")}
                                 </span>
                               ))}
                             {/* Xonaning maxsus holati (tozalanmoqda/ta'mirda/...) */}
@@ -813,7 +814,7 @@ export function HourlyBoard({
                             {!ROOM_STATUS_LABELS[room.current_status] &&
                               activeTaskTypeByRoom[room.id] && (
                                 <span
-                                  title="Xonaga xo'jalik vazifasi biriktirilgan"
+                                  title={tr("Xonaga xo'jalik vazifasi biriktirilgan")}
                                   className={cn(
                                     "text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap",
                                     taskTypeBadge[activeTaskTypeByRoom[room.id]]
@@ -834,9 +835,9 @@ export function HourlyBoard({
                           </div>
 
                           <span className="text-[11px] text-gray-400 truncate">
-                            {room.room_type?.name || "Standard"}
+                            {room.room_type?.name || tr("Standard")}
                             {getRoomPrice(room) > 0 &&
-                              ` · ${getRoomPrice(room).toLocaleString()} So'm`}
+                              tr(" · {{price}} So'm", { price: getRoomPrice(room).toLocaleString() })}
                           </span>
                         </div>
 
@@ -870,7 +871,7 @@ export function HourlyBoard({
                                   }}
                                   title={
                                     clickable && slot
-                                      ? `${minToTime(slot[0])}${nextDay ? " (ertangi kun)" : ""} dan bron qilish`
+                                      ? tr("{{time}}{{nextDay}} dan bron qilish", { time: minToTime(slot[0]), nextDay: nextDay ? tr(" (ertangi kun)") : "" })
                                       : undefined
                                   }
                                 >
@@ -923,15 +924,15 @@ export function HourlyBoard({
                                   onReservationClick(iv.res)
                                 }}
                                 title={`${getGuestName(iv.res)} · ${
-                                  iv.daily ? "Kunlik bron" : pos.label
+                                  iv.daily ? tr("Kunlik bron") : pos.label
                                 }${debtHint(iv.res)}${
                                   extendable
-                                    ? " · o'ng chetidan tortib cho'zing yoki qisqartiring"
+                                    ? tr(" · o'ng chetidan tortib cho'zing yoki qisqartiring")
                                     : ""
                                 }`}
                               >
                                 <span className="text-[11px] font-bold leading-tight truncate">
-                                  {iv.daily ? "Kunlik bron" : pos.label}
+                                  {iv.daily ? tr("Kunlik bron") : pos.label}
                                 </span>
                                 <span className="text-[10px] opacity-80 leading-tight truncate">
                                   {drag
@@ -945,7 +946,7 @@ export function HourlyBoard({
                                 {extendable && (
                                   <span
                                     role="separator"
-                                    aria-label="Bron muddatini o'zgartirish"
+                                    aria-label={tr("Bron muddatini o'zgartirish")}
                                     onMouseDown={(e) => beginExtend(e, iv)}
                                     className={cn(
                                       "absolute inset-y-0 right-0 w-2.5 cursor-col-resize",
@@ -978,7 +979,7 @@ export function HourlyBoard({
 
           {visibleGroups.length === 0 && (
             <p className="py-10 text-center text-sm text-gray-400">
-              {onlyFree ? "Hozir bo'sh xona yo'q" : "Xonalar topilmadi"}
+              {onlyFree ? tr("Hozir bo'sh xona yo'q") : tr("Xonalar topilmadi")}
             </p>
           )}
         </div>

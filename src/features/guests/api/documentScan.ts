@@ -1,5 +1,6 @@
 import { api } from "@/lib/api"
 import type { DocumentType, ScannedDoc } from "../components/documentScannerTypes"
+import { tr } from "@/i18n"
 
 /**
  * Hujjatni SERVERDA o'qish va tekshirish.
@@ -59,7 +60,7 @@ export async function scanDocumentOnServer(
     // (masalan "rasmda yozuv topilmadi") server ishlayotganini bildiradi,
     // ya'ni dvigatelni almashtirishning hojati yo'q.
     if (status === undefined || status >= 500 || status === 404) {
-      throw new ServerScanUnavailable(error?.message || "Server skaneri javob bermadi")
+      throw new ServerScanUnavailable(error?.message || tr("Server skaneri javob bermadi"))
     }
     throw error
   }

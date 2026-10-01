@@ -28,11 +28,12 @@ import {
   PanelNotice,
   PanelSelect,
 } from "../components/ui"
+import { tr, trc } from "@/i18n"
 
 const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Faol",
-  INACTIVE: "To'xtatilgan",
-  SUSPENDED: "Vaqtincha to'xtatilgan",
+  ACTIVE: tr("Faol"),
+  INACTIVE: tr("To'xtatilgan"),
+  SUSPENDED: tr("Vaqtincha to'xtatilgan"),
 }
 
 const statusStyle: Record<string, string> = {
@@ -66,11 +67,11 @@ export function HotelsPage() {
   const stop = async (hotel: PanelHotel) => {
     if (
       !confirm(
-        `"${hotel.name}" to'xtatiladi.\n\n` +
-          `Xodimlar tizimga kira olmaydi — ular sabab yozilgan ekranni ` +
-          `ko'radi. Ochiq turgan sessiyalar ham darhol to'xtaydi.\n\n` +
-          `Barcha ma'lumot va tarix saqlanadi, xohlagan payt qayta ` +
-          `faollashtirasiz. Davom etasizmi?`
+        tr("\"{{name}}\" to'xtatiladi.\n\n", { name: hotel.name }) +
+          tr("Xodimlar tizimga kira olmaydi — ular sabab yozilgan ekranni ") +
+          tr("ko'radi. Ochiq turgan sessiyalar ham darhol to'xtaydi.\n\n") +
+          tr("Barcha ma'lumot va tarix saqlanadi, xohlagan payt qayta ") +
+          tr("faollashtirasiz. Davom etasizmi?")
       )
     )
       return
@@ -96,12 +97,12 @@ export function HotelsPage() {
   return (
     <div>
       <PanelHeading
-        title="Mehmonxonalar"
-        subtitle="Tizimdagi barcha obyektlar"
+        title={tr("Mehmonxonalar")}
+        subtitle={tr("Tizimdagi barcha obyektlar")}
         action={
           <PanelButton onClick={() => setEditing({ stars: 3, status: "ACTIVE" })}>
             <Plus className="h-4 w-4" />
-            Qo'shish
+            {tr("Qo'shish")}
           </PanelButton>
         }
       />
@@ -111,7 +112,7 @@ export function HotelsPage() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Nomi, kodi yoki shahri..."
+          placeholder={tr("Nomi, kodi yoki shahri...")}
           className="h-9 w-full rounded-lg border border-white/10 bg-slate-950/60 pl-8 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none"
         />
       </div>
@@ -124,7 +125,7 @@ export function HotelsPage() {
         </div>
       ) : hotels.length === 0 ? (
         <PanelEmpty>
-          {search ? "Qidiruv bo'yicha topilmadi" : "Hozircha mehmonxona yo'q"}
+          {search ? tr("Qidiruv bo'yicha topilmadi") : tr("Hozircha mehmonxona yo'q")}
         </PanelEmpty>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -153,16 +154,17 @@ export function HotelsPage() {
 
               {hotel.status !== "ACTIVE" && (
                 <p className="mt-2 rounded-lg border border-white/5 bg-white/[0.03] px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-400">
-                  Xodimlar tizimga kira olmaydi — ular sabab yozilgan ekranni
-                  ko'radi. Ma'lumotlar saqlanmoqda.
+                  {tr("Xodimlar tizimga kira olmaydi — ular sabab yozilgan ekranni ko'radi. Ma'lumotlar saqlanmoqda.")}
                 </p>
               )}
 
               <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/5 pt-3 text-center">
                 {[
-                  ["Filial", hotel.branch_count],
-                  ["Xona", hotel.room_count],
-                  ["Xodim", hotel.user_count],
+                  // Son ostidagi yorliq: o'zbekchada birlik, ru/en da ko'plik
+                  // ("Rooms", "Номера") — jadval sarlavhasidagi "Xona" dan farqli
+                  [trc("count", "Filial"), hotel.branch_count],
+                  [trc("count", "Xona"), hotel.room_count],
+                  [trc("count", "Xodim"), hotel.user_count],
                 ].map(([label, value]) => (
                   <div key={String(label)}>
                     <p className="text-sm font-bold tabular-nums text-slate-200">
@@ -178,7 +180,7 @@ export function HotelsPage() {
                   to={`/panel/hotels/${hotel.id}`}
                   className="inline-flex h-8 items-center rounded-lg border border-white/10 px-2.5 text-xs text-slate-300 hover:bg-white/5"
                 >
-                  Boshqarish
+                  {tr("Boshqarish")}
                 </Link>
                 <PanelButton
                   variant="ghost"
@@ -186,7 +188,7 @@ export function HotelsPage() {
                   onClick={() => setEditing(hotel)}
                 >
                   <Pencil className="h-3.5 w-3.5" />
-                  Tahrirlash
+                  {tr("Tahrirlash")}
                 </PanelButton>
                 {hotel.status === "ACTIVE" ? (
                   <PanelButton
@@ -195,7 +197,7 @@ export function HotelsPage() {
                     onClick={() => stop(hotel)}
                   >
                     <PauseCircle className="h-3.5 w-3.5" />
-                    To'xtatish
+                    {tr("To'xtatish")}
                   </PanelButton>
                 ) : (
                   <PanelButton
@@ -204,7 +206,7 @@ export function HotelsPage() {
                     onClick={() => resume(hotel)}
                   >
                     <PlayCircle className="h-3.5 w-3.5" />
-                    Faollashtirish
+                    {tr("Faollashtirish")}
                   </PanelButton>
                 )}
               </div>
@@ -215,12 +217,12 @@ export function HotelsPage() {
 
       <PanelDialog
         open={!!editing}
-        title={editing?.id ? "Mehmonxonani tahrirlash" : "Yangi mehmonxona"}
+        title={editing?.id ? tr("Mehmonxonani tahrirlash") : tr("Yangi mehmonxona")}
         onClose={() => setEditing(null)}
       >
         <form onSubmit={submit} className="space-y-3">
           <PanelInput
-            label="Nomi"
+            label={tr("Nomi")}
             value={editing?.name || ""}
             onChange={(e) =>
               setEditing((h) => ({ ...h, name: e.target.value }))
@@ -229,7 +231,7 @@ export function HotelsPage() {
           />
           <div className="grid grid-cols-2 gap-3">
             <PanelInput
-              label="Kod"
+              label={tr("Kod")}
               value={editing?.code || ""}
               onChange={(e) =>
                 setEditing((h) => ({ ...h, code: e.target.value }))
@@ -238,7 +240,7 @@ export function HotelsPage() {
               required
             />
             <PanelInput
-              label="Yulduz"
+              label={tr("Yulduz")}
               type="number"
               min={1}
               max={7}
@@ -250,14 +252,14 @@ export function HotelsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <PanelInput
-              label="Shahar"
+              label={tr("Shahar")}
               value={editing?.city || ""}
               onChange={(e) =>
                 setEditing((h) => ({ ...h, city: e.target.value }))
               }
             />
             <PanelInput
-              label="Davlat"
+              label={tr("Davlat")}
               value={editing?.country || ""}
               onChange={(e) =>
                 setEditing((h) => ({ ...h, country: e.target.value }))
@@ -266,14 +268,14 @@ export function HotelsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <PanelInput
-              label="Telefon"
+              label={tr("Telefon")}
               value={editing?.phone || ""}
               onChange={(e) =>
                 setEditing((h) => ({ ...h, phone: e.target.value }))
               }
             />
             <PanelInput
-              label="Pochta"
+              label={tr("Pochta")}
               type="email"
               value={editing?.email || ""}
               onChange={(e) =>
@@ -283,7 +285,7 @@ export function HotelsPage() {
           </div>
           {editing?.id && (
             <PanelSelect
-              label="Holat"
+              label={tr("Holat")}
               value={editing?.status || "ACTIVE"}
               onChange={(e) =>
                 setEditing((h) => ({ ...h, status: e.target.value }))
@@ -305,11 +307,11 @@ export function HotelsPage() {
               variant="ghost"
               onClick={() => setEditing(null)}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </PanelButton>
             <PanelButton type="submit" disabled={save.isPending}>
               {save.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Saqlash
+              {tr("Saqlash")}
             </PanelButton>
           </div>
         </form>

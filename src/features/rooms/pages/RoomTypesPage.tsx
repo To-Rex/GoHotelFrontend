@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 export const RoomTypesPage = () => {
   // Xona turlari katalogi mutatsiyalari backendda ADMIN/SUPER_ADMIN uchun ochiq
@@ -83,12 +84,12 @@ export const RoomTypesPage = () => {
 
   const onSubmit = async () => {
     if (!name.trim()) {
-      setErrorMsg("Nomini kiriting")
+      setErrorMsg(tr("Nomini kiriting"))
       return
     }
     const price = Number(basePrice)
     if (!price || price <= 0) {
-      setErrorMsg("Asosiy narx 0 dan katta bo'lishi kerak")
+      setErrorMsg(tr("Asosiy narx 0 dan katta bo'lishi kerak"))
       return
     }
     const cap = parseInt(capacity, 10)
@@ -118,7 +119,7 @@ export const RoomTypesPage = () => {
   }
 
   const onDelete = async (rt: RoomType) => {
-    if (!confirm(`"${rt.name}" xona turini o'chirasizmi?`)) return
+    if (!confirm(tr("\"{{name}}\" xona turini o'chirasizmi?", { name: rt.name }))) return
     try {
       await deleteMutation.mutateAsync(rt.id)
     } catch (e) {
@@ -139,7 +140,7 @@ export const RoomTypesPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Xona turlari</h1>
+        <h1 className="text-2xl font-bold">{tr("Xona turlari")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -150,22 +151,22 @@ export const RoomTypesPage = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Xona turlari</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("Xona turlari")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Xona turlari katalogi va asosiy narxlarni boshqarish
+            {tr("Xona turlari katalogi va asosiy narxlarni boshqarish")}
           </p>
         </div>
         {isAdmin && (
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
-            Tur qo'shish
+            {tr("Tur qo'shish")}
           </Button>
         )}
       </div>
 
       <div className="max-w-xs">
         <Input
-          placeholder="Qidirish..."
+          placeholder={tr("Qidirish...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -175,7 +176,7 @@ export const RoomTypesPage = () => {
       <div className="space-y-2.5 md:hidden">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-            Xona turlari topilmadi
+            {tr("Xona turlari topilmadi")}
           </div>
         ) : (
           filtered.map((rt) => (
@@ -190,7 +191,7 @@ export const RoomTypesPage = () => {
                       {rt.name}
                     </p>
                     <p className="mt-0.5 text-[11px] leading-tight text-gray-600">
-                      {rt.capacity} kishi
+                      {tr("{{capacity}} kishi", { capacity: rt.capacity })}
                     </p>
                   </div>
                 </div>
@@ -199,7 +200,7 @@ export const RoomTypesPage = () => {
                   type="button"
                   disabled={!isAdmin || statusMutation.isPending}
                   onClick={() => isAdmin && onToggleStatus(rt)}
-                  title={isAdmin ? "Holatni o'zgartirish" : undefined}
+                  title={isAdmin ? tr("Holatni o'zgartirish") : undefined}
                   className={cn(
                     "flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
                     rt.is_active
@@ -208,7 +209,7 @@ export const RoomTypesPage = () => {
                     isAdmin && "cursor-pointer hover:opacity-80"
                   )}
                 >
-                  {rt.is_active ? "Faol" : "Nofaol"}
+                  {rt.is_active ? tr("Faol") : tr("Nofaol")}
                 </button>
               </div>
 
@@ -219,14 +220,14 @@ export const RoomTypesPage = () => {
               )}
 
               <p className="mt-2 text-sm font-medium">
-                {Number(rt.base_price || 0).toLocaleString()} So'm
+                {tr("{{Number}} So'm", { Number: Number(rt.base_price || 0).toLocaleString() })}
               </p>
 
               {isAdmin && (
                 <div className="mt-3 flex items-center gap-1 border-t border-gray-100 pt-2.5">
                   <Button variant="ghost" size="sm" onClick={() => openEdit(rt)}>
                     <Pencil className="h-3.5 w-3.5 mr-1" />
-                    Tahrirlash
+                    {tr("Tahrirlash")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -235,7 +236,7 @@ export const RoomTypesPage = () => {
                     onClick={() => onDelete(rt)}
                   >
                     <Trash2 className="h-3.5 w-3.5 mr-1" />
-                    O'chirish
+                    {tr("O'chirish")}
                   </Button>
                 </div>
               )}
@@ -249,19 +250,19 @@ export const RoomTypesPage = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nomi</TableHead>
-              <TableHead>Tavsif</TableHead>
-              <TableHead>Sig'im</TableHead>
-              <TableHead>Asosiy narx</TableHead>
-              <TableHead>Holat</TableHead>
-              {isAdmin && <TableHead className="text-right">Amallar</TableHead>}
+              <TableHead>{tr("Nomi")}</TableHead>
+              <TableHead>{tr("Tavsif")}</TableHead>
+              <TableHead>{tr("Sig'im")}</TableHead>
+              <TableHead>{tr("Asosiy narx")}</TableHead>
+              <TableHead>{tr("Holat")}</TableHead>
+              {isAdmin && <TableHead className="text-right">{tr("Amallar")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-6 text-gray-400">
-                  Xona turlari topilmadi
+                  {tr("Xona turlari topilmadi")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -278,16 +279,16 @@ export const RoomTypesPage = () => {
                   <TableCell className="text-gray-600 max-w-[280px] truncate">
                     {rt.description || "—"}
                   </TableCell>
-                  <TableCell className="text-gray-600">{rt.capacity} kishi</TableCell>
+                  <TableCell className="text-gray-600">{tr("{{capacity}} kishi", { capacity: rt.capacity })}</TableCell>
                   <TableCell className="font-medium">
-                    {Number(rt.base_price || 0).toLocaleString()} So'm
+                    {tr("{{Number}} So'm", { Number: Number(rt.base_price || 0).toLocaleString() })}
                   </TableCell>
                   <TableCell>
                     <button
                       type="button"
                       disabled={!isAdmin || statusMutation.isPending}
                       onClick={() => isAdmin && onToggleStatus(rt)}
-                      title={isAdmin ? "Holatni o'zgartirish" : undefined}
+                      title={isAdmin ? tr("Holatni o'zgartirish") : undefined}
                       className={cn(
                         "text-xs font-medium px-2 py-0.5 rounded-full",
                         rt.is_active
@@ -296,7 +297,7 @@ export const RoomTypesPage = () => {
                         isAdmin && "cursor-pointer hover:opacity-80"
                       )}
                     >
-                      {rt.is_active ? "Faol" : "Nofaol"}
+                      {rt.is_active ? tr("Faol") : tr("Nofaol")}
                     </button>
                   </TableCell>
                   {isAdmin && (
@@ -304,7 +305,7 @@ export const RoomTypesPage = () => {
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(rt)}>
                           <Pencil className="h-3.5 w-3.5 mr-1" />
-                          Tahrirlash
+                          {tr("Tahrirlash")}
                         </Button>
                         <Button
                           variant="ghost"
@@ -313,7 +314,7 @@ export const RoomTypesPage = () => {
                           onClick={() => onDelete(rt)}
                         >
                           <Trash2 className="h-3.5 w-3.5 mr-1" />
-                          O'chirish
+                          {tr("O'chirish")}
                         </Button>
                       </div>
                     </TableCell>
@@ -329,29 +330,29 @@ export const RoomTypesPage = () => {
         <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Xona turini tahrirlash" : "Yangi xona turi"}
+              {editing ? tr("Xona turini tahrirlash") : tr("Yangi xona turi")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Nomi *</label>
+              <label className="text-sm font-medium">{tr("Nomi *")}</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Masalan: Standart, Lyuks"
+                placeholder={tr("Masalan: Standart, Lyuks")}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Tavsif</label>
+              <label className="text-sm font-medium">{tr("Tavsif")}</label>
               <Input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Qisqacha tavsif"
+                placeholder={tr("Qisqacha tavsif")}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Sig'im (kishi) *</label>
+                <label className="text-sm font-medium">{tr("Sig'im (kishi) *")}</label>
                 <Input
                   type="number"
                   min={1}
@@ -360,13 +361,13 @@ export const RoomTypesPage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Asosiy narx (So'm) *</label>
+                <label className="text-sm font-medium">{tr("Asosiy narx (So'm) *")}</label>
                 <Input
                   type="number"
                   min={0}
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
-                  placeholder="Masalan: 500000"
+                  placeholder={tr("Masalan: 500000")}
                 />
               </div>
             </div>
@@ -376,11 +377,11 @@ export const RoomTypesPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={onSubmit} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editing ? "Saqlash" : "Qo'shish"}
+              {editing ? tr("Saqlash") : tr("Qo'shish")}
             </Button>
           </DialogFooter>
         </DialogContent>

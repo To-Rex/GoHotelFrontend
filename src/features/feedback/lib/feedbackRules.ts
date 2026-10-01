@@ -4,6 +4,7 @@ import type {
   FeedbackType,
   GuestFeedback,
 } from "@/types/api"
+import { tr } from "@/i18n"
 
 /* Talab, taklif va shikoyatlar — nomlar, ranglar va qoidalar bir joyda.
 
@@ -12,22 +13,22 @@ import type {
    sahifa tugmani ko'rsatsa, server ham o'sha o'tishga ruxsat bersin. */
 
 export const TYPE_LABELS: Record<FeedbackType, string> = {
-  REQUEST: "Talab",
-  SUGGESTION: "Taklif",
-  COMPLAINT: "Shikoyat",
+  REQUEST: tr("Talab"),
+  SUGGESTION: tr("Taklif"),
+  COMPLAINT: tr("Shikoyat"),
 }
 
 export const STATUS_LABELS: Record<FeedbackStatus, string> = {
-  NEW: "Yangi",
-  IN_PROGRESS: "Ko'rib chiqilmoqda",
-  RESOLVED: "Hal qilindi",
-  REJECTED: "Rad etildi",
+  NEW: tr("Yangi"),
+  IN_PROGRESS: tr("Ko'rib chiqilmoqda"),
+  RESOLVED: tr("Hal qilindi"),
+  REJECTED: tr("Rad etildi"),
 }
 
 export const PRIORITY_LABELS: Record<FeedbackPriority, string> = {
-  LOW: "Past",
-  MEDIUM: "O'rta",
-  HIGH: "Yuqori",
+  LOW: tr("Past"),
+  MEDIUM: tr("O'rta"),
+  HIGH: tr("Yuqori"),
 }
 
 export const TYPE_STYLES: Record<FeedbackType, string> = {

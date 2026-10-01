@@ -39,6 +39,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 const fmtMoney = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 
@@ -126,12 +127,12 @@ export const ShiftPanel = () => {
   const submitCount = async () => {
     // Bo'sh maydon Number("")=0 bo'lib jimgina o'tib ketmasligi kerak
     if (counted.trim() === "") {
-      setCountError("Kassadagi haqiqiy summani kiriting")
+      setCountError(tr("Kassadagi haqiqiy summani kiriting"))
       return
     }
     const n = Number(counted.replace(/\s/g, ""))
     if (Number.isNaN(n) || n < 0) {
-      setCountError("Kassadagi haqiqiy summani kiriting")
+      setCountError(tr("Kassadagi haqiqiy summani kiriting"))
       return
     }
     setCountError(null)
@@ -149,7 +150,7 @@ export const ShiftPanel = () => {
 
   const submitAccept = async () => {
     if (!acceptPassword) {
-      setAcceptError("Parolingizni kiriting")
+      setAcceptError(tr("Parolingizni kiriting"))
       return
     }
     setAcceptError(null)
@@ -167,7 +168,7 @@ export const ShiftPanel = () => {
     try {
       const n = forceCounted.trim() ? Number(forceCounted.replace(/\s/g, "")) : undefined
       if (n !== undefined && (Number.isNaN(n) || n < 0)) {
-        setForceError("Summa noto'g'ri")
+        setForceError(tr("Summa noto'g'ri"))
         return
       }
       await forceMutation.mutateAsync({
@@ -208,12 +209,12 @@ export const ShiftPanel = () => {
             </span>
             <div className="min-w-0 flex-1">
               <p className="font-bold text-red-700">
-                {blocking.user_name} smenasi hali topshirilmagan
+                {blocking.user_name}{" "}{tr("smenasi hali topshirilmagan")}
               </p>
               <p className="mt-0.5 text-sm text-red-600/80">
                 {blocking.status === "PENDING_HANDOVER"
-                  ? "Smena tugallangan — qabul qilib olishingiz mumkin. Kassadagi pul sizga o'tadi va yangi smenangizning BOSHLANG'ICH kassasi bo'ladi; avvalgi tushum-chiqim hisobi avvalgi xodimda qoladi."
-                  : "Xodim smenani tugallamagan. Menejer yoki administrator majburiy yopishi kerak."}
+                  ? tr("Smena tugallangan — qabul qilib olishingiz mumkin. Kassadagi pul sizga o'tadi va yangi smenangizning BOSHLANG'ICH kassasi bo'ladi; avvalgi tushum-chiqim hisobi avvalgi xodimda qoladi.")
+                  : tr("Xodim smenani tugallamagan. Menejer yoki administrator majburiy yopishi kerak.")}
               </p>
 
               {/* Topshirilayotgan kassa — qabul qiluvchi sanab tekshirishi kerak */}
@@ -222,13 +223,13 @@ export const ShiftPanel = () => {
                   <div className="mt-2.5 inline-flex flex-wrap items-center gap-2 rounded-lg bg-white px-3 py-2 ring-1 ring-red-200">
                     <Wallet className="h-4 w-4 flex-shrink-0 text-red-500" />
                     <span className="text-sm text-gray-600">
-                      Qabul qilinayotgan kassa:
+                      {tr("Qabul qilinayotgan kassa:")}
                     </span>
                     <b className="text-base tabular-nums text-gray-900">
-                      {fmtMoney(blocking.counted_cash)} so'm
+                      {tr("{{counted_cash}} so'm", { counted_cash: fmtMoney(blocking.counted_cash) })}
                     </b>
                     <span className="text-[11px] text-gray-400">
-                      — pulni sanab tekshiring
+                      {tr("— pulni sanab tekshiring")}
                     </span>
                   </div>
                 )}
@@ -237,7 +238,7 @@ export const ShiftPanel = () => {
                 <div className="mt-3 flex flex-wrap items-end gap-2">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-red-700">
-                      Parolingiz bilan tasdiqlang
+                      {tr("Parolingiz bilan tasdiqlang")}
                     </label>
                     <div className="relative">
                       <KeyRound className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-red-400" />
@@ -247,7 +248,7 @@ export const ShiftPanel = () => {
                         value={acceptPassword}
                         onChange={(e) => setAcceptPassword(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && submitAccept()}
-                        placeholder="Parol"
+                        placeholder={tr("Parol")}
                       />
                     </div>
                   </div>
@@ -256,7 +257,7 @@ export const ShiftPanel = () => {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     <ShieldCheck className="mr-1.5 h-4 w-4" />
-                    Smenani qabul qilish
+                    {tr("Smenani qabul qilish")}
                   </Button>
                 </div>
               )}
@@ -272,7 +273,7 @@ export const ShiftPanel = () => {
                     className="border-red-300 text-red-600 hover:bg-red-100"
                     onClick={() => setForceDialog(true)}
                   >
-                    Majburiy yopish (menejer/admin)
+                    {tr("Majburiy yopish (menejer/admin)")}
                   </Button>
                 </div>
               )}
@@ -289,10 +290,9 @@ export const ShiftPanel = () => {
               <Wallet className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-bold text-gray-900">Smena ochilmagan</p>
+              <p className="font-bold text-gray-900">{tr("Smena ochilmagan")}</p>
               <p className="text-sm text-gray-500">
-                Smena ochilmaguncha bron va to'lov qabul qilib bo'lmaydi — tushum
-                hech kimning kassasiga tushmaydi. Kassa 0 so'mdan boshlanadi.
+                {tr("Smena ochilmaguncha bron va to'lov qabul qilib bo'lmaydi — tushum hech kimning kassasiga tushmaydi. Kassa 0 so'mdan boshlanadi.")}
               </p>
             </div>
           </div>
@@ -302,7 +302,7 @@ export const ShiftPanel = () => {
           >
             {openMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Play className="mr-1.5 h-4 w-4" />
-            Smenani ochish
+            {tr("Smenani ochish")}
           </Button>
         </div>
       )}
@@ -333,19 +333,18 @@ export const ShiftPanel = () => {
               </span>
               <div>
                 <p className="font-bold text-gray-900">
-                  Smena faol
+                  {tr("Smena faol")}
                   {my.continue_after_end && (
                     <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
-                      qo'shimcha vaqt
+                      {tr("qo'shimcha vaqt")}
                     </span>
                   )}
                 </p>
                 <p className="flex items-center gap-1.5 text-sm text-gray-500">
                   <Clock className="h-3.5 w-3.5" />
-                  {my.started_at
+                  {tr("{{v}} dan beri · boshlang'ich kassa: {{opening_cash}} so'm", { v: my.started_at
                     ? format(new Date(my.started_at), "dd.MM HH:mm")
-                    : "—"}{" "}
-                  dan beri · boshlang'ich kassa: {fmtMoney(my.opening_cash)} so'm
+                    : "—", opening_cash: fmtMoney(my.opening_cash) })}
                 </p>
               </div>
             </div>
@@ -361,7 +360,7 @@ export const ShiftPanel = () => {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   <Play className="mr-1.5 h-4 w-4" />
-                  Davom etish
+                  {tr("Davom etish")}
                 </Button>
               )}
               <Button
@@ -370,11 +369,11 @@ export const ShiftPanel = () => {
                 className="border-sky-300 text-sky-700 hover:bg-sky-50"
               >
                 <ArrowRightLeft className="mr-1.5 h-4 w-4" />
-                Kassani topshirish
+                {tr("Kassani topshirish")}
               </Button>
               <Button onClick={() => setCountDialog("end")}>
                 <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                Smenani tugallash
+                {tr("Smenani tugallash")}
               </Button>
             </div>
           </div>
@@ -388,24 +387,21 @@ export const ShiftPanel = () => {
                   : "bg-sky-50 text-sky-800"
               )}
             >
-              Kunlik kassa kesimi vaqti keldi ({state.day_close}) —{" "}
+              {tr("Kunlik kassa kesimi vaqti keldi ({{day_close}}) —", { day_close: state.day_close })}{" "}
               {cutRequired ? (
                 <>
-                  kassani topshiring. Topshirilmaguncha bron va to'lov
-                  qabul qilib bo'lmaydi; topshirgach yangi kassa 0 dan ochiladi.
+                  {tr("kassani topshiring. Topshirilmaguncha bron va to'lov qabul qilib bo'lmaydi; topshirgach yangi kassa 0 dan ochiladi.")}
                 </>
               ) : (
                 <>
-                  kassani topshirish tavsiya etiladi. Ishni davom ettirishingiz
-                  mumkin, lekin topshirilmagan pul kassada yig'ilib boraveradi.
+                  {tr("kassani topshirish tavsiya etiladi. Ishni davom ettirishingiz mumkin, lekin topshirilmagan pul kassada yig'ilib boraveradi.")}
                 </>
               )}
             </p>
           )}
           {workEnded && !my.continue_after_end && !cutDue && (
             <p className="mt-3 rounded-xl bg-amber-100/60 px-3 py-2 text-sm text-amber-800">
-              Ish vaqtingiz tugadi. Keyingi xodim kelmagan bo'lsa "Davom etish"
-              ni bosing, aks holda smenani tugallang.
+              {tr("Ish vaqtingiz tugadi. Keyingi xodim kelmagan bo'lsa \"Davom etish\" ni bosing, aks holda smenani tugallang.")}
             </p>
           )}
           {actionError && <p className="mt-2 text-sm text-red-500">{actionError}</p>}
@@ -419,10 +415,9 @@ export const ShiftPanel = () => {
             <Loader2 className="h-5 w-5 animate-spin" />
           </span>
           <div>
-            <p className="font-bold text-sky-800">Smena tugallandi</p>
+            <p className="font-bold text-sky-800">{tr("Smena tugallandi")}</p>
             <p className="text-sm text-sky-700/80">
-              Keyingi xodim o'z logini bilan kirib, parol orqali qabul qilishi
-              kutilmoqda. Hisob-kitobingiz saqlandi.
+              {tr("Keyingi xodim o'z logini bilan kirib, parol orqali qabul qilishi kutilmoqda. Hisob-kitobingiz saqlandi.")}
             </p>
           </div>
         </div>
@@ -434,21 +429,21 @@ export const ShiftPanel = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              Kassa hisoboti
+              {tr("Kassa hisoboti")}
             </DialogTitle>
           </DialogHeader>
           {report && (
             <div className="space-y-2 py-2 text-sm">
               <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
-                <span className="text-gray-500">Kutilgan summa</span>
+                <span className="text-gray-500">{tr("Kutilgan summa")}</span>
                 <span className="font-bold tabular-nums">
-                  {fmtMoney(report.expected_cash)} so'm
+                  {tr("{{expected_cash}} so'm", { expected_cash: fmtMoney(report.expected_cash) })}
                 </span>
               </div>
               <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
-                <span className="text-gray-500">Siz sanagan summa</span>
+                <span className="text-gray-500">{tr("Siz sanagan summa")}</span>
                 <span className="font-bold tabular-nums">
-                  {fmtMoney(report.counted_cash)} so'm
+                  {tr("{{counted_cash}} so'm", { counted_cash: fmtMoney(report.counted_cash) })}
                 </span>
               </div>
               <div
@@ -459,16 +454,16 @@ export const ShiftPanel = () => {
                     : "bg-red-50 text-red-600"
                 )}
               >
-                <span>Farq</span>
+                <span>{tr("Farq")}</span>
                 <span className="font-bold tabular-nums">
-                  {report.cash_diff ? fmtMoney(report.cash_diff) : "0"} so'm
-                  {!report.cash_diff && " — mos keldi"}
+                  {tr("{{v}} so'm", { v: report.cash_diff ? fmtMoney(report.cash_diff) : "0" })}
+                  {!report.cash_diff && tr(" — mos keldi")}
                 </span>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setReport(null)}>Yopish</Button>
+            <Button onClick={() => setReport(null)}>{tr("Yopish")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -478,7 +473,7 @@ export const ShiftPanel = () => {
         <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
             <DialogTitle>
-              {countDialog === "cash" ? "Kassani topshirish" : "Smenani tugallash"}
+              {countDialog === "cash" ? tr("Kassani topshirish") : tr("Smenani tugallash")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -494,27 +489,23 @@ export const ShiftPanel = () => {
                 )}
               >
                 <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                  Kassada bo'lishi kerak
+                  {tr("Kassada bo'lishi kerak")}
                   {expectedFetching && <Loader2 className="h-3 w-3 animate-spin" />}
                 </p>
                 <p className="text-xl font-bold tabular-nums text-primary-700">
-                  {fmtMoney(expectedData.expected_cash)} so'm
+                  {tr("{{expected_cash}} so'm", { expected_cash: fmtMoney(expectedData.expected_cash) })}
                 </p>
                 <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
-                  Boshlang'ich {fmtMoney(expectedData.opening_cash)} + naqd
-                  to'lovlar {fmtMoney(expectedData.payments_cash)} + do'kon{" "}
-                  {fmtMoney(expectedData.shop_cash)} − naqd xarajatlar{" "}
-                  {fmtMoney(expectedData.expenses_cash)}
+                  {tr("Boshlang'ich {{opening_cash}} + naqd to'lovlar {{payments_cash}} + do'kon {{shop_cash}} − naqd xarajatlar {{expenses_cash}}", { opening_cash: fmtMoney(expectedData.opening_cash), payments_cash: fmtMoney(expectedData.payments_cash), shop_cash: fmtMoney(expectedData.shop_cash), expenses_cash: fmtMoney(expectedData.expenses_cash) })}
                 </p>
               </div>
             )}
             <p className="rounded-xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600">
-              Kassadagi <b>haqiqiy pulni sanab</b> kiriting — farq bo'lsa
-              sizning hisobingizga yoziladi.
+              {tr("Kassadagi")}{" "}<b>{tr("haqiqiy pulni sanab")}</b>{" "}{tr("kiriting — farq bo'lsa sizning hisobingizga yoziladi.")}
             </p>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">
-                Kassadagi haqiqiy summa (so'm) *
+                {tr("Kassadagi haqiqiy summa (so'm) *")}
               </label>
               <Input
                 type="number"
@@ -525,27 +516,26 @@ export const ShiftPanel = () => {
                   editedRef.current = true
                   setCounted(e.target.value)
                 }}
-                placeholder="Masalan: 1 250 000"
+                placeholder={tr("Masalan: 1 250 000")}
                 autoFocus
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Izoh</label>
+              <label className="text-xs font-medium text-gray-600">{tr("Izoh")}</label>
               <Input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Ixtiyoriy"
+                placeholder={tr("Ixtiyoriy")}
               />
             </div>
             {countDialog === "cash" && (
               <p className="text-xs text-gray-400">
-                Kassa yopilib, ishni davom ettirishingiz uchun yangi kassa 0
-                so'mdan ochiladi.
+                {tr("Kassa yopilib, ishni davom ettirishingiz uchun yangi kassa 0 so'mdan ochiladi.")}
               </p>
             )}
             {countDialog === "end" && (
               <p className="text-xs text-gray-400">
-                Smena yopiladi va keyingi xodim qabul qilishi kutiladi.
+                {tr("Smena yopiladi va keyingi xodim qabul qilishi kutiladi.")}
               </p>
             )}
             {countError && (
@@ -556,7 +546,7 @@ export const ShiftPanel = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCountDialog(null)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button
               onClick={submitCount}
@@ -565,7 +555,7 @@ export const ShiftPanel = () => {
               {(closeCashMutation.isPending || endShiftMutation.isPending) && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Tasdiqlash
+              {tr("Tasdiqlash")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -577,14 +567,12 @@ export const ShiftPanel = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="h-5 w-5" />
-              Smenani majburiy yopish
+              {tr("Smenani majburiy yopish")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-gray-600">
-              <b>{blocking?.user_name}</b> smenasi majburiy yopiladi. Kassadagi
-              pulni sanab kiritsangiz farq o'sha xodim hisobiga yoziladi;
-              kiritmasangiz kutilgan summa bo'yicha (farqsiz) yopiladi.
+              <b>{blocking?.user_name}</b>{" "}{tr("smenasi majburiy yopiladi. Kassadagi pulni sanab kiritsangiz farq o'sha xodim hisobiga yoziladi; kiritmasangiz kutilgan summa bo'yicha (farqsiz) yopiladi.")}
             </p>
 
             {/* Kassa taqdiri: keyingi xodimga o'tadimi yoki admin oldimi */}
@@ -596,33 +584,33 @@ export const ShiftPanel = () => {
               />
               <span className="text-sm">
                 <b className="font-medium text-gray-900">
-                  Kassani keyingi xodim qabul qilsin
+                  {tr("Kassani keyingi xodim qabul qilsin")}
                 </b>
                 <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
                   {forceHandOver
-                    ? "Smena «topshirilgan» holatda qoladi — keyingi xodim uni o'z paroli bilan qabul qiladi va sanalgan summa uning boshlang'ich kassasi bo'ladi."
-                    : "Pulni o'zingiz olasiz: smena butunlay yopiladi va keyingi xodim kassani noldan boshlaydi."}
+                    ? tr("Smena «topshirilgan» holatda qoladi — keyingi xodim uni o'z paroli bilan qabul qiladi va sanalgan summa uning boshlang'ich kassasi bo'ladi.")
+                    : tr("Pulni o'zingiz olasiz: smena butunlay yopiladi va keyingi xodim kassani noldan boshlaydi.")}
                 </span>
               </span>
             </label>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">
-                Kassadagi haqiqiy summa (ixtiyoriy)
+                {tr("Kassadagi haqiqiy summa (ixtiyoriy)")}
               </label>
               <Input
                 type="number"
                 min={0}
                 value={forceCounted}
                 onChange={(e) => setForceCounted(e.target.value)}
-                placeholder="Sanalmagan bo'lsa bo'sh qoldiring"
+                placeholder={tr("Sanalmagan bo'lsa bo'sh qoldiring")}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Izoh</label>
+              <label className="text-xs font-medium text-gray-600">{tr("Izoh")}</label>
               <Input
                 value={forceNotes}
                 onChange={(e) => setForceNotes(e.target.value)}
-                placeholder="Masalan: xodim telefon ko'tarmadi"
+                placeholder={tr("Masalan: xodim telefon ko'tarmadi")}
               />
             </div>
             {forceError && (
@@ -633,7 +621,7 @@ export const ShiftPanel = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setForceDialog(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button
               variant="destructive"
@@ -643,7 +631,7 @@ export const ShiftPanel = () => {
               {forceMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Majburiy yopish
+              {tr("Majburiy yopish")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { tr } from "@/i18n"
 
 /* Chegirma qoidalari — mehmonxona bo'yicha, bron turi bo'yicha alohida.
 
@@ -87,13 +88,13 @@ export const discountBlockedReason = (
   bookingType: "DAILY" | "HOURLY",
   duration: number
 ): string | null => {
-  if (!rule.enabled) return "Chegirma berish sozlamalarda o'chirilgan"
-  const unit = bookingType === "HOURLY" ? "soat" : "kecha"
+  if (!rule.enabled) return tr("Chegirma berish sozlamalarda o'chirilgan")
+  const unit = bookingType === "HOURLY" ? tr("soat") : tr("kecha")
   if (rule.min_duration > 0 && duration < rule.min_duration) {
-    return `Chegirma kamida ${rule.min_duration} ${unit}dan boshlab beriladi — bu bron ${duration} ${unit}`
+    return tr("Chegirma kamida {{min_duration}} {{unit}}dan boshlab beriladi — bu bron {{duration}} {{unit}}", { min_duration: rule.min_duration, unit, duration })
   }
   if (rule.max_duration > 0 && duration > rule.max_duration) {
-    return `Chegirma ko'pi bilan ${rule.max_duration} ${unit}lik bronga beriladi — bu bron ${duration} ${unit}`
+    return tr("Chegirma ko'pi bilan {{max_duration}} {{unit}}lik bronga beriladi — bu bron {{duration}} {{unit}}", { max_duration: rule.max_duration, unit, duration })
   }
   return null
 }
@@ -113,15 +114,15 @@ export const discountProblem = (
   percent: number
 ): string | null => {
   if (amount <= 0 && percent <= 0) return null
-  const unit = bookingType === "HOURLY" ? "soat" : "kecha"
+  const unit = bookingType === "HOURLY" ? tr("soat") : tr("kecha")
   const num = (v: number) => (Number.isInteger(v) ? String(v) : String(v))
 
-  if (!rule.enabled) return "Bu mehmonxonada chegirma berish o'chirilgan"
+  if (!rule.enabled) return tr("Bu mehmonxonada chegirma berish o'chirilgan")
   if (rule.min_duration > 0 && duration < rule.min_duration) {
-    return `Chegirma kamida ${num(rule.min_duration)} ${unit}dan boshlab beriladi`
+    return tr("Chegirma kamida {{min_duration}} {{unit}}dan boshlab beriladi", { min_duration: num(rule.min_duration), unit })
   }
   if (rule.max_duration > 0 && duration > rule.max_duration) {
-    return `Chegirma ko'pi bilan ${num(rule.max_duration)} ${unit}lik bronga beriladi`
+    return tr("Chegirma ko'pi bilan {{max_duration}} {{unit}}lik bronga beriladi", { max_duration: num(rule.max_duration), unit })
   }
 
   // Ikkala chegara ham bir xil o'lchovga keltiriladi: xodim foizda kiritsa
@@ -130,10 +131,10 @@ export const discountProblem = (
   const effPercent = percent > 0 ? percent : roomCharge > 0 ? (amount / roomCharge) * 100 : 0
 
   if (rule.max_percent > 0 && effPercent > rule.max_percent + 0.001) {
-    return `Chegirma ${num(rule.max_percent)}% dan oshmasligi kerak`
+    return tr("Chegirma {{max_percent}}% dan oshmasligi kerak", { max_percent: num(rule.max_percent) })
   }
   if (rule.max_amount > 0 && effAmount > rule.max_amount + 0.001) {
-    return `Chegirma ${rule.max_amount.toLocaleString()} so'mdan oshmasligi kerak`
+    return tr("Chegirma {{max_amount}} so'mdan oshmasligi kerak", { max_amount: rule.max_amount.toLocaleString() })
   }
   return null
 }
@@ -143,12 +144,12 @@ export const discountHint = (
   rule: DiscountRule,
   bookingType: "DAILY" | "HOURLY"
 ): string => {
-  if (!rule.enabled) return "Chegirma berish o'chirilgan"
-  const unit = bookingType === "HOURLY" ? "soat" : "kecha"
+  if (!rule.enabled) return tr("Chegirma berish o'chirilgan")
+  const unit = bookingType === "HOURLY" ? tr("soat") : tr("kecha")
   const parts: string[] = []
-  if (rule.max_percent > 0) parts.push(`${rule.max_percent}% gacha`)
-  if (rule.max_amount > 0) parts.push(`${rule.max_amount.toLocaleString()} so'mgacha`)
-  if (rule.min_duration > 0) parts.push(`kamida ${rule.min_duration} ${unit}`)
-  if (rule.max_duration > 0) parts.push(`ko'pi bilan ${rule.max_duration} ${unit}`)
+  if (rule.max_percent > 0) parts.push(tr("{{max_percent}}% gacha", { max_percent: rule.max_percent }))
+  if (rule.max_amount > 0) parts.push(tr("{{max_amount}} so'mgacha", { max_amount: rule.max_amount.toLocaleString() }))
+  if (rule.min_duration > 0) parts.push(tr("kamida {{min_duration}} {{unit}}", { min_duration: rule.min_duration, unit }))
+  if (rule.max_duration > 0) parts.push(tr("ko'pi bilan {{max_duration}} {{unit}}", { max_duration: rule.max_duration, unit }))
   return parts.join(" · ")
 }

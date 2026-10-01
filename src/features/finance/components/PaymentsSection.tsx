@@ -21,6 +21,7 @@ import {
   setSearch,
   toggleSort,
 } from "@/lib/tableState"
+import { tr } from "@/i18n"
 
 /**
  * To'lovlar jadvali — sahifalab, qidirib va saralab.
@@ -93,7 +94,7 @@ export function PaymentsSection({
           className="w-full sm:w-72"
           value={state.search}
           onChange={(value) => setState((s) => setSearch(s, value))}
-          placeholder="Raqam yoki izoh bo'yicha..."
+          placeholder={tr("Raqam yoki izoh bo'yicha...")}
         />
       </div>
 
@@ -110,8 +111,8 @@ export function PaymentsSection({
             {rows.length === 0 ? (
               <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
                 {state.search
-                  ? "Qidiruv bo'yicha to'lov topilmadi"
-                  : "Tanlangan davrda to'lovlar yo'q"}
+                  ? tr("Qidiruv bo'yicha to'lov topilmadi")
+                  : tr("Tanlangan davrda to'lovlar yo'q")}
               </div>
             ) : (
               rows.map((p) => (
@@ -126,7 +127,7 @@ export function PaymentsSection({
                       </p>
                     </div>
                     <span className="flex-shrink-0 font-semibold text-green-600">
-                      {fmt(p.amount)} So'm
+                      {tr("{{amount}} So'm", { amount: fmt(p.amount) })}
                     </span>
                   </div>
                   <div className="mt-2">
@@ -155,7 +156,7 @@ export function PaymentsSection({
                     dir={state.sortDir}
                     onSort={sort}
                   >
-                    Raqami
+                    {tr("Raqami")}
                   </SortableHead>
                   <SortableHead
                     column="payment_date"
@@ -163,7 +164,7 @@ export function PaymentsSection({
                     dir={state.sortDir}
                     onSort={sort}
                   >
-                    Sana
+                    {tr("Sana")}
                   </SortableHead>
                   <SortableHead
                     column="payment_method"
@@ -171,9 +172,9 @@ export function PaymentsSection({
                     dir={state.sortDir}
                     onSort={sort}
                   >
-                    To'lov turi
+                    {tr("To'lov turi")}
                   </SortableHead>
-                  <TableHead>Izoh</TableHead>
+                  <TableHead>{tr("Izoh")}</TableHead>
                   <SortableHead
                     column="amount"
                     active={state.sortBy}
@@ -181,7 +182,7 @@ export function PaymentsSection({
                     onSort={sort}
                     align="right"
                   >
-                    Summa
+                    {tr("Summa")}
                   </SortableHead>
                 </TableRow>
               </TableHeader>
@@ -190,8 +191,8 @@ export function PaymentsSection({
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-6 text-gray-400">
                       {state.search
-                        ? "Qidiruv bo'yicha to'lov topilmadi"
-                        : "Tanlangan davrda to'lovlar yo'q"}
+                        ? tr("Qidiruv bo'yicha to'lov topilmadi")
+                        : tr("Tanlangan davrda to'lovlar yo'q")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -208,7 +209,7 @@ export function PaymentsSection({
                         {p.notes || p.reference || "-"}
                       </TableCell>
                       <TableCell className="text-right text-green-600 font-semibold">
-                        {fmt(p.amount)} So'm
+                        {tr("{{amount}} So'm", { amount: fmt(p.amount) })}
                       </TableCell>
                     </TableRow>
                   ))

@@ -1,4 +1,5 @@
 import type { ReservationCompanion } from "@/types/api"
+import { tr, trc } from "@/i18n"
 
 /* Turish davomida hamrohlar: ketdi / qaytdi / o'rniga yangisi keldi.
 
@@ -47,18 +48,18 @@ export type CompanionAddCheck = { ok: true } | { ok: false; reason: string }
     ko'rsatiladi, shuning uchun nima qilish kerakligini ham aytadi. */
 export function companionAddCheck(res: CompanionReservationLike): CompanionAddCheck {
   if (res.status !== "CONFIRMED" && res.status !== "CHECKED_IN") {
-    return { ok: false, reason: "Bu holatdagi bronga hamroh qo'shilmaydi" }
+    return { ok: false, reason: tr("Bu holatdagi bronga hamroh qo'shilmaydi") }
   }
   if (res.checkout_requested_at) {
     return {
       ok: false,
-      reason: "Chiqish jarayoni boshlangan — yangi hamroh qo'shilmaydi",
+      reason: tr("Chiqish jarayoni boshlangan — yangi hamroh qo'shilmaydi"),
     }
   }
   if (freeSeats(res) === 0) {
     return {
       ok: false,
-      reason: `Xonada joy yo'q: mehmonlar soni ${guestCapacity(res.adults)}, hammasi ichkarida. Avval ketgan hamrohni belgilang yoki bronni tahrirlab mehmonlar sonini oshiring`,
+      reason: tr("Xonada joy yo'q: mehmonlar soni {{adults}}, hammasi ichkarida. Avval ketgan hamrohni belgilang yoki bronni tahrirlab mehmonlar sonini oshiring", { adults: guestCapacity(res.adults) }),
     }
   }
   return { ok: true }
@@ -114,13 +115,15 @@ export function companionStatusLabel(c: ReservationCompanion, now: Date = new Da
         : state === "added"
           ? shortMoment(c.added_at, now)
           : null
+  // "status": chipdagi holat. Paneldagi xuddi shu so'zli tugmalar esa amal
+  // (tr("Ketdi") — "ketganini belgilash") — boshqa tillarda farq qiladi
   const word =
     state === "left"
-      ? "Ketdi"
+      ? trc("status", "Ketdi")
       : state === "returned"
-        ? "Qaytdi"
+        ? trc("status", "Qaytdi")
         : state === "added"
-          ? "Qo'shildi"
-          : "Ichkarida"
+          ? tr("Qo'shildi")
+          : tr("Ichkarida")
   return at ? `${word} · ${at}` : word
 }

@@ -20,6 +20,7 @@ import {
 import { useBranches } from "@/features/rooms/api/rooms"
 import { cn } from "@/lib/utils"
 import { fetchSightingImage, useSightingGroups, type SightingGroup } from "../api/vision"
+import { tr } from "@/i18n"
 
 /**
  * Filial kamerasidan yuz tanlash — odamlar bo'yicha guruhlangan holda.
@@ -66,11 +67,11 @@ const WEAK_COHESION = 0.7
 
 function timeAgo(iso: string): string {
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
-  if (seconds < 60) return "hozirgina"
+  if (seconds < 60) return tr("hozirgina")
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} daq. oldin`
+  if (minutes < 60) return tr("{{minutes}} daq. oldin", { minutes })
   const hours = Math.floor(minutes / 60)
-  return `${hours} soat oldin`
+  return tr("{{hours}} soat oldin", { hours })
 }
 
 /**
@@ -134,7 +135,7 @@ function GroupCard({
         {url ? (
           <img
             src={url}
-            alt={`${group.camera_name || group.camera_id} kamerasidan`}
+            alt={tr("{{v}} kamerasidan", { v: group.camera_name || group.camera_id })}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -151,7 +152,7 @@ function GroupCard({
       {group.count > 1 && (
         <span
           className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-gray-900/75 px-1.5 py-0.5 text-[10px] font-medium text-white"
-          title={`${group.count} ta surat bitta odamga tegishli deb topildi`}
+          title={tr("{{count}} ta surat bitta odamga tegishli deb topildi", { count: group.count })}
         >
           <Layers className="h-3 w-3" />
           {group.count}
@@ -160,7 +161,7 @@ function GroupCard({
       {weak && (
         <span
           className="absolute right-1.5 top-1.5 rounded-full bg-amber-500/90 p-1 text-white"
-          title="Guruh a'zolari bir-biriga unchalik o'xshamaydi — tekshirib ko'ring"
+          title={tr("Guruh a'zolari bir-biriga unchalik o'xshamaydi — tekshirib ko'ring")}
         >
           <TriangleAlert className="h-3 w-3" />
         </span>
@@ -177,7 +178,7 @@ function GroupCard({
         </p>
         <p className="text-[10px] text-gray-400">
           {timeAgo(group.last_seen_at)}
-          {group.count > 1 && ` · ${group.count} marta`}
+          {group.count > 1 && tr(" · {{count}} marta", { count: group.count })}
         </p>
       </div>
     </button>
@@ -189,8 +190,8 @@ export function FacePickerDialog({
   onOpenChange,
   branchId,
   onSelect,
-  noBranchTitle = "Filial topilmadi",
-  noBranchHint = "Suratlar filial bo'yicha ajratiladi, lekin bu mehmonxonada filial yaratilmagan. Avval filial qo'shing.",
+  noBranchTitle = tr("Filial topilmadi"),
+  noBranchHint = tr("Suratlar filial bo'yicha ajratiladi, lekin bu mehmonxonada filial yaratilmagan. Avval filial qo'shing."),
 }: FacePickerDialogProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [chosenBranch, setChosenBranch] = useState<string>("")
@@ -239,7 +240,7 @@ export function FacePickerDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-4 w-4" />
-            Kameradan yuz tanlash
+            {tr("Kameradan yuz tanlash")}
           </DialogTitle>
         </DialogHeader>
 
@@ -257,7 +258,7 @@ export function FacePickerDialog({
                 Bandlovda u xonadan aniq bo'ladi va tanlov ko'rsatilmaydi. */}
             {!fixedBranch && (branches as Array<{ id: string }>).length > 1 && (
               <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-gray-600">Filial</label>
+                <label className="text-xs font-medium text-gray-600">{tr("Filial")}</label>
                 <select
                   className="h-9 flex-1 rounded-lg border border-gray-300 bg-white px-2 text-sm"
                   value={chosenBranch}
@@ -266,7 +267,7 @@ export function FacePickerDialog({
                     setSelectedKey(null)
                   }}
                 >
-                  <option value="">— tanlang —</option>
+                  <option value="">{tr("— tanlang —")}</option>
                   {(branches as Array<{ id: string; name: string }>).map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
@@ -278,8 +279,7 @@ export function FacePickerDialog({
 
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs text-gray-500">
-                Har bir karta — bitta odam. Bir necha marta o'tgan bo'lsa
-                suratlari birlashtirilgan va hammasi birga biriktiriladi.
+                {tr("Har bir karta — bitta odam. Bir necha marta o'tgan bo'lsa suratlari birlashtirilgan va hammasi birga biriktiriladi.")}
               </p>
               <Button
                 type="button"
@@ -291,17 +291,16 @@ export function FacePickerDialog({
                 <RefreshCw
                   className={cn("mr-1.5 h-3.5 w-3.5", isFetching && "animate-spin")}
                 />
-                Yangilash
+                {tr("Yangilash")}
               </Button>
             </div>
 
             {!effectiveBranch ? (
               <div className="flex h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 text-center">
                 <Camera className="h-7 w-7 text-gray-300" />
-                <p className="text-sm font-medium text-gray-600">Filialni tanlang</p>
+                <p className="text-sm font-medium text-gray-600">{tr("Filialni tanlang")}</p>
                 <p className="max-w-sm text-xs text-gray-400">
-                  Suratlar filial bo'yicha ajratiladi — boshqa filialning
-                  kameralaridan kelgan yuzlar bu yerda ko'rinmaydi.
+                  {tr("Suratlar filial bo'yicha ajratiladi — boshqa filialning kameralaridan kelgan yuzlar bu yerda ko'rinmaydi.")}
                 </p>
               </div>
             ) : isLoading ? (
@@ -310,23 +309,19 @@ export function FacePickerDialog({
               </div>
             ) : isError ? (
               <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                Suratlarni olishda xatolik. Kamera agenti ishlayaptimi va
-                kameralar filialga biriktirilganmi — tekshiring.
+                {tr("Suratlarni olishda xatolik. Kamera agenti ishlayaptimi va kameralar filialga biriktirilganmi — tekshiring.")}
               </div>
             ) : items.length === 0 ? (
               <div className="flex h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 text-center">
                 <Camera className="h-7 w-7 text-gray-300" />
                 <p className="text-sm font-medium text-gray-600">
-                  Bu filialda yangi yuz yo'q
+                  {tr("Bu filialda yangi yuz yo'q")}
                 </p>
                 {/* Sozlamalar sahifasi faqat administrator uchun, shuning
                     uchun qabulxona xodimiga u yerga borishni aytish foydasiz —
                     kimga murojaat qilishini aytamiz. */}
                 <p className="max-w-sm text-xs text-gray-400">
-                  Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda
-                  paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan
-                  bo'lishi mumkin; administratordan so'rang (Sozlamalar →
-                  Kameralar).
+                  {tr("Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan bo'lishi mumkin; administratordan so'rang (Sozlamalar → Kameralar).")}
                 </p>
               </div>
             ) : (
@@ -345,8 +340,7 @@ export function FacePickerDialog({
             {selected && selected.count > 1 && (
               <p className="flex items-center gap-1.5 text-xs text-gray-500">
                 <Layers className="h-3.5 w-3.5" />
-                {selected.count} ta surat biriktiriladi — bir nechtasidan
-                yig'ilgan shablon aniqroq ishlaydi.
+                {tr("{{count}} ta surat biriktiriladi — bir nechtasidan yig'ilgan shablon aniqroq ishlaydi.", { count: selected.count })}
               </p>
             )}
           </>
@@ -354,11 +348,11 @@ export function FacePickerDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Bekor qilish
+            {tr("Bekor qilish")}
           </Button>
           <Button type="button" onClick={confirm} disabled={!selected}>
             <UserCheck className="mr-2 h-4 w-4" />
-            Tanlash
+            {tr("Tanlash")}
           </Button>
         </DialogFooter>
       </DialogContent>

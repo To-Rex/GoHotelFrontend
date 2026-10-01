@@ -3,6 +3,7 @@ import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 /**
  * Navbar menyularining "kattaroq ko'rinishi" uchun umumiy oyna.
@@ -65,8 +66,8 @@ export function OverlayDialog({
             type="button"
             onClick={onClose}
             className="ml-auto rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Yopish"
-            aria-label="Yopish"
+            title={tr("Yopish")}
+            aria-label={tr("Yopish")}
           >
             <X size={18} />
           </button>

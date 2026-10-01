@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { panelError } from "../api/client"
 import { panelLogin } from "../api/panel"
+import { tr, trc } from "@/i18n"
 
 /**
  * Panel kirish sahifasi.
@@ -50,28 +51,28 @@ export function PanelLoginPage() {
             <ShieldCheck className="h-6 w-6 text-emerald-400" />
           </span>
           <h1 className="pt-2 text-lg font-bold text-slate-100">
-            Boshqaruv paneli
+            {tr("Boshqaruv paneli")}
           </h1>
           <p className="text-xs text-slate-400">
-            Tizim egasi uchun — barcha mehmonxonalar ustidan nazorat
+            {tr("Tizim egasi uchun — barcha mehmonxonalar ustidan nazorat")}
           </p>
         </div>
 
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-400">Pochta</label>
+            <label className="text-xs font-medium text-slate-400">{tr("Pochta")}</label>
             <Input
               type="email"
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-600"
-              placeholder="pochta@example.com"
+              placeholder={tr("pochta@example.com")}
               required
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-400">Parol</label>
+            <label className="text-xs font-medium text-slate-400">{tr("Parol")}</label>
             <Input
               type="password"
               autoComplete="current-password"
@@ -95,7 +96,7 @@ export function PanelLoginPage() {
           ) : (
             <Lock className="mr-2 h-4 w-4" />
           )}
-          Kirish
+          {trc("login", "Kirish")}
         </Button>
 
         <button
@@ -103,7 +104,7 @@ export function PanelLoginPage() {
           onClick={() => navigate("/login")}
           className="w-full text-center text-xs text-slate-500 hover:text-slate-300"
         >
-          Mehmonxona tizimiga qaytish
+          {tr("Mehmonxona tizimiga qaytish")}
         </button>
       </form>
     </div>

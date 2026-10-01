@@ -52,18 +52,19 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 
 const STATUS_LABELS: Record<string, string> = {
-  AVAILABLE: "Bo'sh",
-  RESERVED: "Band qilingan",
-  OCCUPIED: "Band",
-  CLEANING: "Tozalanmoqda",
-  MAINTENANCE: "Ta'mirda",
-  INSPECTION: "Tekshiruvda",
-  OUT_OF_SERVICE: "Xizmatdan tashqari",
+  AVAILABLE: tr("Bo'sh"),
+  RESERVED: tr("Band qilingan"),
+  OCCUPIED: tr("Band"),
+  CLEANING: tr("Tozalanmoqda"),
+  MAINTENANCE: tr("Ta'mirda"),
+  INSPECTION: tr("Tekshiruvda"),
+  OUT_OF_SERVICE: tr("Xizmatdan tashqari"),
 }
 
 const statusBadge: Record<string, string> = {
@@ -142,7 +143,7 @@ export const RoomsPage = () => {
 
   const floorMap = useMemo(() => {
     const m: Record<string, string> = {}
-    for (const f of floors) m[f.id] = f.name || `${f.floor_number}-qavat`
+    for (const f of floors) m[f.id] = f.name || tr("{{floor_number}}-qavat", { floor_number: f.floor_number })
     return m
   }, [floors])
 
@@ -267,7 +268,7 @@ export const RoomsPage = () => {
 
       const label =
         dayPart === todayIso
-          ? `bugun ${timePart}`
+          ? tr("bugun {{timePart}}", { timePart })
           : `${dayPart.slice(8, 10)}.${dayPart.slice(5, 7)} ${timePart}`
       const rank = res.status === "CHECKED_IN" ? 0 : 1
       const prev = result[res.room_id]
@@ -472,15 +473,15 @@ export const RoomsPage = () => {
 
   const onSubmit = async () => {
     if (!editing && !roomNumber.trim()) {
-      setErrorMsg("Xona raqamini kiriting")
+      setErrorMsg(tr("Xona raqamini kiriting"))
       return
     }
     if (!floorId) {
-      setErrorMsg("Qavatni tanlang")
+      setErrorMsg(tr("Qavatni tanlang"))
       return
     }
     if (!roomTypeId) {
-      setErrorMsg("Xona turini tanlang")
+      setErrorMsg(tr("Xona turini tanlang"))
       return
     }
     const price = Number(basePrice) || 0
@@ -498,7 +499,7 @@ export const RoomsPage = () => {
         })
       } else {
         if (!branchId) {
-          setErrorMsg("Filialni tanlang")
+          setErrorMsg(tr("Filialni tanlang"))
           return
         }
         const branch = branches.find((b) => b.id === branchId)
@@ -520,7 +521,7 @@ export const RoomsPage = () => {
   }
 
   const onDelete = async (r: Room) => {
-    if (!confirm(`${r.room_number}-xonani o'chirasizmi?`)) return
+    if (!confirm(tr("{{room_number}}-xonani o'chirasizmi?", { room_number: r.room_number }))) return
     try {
       await deleteMutation.mutateAsync({
         id: r.id,
@@ -573,7 +574,7 @@ export const RoomsPage = () => {
   }
 
   if (isError) {
-    return <div>Xatolik yuz berdi. Iltimos qayta urining.</div>
+    return <div>{tr("Xatolik yuz berdi. Iltimos qayta urining.")}</div>
   }
 
   /* Ta'mir/tekshiruv/xizmatdan tashqari xonaga bosilganda bron dialogi
@@ -599,12 +600,12 @@ export const RoomsPage = () => {
         </span>
         <p className="text-sm">
           {search.trim() || statusFilter
-            ? "Filtr bo'yicha xona topilmadi"
-            : "Hozircha xonalar yo'q"}
+            ? tr("Filtr bo'yicha xona topilmadi")
+            : tr("Hozircha xonalar yo'q")}
         </p>
         {canCreate && !search.trim() && !statusFilter && (
           <Button variant="outline" size="sm" className="gap-1.5" onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Xona qo'shish
+            <Plus className="h-4 w-4" />{" "}{tr("Xona qo'shish")}
           </Button>
         )}
       </div>
@@ -631,29 +632,29 @@ export const RoomsPage = () => {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-bold text-gray-900">
                     {floorId
-                      ? floorMap[floorId] || "Noma'lum qavat"
-                      : "Qavat belgilanmagan"}
+                      ? floorMap[floorId] || tr("Noma'lum qavat")
+                      : tr("Qavat belgilanmagan")}
                   </span>
                   <span className="block text-[11px] text-gray-500">
-                    {floorRooms.length} ta xona
+                    {tr("{{count}} ta xona", { count: floorRooms.length })}
                   </span>
                 </span>
                 {/* Bo'sh/band soni — yaqqol ko'rinadigan pill ko'rsatkichlar */}
                 <span className="flex flex-wrap items-center justify-end gap-1.5">
                   <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    {stats.available} bo'sh
+                    {tr("{{available}} bo'sh", { available: stats.available })}
                   </span>
                   {stats.busy > 0 && (
                     <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-bold text-red-600">
                       <span className="h-2 w-2 rounded-full bg-red-500" />
-                      {stats.busy} band
+                      {tr("{{busy}} band", { busy: stats.busy })}
                     </span>
                   )}
                   {stats.other > 0 && (
                     <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-sm font-bold text-gray-600">
                       <span className="h-2 w-2 rounded-full bg-gray-400" />
-                      {stats.other} boshqa
+                      {tr("{{other}} boshqa", { other: stats.other })}
                     </span>
                   )}
                 </span>
@@ -679,7 +680,7 @@ export const RoomsPage = () => {
                       }
                       title={
                         bookBlockFor(room) ||
-                        (canBook ? "Yangi bandlov" : undefined)
+                        (canBook ? tr("Yangi bandlov") : undefined)
                       }
                       className={cn(
                         "group relative rounded-xl border border-gray-200 bg-white p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md",
@@ -705,7 +706,7 @@ export const RoomsPage = () => {
                             setStatusError(null)
                             setStatusRoom(room)
                           }}
-                          title={canStatus ? "Holatni o'zgartirish" : undefined}
+                          title={canStatus ? tr("Holatni o'zgartirish") : undefined}
                           className={cn(
                             "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold",
                             statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
@@ -722,7 +723,7 @@ export const RoomsPage = () => {
                         </button>
                       </div>
                       <p className="mt-1 flex items-center gap-1 truncate text-xs text-gray-500">
-                        {typeMap[room.room_type_id] || "Turi belgilanmagan"}
+                        {typeMap[room.room_type_id] || tr("Turi belgilanmagan")}
                         {room.capacity ? (
                           <span className="inline-flex items-center gap-0.5 text-gray-400">
                             · <Users className="h-3 w-3" /> {room.capacity}
@@ -734,7 +735,7 @@ export const RoomsPage = () => {
                         freeAtByRoom[room.id] && (
                           <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-amber-600">
                             <Clock className="h-3 w-3" />
-                            Bo'shaydi: {freeAtByRoom[room.id].label}
+                            {tr("Bo'shaydi: {{label}}", { label: freeAtByRoom[room.id].label })}
                           </p>
                         )}
                       {/* Tozalash/ta'mirlash: qachondan beri va kim.
@@ -745,7 +746,7 @@ export const RoomsPage = () => {
                       <div className="mt-2.5 flex items-end justify-between">
                         <p className="text-sm font-bold tabular-nums text-gray-900">
                           {Number(room.base_price || 0).toLocaleString()}{" "}
-                          <span className="text-xs font-normal text-gray-400">So'm</span>
+                          <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
                         </p>
                         {(canEdit || canDelete || canSeeReservations) && (
                           /* Amallar: telefonda (hover yo'q) doim ko'rinadi,
@@ -754,7 +755,7 @@ export const RoomsPage = () => {
                             {canSeeReservations && (
                               <button
                                 type="button"
-                                title="Xona bandlovlari"
+                                title={tr("Xona bandlovlari")}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setReservationsRoom(room)
@@ -767,7 +768,7 @@ export const RoomsPage = () => {
                             {canEdit && (
                               <button
                                 type="button"
-                                title="Tahrirlash"
+                                title={tr("Tahrirlash")}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   openEdit(room)
@@ -780,7 +781,7 @@ export const RoomsPage = () => {
                             {canDelete && (
                               <button
                                 type="button"
-                                title="O'chirish"
+                                title={tr("O'chirish")}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   onDelete(room)
@@ -813,20 +814,19 @@ export const RoomsPage = () => {
             <DoorOpen className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Xonalar</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{tr("Xonalar")}</h1>
             <p className="text-sm text-gray-500">
-              Jami {rooms.length} ta xona ·{" "}
-              <span className="font-medium text-emerald-600">{freeCount} bo'sh</span>
+              {tr("Jami {{count}} ta xona ·", { count: rooms.length })}{" "}
+              <span className="font-medium text-emerald-600">{tr("{{freeCount}} bo'sh", { freeCount })}</span>
               {busyCount > 0 && (
                 <>
                   {" "}
-                  · <span className="font-medium text-red-500">{busyCount} band</span>
+                  · <span className="font-medium text-red-500">{tr("{{busyCount}} band", { busyCount })}</span>
                 </>
               )}
               {sortedRooms.length !== rooms.length && (
                 <span className="font-medium text-primary-700">
-                  {" "}
-                  · natija: {sortedRooms.length} ta
+                  {" "}{tr("· natija: {{count}} ta", { count: sortedRooms.length })}
                 </span>
               )}
             </p>
@@ -835,7 +835,7 @@ export const RoomsPage = () => {
         {canCreate && (
           <Button onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            Xona qo'shish
+            {tr("Xona qo'shish")}
           </Button>
         )}
       </div>
@@ -849,7 +849,7 @@ export const RoomsPage = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             className="pl-9"
-            placeholder="Xona raqami bo'yicha qidirish..."
+            placeholder={tr("Xona raqami bo'yicha qidirish...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -865,7 +865,7 @@ export const RoomsPage = () => {
                 : "border-gray-200 text-gray-600 hover:bg-gray-50"
             )}
           >
-            Barchasi ({rooms.length})
+            {tr("Barchasi ({{count}})", { count: rooms.length })}
           </button>
           {Object.entries(STATUS_LABELS)
             .filter(([value]) => statusCounts[value])
@@ -897,7 +897,7 @@ export const RoomsPage = () => {
           <button
             type="button"
             onClick={() => setViewMode("table")}
-            title="Jadval ko'rinishi"
+            title={tr("Jadval ko'rinishi")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
               viewMode === "table"
@@ -906,12 +906,12 @@ export const RoomsPage = () => {
             )}
           >
             <List className="h-4 w-4" />
-            Jadval
+            {tr("Jadval")}
           </button>
           <button
             type="button"
             onClick={() => setViewMode("grid")}
-            title="Grid ko'rinishi"
+            title={tr("Grid ko'rinishi")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
               viewMode === "grid"
@@ -920,7 +920,7 @@ export const RoomsPage = () => {
             )}
           >
             <LayoutGrid className="h-4 w-4" />
-            Grid
+            {tr("Grid")}
           </button>
         </div>
       </div>
@@ -937,13 +937,13 @@ export const RoomsPage = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Xona</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Turi</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Narxi</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Sig'imi</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Holati</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{tr("Xona")}</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{tr("Turi")}</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{tr("Narxi")}</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{tr("Sig'imi")}</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{tr("Holati")}</TableHead>
               {(canEdit || canDelete || canSeeReservations) && (
-                <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">Amallar</TableHead>
+                <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">{tr("Amallar")}</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -955,8 +955,8 @@ export const RoomsPage = () => {
                     <DoorOpen className="h-8 w-8" />
                     <p className="text-sm">
                       {search.trim() || statusFilter
-                        ? "Filtr bo'yicha xona topilmadi"
-                        : "Hozircha xonalar yo'q"}
+                        ? tr("Filtr bo'yicha xona topilmadi")
+                        : tr("Hozircha xonalar yo'q")}
                     </p>
                   </div>
                 </TableCell>
@@ -983,26 +983,26 @@ export const RoomsPage = () => {
                       />
                       <Layers className="h-3.5 w-3.5" />
                       {floorId
-                        ? floorMap[floorId] || "Noma'lum qavat"
-                        : "Qavat belgilanmagan"}
+                        ? floorMap[floorId] || tr("Noma'lum qavat")
+                        : tr("Qavat belgilanmagan")}
                       <span className="font-medium normal-case tracking-normal text-primary-400">
-                        · {floorRooms.length} ta xona
+                        {tr("· {{count}} ta xona", { count: floorRooms.length })}
                       </span>
                       <span className="ml-auto flex items-center gap-1.5 normal-case tracking-normal">
                         <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          {stats.available} bo'sh
+                          {tr("{{available}} bo'sh", { available: stats.available })}
                         </span>
                         {stats.busy > 0 && (
                           <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-bold text-red-600">
                             <span className="h-2 w-2 rounded-full bg-red-500" />
-                            {stats.busy} band
+                            {tr("{{busy}} band", { busy: stats.busy })}
                           </span>
                         )}
                         {stats.other > 0 && (
                           <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-sm font-bold text-gray-600">
                             <span className="h-2 w-2 rounded-full bg-gray-400" />
-                            {stats.other} boshqa
+                            {tr("{{other}} boshqa", { other: stats.other })}
                           </span>
                         )}
                       </span>
@@ -1018,7 +1018,7 @@ export const RoomsPage = () => {
                       : undefined
                   }
                   title={
-                    bookBlockFor(room) || (canBook ? "Yangi bandlov" : undefined)
+                    bookBlockFor(room) || (canBook ? tr("Yangi bandlov") : undefined)
                   }
                   className={cn(
                     "border-l-4",
@@ -1034,13 +1034,13 @@ export const RoomsPage = () => {
                   </TableCell>
                   <TableCell className="font-medium tabular-nums text-gray-900">
                     {Number(room.base_price || 0).toLocaleString()}{" "}
-                    <span className="text-xs font-normal text-gray-400">So'm</span>
+                    <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
                   </TableCell>
                   <TableCell>
                     {room.capacity ? (
                       <span className="inline-flex items-center gap-1.5 text-gray-600">
                         <Users className="h-3.5 w-3.5 text-gray-400" />
-                        {room.capacity} kishi
+                        {tr("{{capacity}} kishi", { capacity: room.capacity })}
                       </span>
                     ) : (
                       <span className="text-gray-300">—</span>
@@ -1055,7 +1055,7 @@ export const RoomsPage = () => {
                         setStatusError(null)
                         setStatusRoom(room)
                       }}
-                      title={canStatus ? "Holatni o'zgartirish" : undefined}
+                      title={canStatus ? tr("Holatni o'zgartirish") : undefined}
                       className={cn(
                         "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold",
                         statusBadge[room.current_status] || "bg-gray-100 text-gray-500",
@@ -1075,7 +1075,7 @@ export const RoomsPage = () => {
                       freeAtByRoom[room.id] && (
                         <p className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] font-medium text-amber-600">
                           <Clock className="h-3 w-3" />
-                          Bo'shaydi: {freeAtByRoom[room.id].label}
+                          {tr("Bo'shaydi: {{label}}", { label: freeAtByRoom[room.id].label })}
                         </p>
                       )}
                     {statusDetailByRoom[room.id] && (
@@ -1088,7 +1088,7 @@ export const RoomsPage = () => {
                         {canSeeReservations && (
                           <button
                             type="button"
-                            title="Xona bandlovlari"
+                            title={tr("Xona bandlovlari")}
                             onClick={(e) => {
                               e.stopPropagation()
                               setReservationsRoom(room)
@@ -1101,7 +1101,7 @@ export const RoomsPage = () => {
                         {canEdit && (
                           <button
                             type="button"
-                            title="Tahrirlash"
+                            title={tr("Tahrirlash")}
                             onClick={(e) => {
                               e.stopPropagation()
                               openEdit(room)
@@ -1114,7 +1114,7 @@ export const RoomsPage = () => {
                         {canDelete && (
                           <button
                             type="button"
-                            title="O'chirish"
+                            title={tr("O'chirish")}
                             onClick={(e) => {
                               e.stopPropagation()
                               onDelete(room)
@@ -1150,23 +1150,23 @@ export const RoomsPage = () => {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                 <DoorOpen className="h-4 w-4" />
               </span>
-              {editing ? `Xonani tahrirlash — ${editing.room_number}` : "Yangi xona"}
+              {editing ? tr("Xonani tahrirlash — {{room_number}}", { room_number: editing.room_number }) : tr("Yangi xona")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Xona raqami *</label>
+                <label className="text-xs font-medium text-gray-600">{tr("Xona raqami *")}</label>
                 <Input
                   value={roomNumber}
                   onChange={(e) => setRoomNumber(e.target.value)}
-                  placeholder="Masalan: 101"
+                  placeholder={tr("Masalan: 101")}
                   disabled={!!editing}
-                  title={editing ? "Xona raqamini o'zgartirib bo'lmaydi" : undefined}
+                  title={editing ? tr("Xona raqamini o'zgartirib bo'lmaydi") : undefined}
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Filial *</label>
+                <label className="text-xs font-medium text-gray-600">{tr("Filial *")}</label>
                 <select
                   className={selectClass}
                   value={branchId}
@@ -1176,7 +1176,7 @@ export const RoomsPage = () => {
                   }}
                   disabled={!!editing}
                 >
-                  <option value="">Filialni tanlang</option>
+                  <option value="">{tr("Filialni tanlang")}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
@@ -1187,22 +1187,22 @@ export const RoomsPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Qavat *</label>
+                <label className="text-xs font-medium text-gray-600">{tr("Qavat *")}</label>
                 <select
                   className={selectClass}
                   value={floorId}
                   onChange={(e) => setFloorId(e.target.value)}
                 >
-                  <option value="">Qavatni tanlang</option>
+                  <option value="">{tr("Qavatni tanlang")}</option>
                   {branchFloors.map((f) => (
                     <option key={f.id} value={f.id}>
-                      {f.name || `${f.floor_number}-qavat`}
+                      {f.name || tr("{{floor_number}}-qavat", { floor_number: String(f.floor_number) })}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Xona turi *</label>
+                <label className="text-xs font-medium text-gray-600">{tr("Xona turi *")}</label>
                 <select
                   className={selectClass}
                   value={roomTypeId}
@@ -1221,10 +1221,10 @@ export const RoomsPage = () => {
                     }
                   }}
                 >
-                  <option value="">Turni tanlang</option>
+                  <option value="">{tr("Turni tanlang")}</option>
                   {roomTypes.map((rt: any) => (
                     <option key={rt.id} value={rt.id}>
-                      {rt.name} ({Number(rt.base_price || 0).toLocaleString()} So'm)
+                      {rt.name}{" "}{tr("({{Number}} So'm)", { Number: Number(rt.base_price || 0).toLocaleString() })}
                     </option>
                   ))}
                 </select>
@@ -1232,17 +1232,17 @@ export const RoomsPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Narx (So'm)</label>
+                <label className="text-xs font-medium text-gray-600">{tr("Narx (So'm)")}</label>
                 <Input
                   type="number"
                   min={0}
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
-                  placeholder="Tur narxi ishlatiladi"
+                  placeholder={tr("Tur narxi ishlatiladi")}
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Sig'im (kishi)</label>
+                <label className="text-xs font-medium text-gray-600">{tr("Sig'im (kishi)")}</label>
                 <Input
                   type="number"
                   min={1}
@@ -1252,11 +1252,11 @@ export const RoomsPage = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Izoh</label>
+              <label className="text-xs font-medium text-gray-600">{tr("Izoh")}</label>
               <Input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Izoh..."
+                placeholder={tr("Izoh...")}
               />
             </div>
             {errorMsg && (
@@ -1267,11 +1267,11 @@ export const RoomsPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={onSubmit} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editing ? "Saqlash" : "Qo'shish"}
+              {editing ? tr("Saqlash") : tr("Qo'shish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1285,7 +1285,7 @@ export const RoomsPage = () => {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                 <DoorOpen className="h-4 w-4" />
               </span>
-              Xona holati — {statusRoom?.room_number}
+              {tr("Xona holati —")}{" "}{statusRoom?.room_number}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">

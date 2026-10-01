@@ -17,27 +17,28 @@ import { apiErrorMessage } from "@/lib/apiError"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr, trc } from "@/i18n"
 
 const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 
 // Modul nomlarini o'zbekchaga o'girish (backend `module` maydoni)
 export const MODULE_LABELS: Record<string, string> = {
-  reservation: "Bronlar",
-  guest: "Mehmonlar",
-  room: "Xonalar",
-  housekeeping: "Xo'jalik ishlari",
-  finance: "Moliya",
-  report: "Hisobotlar",
-  employee: "Xodimlar",
-  service: "Xizmatlar",
-  hotel: "Mehmonxona",
-  branch: "Filiallar",
-  floor: "Qavatlar",
-  audit: "Audit",
-  file: "Fayllar",
-  expense: "Xarajatlar",
-  feedback: "Talab, taklif va shikoyatlar",
+  reservation: tr("Bronlar"),
+  guest: tr("Mehmonlar"),
+  room: tr("Xonalar"),
+  housekeeping: tr("Xo'jalik ishlari"),
+  finance: tr("Moliya"),
+  report: tr("Hisobotlar"),
+  employee: tr("Xodimlar"),
+  service: tr("Xizmatlar"),
+  hotel: tr("Mehmonxona"),
+  branch: tr("Filiallar"),
+  floor: tr("Qavatlar"),
+  audit: tr("Audit"),
+  file: tr("Fayllar"),
+  expense: tr("Xarajatlar"),
+  feedback: tr("Talab, taklif va shikoyatlar"),
 }
 
 // Menejer (EMPLOYEE, permission.assign ruxsati bilan) faqat shu shablon
@@ -50,112 +51,112 @@ const HOUSEKEEPER_TEMPLATE = PERMISSION_TEMPLATES.find((t) => t.id === "housekee
 export const UZ_PERMISSION_LABELS: Record<string, string> = {
   // Talab, taklif va shikoyatlar — qabulxona/menejer bu kodlarsiz ham kiradi,
   // kodlar boshqa rollarga (masalan buxgalter) alohida berish uchun
-  "feedback.view": "Murojaatlarni ko'rish",
-  "feedback.create": "Murojaat kiritish",
-  "feedback.manage": "Murojaatlarni boshqarish (javob, holat, o'chirish)",
-  "reservation.create": "Bron yaratish",
-  "reservation.update": "Bronni tahrirlash",
-  "reservation.view": "Bronlarni ko'rish",
-  "reservation.cancel": "Bronni bekor qilish",
-  "reservation.delete": "Bronni o'chirish",
-  "guest.create": "Mehmon qo'shish",
-  "guest.update": "Mehmonni tahrirlash",
-  "guest.view": "Mehmonlarni ko'rish",
-  "guest.delete": "Mehmonni o'chirish",
-  "guest.checkin": "Mehmonni kirish qilish",
-  "guest.checkout": "Mehmonni chiqarish",
-  "room.view": "Xonalarni ko'rish",
-  "room.create": "Xona qo'shish",
-  "room.update": "Xonani tahrirlash",
-  "room.delete": "Xonani o'chirish",
-  "room.manage": "Xonalarni to'liq boshqarish",
-  "room.status.update": "Xona holatini o'zgartirish",
-  "room_type.create": "Xona turi qo'shish",
-  "room_type.update": "Xona turini tahrirlash",
-  "room_type.delete": "Xona turini o'chirish",
-  "floor.create": "Qavat qo'shish",
-  "floor.update": "Qavatni tahrirlash",
-  "floor.delete": "Qavatni o'chirish",
-  "housekeeping.task.create": "Vazifa yaratish",
-  "housekeeping.task.update": "Vazifani yangilash",
-  "housekeeping.task.assign": "Vazifaga mas'ul biriktirish",
-  "housekeeping.task.view": "Vazifalarni ko'rish",
-  "housekeeping.cleaning.start": "Tozalashni boshlash",
-  "housekeeping.cleaning.complete": "Tozalashni yakunlash",
-  "finance.view": "Moliyani ko'rish",
-  "finance.invoice.create": "Hisob-faktura yaratish",
-  "finance.invoice.view": "Hisob-fakturalarni ko'rish",
-  "finance.payment.create": "To'lov qabul qilish",
-  "finance.payment.view": "To'lovlarni ko'rish",
-  "report.view": "Hisobotlarni ko'rish",
-  "report.generate": "Hisobot shakllantirish",
-  "employee.view": "Xodimlarni ko'rish",
-  "employee.create": "Xodim qo'shish",
-  "employee.update": "Xodimni tahrirlash",
-  "employee.delete": "Xodimni o'chirish",
-  "employee.manage": "Xodimlarni to'liq boshqarish",
-  "permission.view": "Ruxsatlarni ko'rish",
-  "permission.assign": "Ruxsat biriktirish",
-  "service.view": "Xizmatlarni ko'rish",
-  "service.create": "Xizmat qo'shish",
-  "service.update": "Xizmatni tahrirlash",
-  "service.delete": "Xizmatni o'chirish",
-  "service.manage": "Xizmatlarni to'liq boshqarish",
-  "hotel_service.manage": "Mehmonxona xizmatlarini boshqarish",
-  "expense.view": "Xarajatlarni ko'rish",
-  "expense.create": "Xarajat kiritish",
-  "expense.delete": "Xarajatni o'chirish",
-  "file.upload": "Fayl yuklash",
-  "file.delete": "Faylni o'chirish",
-  "file.view": "Fayllarni ko'rish",
-  "audit.view": "Audit loglarini ko'rish",
-  "hotel.view": "Mehmonxonani ko'rish",
-  "hotel.update": "Mehmonxonani tahrirlash",
-  "branch.view": "Filiallarni ko'rish",
-  "branch.update": "Filialni tahrirlash",
+  "feedback.view": tr("Murojaatlarni ko'rish"),
+  "feedback.create": tr("Murojaat kiritish"),
+  "feedback.manage": tr("Murojaatlarni boshqarish (javob, holat, o'chirish)"),
+  "reservation.create": tr("Bron yaratish"),
+  "reservation.update": tr("Bronni tahrirlash"),
+  "reservation.view": tr("Bronlarni ko'rish"),
+  "reservation.cancel": trc("perm", "Bronni bekor qilish"),
+  "reservation.delete": tr("Bronni o'chirish"),
+  "guest.create": trc("perm", "Mehmon qo'shish"),
+  "guest.update": tr("Mehmonni tahrirlash"),
+  "guest.view": tr("Mehmonlarni ko'rish"),
+  "guest.delete": tr("Mehmonni o'chirish"),
+  "guest.checkin": tr("Mehmonni kirish qilish"),
+  "guest.checkout": tr("Mehmonni chiqarish"),
+  "room.view": tr("Xonalarni ko'rish"),
+  "room.create": trc("perm", "Xona qo'shish"),
+  "room.update": tr("Xonani tahrirlash"),
+  "room.delete": tr("Xonani o'chirish"),
+  "room.manage": tr("Xonalarni to'liq boshqarish"),
+  "room.status.update": tr("Xona holatini o'zgartirish"),
+  "room_type.create": tr("Xona turi qo'shish"),
+  "room_type.update": tr("Xona turini tahrirlash"),
+  "room_type.delete": tr("Xona turini o'chirish"),
+  "floor.create": trc("perm", "Qavat qo'shish"),
+  "floor.update": tr("Qavatni tahrirlash"),
+  "floor.delete": tr("Qavatni o'chirish"),
+  "housekeeping.task.create": tr("Vazifa yaratish"),
+  "housekeeping.task.update": tr("Vazifani yangilash"),
+  "housekeeping.task.assign": tr("Vazifaga mas'ul biriktirish"),
+  "housekeeping.task.view": tr("Vazifalarni ko'rish"),
+  "housekeeping.cleaning.start": tr("Tozalashni boshlash"),
+  "housekeeping.cleaning.complete": tr("Tozalashni yakunlash"),
+  "finance.view": tr("Moliyani ko'rish"),
+  "finance.invoice.create": tr("Hisob-faktura yaratish"),
+  "finance.invoice.view": tr("Hisob-fakturalarni ko'rish"),
+  "finance.payment.create": tr("To'lov qabul qilish"),
+  "finance.payment.view": tr("To'lovlarni ko'rish"),
+  "report.view": tr("Hisobotlarni ko'rish"),
+  "report.generate": tr("Hisobot shakllantirish"),
+  "employee.view": tr("Xodimlarni ko'rish"),
+  "employee.create": trc("perm", "Xodim qo'shish"),
+  "employee.update": tr("Xodimni tahrirlash"),
+  "employee.delete": tr("Xodimni o'chirish"),
+  "employee.manage": tr("Xodimlarni to'liq boshqarish"),
+  "permission.view": tr("Ruxsatlarni ko'rish"),
+  "permission.assign": tr("Ruxsat biriktirish"),
+  "service.view": tr("Xizmatlarni ko'rish"),
+  "service.create": tr("Xizmat qo'shish"),
+  "service.update": tr("Xizmatni tahrirlash"),
+  "service.delete": tr("Xizmatni o'chirish"),
+  "service.manage": tr("Xizmatlarni to'liq boshqarish"),
+  "hotel_service.manage": tr("Mehmonxona xizmatlarini boshqarish"),
+  "expense.view": tr("Xarajatlarni ko'rish"),
+  "expense.create": tr("Xarajat kiritish"),
+  "expense.delete": tr("Xarajatni o'chirish"),
+  "file.upload": tr("Fayl yuklash"),
+  "file.delete": tr("Faylni o'chirish"),
+  "file.view": tr("Fayllarni ko'rish"),
+  "audit.view": tr("Audit loglarini ko'rish"),
+  "hotel.view": tr("Mehmonxonani ko'rish"),
+  "hotel.update": tr("Mehmonxonani tahrirlash"),
+  "branch.view": tr("Filiallarni ko'rish"),
+  "branch.update": tr("Filialni tahrirlash"),
 }
 
 // Lug'atda bo'lmagan kodlar uchun avtomatik o'zbekcha nom yasash
 const UZ_ACTIONS: Record<string, string> = {
-  view: "ko'rish",
-  create: "yaratish",
-  update: "tahrirlash",
-  delete: "o'chirish",
-  manage: "boshqarish",
-  assign: "biriktirish",
-  cancel: "bekor qilish",
-  upload: "yuklash",
-  download: "yuklab olish",
-  start: "boshlash",
-  complete: "yakunlash",
-  generate: "shakllantirish",
-  export: "eksport qilish",
+  view: tr("ko'rish"),
+  create: tr("yaratish"),
+  update: tr("tahrirlash"),
+  delete: tr("o'chirish"),
+  manage: tr("boshqarish"),
+  assign: tr("biriktirish"),
+  cancel: tr("bekor qilish"),
+  upload: tr("yuklash"),
+  download: tr("yuklab olish"),
+  start: tr("boshlash"),
+  complete: tr("yakunlash"),
+  generate: tr("shakllantirish"),
+  export: tr("eksport qilish"),
 }
 const UZ_SUBJECTS: Record<string, string> = {
-  reservation: "Bron",
-  guest: "Mehmon",
-  room: "Xona",
-  room_type: "Xona turi",
-  floor: "Qavat",
-  housekeeping: "Xo'jalik",
-  task: "vazifa",
-  cleaning: "tozalash",
-  finance: "Moliya",
-  invoice: "hisob-faktura",
-  payment: "to'lov",
-  report: "Hisobot",
-  employee: "Xodim",
-  permission: "Ruxsat",
-  service: "Xizmat",
-  hotel: "Mehmonxona",
-  hotel_service: "Mehmonxona xizmati",
-  branch: "Filial",
-  audit: "Audit",
-  file: "Fayl",
-  expense: "Xarajat",
-  feedback: "Murojaat",
-  status: "holat",
-  amenity: "Qulaylik",
+  reservation: tr("Bron"),
+  guest: tr("Mehmon"),
+  room: tr("Xona"),
+  room_type: tr("Xona turi"),
+  floor: tr("Qavat"),
+  housekeeping: tr("Xo'jalik"),
+  task: tr("vazifa"),
+  cleaning: tr("tozalash"),
+  finance: tr("Moliya"),
+  invoice: tr("hisob-faktura"),
+  payment: tr("to'lov"),
+  report: tr("Hisobot"),
+  employee: tr("Xodim"),
+  permission: tr("Ruxsat"),
+  service: tr("Xizmat"),
+  hotel: tr("Mehmonxona"),
+  hotel_service: tr("Mehmonxona xizmati"),
+  branch: tr("Filial"),
+  audit: tr("Audit"),
+  file: tr("Fayl"),
+  expense: tr("Xarajat"),
+  feedback: tr("Murojaat"),
+  status: tr("holat"),
+  amenity: tr("Qulaylik"),
 }
 
 export function uzPermissionLabel(code: string, fallback: string): string {
@@ -224,7 +225,9 @@ export const PermissionsPage = () => {
   const grouped = useMemo(() => {
     const map: Record<string, Permission[]> = {}
     for (const p of allPermissions) {
-      const key = p.module || "boshqa"
+      // Guruh kaliti xom qoladi (saralash tildan qat'i nazar bir xil);
+      // ekranda tr(module) — "boshqa" lug'atga i18n:keys orqali kiradi
+      const key = p.module || /* i18n:keys */ "boshqa"
       if (!map[key]) map[key] = []
       map[key].push(p)
     }
@@ -321,7 +324,7 @@ export const PermissionsPage = () => {
         currentIds: assignedIds,
       })
       setDraft(null)
-      setSuccessMsg("Ruxsatlar saqlandi. Xodim qayta kirganda kuchga kiradi.")
+      setSuccessMsg(tr("Ruxsatlar saqlandi. Xodim qayta kirganda kuchga kiradi."))
     } catch (e) {
       setErrorMsg(apiErrorMessage(e))
     }
@@ -330,7 +333,7 @@ export const PermissionsPage = () => {
   if (employeesLoading || permsLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Ruxsatnomalar</h1>
+        <h1 className="text-2xl font-bold">{tr("Ruxsatnomalar")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -345,9 +348,9 @@ export const PermissionsPage = () => {
             <ShieldCheck className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Ruxsatnomalar</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{tr("Ruxsatnomalar")}</h1>
             <p className="text-sm text-gray-500">
-              Xodimlarga tizim bo'limlari bo'yicha ruxsatlar berish
+              {tr("Xodimlarga tizim bo'limlari bo'yicha ruxsatlar berish")}
             </p>
           </div>
         </div>
@@ -356,20 +359,20 @@ export const PermissionsPage = () => {
             {setPermsMutation.isPending && (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             )}
-            Saqlash
+            {tr("Saqlash")}
           </Button>
         )}
       </div>
 
       {employeeUsers.length === 0 ? (
         <div className="rounded-md border py-12 text-center text-sm text-gray-400">
-          Xodimlar topilmadi. Avval "Xodimlar" bo'limida xodim qo'shing.
+          {tr("Xodimlar topilmadi. Avval \"Xodimlar\" bo'limida xodim qo'shing.")}
         </div>
       ) : (
         <>
           <div className="flex flex-wrap items-end gap-4">
             <div className="max-w-sm flex-1 min-w-[220px] space-y-1">
-              <label className="text-sm font-medium">Xodim</label>
+              <label className="text-sm font-medium">{tr("Xodim")}</label>
               <select
                 className={selectClass}
                 value={selectedId}
@@ -385,15 +388,15 @@ export const PermissionsPage = () => {
             {canAssign && isAdmin && (
               <div className="flex gap-2 pb-0.5">
                 <Button variant="outline" size="sm" onClick={selectAll}>
-                  Hammasini tanlash
+                  {tr("Hammasini tanlash")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={clearAll}>
-                  Tozalash
+                  {trc("clear", "Tozalash")}
                 </Button>
               </div>
             )}
             <div className="pb-1.5 text-sm text-gray-500">
-              Tanlangan: <span className="font-semibold">{selected.length}</span> /{" "}
+              {tr("Tanlangan:")}{" "}<span className="font-semibold">{selected.length}</span> /{" "}
               {allPermissions.length}
               {selected.length > 0 && (
                 <span
@@ -404,7 +407,7 @@ export const PermissionsPage = () => {
                       : "bg-gray-100 text-gray-500"
                   )}
                 >
-                  {activeTemplate ? activeTemplate.name : "Maxsus tanlov"}
+                  {activeTemplate ? activeTemplate.name : tr("Maxsus tanlov")}
                 </span>
               )}
             </div>
@@ -413,15 +416,13 @@ export const PermissionsPage = () => {
           {/* Menejer uchun cheklov haqida eslatma */}
           {canAssign && !isAdmin && (
             <div className="rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-700">
-              Siz menejer sifatida faqat «Farrosh» roli doirasidagi ruxsatlarni
-              bera olasiz yoki olib tashlay olasiz. Boshqa ruxsatlarni faqat
-              administrator boshqaradi.
+              {tr("Siz menejer sifatida faqat «Farrosh» roli doirasidagi ruxsatlarni bera olasiz yoki olib tashlay olasiz. Boshqa ruxsatlarni faqat administrator boshqaradi.")}
             </div>
           )}
 
           {/* Rol shablonlari — bir bosishda tayyor ruxsatlar to'plami */}
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-gray-700">Rol shablonlari</p>
+            <p className="text-sm font-semibold text-gray-700">{tr("Rol shablonlari")}</p>
             <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
               {visibleTemplates.map(({ template, ids }) => {
                 const Icon = template.icon
@@ -456,7 +457,7 @@ export const PermissionsPage = () => {
                         {template.description}
                       </span>
                       <span className="mt-1 block text-[11px] text-gray-400">
-                        {ids.length} ta ruxsat
+                        {tr("{{count}} ta ruxsat", { count: ids.length })}
                       </span>
                     </span>
                   </button>
@@ -501,7 +502,7 @@ export const PermissionsPage = () => {
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4 text-primary-600" />
                         <span className="text-sm font-semibold">
-                          {MODULE_LABELS[module] || module}
+                          {MODULE_LABELS[module] || tr(module)}
                         </span>
                         <span className="text-xs text-gray-400">
                           {selectedCount}/{perms.length}
@@ -514,8 +515,8 @@ export const PermissionsPage = () => {
                           className="text-xs font-medium text-primary-700 hover:text-primary-800"
                         >
                           {editablePerms.every((p) => selected.includes(p.id))
-                            ? "Bekor qilish"
-                            : "Hammasi"}
+                            ? trc("clear", "Bekor qilish")
+                            : tr("Hammasi")}
                         </button>
                       )}
                     </div>
@@ -527,7 +528,7 @@ export const PermissionsPage = () => {
                             key={p.id}
                             title={
                               canAssign && !editable
-                                ? "Bu ruxsatni faqat administrator o'zgartira oladi"
+                                ? tr("Bu ruxsatni faqat administrator o'zgartira oladi")
                                 : undefined
                             }
                             className={cn(

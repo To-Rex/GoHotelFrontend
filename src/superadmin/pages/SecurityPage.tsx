@@ -11,6 +11,7 @@ import {
   PanelInput,
   PanelNotice,
 } from "../components/ui"
+import { tr } from "@/i18n"
 
 /**
  * O'z parolini almashtirish.
@@ -31,7 +32,7 @@ export function SecurityPage() {
     setError(null)
     setNotice(null)
     if (next !== repeat) {
-      setError("Yangi parollar bir xil emas")
+      setError(tr("Yangi parollar bir xil emas"))
       return
     }
     try {
@@ -39,7 +40,7 @@ export function SecurityPage() {
       setCurrent("")
       setNext("")
       setRepeat("")
-      setNotice("Parol almashtirildi. Keyingi kirishda yangisini ishlating.")
+      setNotice(tr("Parol almashtirildi. Keyingi kirishda yangisini ishlating."))
     } catch (e) {
       setError(panelError(e))
     }
@@ -47,19 +48,19 @@ export function SecurityPage() {
 
   return (
     <div className="max-w-lg">
-      <PanelHeading title="Xavfsizlik" subtitle="Kirish paroli va push kaliti" />
+      <PanelHeading title={tr("Xavfsizlik")} subtitle={tr("Kirish paroli va push kaliti")} />
 
       <PanelCard>
         <form onSubmit={submit} className="space-y-3">
           <div className="flex items-center gap-2 pb-1">
             <KeyRound className="h-4 w-4 text-slate-500" />
             <span className="text-sm font-semibold text-slate-200">
-              Parolni almashtirish
+              {tr("Parolni almashtirish")}
             </span>
           </div>
 
           <PanelInput
-            label="Joriy parol"
+            label={tr("Joriy parol")}
             type="password"
             autoComplete="current-password"
             value={current}
@@ -67,7 +68,7 @@ export function SecurityPage() {
             required
           />
           <PanelInput
-            label="Yangi parol"
+            label={tr("Yangi parol")}
             type="password"
             autoComplete="new-password"
             value={next}
@@ -76,7 +77,7 @@ export function SecurityPage() {
             required
           />
           <PanelInput
-            label="Yangi parolni takrorlang"
+            label={tr("Yangi parolni takrorlang")}
             type="password"
             autoComplete="new-password"
             value={repeat}
@@ -90,7 +91,7 @@ export function SecurityPage() {
 
           <PanelButton type="submit" disabled={change.isPending}>
             {change.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Saqlash
+            {tr("Saqlash")}
           </PanelButton>
         </form>
       </PanelCard>
@@ -100,17 +101,13 @@ export function SecurityPage() {
           <ShieldCheck className="h-5 w-5 flex-shrink-0 text-emerald-400" />
           <div className="space-y-1 text-xs leading-relaxed text-slate-400">
             <p className="font-medium text-slate-300">
-              Kirish ma'lumoti qanday saqlanadi
+              {tr("Kirish ma'lumoti qanday saqlanadi")}
             </p>
             <p>
-              Tizim egasining pochtasi kodda ochiq matnda emas — faqat
-              SHA-256 yig'indisi turadi, ya'ni uni kodni o'qib bilib
-              bo'lmaydi. Parol bcrypt bilan hashlangan va undan asl parolni
-              tiklab bo'lmaydi.
+              {tr("Tizim egasining pochtasi kodda ochiq matnda emas — faqat SHA-256 yig'indisi turadi, ya'ni uni kodni o'qib bilib bo'lmaydi. Parol bcrypt bilan hashlangan va undan asl parolni tiklab bo'lmaydi.")}
             </p>
             <p>
-              Parolni shu yerda almashtirsangiz yangi hash bazaga yoziladi va
-              koddagi boshlang'ich qiymat boshqa ishlatilmaydi.
+              {tr("Parolni shu yerda almashtirsangiz yangi hash bazaga yoziladi va koddagi boshlang'ich qiymat boshqa ishlatilmaydi.")}
             </p>
           </div>
         </div>

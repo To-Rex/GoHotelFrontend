@@ -32,6 +32,8 @@ import {
   faceErrorMessage,
 } from "@/features/auth/api/face";
 import { FaceCameraDialog } from "@/features/auth/components/FaceCameraDialog";
+import { tr, trc } from "@/i18n";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 
 /**
  * Kirish sahifasi — landing bilan bir xil uslubda: ikki tabiat sahnasi
@@ -41,8 +43,8 @@ import { FaceCameraDialog } from "@/features/auth/components/FaceCameraDialog";
  */
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Foydalanuvchi nomi kiritilishi shart"),
-  password: z.string().min(4, "Parol kamida 4 ta belgidan iborat bo'lishi kerak"),
+  username: z.string().min(1, tr("Foydalanuvchi nomi kiritilishi shart")),
+  password: z.string().min(4, tr("Parol kamida 4 ta belgidan iborat bo'lishi kerak")),
 });
 
 // Tungi osmon yulduzlari (foizli koordinatalar)
@@ -108,9 +110,9 @@ function Cloud({
 
 export const LoginPage = () => {
   useSeo({
-    title: "Kirish — GoHotel | Mehmonxona boshqaruv tizimi",
+    title: tr("Kirish — GoHotel | Mehmonxona boshqaruv tizimi"),
     description:
-      "GoHotel tizimiga kirish: mehmonxonangiz bandlovlari, kassa-smena, ombor va hisobotlarini bitta oynada boshqaring.",
+      tr("GoHotel tizimiga kirish: mehmonxonangiz bandlovlari, kassa-smena, ombor va hisobotlarini bitta oynada boshqaring."),
     canonicalPath: "/login",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -155,7 +157,7 @@ export const LoginPage = () => {
   };
 
   const handleFaceCapture = async (photo: Blob): Promise<string | null> => {
-    if (!faceToken) return "Kirish seansi tugadi — qaytadan urinib ko'ring";
+    if (!faceToken) return tr("Kirish seansi tugadi — qaytadan urinib ko'ring");
     try {
       await finishLogin(await verifyFaceLogin(faceToken, photo));
       return null;
@@ -172,7 +174,7 @@ export const LoginPage = () => {
     if (!open) {
       setFaceToken(null);
       setError(
-        "Yuz tekshiruvi tugallanmadi. Kirish uchun uni o'tashingiz kerak."
+        tr("Yuz tekshiruvi tugallanmadi. Kirish uchun uni o'tashingiz kerak.")
       );
     }
   };
@@ -211,7 +213,7 @@ export const LoginPage = () => {
           return;
         }
         await finishLogin(
-          await loginWithoutCamera(data.face_token, "qurilmada kamera topilmadi")
+          await loginWithoutCamera(data.face_token, /* i18n:skip — serverga yoziladigan sabab */ "qurilmada kamera topilmadi")
         );
         return;
       }
@@ -232,7 +234,7 @@ export const LoginPage = () => {
           navigate("/panel", { replace: true });
           return;
         }
-        setError("Login yoki parol noto'g'ri. Tekshirib, qayta urinib ko'ring.");
+        setError(tr("Login yoki parol noto'g'ri. Tekshirib, qayta urinib ko'ring."));
       } else if (err?.response?.status === 403) {
         /* Qurilma tasdiqlanmagan bo'lsa — alohida sahifaga. Login
            formasidagi qizil qator yetarli emasdi: xodim parolni to'g'ri
@@ -260,7 +262,7 @@ export const LoginPage = () => {
         }
         setError(apiErrorMessage(err));
       } else if (!err?.response) {
-        setError("Server bilan aloqa yo'q. Internet aloqasini tekshiring.");
+        setError(tr("Server bilan aloqa yo'q. Internet aloqasini tekshiring."));
       } else {
         setError(apiErrorMessage(err));
       }
@@ -357,12 +359,14 @@ export const LoginPage = () => {
           )}
         >
           <ArrowLeft size={15} />
-          Bosh sahifa
+          {tr("Bosh sahifa")}
         </Link>
+        <div className="flex items-center gap-2.5">
+        <LanguageSwitcher scene={night ? "night" : "day"} />
         <button
           type="button"
           onClick={() => setNight((v) => !v)}
-          title={night ? "Kun sahnasiga o'tish" : "Tun sahnasiga o'tish"}
+          title={night ? tr("Kun sahnasiga o'tish") : tr("Tun sahnasiga o'tish")}
           className={cn(
             "relative flex h-9 w-[68px] items-center rounded-full border transition-colors duration-500",
             night ? "border-white/15 bg-white/10" : "border-orange-900/15 bg-white/80"
@@ -379,6 +383,7 @@ export const LoginPage = () => {
             {night ? <Moon size={15} /> : <Sun size={15} />}
           </span>
         </button>
+        </div>
       </div>
 
       {/* ============ KIRISH KARTASI ============ */}
@@ -407,7 +412,7 @@ export const LoginPage = () => {
                 night ? "text-zinc-400" : "text-zinc-600"
               )}
             >
-              Mehmonxona boshqaruv tizimiga xush kelibsiz
+              {tr("Mehmonxona boshqaruv tizimiga xush kelibsiz")}
             </p>
           </div>
         </div>
@@ -420,9 +425,9 @@ export const LoginPage = () => {
           )}
         >
           <div className="mb-5">
-            <h2 className="text-lg font-semibold tracking-tight">Tizimga kirish</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{tr("Tizimga kirish")}</h2>
             <p className="mt-0.5 text-sm text-zinc-500">
-              Hisob ma'lumotlaringizni kiriting
+              {tr("Hisob ma'lumotlaringizni kiriting")}
             </p>
           </div>
 
@@ -434,7 +439,7 @@ export const LoginPage = () => {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-zinc-700">Foydalanuvchi nomi</FormLabel>
+                    <FormLabel className="text-zinc-700">{tr("Foydalanuvchi nomi")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <User
@@ -442,7 +447,7 @@ export const LoginPage = () => {
                           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
                         />
                         <Input
-                          placeholder="admin"
+                          placeholder={tr("admin")}
                           autoFocus
                           autoComplete="username"
                           className="h-11 border-zinc-200 bg-white pl-9 text-zinc-900 placeholder:text-zinc-400 transition-shadow focus-visible:shadow-md"
@@ -466,7 +471,7 @@ export const LoginPage = () => {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-zinc-700">Parol</FormLabel>
+                    <FormLabel className="text-zinc-700">{tr("Parol")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock
@@ -498,7 +503,7 @@ export const LoginPage = () => {
                           tabIndex={-1}
                           onClick={() => setShowPassword((v) => !v)}
                           className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-400 transition-colors hover:text-zinc-700"
-                          aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                          aria-label={showPassword ? tr("Parolni yashirish") : tr("Parolni ko'rsatish")}
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -507,7 +512,7 @@ export const LoginPage = () => {
                     {capsOn && (
                       <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
                         <AlertCircle size={13} />
-                        Caps Lock yoqiq — parol katta harflarda yozilmoqda
+                        {tr("Caps Lock yoqiq — parol katta harflarda yozilmoqda")}
                       </p>
                     )}
                     <FormMessage />
@@ -538,10 +543,10 @@ export const LoginPage = () => {
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <Loader2 size={18} className="animate-spin" />
-                    Kirilmoqda...
+                    {tr("Kirilmoqda...")}
                   </span>
                 ) : (
-                  "Kirish"
+                  trc("login", "Kirish")
                 )}
               </Button>
 
@@ -557,9 +562,9 @@ export const LoginPage = () => {
         <FaceCameraDialog
           open={faceOpen}
           onOpenChange={closeFaceStep}
-          title="Yuzni tasdiqlang"
-          actionLabel="Bekor qilish"
-          hint="Ikkinchi bosqich: yuzingizni oval ramkaga joylang. Bu hisobga faqat uning egasi kira oladi."
+          title={tr("Yuzni tasdiqlang")}
+          actionLabel={tr("Bekor qilish")}
+          hint={tr("Ikkinchi bosqich: yuzingizni oval ramkaga joylang. Bu hisobga faqat uning egasi kira oladi.")}
           auto
           onCapture={handleFaceCapture}
         />
@@ -570,7 +575,7 @@ export const LoginPage = () => {
             night ? "text-zinc-500" : "text-zinc-500"
           )}
         >
-          © {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi
+          {tr("© {{getFullYear}} GoHotel — mehmonxona boshqaruv tizimi", { getFullYear: new Date().getFullYear() })}
         </p>
       </div>
     </div>

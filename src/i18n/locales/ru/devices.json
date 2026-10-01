@@ -1,0 +1,17 @@
+{
+  "Kutmoqda": "Ожидает",
+  "device::Tasdiqlangan": "Одобрено",
+  "Taqiqlangan": "Заблокировано",
+  "Xodimlar faqat tasdiqlangan qurilmadan kira oladi. Yangi qurilmadan urinish shu ro'yxatga tushadi va tasdiqni kutadi. Administrator bu tekshiruvdan ozod — u istalgan qurilmadan login, parol va yuz bilan kira oladi.": "Сотрудники могут входить только с одобренных устройств. Попытка входа с нового устройства попадает в этот список и ждёт одобрения. Администратор освобождён от этой проверки — он может войти с любого устройства по логину, паролю и лицу.",
+  "Bu holatda qurilma yo'q": "Нет устройств с этим статусом",
+  "Hali birorta qurilma ro'yxatga tushmagan": "В списке пока нет ни одного устройства",
+  "Siz hozir shu qurilmadan turibsiz": "Вы сейчас работаете с этого устройства",
+  "Shu qurilma": "Это устройство",
+  "oxirgi urinish: {{last_seen_at}}": "последняя попытка: {{last_seen_at}}",
+  "tasdiqlangan: {{approved_at}}": "одобрено: {{approved_at}}",
+  "Taqiqlash": "Заблокировать",
+  "Nom qo'yish": "Задать название",
+  "Ro'yxatdan o'chirish": "Удалить из списка",
+  "Qurilma ro'yxatdan o'chiriladi. Keyingi urinishda u yangi sifatida qaytadi va yana tasdiq kutadi. Davom etasizmi?": "Устройство будет удалено из списка. При следующей попытке входа оно появится как новое и снова будет ждать одобрения. Продолжить?",
+  "Masalan: Resepsiya kompyuteri": "Например: Компьютер на ресепшн"
+}

@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import type { Permission } from "@/types/api"
+import { tr } from "@/i18n"
 
 /**
  * Rol shablonlari — GoHotelAdmin bilan bir xil to'plam. Moslashtirish
@@ -30,8 +31,8 @@ export interface PermissionTemplate {
 export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
   {
     id: "housekeeper",
-    name: "Farrosh",
-    description: "Xonalarni tozalash va holatini yangilash",
+    name: tr("Farrosh"),
+    description: tr("Xonalarni tozalash va holatini yangilash"),
     icon: Sparkles,
     accent: "bg-sky-50 text-sky-600",
     codes: [
@@ -43,8 +44,8 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
   },
   {
     id: "housekeepingLead",
-    name: "Xo'jalik bo'limi boshlig'i",
-    description: "Tozalash vazifalarini yaratish va xodimlarga taqsimlash",
+    name: tr("Xo'jalik bo'limi boshlig'i"),
+    description: tr("Tozalash vazifalarini yaratish va xodimlarga taqsimlash"),
     icon: ClipboardList,
     accent: "bg-teal-50 text-teal-600",
     codes: [
@@ -58,8 +59,8 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
   },
   {
     id: "receptionist",
-    name: "Qabulxona xodimi",
-    description: "Bandlash, mehmonlar, kirish-chiqish va to'lovlar",
+    name: tr("Qabulxona xodimi"),
+    description: tr("Bandlash, mehmonlar, kirish-chiqish va to'lovlar"),
     icon: BellRing,
     accent: "bg-indigo-50 text-indigo-600",
     codes: [
@@ -80,8 +81,8 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
   },
   {
     id: "manager",
-    name: "Menejer",
-    description: "Kundalik operatsiyalar, moliya va xodimlarni boshqarish",
+    name: tr("Menejer"),
+    description: tr("Kundalik operatsiyalar, moliya va xodimlarni boshqarish"),
     icon: Briefcase,
     accent: "bg-violet-50 text-violet-600",
     codes: [
@@ -105,8 +106,8 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
   },
   {
     id: "accountant",
-    name: "Buxgalter",
-    description: "Hisob-fakturalar, to'lovlar va moliyaviy hisobotlar",
+    name: tr("Buxgalter"),
+    description: tr("Hisob-fakturalar, to'lovlar va moliyaviy hisobotlar"),
     icon: Calculator,
     accent: "bg-amber-50 text-amber-600",
     codes: [
@@ -120,8 +121,8 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
   },
   {
     id: "maintenance",
-    name: "Texnik xizmat",
-    description: "Ta'mirlash vazifalari va xona holatini yangilash",
+    name: tr("Texnik xizmat"),
+    description: tr("Ta'mirlash vazifalari va xona holatini yangilash"),
     icon: Wrench,
     accent: "bg-orange-50 text-orange-600",
     codes: [
@@ -133,16 +134,16 @@ export const PERMISSION_TEMPLATES: PermissionTemplate[] = [
   },
   {
     id: "viewer",
-    name: "Faqat ko'rish",
-    description: "Barcha bo'limlarni o'zgartirishsiz ko'rish",
+    name: tr("Faqat ko'rish"),
+    description: tr("Barcha bo'limlarni o'zgartirishsiz ko'rish"),
     icon: Eye,
     accent: "bg-slate-100 text-slate-600",
     codes: ["*.view"],
   },
   {
     id: "fullAccess",
-    name: "To'liq huquq",
-    description: "Barcha modullar bo'yicha cheklovsiz ruxsat",
+    name: tr("To'liq huquq"),
+    description: tr("Barcha modullar bo'yicha cheklovsiz ruxsat"),
     icon: ShieldCheck,
     accent: "bg-emerald-50 text-emerald-600",
     codes: ["*"],

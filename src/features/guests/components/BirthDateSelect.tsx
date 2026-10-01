@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 /**
  * Tug'ilgan sana uchun tezkor maskali maydon.
@@ -95,7 +96,7 @@ export function BirthDateSelect({ value, onChange, className }: BirthDateSelectP
       <input
         type="text"
         inputMode="numeric"
-        placeholder="kk.oo.yyyy — masalan 15.08.1990"
+        placeholder={tr("kk.oo.yyyy — masalan 15.08.1990")}
         value={formatDigits(digits)}
         onChange={(e) => handleChange(e.target.value)}
         className={cn(
@@ -108,12 +109,12 @@ export function BirthDateSelect({ value, onChange, className }: BirthDateSelectP
       {/* O'ng tomonda jonli holat: yosh yoki xato belgisi */}
       {iso && (
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-          {ageFromIso(iso)} yosh
+          {tr("{{iso}} yosh", { iso: ageFromIso(iso) })}
         </span>
       )}
       {invalid && (
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-medium text-destructive">
-          Noto'g'ri sana
+          {tr("Noto'g'ri sana")}
         </span>
       )}
     </div>

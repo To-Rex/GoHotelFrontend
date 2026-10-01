@@ -101,6 +101,7 @@ import {
   timeToMin,
   todayStr as todayString,
 } from "../lib/booking"
+import { tr, trc } from "@/i18n"
 
 /* "Yangi bandlov" dialogi — YAGONA komponent.
 
@@ -147,10 +148,10 @@ interface Props {
 const reservationSchema = z
   .object({
     guest_id: z.string().optional(),
-    room_id: z.string().min(1, "Xonani tanlash shart"),
+    room_id: z.string().min(1, tr("Xonani tanlash shart")),
     booking_type: z.enum(["DAILY", "HOURLY"]).default("DAILY"),
-    check_in_date: z.string().min(1, "Kirish sanasi kiritilmagan"),
-    check_out_date: z.string().min(1, "Chiqish sanasi kiritilmagan"),
+    check_in_date: z.string().min(1, tr("Kirish sanasi kiritilmagan")),
+    check_out_date: z.string().min(1, tr("Chiqish sanasi kiritilmagan")),
     check_in_time: z.string().optional(),
     check_out_time: z.string().optional(),
     adults: z.coerce.number().min(1),
@@ -169,13 +170,13 @@ const reservationSchema = z
     payment_method: z.string().optional(),
   })
   .refine((data) => !!data.guest_id || !!data.new_guest_first_name, {
-    message: "Mehmonni tanlang yoki yangi mehmon ismini kiriting",
+    message: tr("Mehmonni tanlang yoki yangi mehmon ismini kiriting"),
     path: ["guest_id"],
   })
   .refine(
     (data) => !(data.payment_amount && data.payment_amount > 0 && !data.payment_method),
     {
-      message: "To'lov summasi kiritilganda to'lov turini tanlash majburiy",
+      message: tr("To'lov summasi kiritilganda to'lov turini tanlash majburiy"),
       path: ["payment_method"],
     }
   )
@@ -183,13 +184,13 @@ const reservationSchema = z
     (data) =>
       data.booking_type !== "HOURLY" || (!!data.check_in_time && !!data.check_out_time),
     {
-      message: "Soatlik bron uchun kirish va chiqish vaqtini kiriting",
+      message: tr("Soatlik bron uchun kirish va chiqish vaqtini kiriting"),
       path: ["check_in_time"],
     }
   )
   .refine(
     (data) => !data.check_in_date || data.check_in_date >= format(new Date(), "yyyy-MM-dd"),
-    { message: "O'tgan sanaga bron qilib bo'lmaydi", path: ["check_in_date"] }
+    { message: tr("O'tgan sanaga bron qilib bo'lmaydi"), path: ["check_in_date"] }
   )
 
 type BookingForm = z.infer<typeof reservationSchema>
@@ -335,11 +336,11 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       return
     }
     if (!GUEST_PHOTO_ACCEPT.split(",").includes(file.type)) {
-      showError("Faqat JPG, PNG yoki WEBP formatdagi rasm yuklash mumkin.")
+      showError(tr("Faqat JPG, PNG yoki WEBP formatdagi rasm yuklash mumkin."))
       return
     }
     if (file.size > GUEST_PHOTO_MAX_BYTES) {
-      showError("Rasm hajmi 5 MB dan oshmasligi kerak.")
+      showError(tr("Rasm hajmi 5 MB dan oshmasligi kerak."))
       return
     }
     setGuestPhoto(file)
@@ -361,7 +362,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     } catch {
       // Surat yuklanmasa ham biriktirish ishlaydi: vektor serverda saqlangan,
       // rasm faqat ko'rsatish uchun. Xodimga to'sqinlik qilmaymiz.
-      showError("Surat yuklanmadi, lekin yuz baribir biriktiriladi.")
+      showError(tr("Surat yuklanmadi, lekin yuz baribir biriktiriladi."))
     }
     // handlePhotoChange tanlovni tozalaydi, shuning uchun undan KEYIN.
     setPickedFace(group)
@@ -382,7 +383,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const startCamera = async () => {
     setCameraError(null)
     if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError("Bu brauzer kamerani qo'llab-quvvatlamaydi. Faylni tanlang.")
+      setCameraError(tr("Bu brauzer kamerani qo'llab-quvvatlamaydi. Faylni tanlang."))
       return
     }
     try {
@@ -395,10 +396,10 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     } catch (err: any) {
       setCameraError(
         err?.name === "NotAllowedError"
-          ? "Kameraga ruxsat berilmadi. Brauzer sozlamalaridan ruxsat bering."
+          ? tr("Kameraga ruxsat berilmadi. Brauzer sozlamalaridan ruxsat bering.")
           : err?.name === "NotFoundError"
-            ? "Kamera topilmadi."
-            : "Kamerani ochib bo'lmadi. Faylni tanlashingiz mumkin."
+            ? tr("Kamera topilmadi.")
+            : tr("Kamerani ochib bo'lmadi. Faylni tanlashingiz mumkin.")
       )
     }
   }
@@ -969,7 +970,7 @@ function SectionMark({
     ].filter((p) => p.amount > 0)
 
     if (paymentRows.some((p) => !p.payment_method)) {
-      showError("Har bir to'lov qatorida to'lov turini tanlang.")
+      showError(tr("Har bir to'lov qatorida to'lov turini tanlang."))
       return
     }
     // Chegirma qoidasi — serverdan oldin shu yerda, xabar tushunarli bo'lsin
@@ -982,9 +983,9 @@ function SectionMark({
     // Serverdan oldin shu yerda to'xtatamiz — xabar tushunarli bo'lishi uchun
     if (guestsRequired && companionsMissing > 0) {
       showError(
-        `Xonadagi har bir mehmon ro'yxatga olinishi kerak: ${adultsCount} kishidan ` +
-          `${adultsCount - companionsMissing} tasi kiritilgan. Qolgan ${companionsMissing} ta ` +
-          `mehmonni "Hamrohlar" bo'limida tanlang yoki yangi qo'shing.`
+        tr("Xonadagi har bir mehmon ro'yxatga olinishi kerak: {{adultsCount}} kishidan ", { adultsCount }) +
+          tr("{{entered}} tasi kiritilgan. Qolgan {{companionsMissing}} ta ", { entered: adultsCount - companionsMissing, companionsMissing }) +
+          tr("mehmonni \"Hamrohlar\" bo'limida tanlang yoki yangi qo'shing.")
       )
       return
     }
@@ -992,7 +993,7 @@ function SectionMark({
     const paymentsTotal = paymentRows.reduce((s, p) => s + p.amount, 0)
     if (finalTotal > 0 && paymentsTotal > finalTotal) {
       showError(
-        `To'lovlar yig'indisi (${paymentsTotal.toLocaleString()} So'm) chegirma bilan hisoblangan jami narxdan (${finalTotal.toLocaleString()} So'm) oshib ketdi. Iltimos, summalarni to'g'rilang.`
+        tr("To'lovlar yig'indisi ({{paymentsTotal}} So'm) chegirma bilan hisoblangan jami narxdan ({{finalTotal}} So'm) oshib ketdi. Iltimos, summalarni to'g'rilang.", { paymentsTotal: paymentsTotal.toLocaleString(), finalTotal: finalTotal.toLocaleString() })
       )
       return
     }
@@ -1151,7 +1152,7 @@ function SectionMark({
         const eClamped = overnight ? 24 * 60 : timeToMin(outTime)
         if (busy.some(([bs, be]) => bs < eClamped + HOURLY_TURNOVER_MIN && be > s)) {
           showError(
-            `Tanlangan vaqt band soatlar bilan kesishadi. Har bir bron orasida xonani tayyorlash uchun ${HOURLY_TURNOVER_MIN} daqiqa tanaffus bo'lishi kerak. Iltimos, bo'sh vaqtni tanlang.`
+            tr("Tanlangan vaqt band soatlar bilan kesishadi. Har bir bron orasida xonani tayyorlash uchun {{HOURLY_TURNOVER_MIN}} daqiqa tanaffus bo'lishi kerak. Iltimos, bo'sh vaqtni tanlang.", { HOURLY_TURNOVER_MIN })
           )
           return
         }
@@ -1170,7 +1171,7 @@ function SectionMark({
         const limit = nextBookingStart(reservations, values.room_id, values.check_in_date)
         if (limit && values.check_out_date > limit) {
           showError(
-            `Bu xona ${limit} sanasidan boshlab boshqa mijozga bron qilingan. Chiqish sanasi ${limit} dan keyin bo'la olmaydi.`
+            tr("Bu xona {{limit}} sanasidan boshlab boshqa mijozga bron qilingan. Chiqish sanasi {{limit}} dan keyin bo'la olmaydi.", { limit })
           )
           return
         }
@@ -1223,17 +1224,17 @@ function SectionMark({
 
       if (photoUploadFailed) {
         showError(
-          "Bron va mehmon saqlandi, lekin suratni yuklab bo'lmadi. Suratni keyinroq qayta yuklashingiz mumkin."
+          tr("Bron va mehmon saqlandi, lekin suratni yuklab bo'lmadi. Suratni keyinroq qayta yuklashingiz mumkin.")
         )
       } else if (faceEnrollFailed) {
         showError(
-          "Bron va mehmon saqlandi, lekin yuz biriktirilmadi — keyingi tashrifda avtomatik tanilmaydi. " +
-            "Yuzni qabulxona panelidan qayta biriktirishingiz mumkin."
+          tr("Bron va mehmon saqlandi, lekin yuz biriktirilmadi — keyingi tashrifda avtomatik tanilmaydi. ") +
+            tr("Yuzni qabulxona panelidan qayta biriktirishingiz mumkin.")
         )
       } else if (autoCheckInFailed) {
         showError(
-          "Bron saqlandi, lekin kirish avtomatik rasmiylashmadi. " +
-            "Bron oynasidagi \"Mehmon keldi — kirishni rasmiylashtirish\" tugmasi bilan qo'lda rasmiylashtiring."
+          tr("Bron saqlandi, lekin kirish avtomatik rasmiylashmadi. ") +
+            tr("Bron oynasidagi \"Mehmon keldi — kirishni rasmiylashtirish\" tugmasi bilan qo'lda rasmiylashtiring.")
         )
       }
     } catch (error: any) {
@@ -1252,12 +1253,16 @@ function SectionMark({
             <CalendarPlus className="h-5 w-5" />
           </span>
           <div className="min-w-0 text-left">
-            <DialogTitle>Yangi bandlov</DialogTitle>
+            <DialogTitle>{tr("Yangi bandlov")}</DialogTitle>
             {/* Kontekst tanlov bilan birga to'lib boradi — sarlavhaning
                 o'zi qisqa xulosa bo'lib qoladi */}
             <p className="mt-0.5 truncate text-xs font-normal text-gray-500">
-              {bookingType === "HOURLY" ? "Soatlik" : "Kunlik"} joylashtirish
-              {activeRoom ? ` · ${activeRoom.room_number}-xona` : ""}
+              {tr("{{type}} joylashtirish{{room}}", {
+                // "placement": so'z "joylashtirish" bilan birga keladi — rus
+                // tilida sifat moslashadi ("Почасовое размещение"), tugmadagi
+                // yolg'iz "Soatlik" esa boshqacha tarjima qilinadi
+                type: bookingType === "HOURLY" ? trc("placement", "Soatlik") : trc("placement", "Kunlik"),
+                room: activeRoom ? tr(" · {{room_number}}-xona", { room_number: String(activeRoom.room_number) }) : "" })}
             </p>
           </div>
         </div>
@@ -1267,12 +1272,12 @@ function SectionMark({
         {/* Bron turi yorliq qatorining o'zida — alohida qator olmaydi */}
         <SectionMark
           icon={BedDouble}
-          label="Joylashtirish"
+          label={tr("Joylashtirish")}
           action={
         <div className="flex flex-shrink-0 rounded-lg bg-gray-100/80 p-0.5">
           {([
-            { key: "DAILY", label: "Kunlik" },
-            { key: "HOURLY", label: "Soatlik" },
+            { key: "DAILY", label: tr("Kunlik") },
+            { key: "HOURLY", label: tr("Soatlik") },
           ] as const).map((opt) => (
             <button
               key={opt.key}
@@ -1321,14 +1326,14 @@ function SectionMark({
             sana/soat xulosasi yorliq qatorining o'zida turadi. */}
         <div className="space-y-1">
           <div className="flex items-baseline justify-between gap-2">
-            <label className="text-sm font-medium">Xona *</label>
+            <label className="text-sm font-medium">{tr("Xona *")}</label>
             {activeRoom && (
               <span className="inline-flex items-center gap-1 truncate text-[11px] text-gray-500">
                 <BedDouble className="h-3 w-3 flex-shrink-0 text-primary-500" />
                 {bookingType === "HOURLY"
-                  ? `Soatlik${hourCount > 0 ? ` · ${hourCount} soat` : ""}`
+                  ? tr("Soatlik{{hours}}", { hours: hourCount > 0 ? tr(" · {{hourCount}} soat", { hourCount }) : "" })
                   : watchFormDate && watchFormOutDate
-                    ? `${watchFormDate} → ${watchFormOutDate} · ${dialogNightCount} kecha`
+                    ? tr("{{watchFormDate}} → {{watchFormOutDate}} · {{dialogNightCount}} kecha", { watchFormDate, watchFormOutDate, dialogNightCount })
                     : activeRoom.room_number}
               </span>
             )}
@@ -1339,7 +1344,7 @@ function SectionMark({
               className="h-10 w-full appearance-none rounded-lg border border-input bg-background pl-9 pr-9 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               {...register("room_id")}
             >
-              <option value="">Xonani tanlang</option>
+              <option value="">{tr("Xonani tanlang")}</option>
               {rooms.map(r => (
                 <option
                   key={r.id}
@@ -1351,13 +1356,11 @@ function SectionMark({
                     isRestrictedStatus(r.current_status) || !!hkTaskBlocks[r.id]
                   }
                 >
-                  {r.room_number} · {r.room_type?.name} ·{" "}
-                  {getRoomPrice(r).toLocaleString()} so'm
-                  {isRestrictedStatus(r.current_status)
+                  {r.room_number} · {r.room_type?.name}{" "}{tr("· {{price}} so'm{{reason}}", { price: getRoomPrice(r).toLocaleString(), reason: isRestrictedStatus(r.current_status)
                     ? ` — ${statusLabel(r.current_status)}`
                     : hkTaskBlocks[r.id]
-                      ? ` — ${taskWorkLabel(hkTaskBlocks[r.id])} tugallanmagan`
-                      : ""}
+                      ? tr(" — {{taskWorkLabel}} tugallanmagan", { taskWorkLabel: taskWorkLabel(hkTaskBlocks[r.id]) })
+                      : "" })}
                 </option>
               ))}
             </select>
@@ -1368,16 +1371,15 @@ function SectionMark({
           {activeRoom && (
             <div className="flex items-center justify-between gap-2 rounded-lg border border-primary-100 bg-primary-50/60 px-3 py-1.5 text-xs">
               <span className="truncate text-gray-600">
-                {activeRoom.room_type?.name || "Xona"}
+                {activeRoom.room_type?.name || tr("Xona")}
                 {activeRoom.floor?.floor_number != null
-                  ? ` · ${activeRoom.floor.floor_number}-qavat`
+                  ? tr(" · {{floor_number}}-qavat", { floor_number: String(activeRoom.floor.floor_number) })
                   : ""}
               </span>
               <span className="flex-shrink-0 font-semibold tabular-nums text-primary-700">
                 {/* Soatlik bron narxi davomiylikka bog'liq emas — shuning
                     uchun "/soat" deb yozilmaydi */}
-                {getRoomPrice(activeRoom).toLocaleString()} so'm
-                {bookingType === "HOURLY" ? "" : " / kecha"}
+                {tr("{{price}} so'm{{perNight}}", { price: getRoomPrice(activeRoom).toLocaleString(), perNight: bookingType === "HOURLY" ? "" : tr(" / kecha") })}
               </span>
             </div>
           )}
@@ -1397,33 +1399,32 @@ function SectionMark({
                 keraksiz joy olardi */}
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Sana *</label>
+                <label className="text-sm font-medium">{tr("Sana *")}</label>
                 <Input type="date" min={todayStr} {...register("check_in_date")} />
                 {errors.check_in_date && <p className="text-xs text-red-500">{errors.check_in_date.message}</p>}
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Kirish *</label>
+                <label className="text-sm font-medium">{tr("Kirish *")}</label>
                 <Input type="time" {...register("check_in_time")} />
                 {errors.check_in_time && <p className="text-xs text-red-500">{errors.check_in_time.message}</p>}
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Chiqish *</label>
+                <label className="text-sm font-medium">{tr("Chiqish *")}</label>
                 <Input type="time" {...register("check_out_time")} />
               </div>
             </div>
             {watchFormDate === todayStr && (
               <p className="text-[11px] text-gray-400">
-                Vaqt o'tsa, kirish vaqti avtomatik joriy vaqtga suriladi —
-                tanlangan davomiylik saqlanadi
+                {tr("Vaqt o'tsa, kirish vaqti avtomatik joriy vaqtga suriladi — tanlangan davomiylik saqlanadi")}
               </p>
             )}
 
             {/* Davomiylikni tanlash — bir bosishda chiqish vaqti hisoblanadi */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium">
-                Necha soat?{" "}
+                {tr("Necha soat?")}{" "}
                 <span className="text-[11px] font-normal text-gray-400">
-                  — yoki chiqish vaqtini qo'lda kiriting
+                  {tr("— yoki chiqish vaqtini qo'lda kiriting")}
                 </span>
               </label>
               <div className="grid grid-cols-6 gap-1.5">
@@ -1445,8 +1446,8 @@ function SectionMark({
                       )}
                       title={
                         conflict
-                          ? "Bu davomiylik band soatlar bilan kesishadi"
-                          : `${h} soat`
+                          ? tr("Bu davomiylik band soatlar bilan kesishadi")
+                          : tr("{{h}} soat", { h })
                       }
                     >
                       {h}
@@ -1457,7 +1458,7 @@ function SectionMark({
             </div>
             {dialogBusyTimes.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="text-gray-500">Band soatlar:</span>
+                <span className="text-gray-500">{tr("Band soatlar:")}</span>
                 {dialogBusyTimes.map(([s, e], i) => (
                   <span
                     key={i}
@@ -1470,19 +1471,19 @@ function SectionMark({
             )}
             {selectedTimeConflict && (
               <p className="text-xs text-red-500 font-medium">
-                Tanlangan vaqt band soatlar bilan kesishadi. Iltimos, bo'sh vaqtni tanlang.
+                {tr("Tanlangan vaqt band soatlar bilan kesishadi. Iltimos, bo'sh vaqtni tanlang.")}
               </p>
             )}
           </>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Kirish sanasi *</label>
+              <label className="text-sm font-medium">{tr("Kirish sanasi *")}</label>
               <Input type="date" min={todayStr} {...register("check_in_date")} />
               {errors.check_in_date && <p className="text-xs text-red-500">{errors.check_in_date.message}</p>}
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Chiqish sanasi *</label>
+              <label className="text-sm font-medium">{tr("Chiqish sanasi *")}</label>
               {/* max — keyingi mijozning kirish sanasi: bron uning kunlariga
                   bosib kirmasligi uchun bundan narini tanlab bo'lmaydi */}
               <Input
@@ -1507,8 +1508,8 @@ function SectionMark({
             )}
           >
             {dailyRangeConflict
-              ? `Chiqish sanasi ${nextGuestStart} dan oshib ketdi — bu xona o'sha kundan boshlab boshqa mijozga bron qilingan.`
-              : `Bu xona ${nextGuestStart} sanasidan band. Chiqish sanasi shu kundan oshmasligi kerak.`}
+              ? tr("Chiqish sanasi {{nextGuestStart}} dan oshib ketdi — bu xona o'sha kundan boshlab boshqa mijozga bron qilingan.", { nextGuestStart })
+              : tr("Bu xona {{nextGuestStart}} sanasidan band. Chiqish sanasi shu kundan oshmasligi kerak.", { nextGuestStart })}
           </p>
         )}
 
@@ -1516,7 +1517,7 @@ function SectionMark({
         <div className="space-y-2">
           <SectionMark
             icon={UserRound}
-            label="Mehmon *"
+            label={tr("Mehmon *")}
             action={
               !showNewGuest && canCreateGuest ? (
                 <button
@@ -1528,7 +1529,7 @@ function SectionMark({
                     setShowNewGuest(true)
                   }}
                 >
-                  + Yangi mijoz
+                  {tr("+ Yangi mijoz")}
                 </button>
               ) : undefined
             }
@@ -1562,7 +1563,7 @@ function SectionMark({
                       <p className="truncate text-xs text-gray-500">
                         {[selectedGuestObj.phone, selectedGuestObj.passport_number]
                           .filter(Boolean)
-                          .join(" · ") || "Qo'shimcha ma'lumot yo'q"}
+                          .join(" · ") || tr("Qo'shimcha ma'lumot yo'q")}
                       </p>
                     </div>
                     <button
@@ -1574,7 +1575,7 @@ function SectionMark({
                       }}
                       className="flex-shrink-0 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
                     >
-                      O'zgartirish
+                      {tr("O'zgartirish")}
                     </button>
                   </div>
                   {/* QORA RO'YXAT ogohlantirishi. Server baribir to'sadi,
@@ -1585,16 +1586,15 @@ function SectionMark({
                     <div className="rounded-lg border border-red-300 bg-red-50 px-2.5 py-2">
                       <p className="flex items-center gap-1.5 text-xs font-semibold text-red-700">
                         <Ban className="h-3.5 w-3.5 flex-shrink-0" />
-                        Bu mehmon qora ro'yxatda
+                        {tr("Bu mehmon qora ro'yxatda")}
                       </p>
                       {selectedGuestObj.blacklist_reason && (
                         <p className="mt-0.5 text-[11px] leading-tight text-red-600">
-                          Sabab: {selectedGuestObj.blacklist_reason}
+                          {tr("Sabab:")}{" "}{selectedGuestObj.blacklist_reason}
                         </p>
                       )}
                       <p className="mt-0.5 text-[11px] leading-tight text-red-500">
-                        Sozlamada taqiq yoqiq bo'lsa bron saqlanmaydi.
-                        Administrator ro'yxatdan chiqarishi mumkin.
+                        {tr("Sozlamada taqiq yoqiq bo'lsa bron saqlanmaydi. Administrator ro'yxatdan chiqarishi mumkin.")}
                       </p>
                     </div>
                   )}
@@ -1626,7 +1626,7 @@ function SectionMark({
                   <input
                     type="text"
                     className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder="Mijozni qidirish..."
+                    placeholder={tr("Mijozni qidirish...")}
                     value={guestSearch}
                     onChange={(e) => setGuestSearch(e.target.value)}
                   />
@@ -1639,10 +1639,10 @@ function SectionMark({
                     setGuestScanOpen(true)
                   }}
                   className="flex shrink-0 items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
-                  title="Passport yoki ID kartani skanerlab mijozni topish"
+                  title={tr("Passport yoki ID kartani skanerlab mijozni topish")}
                 >
                   <ScanLine className="h-4 w-4" />
-                  Skaner
+                  {tr("Skaner")}
                 </button>
               </div>
 
@@ -1650,11 +1650,9 @@ function SectionMark({
               {guestScanNotFound && (
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
                   <p className="min-w-0 text-sm font-medium text-amber-800">
-                    Mijoz topilmadi
-                    {guestScanNotFound.firstName
+                    {tr("Mijoz topilmadi{{name}} — yangi qo'shilsinmi?", { name: guestScanNotFound.firstName
                       ? ` (${guestScanNotFound.firstName} ${guestScanNotFound.lastName || ""})`
-                      : ""}{" "}
-                    — yangi qo'shilsinmi?
+                      : "" })}
                   </p>
                   <div className="flex shrink-0 gap-1.5">
                     {canCreateGuest && (
@@ -1663,7 +1661,7 @@ function SectionMark({
                         onClick={() => startNewGuestFromScan(guestScanNotFound)}
                         className="rounded-md bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
                       >
-                        + Qo'shish
+                        {tr("+ Qo'shish")}
                       </button>
                     )}
                     <button
@@ -1671,7 +1669,7 @@ function SectionMark({
                       onClick={() => setGuestScanNotFound(null)}
                       className="rounded-md px-2 py-1.5 text-xs text-amber-700 hover:bg-amber-100"
                     >
-                      Yopish
+                      {tr("Yopish")}
                     </button>
                   </div>
                 </div>
@@ -1709,14 +1707,13 @@ function SectionMark({
                 ))}
                 {filteredGuests.length === 0 && (
                   <p className="px-3 py-4 text-sm text-gray-400 text-center">
-                    Mijoz topilmadi
+                    {tr("Mijoz topilmadi")}
                   </p>
                 )}
               </div>
               ) : (
                 <p className="px-1 text-xs leading-relaxed text-gray-400">
-                  Mijozni topish uchun ism yoki telefon raqamini yozing — yoki
-                  hujjatini skanerlang
+                  {tr("Mijozni topish uchun ism yoki telefon raqamini yozing — yoki hujjatini skanerlang")}
                 </p>
               )}
               {errors.guest_id && <p className="text-xs text-red-500">{errors.guest_id.message}</p>}
@@ -1728,16 +1725,16 @@ function SectionMark({
               {/* Blok sarlavhasi + ro'yxatga qaytish tugmasi (forma uzun bo'lgani
                   uchun qaytish tugmasi tepada ham, pastda ham mavjud) */}
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-200">
-                <span className="text-sm font-semibold text-gray-900">Yangi mehmon</span>
+                <span className="text-sm font-semibold text-gray-900">{tr("Yangi mehmon")}</span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setScanOpen(true)}
                     className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
-                    title="Passport yoki ID kartani kamera bilan skanerlash"
+                    title={tr("Passport yoki ID kartani kamera bilan skanerlash")}
                   >
                     <ScanLine className="h-3.5 w-3.5" />
-                    Skanerlash
+                    {tr("Skanerlash")}
                   </button>
                   <button
                     type="button"
@@ -1745,7 +1742,7 @@ function SectionMark({
                     className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
-                    Ro'yxatga qaytish
+                    {tr("Ro'yxatga qaytish")}
                   </button>
                 </div>
               </div>
@@ -1758,17 +1755,17 @@ function SectionMark({
               />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">Ism *</label>
-                  <Input placeholder="Ism" {...register("new_guest_first_name")} />
+                  <label className="text-xs font-medium">{tr("Ism *")}</label>
+                  <Input placeholder={tr("Ism")} {...register("new_guest_first_name")} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">Familiya</label>
-                  <Input placeholder="Familiya" {...register("new_guest_last_name")} />
+                  <label className="text-xs font-medium">{tr("Familiya")}</label>
+                  <Input placeholder={tr("Familiya")} {...register("new_guest_last_name")} />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium">Telefon</label>
-                <Input placeholder="Telefon" {...register("new_guest_phone")} />
+                <label className="text-xs font-medium">{tr("Telefon")}</label>
+                <Input placeholder={tr("Telefon")} {...register("new_guest_phone")} />
               </div>
 
               {/* Mavjud mehmon topildi — qayta yaratmasdan bir klikda tanlash */}
@@ -1776,7 +1773,7 @@ function SectionMark({
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
                   <div className="min-w-0 text-sm text-amber-800">
                     <p className="truncate font-semibold">
-                      Bu mijoz bazada mavjud: {existingGuestMatch.first_name}{" "}
+                      {tr("Bu mijoz bazada mavjud:")}{" "}{existingGuestMatch.first_name}{" "}
                       {existingGuestMatch.last_name}
                     </p>
                     {/* Maxfiylik: passport raqami ko'rsatilmaydi, faqat telefon */}
@@ -1793,13 +1790,13 @@ function SectionMark({
                     }}
                     className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
                   >
-                    Tanlash
+                    {tr("Tanlash")}
                   </button>
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="text-xs font-medium">Tug'ilgan sana</label>
+                <label className="text-xs font-medium">{tr("Tug'ilgan sana")}</label>
                 {/* Maydon RHF'da ro'yxatdan o'tgan bo'lishi uchun yashirin input */}
                 <input type="hidden" {...register("new_guest_birth_date")} />
                 <BirthDateSelect
@@ -1813,11 +1810,11 @@ function SectionMark({
               {/* Passport / hujjat ma'lumotlari */}
               <div className="pt-2 border-t border-gray-200 space-y-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Hujjat ma'lumotlari
+                  {tr("Hujjat ma'lumotlari")}
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">Passport raqami</label>
+                    <label className="text-xs font-medium">{tr("Passport raqami")}</label>
                     <Input
                       placeholder="AA1234567"
                       autoCapitalize="characters"
@@ -1833,14 +1830,14 @@ function SectionMark({
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">Fuqaroligi</label>
+                    <label className="text-xs font-medium">{tr("Fuqaroligi")}</label>
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       {...register("new_guest_nationality")}
                     >
                       {NATIONALITIES.map((c) => (
                         <option key={c} value={c}>
-                          {c}
+                          {tr(c)}
                         </option>
                       ))}
                     </select>
@@ -1848,7 +1845,7 @@ function SectionMark({
                     {watchNationality === "Boshqa" && (
                       <Input
                         className="mt-1.5"
-                        placeholder="Davlat nomini yozing"
+                        placeholder={tr("Davlat nomini yozing")}
                         value={nationalityOther}
                         onChange={(e) => setNationalityOther(e.target.value)}
                       />
@@ -1857,53 +1854,53 @@ function SectionMark({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">Hujjat turi</label>
+                    <label className="text-xs font-medium">{tr("Hujjat turi")}</label>
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       {...register("new_guest_id_document_type")}
                     >
-                      <option value="">Tanlang</option>
-                      <option value="PASSPORT">Passport</option>
-                      <option value="ID_CARD">ID karta</option>
-                      <option value="DRIVER_LICENSE">Haydovchilik guvohnomasi</option>
-                      <option value="BIRTH_CERTIFICATE">Tug'ilganlik guvohnomasi</option>
-                      <option value="OTHER">Boshqa</option>
+                      <option value="">{tr("Tanlang")}</option>
+                      <option value="PASSPORT">{tr("Passport")}</option>
+                      <option value="ID_CARD">{tr("ID karta")}</option>
+                      <option value="DRIVER_LICENSE">{tr("Haydovchilik guvohnomasi")}</option>
+                      <option value="BIRTH_CERTIFICATE">{tr("Tug'ilganlik guvohnomasi")}</option>
+                      <option value="OTHER">{tr("Boshqa")}</option>
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">Shaxsiy raqam/JSHSHIR</label>
-                    <Input placeholder="Shaxsiy raqam/JSHSHIR" {...register("new_guest_id_document_number")} />
+                    <label className="text-xs font-medium">{tr("Shaxsiy raqam/JSHSHIR")}</label>
+                    <Input placeholder={tr("Shaxsiy raqam/JSHSHIR")} {...register("new_guest_id_document_number")} />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">Manzil</label>
-                  <Input placeholder="Yashash manzili" {...register("new_guest_address")} />
+                  <label className="text-xs font-medium">{tr("Manzil")}</label>
+                  <Input placeholder={tr("Yashash manzili")} {...register("new_guest_address")} />
                 </div>
               </div>
 
               {/* Mehmon surati / passport nusxasi */}
               <div className="pt-2 border-t border-gray-200 space-y-2">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Surat (ixtiyoriy)
+                  {tr("Surat (ixtiyoriy)")}
                 </p>
                 {guestPhotoPreview ? (
                   <div className="flex items-center gap-3">
                     <img
                       src={guestPhotoPreview}
-                      alt="Mehmon surati"
+                      alt={tr("Mehmon surati")}
                       className="h-20 w-20 rounded-lg object-cover border border-gray-200"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-gray-600 truncate">{guestPhoto?.name}</p>
                       <p className="text-[11px] text-gray-400">
-                        {guestPhoto ? Math.round(guestPhoto.size / 1024) : 0} KB
+                        {tr("{{size}} KB", { size: guestPhoto ? Math.round(guestPhoto.size / 1024) : 0 })}
                       </p>
                       <button
                         type="button"
                         className="mt-1 text-xs text-red-600 hover:text-red-700 font-medium"
                         onClick={clearGuestPhoto}
                       >
-                        O'chirish
+                        {tr("O'chirish")}
                       </button>
                     </div>
                   </div>
@@ -1919,10 +1916,10 @@ function SectionMark({
                     <div className="flex items-center gap-2">
                       <Button type="button" size="sm" onClick={capturePhoto}>
                         <Camera className="h-4 w-4 mr-2" />
-                        Suratga olish
+                        {tr("Suratga olish")}
                       </Button>
                       <Button type="button" size="sm" variant="outline" onClick={stopCamera}>
-                        Bekor qilish
+                        {tr("Bekor qilish")}
                       </Button>
                     </div>
                   </div>
@@ -1930,8 +1927,8 @@ function SectionMark({
                   <div className="grid grid-cols-2 gap-2">
                     <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
                       <Upload className="h-5 w-5 text-gray-400" />
-                      <span className="text-xs text-gray-600 font-medium">Fayl tanlash</span>
-                      <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · 5 MB</span>
+                      <span className="text-xs text-gray-600 font-medium">{tr("Fayl tanlash")}</span>
+                      <span className="text-[11px] text-gray-400">{tr("JPG, PNG, WEBP · 5 MB")}</span>
                       <input
                         type="file"
                         accept={GUEST_PHOTO_ACCEPT}
@@ -1945,8 +1942,8 @@ function SectionMark({
                       className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-400 hover:bg-white transition-colors"
                     >
                       <Camera className="h-5 w-5 text-gray-400" />
-                      <span className="text-xs text-gray-600 font-medium">Kamera</span>
-                      <span className="text-[11px] text-gray-400">Hoziroq suratga olish</span>
+                      <span className="text-xs text-gray-600 font-medium">{tr("Kamera")}</span>
+                      <span className="text-[11px] text-gray-400">{tr("Hoziroq suratga olish")}</span>
                     </button>
                     {/* Filial IP kamerasidan tanlash — mehmon qabulxonaga
                         kelganda kamera uni allaqachon suratga olgan bo'ladi */}
@@ -1957,10 +1954,10 @@ function SectionMark({
                     >
                       <Video className="h-5 w-5 text-primary-500" />
                       <span className="text-xs text-primary-700 font-medium">
-                        Filial kamerasidan tanlash
+                        {tr("Filial kamerasidan tanlash")}
                       </span>
                       <span className="text-[11px] text-primary-500/80">
-                        Keyingi tashrifda avtomatik tanaladi
+                        {tr("Keyingi tashrifda avtomatik tanaladi")}
                       </span>
                     </button>
                   </div>
@@ -1969,9 +1966,7 @@ function SectionMark({
                 {pickedFace && (
                   <p className="flex items-center gap-1.5 text-[11px] text-primary-700">
                     <Video className="h-3.5 w-3.5" />
-                    {pickedFace.camera_name || pickedFace.camera_id} kamerasidan
-                    {pickedFace.count > 1 && ` · ${pickedFace.count} ta surat`} — mehmon
-                    saqlangach yuzi biriktiriladi
+                    {tr("{{camera}} kamerasidan{{photos}} — mehmon saqlangach yuzi biriktiriladi", { camera: pickedFace.camera_name || pickedFace.camera_id, photos: pickedFace.count > 1 && tr(" · {{count}} ta surat", { count: pickedFace.count }) })}
                   </p>
                 )}
               </div>
@@ -1982,7 +1977,7 @@ function SectionMark({
                 onClick={backToGuestList}
               >
                 <ArrowLeft className="h-4 w-4" />
-                Mehmonlar ro'yxatiga qaytish
+                {tr("Mehmonlar ro'yxatiga qaytish")}
               </button>
             </div>
           )}
@@ -1991,13 +1986,13 @@ function SectionMark({
         {/* Soni va izoh yonma-yon — ikkalasi ham kichik maydon */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-sm font-medium">Mehmonlar soni</label>
+            <label className="text-sm font-medium">{tr("Mehmonlar soni")}</label>
             <Input type="number" min="1" {...register("adults")} />
             {errors.adults && <p className="text-xs text-red-500">{errors.adults.message}</p>}
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">Qo'shimcha izoh</label>
-            <Input placeholder="Izoh..." {...register("notes")} />
+            <label className="text-sm font-medium">{tr("Qo'shimcha izoh")}</label>
+            <Input placeholder={tr("Izoh...")} {...register("notes")} />
           </div>
         </div>
 
@@ -2017,8 +2012,7 @@ function SectionMark({
         />
         {companionsMissing > 0 && guestsRequired && (
           <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
-            Xonadagi har bir mehmon ro'yxatga olinishi kerak — yana{" "}
-            {companionsMissing} ta mehmon kiritilishi zarur.
+            {tr("Xonadagi har bir mehmon ro'yxatga olinishi kerak — yana {{companionsMissing}} ta mehmon kiritilishi zarur.", { companionsMissing })}
           </p>
         )}
 
@@ -2029,26 +2023,26 @@ function SectionMark({
           <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-3.5 py-2">
             <Wallet className="h-3.5 w-3.5 text-primary-500" />
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
-              To'lov
+              {tr("To'lov")}
             </span>
             <span className="ml-auto text-sm font-bold tabular-nums text-primary-700">
-              {finalTotal.toLocaleString()} So'm
+              {tr("{{finalTotal}} So'm", { finalTotal: finalTotal.toLocaleString() })}
             </span>
           </div>
           <div className="space-y-2.5 bg-gray-50/60 p-3.5">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">
               {bookingType === "HOURLY"
-                ? `Xona narxi (${hourCount} soat)`
-                : `Xona narxi (${dialogNightCount} kecha)`}
+                ? tr("Xona narxi ({{hourCount}} soat)", { hourCount })
+                : tr("Xona narxi ({{dialogNightCount}} kecha)", { dialogNightCount })}
             </span>
-            <span className="text-sm font-semibold tabular-nums text-gray-900">{effectiveTotal.toLocaleString()} So'm</span>
+            <span className="text-sm font-semibold tabular-nums text-gray-900">{tr("{{effectiveTotal}} So'm", { effectiveTotal: effectiveTotal.toLocaleString() })}</span>
           </div>
 
           {/* Chegirma: so'mda yoki foizda — qoida doirasida */}
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-gray-600">
-              Chegirma
+              {tr("Chegirma")}
               {discountLimitText && (
                 <span className="mt-0.5 block text-[11px] font-normal text-gray-400">
                   {discountLimitText}
@@ -2082,7 +2076,7 @@ function SectionMark({
                   setDiscountValue("")
                 }}
               >
-                <option value="AMOUNT">So'm</option>
+                <option value="AMOUNT">{tr("So'm")}</option>
                 <option value="PERCENT">%</option>
               </select>
             </div>
@@ -2104,20 +2098,20 @@ function SectionMark({
           {discountAmount > 0 && (
             <div className="flex justify-between items-center border-t border-gray-200 pt-2">
               <span className="text-sm font-medium text-gray-700">
-                Jami to'lov{" "}
+                {tr("Jami to'lov")}{" "}
                 <span className="text-xs font-normal text-red-500">
-                  (−{discountAmount.toLocaleString()} So'm chegirma)
+                  {tr("(−{{discountAmount}} So'm chegirma)", { discountAmount: discountAmount.toLocaleString() })}
                 </span>
               </span>
               <span className="text-base font-bold tabular-nums text-primary-700">
-                {finalTotal.toLocaleString()} So'm
+                {tr("{{finalTotal}} So'm", { finalTotal: finalTotal.toLocaleString() })}
               </span>
             </div>
           )}
 
           <div className="border-t border-dashed border-gray-300 pt-3">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              To'lov summasi
+              {tr("To'lov summasi")}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <Input
@@ -2141,7 +2135,7 @@ function SectionMark({
                 className="w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 {...register("payment_method")}
               >
-                <option value="">To'lov turini tanlang</option>
+                <option value="">{tr("To'lov turini tanlang")}</option>
                 {PAYMENT_METHOD_OPTIONS.map((m) => (
                   <option key={m.value} value={m.value}>
                     {m.label}
@@ -2168,7 +2162,7 @@ function SectionMark({
                   value={p.method}
                   onChange={(e) => updateExtraPayment(i, { method: e.target.value })}
                 >
-                  <option value="">To'lov turini tanlang</option>
+                  <option value="">{tr("To'lov turini tanlang")}</option>
                   {PAYMENT_METHOD_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
@@ -2179,7 +2173,7 @@ function SectionMark({
                   type="button"
                   onClick={() => removeExtraPayment(i)}
                   className="flex-shrink-0 p-1.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600"
-                  title="Qatorni o'chirish"
+                  title={tr("Qatorni o'chirish")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -2192,7 +2186,7 @@ function SectionMark({
                 onClick={addExtraPayment}
                 className="text-xs font-medium text-primary-700 hover:text-primary-800"
               >
-                + To'lov usulini qo'shish
+                {tr("+ To'lov usulini qo'shish")}
               </button>
               {(extraPayments.length > 0 || paidTotal > 0) && (
                 <span
@@ -2203,11 +2197,11 @@ function SectionMark({
                       : "text-gray-500"
                   )}
                 >
-                  Jami to'lov: {paidTotal.toLocaleString()} So'm
+                  {tr("Jami to'lov: {{paidTotal}} So'm", { paidTotal: paidTotal.toLocaleString() })}
                   {finalTotal > 0 && paidTotal <= finalTotal && remainingAmount > 0 && (
-                    <> · Qolgan: {remainingAmount.toLocaleString()} So'm</>
+                    <>{" "}{tr("· Qolgan: {{remainingAmount}} So'm", { remainingAmount: remainingAmount.toLocaleString() })}</>
                   )}
-                  {finalTotal > 0 && paidTotal > finalTotal && " (narxdan oshiq!)"}
+                  {finalTotal > 0 && paidTotal > finalTotal && tr(" (narxdan oshiq!)")}
                 </span>
               )}
             </div>
@@ -2217,7 +2211,7 @@ function SectionMark({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
-            Bekor qilish
+            {tr("Bekor qilish")}
           </Button>
           <Button
             type="submit"
@@ -2237,10 +2231,10 @@ function SectionMark({
             {(createReservationMutation.isPending ||
               createGuestMutation.isPending ||
               photoUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Tasdiqlash
+            {tr("Tasdiqlash")}
             {finalTotal > 0 && (
               <span className="ml-1.5 font-semibold tabular-nums">
-                · {finalTotal.toLocaleString()} So'm
+                {tr("· {{finalTotal}} So'm", { finalTotal: finalTotal.toLocaleString() })}
               </span>
             )}
           </Button>
@@ -2261,11 +2255,11 @@ function SectionMark({
       <Dialog open={!!localError} onOpenChange={(o) => !o && setLocalError(null)}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>Xatolik</DialogTitle>
+            <DialogTitle>{tr("Xatolik")}</DialogTitle>
           </DialogHeader>
           <p className="whitespace-pre-line py-2 text-sm text-gray-700">{localError}</p>
           <DialogFooter>
-            <Button onClick={() => setLocalError(null)}>Tushunarli</Button>
+            <Button onClick={() => setLocalError(null)}>{tr("Tushunarli")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

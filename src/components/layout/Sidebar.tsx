@@ -17,6 +17,7 @@ import {
 } from "@/features/shifts/api/shifts";
 import { useStaffMessages } from "@/features/messages/api/messages";
 import { useNavOrder, applyNavOrder } from "@/features/settings/api/navOrder";
+import { tr } from "@/i18n";
 
 export const Sidebar = () => {
   const location = useLocation();
@@ -66,10 +67,10 @@ export const Sidebar = () => {
 
   const roleLabel =
     user?.user_type === "SUPER_ADMIN"
-      ? "Super admin"
+      ? tr("Super admin")
       : user?.user_type === "ADMIN"
-        ? "Administrator"
-        : "Xodim";
+        ? tr("Administrator")
+        : tr("Xodim");
 
   // Bitta havolani chizish — asosiy va administratsiya guruhlari uchun umumiy.
   // badge — ochiq xabar/so'rovlar soni kabi jonli ko'rsatkich (0 da yashirin)
@@ -150,7 +151,7 @@ export const Sidebar = () => {
           <button
             onClick={() => setIsOpen(false)}
             className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Yig'ish"
+            title={tr("Yig'ish")}
           >
             <PanelLeftClose size={18} />
           </button>
@@ -172,7 +173,7 @@ export const Sidebar = () => {
             >
               {isOpen ? (
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                  Administratsiya
+                  {tr("Administratsiya")}
                 </span>
               ) : (
                 <span className="block h-px w-6 bg-border" />
@@ -189,7 +190,7 @@ export const Sidebar = () => {
           <button
             onClick={() => setIsOpen(true)}
             className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Yoyish"
+            title={tr("Yoyish")}
           >
             <PanelLeftOpen size={18} />
           </button>
@@ -200,7 +201,7 @@ export const Sidebar = () => {
       <div className="flex-shrink-0 border-t border-border/70 p-3">
         <Link
           to="/profile"
-          title="Profil"
+          title={tr("Profil")}
           className={cn(
             "flex items-center rounded-xl transition-colors",
             isOpen ? "gap-3 p-2 hover:bg-muted" : "justify-center py-1 hover:opacity-80",

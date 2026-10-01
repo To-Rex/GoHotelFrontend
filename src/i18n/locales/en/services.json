@@ -1,0 +1,23 @@
+{
+  "Kodni kiriting (masalan: LAUNDRY)": "Enter a code (e.g. LAUNDRY)",
+  "Narxni to'g'ri kiriting": "Enter a valid price",
+  "Xizmatni tanlang": "Select a service",
+  "Mehmonxonangizda ko'rsatiladigan xizmatlar va ularning narxlari": "Services offered at your hotel and their prices",
+  "Xizmat ulash": "Add service",
+  "Mehmonxonaga hali xizmatlar ulanmagan": "No services have been added to the hotel yet",
+  "toggle::O'chirilgan": "Disabled",
+  "Xizmatlar katalogi": "Service catalog",
+  "Umumiy xizmatlar ro'yxati — mehmonxonaga ulash uchun asos": "Shared list of services — the source for adding them to the hotel",
+  "Katalogga qo'shish": "Add to catalog",
+  "Katalog bo'sh": "The catalog is empty",
+  "Katalogga yangi xizmat": "New catalog service",
+  "Masalan: Kir yuvish": "E.g. Laundry",
+  "Kod *": "Code *",
+  "Kodni o'zgartirib bo'lmaydi": "The code can't be changed",
+  "Narxni tahrirlash — {{name}}": "Edit price — {{name}}",
+  "Xizmatni ulash": "Add service",
+  "Xizmat *": "Service *",
+  "Narx (So'm) *": "Price (UZS) *",
+  "Masalan: 50000": "E.g. 50000",
+  "Ulash": "Add"
+}

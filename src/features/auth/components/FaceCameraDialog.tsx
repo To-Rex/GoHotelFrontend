@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { tr } from "@/i18n"
 
 /**
  * Yuz uchun umumiy kamera dialogi: old kamera jonli ko'rinadi.
@@ -69,7 +70,7 @@ export function FaceCameraDialog({
           canvas.toBlob(resolve, "image/jpeg", 0.9)
         )
         if (!blob) {
-          if (!silent) setErrorMsg("Kadr olinmadi — qayta uriring")
+          if (!silent) setErrorMsg(tr("Kadr olinmadi — qayta uriring"))
           return false
         }
         const err = await onCapture(blob)
@@ -125,7 +126,7 @@ export function FaceCameraDialog({
         }
       } catch {
         if (!cancelled) {
-          setCameraError("Kameraga ruxsat berilmadi yoki kamera topilmadi")
+          setCameraError(tr("Kameraga ruxsat berilmadi yoki kamera topilmadi"))
         }
       }
     })()
@@ -167,12 +168,12 @@ export function FaceCameraDialog({
                 {busy ? (
                   <>
                     <Loader2 size={11} className="animate-spin" />
-                    Tekshirilmoqda...
+                    {tr("Tekshirilmoqda...")}
                   </>
                 ) : (
                   <>
                     <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                    Yuz avtomatik aniqlanmoqda{attempts > 0 ? ` · ${attempts}` : ""}...
+                    {tr("Yuz avtomatik aniqlanmoqda{{v}}...", { v: attempts > 0 ? ` · ${attempts}` : "" })}
                   </>
                 )}
               </div>
@@ -187,7 +188,7 @@ export function FaceCameraDialog({
           {errorMsg &&
             (softError ? (
               <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-                Yuz qidirilmoqda — kameraga to'g'ri qarab turing...
+                {tr("Yuz qidirilmoqda — kameraga to'g'ri qarab turing...")}
               </p>
             ) : (
               <p className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

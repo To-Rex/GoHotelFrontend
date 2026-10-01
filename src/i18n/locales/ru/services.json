@@ -1,0 +1,23 @@
+{
+  "Kodni kiriting (masalan: LAUNDRY)": "Введите код (например: LAUNDRY)",
+  "Narxni to'g'ri kiriting": "Введите корректную цену",
+  "Xizmatni tanlang": "Выберите услугу",
+  "Mehmonxonangizda ko'rsatiladigan xizmatlar va ularning narxlari": "Услуги, оказываемые в вашей гостинице, и их цены",
+  "Xizmat ulash": "Подключить услугу",
+  "Mehmonxonaga hali xizmatlar ulanmagan": "К гостинице пока не подключено ни одной услуги",
+  "toggle::O'chirilgan": "Отключено",
+  "Xizmatlar katalogi": "Каталог услуг",
+  "Umumiy xizmatlar ro'yxati — mehmonxonaga ulash uchun asos": "Общий список услуг — из него услуги подключаются к гостинице",
+  "Katalogga qo'shish": "Добавить в каталог",
+  "Katalog bo'sh": "Каталог пуст",
+  "Katalogga yangi xizmat": "Новая услуга в каталоге",
+  "Masalan: Kir yuvish": "Например: Стирка",
+  "Kod *": "Код *",
+  "Kodni o'zgartirib bo'lmaydi": "Код нельзя изменить",
+  "Narxni tahrirlash — {{name}}": "Редактирование цены — {{name}}",
+  "Xizmatni ulash": "Подключение услуги",
+  "Xizmat *": "Услуга *",
+  "Narx (So'm) *": "Цена (сум) *",
+  "Masalan: 50000": "Например: 50000",
+  "Ulash": "Подключить"
+}

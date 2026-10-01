@@ -35,30 +35,31 @@ import {
   PanelNotice,
   PanelSelect,
 } from "../components/ui"
+import { tr } from "@/i18n"
 
 const STAFF_STATUS: Record<string, string> = {
-  ACTIVE: "Faol",
-  INACTIVE: "To'xtatilgan",
-  TERMINATED: "Ishdan bo'shatilgan",
+  ACTIVE: tr("Faol"),
+  INACTIVE: tr("To'xtatilgan"),
+  TERMINATED: tr("Ishdan bo'shatilgan"),
 }
 
 /** Xodim rollari — backend qabul qiladigan qiymatlar. */
 const USER_TYPES: [string, string][] = [
-  ["ADMIN", "Administrator"],
-  ["MANAGER", "Menejer"],
-  ["RECEPTIONIST", "Qabulxona"],
-  ["HOUSEKEEPER", "Farrosh"],
-  ["MAINTENANCE", "Usta"],
-  ["ACCOUNTANT", "Buxgalter"],
+  ["ADMIN", tr("Administrator")],
+  ["MANAGER", tr("Menejer")],
+  ["RECEPTIONIST", tr("Qabulxona")],
+  ["HOUSEKEEPER", tr("Farrosh")],
+  ["MAINTENANCE", tr("Usta")],
+  ["ACCOUNTANT", tr("Buxgalter")],
 ]
 
 const ROOM_STATUS: Record<string, string> = {
-  AVAILABLE: "Bo'sh",
-  OCCUPIED: "Band",
-  RESERVED: "Bron qilingan",
-  CLEANING: "Tozalanmoqda",
-  MAINTENANCE: "Ta'mirda",
-  OUT_OF_ORDER: "Ishlamaydi",
+  AVAILABLE: tr("Bo'sh"),
+  OCCUPIED: tr("Band"),
+  RESERVED: tr("Bron qilingan"),
+  CLEANING: tr("Tozalanmoqda"),
+  MAINTENANCE: tr("Ta'mirda"),
+  OUT_OF_ORDER: tr("Ishlamaydi"),
 }
 
 /** Bitta mehmonxona: filiallari va xodimlari. */
@@ -78,11 +79,11 @@ export function HotelDetailPage() {
         className="mb-3 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Mehmonxonalar
+        {tr("Mehmonxonalar")}
       </Link>
 
       <PanelHeading
-        title={hotel?.name || "Mehmonxona"}
+        title={hotel?.name || tr("Mehmonxona")}
         subtitle={
           hotel ? `${hotel.code}${hotel.city ? ` · ${hotel.city}` : ""}` : undefined
         }
@@ -91,9 +92,9 @@ export function HotelDetailPage() {
       <div className="mb-4 flex gap-1 rounded-xl border border-white/5 bg-white/[0.03] p-1">
         {(
           [
-            ["branches", "Filiallar"],
-            ["rooms", "Xonalar"],
-            ["staff", "Xodimlar"],
+            ["branches", tr("Filiallar")],
+            ["rooms", tr("Xonalar")],
+            ["staff", tr("Xodimlar")],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -139,7 +140,7 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
   }
 
   const drop = async (branch: PanelBranch) => {
-    if (!confirm(`"${branch.name}" filiali o'chiriladi. Davom etasizmi?`)) return
+    if (!confirm(tr("\"{{name}}\" filiali o'chiriladi. Davom etasizmi?", { name: branch.name }))) return
     setError(null)
     try {
       await remove.mutateAsync(branch.id)
@@ -153,7 +154,7 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
       <div className="mb-3 flex justify-end">
         <PanelButton onClick={() => setEditing({})}>
           <Plus className="h-4 w-4" />
-          Filial qo'shish
+          {tr("Filial qo'shish")}
         </PanelButton>
       </div>
 
@@ -164,7 +165,7 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
           <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
         </div>
       ) : branches.length === 0 ? (
-        <PanelEmpty>Filial yo'q</PanelEmpty>
+        <PanelEmpty>{tr("Filial yo'q")}</PanelEmpty>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {branches.map((branch) => (
@@ -175,14 +176,12 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
                     <span className="truncate">{branch.name}</span>
                     {branch.is_main_branch && (
                       <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">
-                        asosiy
+                        {tr("asosiy")}
                       </span>
                     )}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {branch.code}
-                    {branch.city ? ` · ${branch.city}` : ""} ·{" "}
-                    {branch.room_count ?? 0} xona
+                    {tr("{{code}}{{v}} · {{v2}} xona", { code: branch.code, v: branch.city ? ` · ${branch.city}` : "", v2: branch.room_count ?? 0 })}
                   </p>
                 </div>
               </div>
@@ -192,7 +191,7 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
                   className="h-8 text-xs"
                   onClick={() => setEditing(branch)}
                 >
-                  Tahrirlash
+                  {tr("Tahrirlash")}
                 </PanelButton>
                 <PanelButton
                   variant="danger"
@@ -200,7 +199,7 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
                   onClick={() => drop(branch)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  O'chirish
+                  {tr("O'chirish")}
                 </PanelButton>
               </div>
             </PanelCard>
@@ -210,18 +209,18 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
 
       <PanelDialog
         open={!!editing}
-        title={editing?.id ? "Filialni tahrirlash" : "Yangi filial"}
+        title={editing?.id ? tr("Filialni tahrirlash") : tr("Yangi filial")}
         onClose={() => setEditing(null)}
       >
         <form onSubmit={submit} className="space-y-3">
           <PanelInput
-            label="Nomi"
+            label={tr("Nomi")}
             value={editing?.name || ""}
             onChange={(e) => setEditing((b) => ({ ...b, name: e.target.value }))}
             required
           />
           <PanelInput
-            label="Kod"
+            label={tr("Kod")}
             value={editing?.code || ""}
             onChange={(e) => setEditing((b) => ({ ...b, code: e.target.value }))}
             maxLength={20}
@@ -229,14 +228,14 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
           />
           <div className="grid grid-cols-2 gap-3">
             <PanelInput
-              label="Shahar"
+              label={tr("Shahar")}
               value={editing?.city || ""}
               onChange={(e) =>
                 setEditing((b) => ({ ...b, city: e.target.value }))
               }
             />
             <PanelInput
-              label="Telefon"
+              label={tr("Telefon")}
               value={editing?.phone || ""}
               onChange={(e) =>
                 setEditing((b) => ({ ...b, phone: e.target.value }))
@@ -251,7 +250,7 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
                 setEditing((b) => ({ ...b, is_main_branch: e.target.checked }))
               }
             />
-            Asosiy filial
+            {tr("Asosiy filial")}
           </label>
 
           {error && <PanelNotice>{error}</PanelNotice>}
@@ -262,11 +261,11 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
               variant="ghost"
               onClick={() => setEditing(null)}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </PanelButton>
             <PanelButton type="submit" disabled={save.isPending}>
               {save.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Saqlash
+              {tr("Saqlash")}
             </PanelButton>
           </div>
         </form>
@@ -298,7 +297,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
     setError(null)
     try {
       await createStaff.mutateAsync({ hotelId, ...draft })
-      setNotice(`${draft.username} qo'shildi`)
+      setNotice(tr("{{username}} qo'shildi", { username: draft.username }))
       setDraft(null)
       window.setTimeout(() => setNotice(null), 4000)
     } catch (e) {
@@ -312,7 +311,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
     setError(null)
     try {
       await resetPassword.mutateAsync({ id: target.id, password })
-      setNotice(`${target.username} uchun parol almashtirildi`)
+      setNotice(tr("{{username}} uchun parol almashtirildi", { username: target.username }))
       setTarget(null)
       setPassword("")
       window.setTimeout(() => setNotice(null), 4000)
@@ -346,7 +345,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
           }
         >
           <UserPlus className="h-4 w-4" />
-          Xodim qo'shish
+          {tr("Xodim qo'shish")}
         </PanelButton>
       </div>
 
@@ -358,16 +357,16 @@ function StaffTab({ hotelId }: { hotelId: string }) {
           <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
         </div>
       ) : staff.length === 0 ? (
-        <PanelEmpty>Xodim yo'q</PanelEmpty>
+        <PanelEmpty>{tr("Xodim yo'q")}</PanelEmpty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-white/5">
           <table className="w-full text-sm">
             <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
               <tr>
-                <th className="px-3 py-2 font-medium">Xodim</th>
-                <th className="px-3 py-2 font-medium">Login</th>
-                <th className="px-3 py-2 font-medium">Roli</th>
-                <th className="px-3 py-2 font-medium">Holat</th>
+                <th className="px-3 py-2 font-medium">{tr("Xodim")}</th>
+                <th className="px-3 py-2 font-medium">{tr("Login")}</th>
+                <th className="px-3 py-2 font-medium">{tr("Roli")}</th>
+                <th className="px-3 py-2 font-medium">{tr("Holat")}</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -399,14 +398,14 @@ function StaffTab({ hotelId }: { hotelId: string }) {
                         onClick={() => setTarget(person)}
                       >
                         <KeyRound className="h-3.5 w-3.5" />
-                        Parol
+                        {tr("Parol")}
                       </PanelButton>
                       <PanelButton
                         variant="ghost"
                         className="h-7 px-2 text-xs"
                         onClick={() => toggle(person)}
                       >
-                        {person.status === "ACTIVE" ? "To'xtatish" : "Faollashtirish"}
+                        {person.status === "ACTIVE" ? tr("To'xtatish") : tr("Faollashtirish")}
                       </PanelButton>
                     </div>
                   </td>
@@ -419,13 +418,13 @@ function StaffTab({ hotelId }: { hotelId: string }) {
 
       <PanelDialog
         open={!!draft}
-        title="Yangi xodim"
+        title={tr("Yangi xodim")}
         onClose={() => setDraft(null)}
       >
         <form onSubmit={submitNew} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <PanelInput
-              label="Ism"
+              label={tr("Ism")}
               value={draft?.first_name || ""}
               onChange={(e) =>
                 setDraft((d) => d && { ...d, first_name: e.target.value })
@@ -433,7 +432,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
               required
             />
             <PanelInput
-              label="Familiya"
+              label={tr("Familiya")}
               value={draft?.last_name || ""}
               onChange={(e) =>
                 setDraft((d) => d && { ...d, last_name: e.target.value })
@@ -442,7 +441,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
             />
           </div>
           <PanelInput
-            label="Login"
+            label={tr("Login")}
             value={draft?.username || ""}
             onChange={(e) =>
               setDraft((d) => d && { ...d, username: e.target.value })
@@ -451,7 +450,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
             required
           />
           <PanelInput
-            label="Parol"
+            label={tr("Parol")}
             type="text"
             value={draft?.password || ""}
             onChange={(e) =>
@@ -462,7 +461,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
             required
           />
           <PanelSelect
-            label="Roli"
+            label={tr("Roli")}
             value={draft?.user_type || "RECEPTIONIST"}
             onChange={(e) =>
               setDraft((d) => d && { ...d, user_type: e.target.value })
@@ -475,8 +474,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
             ))}
           </PanelSelect>
           <p className="text-[11px] text-slate-500">
-            Xodim asosiy filialga biriktiriladi va shu login bilan tizimga
-            kiradi.
+            {tr("Xodim asosiy filialga biriktiriladi va shu login bilan tizimga kiradi.")}
           </p>
           {error && <PanelNotice>{error}</PanelNotice>}
           <div className="flex justify-end gap-2 pt-1">
@@ -485,13 +483,13 @@ function StaffTab({ hotelId }: { hotelId: string }) {
               variant="ghost"
               onClick={() => setDraft(null)}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </PanelButton>
             <PanelButton type="submit" disabled={createStaff.isPending}>
               {createStaff.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
-              Qo'shish
+              {tr("Qo'shish")}
             </PanelButton>
           </div>
         </form>
@@ -499,12 +497,12 @@ function StaffTab({ hotelId }: { hotelId: string }) {
 
       <PanelDialog
         open={!!target}
-        title={`${target?.username || ""} — yangi parol`}
+        title={tr("{{v}} — yangi parol", { v: target?.username || "" })}
         onClose={() => setTarget(null)}
       >
         <form onSubmit={submitPassword} className="space-y-3">
           <PanelInput
-            label="Yangi parol"
+            label={tr("Yangi parol")}
             type="text"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -512,8 +510,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
             required
           />
           <p className="text-[11px] text-slate-500">
-            Parolni xodimga o'zingiz yetkazasiz — tizim uni hech qayerga
-            yubormaydi.
+            {tr("Parolni xodimga o'zingiz yetkazasiz — tizim uni hech qayerga yubormaydi.")}
           </p>
           {error && <PanelNotice>{error}</PanelNotice>}
           <div className="flex justify-end gap-2">
@@ -522,13 +519,13 @@ function StaffTab({ hotelId }: { hotelId: string }) {
               variant="ghost"
               onClick={() => setTarget(null)}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </PanelButton>
             <PanelButton type="submit" disabled={resetPassword.isPending}>
               {resetPassword.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
-              Almashtirish
+              {tr("Almashtirish")}
             </PanelButton>
           </div>
         </form>
@@ -549,7 +546,7 @@ function RoomsTab({ hotelId }: { hotelId: string }) {
     )
   }
 
-  if (rooms.length === 0) return <PanelEmpty>Xona yo'q</PanelEmpty>
+  if (rooms.length === 0) return <PanelEmpty>{tr("Xona yo'q")}</PanelEmpty>
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/5">
@@ -557,12 +554,12 @@ function RoomsTab({ hotelId }: { hotelId: string }) {
         <table className="w-full min-w-[560px] text-sm">
           <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
             <tr>
-              <th className="px-3 py-2.5 font-medium">Xona</th>
-              <th className="px-3 py-2.5 font-medium">Qavat</th>
-              <th className="px-3 py-2.5 font-medium">Turi</th>
-              <th className="px-3 py-2.5 font-medium">Sig'imi</th>
-              <th className="px-3 py-2.5 text-right font-medium">Narxi</th>
-              <th className="px-3 py-2.5 font-medium">Holat</th>
+              <th className="px-3 py-2.5 font-medium">{tr("Xona")}</th>
+              <th className="px-3 py-2.5 font-medium">{tr("Qavat")}</th>
+              <th className="px-3 py-2.5 font-medium">{tr("Turi")}</th>
+              <th className="px-3 py-2.5 font-medium">{tr("Sig'imi")}</th>
+              <th className="px-3 py-2.5 text-right font-medium">{tr("Narxi")}</th>
+              <th className="px-3 py-2.5 font-medium">{tr("Holat")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">

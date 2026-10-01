@@ -46,13 +46,14 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr, trc } from "@/i18n"
 
 const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 
 const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Faol",
-  PENDING_HANDOVER: "Topshirilmoqda",
-  CLOSED: "Yopilgan",
+  ACTIVE: tr("Faol"),
+  PENDING_HANDOVER: tr("Topshirilmoqda"),
+  CLOSED: tr("Yopilgan"),
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -72,7 +73,7 @@ const durationMins = (s: ShiftSession): number => {
 const durationLabel = (mins: number): string => {
   const h = Math.floor(mins / 60)
   const m = mins % 60
-  return h > 0 ? `${h} s ${m} d` : `${m} d`
+  return h > 0 ? tr("{{h}} s {{m}} d", { h, m }) : tr("{{m}} d", { m })
 }
 
 type SortKey =
@@ -159,20 +160,20 @@ export const ShiftsHistoryPage = () => {
 
   const todayStr = format(new Date(), "yyyy-MM-dd")
   const presets = [
-    { key: "today", label: "Bugun", from: todayStr, to: todayStr },
+    { key: "today", label: tr("Bugun"), from: todayStr, to: todayStr },
     {
       key: "week",
-      label: "7 kun",
+      label: tr("7 kun"),
       from: format(subDays(new Date(), 6), "yyyy-MM-dd"),
       to: todayStr,
     },
     {
       key: "month",
-      label: "30 kun",
+      label: tr("30 kun"),
       from: format(subDays(new Date(), 29), "yyyy-MM-dd"),
       to: todayStr,
     },
-    { key: "all", label: "Hammasi", from: "", to: "" },
+    { key: "all", label: tr("Hammasi"), from: "", to: "" },
   ]
 
   // --- Saralash ---
@@ -330,16 +331,16 @@ export const ShiftsHistoryPage = () => {
     if (!editTarget) return
     // Bo'sh maydon Number("")=0 bo'lib jimgina o'tib ketmasligi kerak
     if (newCounted.trim() === "") {
-      setEditError("Yangi summani kiriting")
+      setEditError(tr("Yangi summani kiriting"))
       return
     }
     const n = Number(newCounted.replace(/\s/g, ""))
     if (Number.isNaN(n) || n < 0) {
-      setEditError("Yangi summani to'g'ri kiriting")
+      setEditError(tr("Yangi summani to'g'ri kiriting"))
       return
     }
     if (editNote.trim().length < 3) {
-      setEditError("Tuzatish sababini yozing (izoh majburiy)")
+      setEditError(tr("Tuzatish sababini yozing (izoh majburiy)"))
       return
     }
     setEditError(null)
@@ -358,7 +359,7 @@ export const ShiftsHistoryPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Smenalar tarixi</h1>
+        <h1 className="text-2xl font-bold">{tr("Smenalar tarixi")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -412,46 +413,46 @@ export const ShiftsHistoryPage = () => {
     {
       icon: History,
       accent: "bg-primary-50 text-primary-600",
-      label: "Sessiyalar",
-      value: `${filtered.length} ta`,
-      sub: `${activeF} faol · ${pendingF} topshirilmoqda`,
+      label: tr("Sessiyalar"),
+      value: tr("{{count}} ta", { count: filtered.length }),
+      sub: tr("{{activeF}} faol · {{pendingF}} topshirilmoqda", { activeF, pendingF }),
     },
     {
       icon: Wallet,
       accent: "bg-emerald-50 text-emerald-600",
-      label: "Jami sanalgan (yopilgan)",
-      value: `${fmt(totalCounted)} so'm`,
-      sub: `${closedF.length} ta yopilgan sessiya`,
+      label: tr("Jami sanalgan (yopilgan)"),
+      value: tr("{{totalCounted}} so'm", { totalCounted: fmt(totalCounted) }),
+      sub: tr("{{count}} ta yopilgan sessiya", { count: closedF.length }),
     },
     {
       icon: TrendingDown,
       accent: shortageList.length ? "bg-red-50 text-red-500" : "bg-gray-50 text-gray-400",
-      label: "Kamomad",
-      value: `${fmt(shortageTotal)} so'm`,
-      sub: `${shortageList.length} ta sessiyada`,
+      label: tr("Kamomad"),
+      value: tr("{{shortageTotal}} so'm", { shortageTotal: fmt(shortageTotal) }),
+      sub: tr("{{count}} ta sessiyada", { count: shortageList.length }),
     },
     {
       icon: TrendingUp,
       accent: surplusList.length
         ? "bg-amber-50 text-amber-600"
         : "bg-gray-50 text-gray-400",
-      label: "Ortiqcha",
-      value: `+${fmt(surplusTotal)} so'm`,
-      sub: `${surplusList.length} ta sessiyada`,
+      label: tr("Ortiqcha"),
+      value: tr("+{{surplusTotal}} so'm", { surplusTotal: fmt(surplusTotal) }),
+      sub: tr("{{count}} ta sessiyada", { count: surplusList.length }),
     },
     {
       icon: ShieldAlert,
       accent: forcedCount ? "bg-orange-50 text-orange-600" : "bg-gray-50 text-gray-400",
-      label: "Majburiy yopilgan",
-      value: `${forcedCount} ta`,
-      sub: `tahrirlangan: ${correctedCount} ta`,
+      label: tr("Majburiy yopilgan"),
+      value: tr("{{forcedCount}} ta", { forcedCount }),
+      sub: tr("tahrirlangan: {{correctedCount}} ta", { correctedCount }),
     },
     {
       icon: Clock,
       accent: "bg-sky-50 text-sky-600",
-      label: "O'rtacha davomiylik",
+      label: tr("O'rtacha davomiylik"),
       value: closedF.length ? durationLabel(avgDuration) : "—",
-      sub: "yopilgan sessiyalar bo'yicha",
+      sub: tr("yopilgan sessiyalar bo'yicha"),
     },
   ]
 
@@ -465,21 +466,18 @@ export const ShiftsHistoryPage = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-              Smenalar tarixi
+              {tr("Smenalar tarixi")}
             </h1>
             <p className="text-sm text-gray-500">
-              Jami {sessions.length} ta sessiya
+              {tr("Jami {{count}} ta sessiya", { count: sessions.length })}
               {filtered.length !== sessions.length && (
                 <span className="font-medium text-primary-700">
-                  {" "}
-                  · natija: {filtered.length} ta
+                  {" "}{tr("· natija: {{count}} ta", { count: filtered.length })}
                 </span>
               )}
               {settings && (
                 <span className="text-gray-400">
-                  {" "}
-                  · rejim: {settings.mode === "cash" ? "kassali" : "oddiy"} · kesim:{" "}
-                  {settings.day_close}
+                  {" "}{tr("· rejim: {{v}} · kesim: {{day_close}}", { v: settings.mode === "cash" ? tr("kassali") : tr("oddiy"), day_close: settings.day_close })}
                 </span>
               )}
             </p>
@@ -504,7 +502,7 @@ export const ShiftsHistoryPage = () => {
                 {selectedEmployee.name}
               </p>
               <p className="text-xs text-primary-700">
-                Faqat shu xodimning kassa ma'lumotlari ko'rsatilmoqda
+                {tr("Faqat shu xodimning kassa ma'lumotlari ko'rsatilmoqda")}
               </p>
             </div>
           </div>
@@ -514,7 +512,7 @@ export const ShiftsHistoryPage = () => {
             className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-gray-600 ring-1 ring-primary-200 transition-colors hover:text-red-600"
           >
             <X className="h-3.5 w-3.5" />
-            Barcha xodimlar
+            {tr("Barcha xodimlar")}
           </button>
         </div>
       )}
@@ -549,10 +547,10 @@ export const ShiftsHistoryPage = () => {
         <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-gray-50/70 px-4 py-2.5">
           <p className="flex items-center gap-2 text-xs font-semibold text-gray-600">
             <Filter className="h-3.5 w-3.5" />
-            Filtrlar
+            {tr("Filtrlar")}
             {hasFilters && (
               <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
-                natija: {filtered.length} ta
+                {tr("natija: {{count}} ta", { count: filtered.length })}
               </span>
             )}
           </p>
@@ -563,7 +561,7 @@ export const ShiftsHistoryPage = () => {
               className="flex items-center gap-1 text-xs font-medium text-gray-400 transition-colors hover:text-red-500"
             >
               <X className="h-3.5 w-3.5" />
-              Tozalash
+              {trc("clear", "Tozalash")}
             </button>
           )}
         </div>
@@ -575,9 +573,9 @@ export const ShiftsHistoryPage = () => {
             className={cn(selectClass, employeeFilter !== "ALL" && "border-primary-400 ring-1 ring-primary-200")}
             value={employeeFilter}
             onChange={(e) => setEmployeeFilter(e.target.value)}
-            title="Xodimni tanlang"
+            title={tr("Xodimni tanlang")}
           >
-            <option value="ALL">Barcha xodimlar</option>
+            <option value="ALL">{tr("Barcha xodimlar")}</option>
             {employees.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.name}
@@ -628,10 +626,10 @@ export const ShiftsHistoryPage = () => {
           {/* Holat filtrlari */}
           {(
             [
-              ["ALL", "Barcha holat"],
-              ["ACTIVE", "Faol"],
-              ["PENDING_HANDOVER", "Topshirilmoqda"],
-              ["CLOSED", "Yopilgan"],
+              ["ALL", tr("Barcha holat")],
+              ["ACTIVE", tr("Faol")],
+              ["PENDING_HANDOVER", tr("Topshirilmoqda")],
+              ["CLOSED", tr("Yopilgan")],
             ] as [StatusFilter, string][]
           ).map(([v, l]) => (
             <button
@@ -663,7 +661,7 @@ export const ShiftsHistoryPage = () => {
             )}
           >
             <AlertTriangle className="h-3 w-3" />
-            Farqli
+            {tr("Farqli")}
           </button>
           <button
             type="button"
@@ -675,7 +673,7 @@ export const ShiftsHistoryPage = () => {
                 : "bg-orange-50 text-orange-600 hover:bg-orange-100"
             )}
           >
-            Majburiy
+            {tr("Majburiy")}
           </button>
           <button
             type="button"
@@ -687,7 +685,7 @@ export const ShiftsHistoryPage = () => {
                 : "bg-amber-50 text-amber-700 hover:bg-amber-100"
             )}
           >
-            Tahrirlangan
+            {tr("Tahrirlangan")}
           </button>
 
           {/* Qidiruv */}
@@ -695,7 +693,7 @@ export const ShiftsHistoryPage = () => {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               className="h-8 pl-9 text-xs"
-              placeholder="Xodim bo'yicha qidirish..."
+              placeholder={tr("Xodim bo'yicha qidirish...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -709,9 +707,9 @@ export const ShiftsHistoryPage = () => {
         <div className="rounded-2xl border bg-white overflow-hidden">
           <p className="flex items-center gap-2 border-b bg-gray-50/70 px-4 py-2.5 text-xs font-semibold text-gray-600">
             <Users className="h-3.5 w-3.5" />
-            Xodimlar kesimi
+            {tr("Xodimlar kesimi")}
             <span className="font-normal text-gray-400">
-              — qatorni bosib faqat shu xodimni ko'ring
+              {tr("— qatorni bosib faqat shu xodimni ko'ring")}
             </span>
           </p>
 
@@ -757,21 +755,21 @@ export const ShiftsHistoryPage = () => {
                   </p>
                   {employeeFilter === e.id && (
                     <span className="rounded-full bg-primary-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                      tanlangan
+                      {tr("tanlangan")}
                     </span>
                   )}
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-1.5 text-center">
                   <div className="rounded-lg bg-gray-50 px-1 py-1.5">
-                    <p className="text-[10px] text-gray-400">Sessiyalar</p>
+                    <p className="text-[10px] text-gray-400">{tr("Sessiyalar")}</p>
                     <p className="text-xs font-bold tabular-nums text-gray-800">
-                      {e.count} ta
+                      {tr("{{count}} ta", { count: e.count })}
                     </p>
                   </div>
                   <div className="rounded-lg bg-gray-50 px-1 py-1.5">
-                    <p className="text-[10px] text-gray-400">Jami sanalgan</p>
+                    <p className="text-[10px] text-gray-400">{tr("Jami sanalgan")}</p>
                     <p className="truncate text-xs font-bold tabular-nums text-gray-800">
-                      {fmt(e.counted)} so'm
+                      {tr("{{counted}} so'm", { counted: fmt(e.counted) })}
                     </p>
                   </div>
                   <div
@@ -786,7 +784,7 @@ export const ShiftsHistoryPage = () => {
                         e.shortage < 0 ? "text-red-500" : "text-gray-400"
                       )}
                     >
-                      Kamomad
+                      {tr("Kamomad")}
                     </p>
                     <p
                       className={cn(
@@ -794,7 +792,7 @@ export const ShiftsHistoryPage = () => {
                         e.shortage < 0 ? "text-red-600" : "text-gray-400"
                       )}
                     >
-                      {e.shortage < 0 ? `${fmt(e.shortage)} so'm` : "—"}
+                      {e.shortage < 0 ? tr("{{shortage}} so'm", { shortage: fmt(e.shortage) }) : "—"}
                     </p>
                   </div>
                   <div
@@ -809,7 +807,7 @@ export const ShiftsHistoryPage = () => {
                         e.surplus > 0 ? "text-amber-600" : "text-gray-400"
                       )}
                     >
-                      Ortiqcha
+                      {tr("Ortiqcha")}
                     </p>
                     <p
                       className={cn(
@@ -817,7 +815,7 @@ export const ShiftsHistoryPage = () => {
                         e.surplus > 0 ? "text-amber-700" : "text-gray-400"
                       )}
                     >
-                      {e.surplus > 0 ? `+${fmt(e.surplus)} so'm` : "—"}
+                      {e.surplus > 0 ? tr("+{{surplus}} so'm", { surplus: fmt(e.surplus) }) : "—"}
                     </p>
                   </div>
                 </div>
@@ -830,11 +828,11 @@ export const ShiftsHistoryPage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Xodim</TableHead>
-                  <TableHead className="text-right">Sessiyalar</TableHead>
-                  <TableHead className="text-right">Jami sanalgan</TableHead>
-                  <TableHead className="text-right">Kamomad</TableHead>
-                  <TableHead className="text-right">Ortiqcha</TableHead>
+                  <TableHead>{tr("Xodim")}</TableHead>
+                  <TableHead className="text-right">{tr("Sessiyalar")}</TableHead>
+                  <TableHead className="text-right">{tr("Jami sanalgan")}</TableHead>
+                  <TableHead className="text-right">{tr("Kamomad")}</TableHead>
+                  <TableHead className="text-right">{tr("Ortiqcha")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -871,16 +869,16 @@ export const ShiftsHistoryPage = () => {
                         <span className="font-medium text-gray-900">{e.name}</span>
                         {employeeFilter === e.id && (
                           <span className="rounded-full bg-primary-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                            tanlangan
+                            {tr("tanlangan")}
                           </span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-gray-600">
-                      {e.count} ta
+                      {tr("{{count}} ta", { count: e.count })}
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-gray-600">
-                      {fmt(e.counted)} so'm
+                      {tr("{{counted}} so'm", { counted: fmt(e.counted) })}
                     </TableCell>
                     <TableCell
                       className={cn(
@@ -888,7 +886,7 @@ export const ShiftsHistoryPage = () => {
                         e.shortage < 0 ? "text-red-600" : "text-gray-400"
                       )}
                     >
-                      {e.shortage < 0 ? `${fmt(e.shortage)} so'm` : "—"}
+                      {e.shortage < 0 ? tr("{{shortage}} so'm", { shortage: fmt(e.shortage) }) : "—"}
                     </TableCell>
                     <TableCell
                       className={cn(
@@ -896,7 +894,7 @@ export const ShiftsHistoryPage = () => {
                         e.surplus > 0 ? "text-amber-600" : "text-gray-400"
                       )}
                     >
-                      {e.surplus > 0 ? `+${fmt(e.surplus)} so'm` : "—"}
+                      {e.surplus > 0 ? tr("+{{surplus}} so'm", { surplus: fmt(e.surplus) }) : "—"}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -914,35 +912,35 @@ export const ShiftsHistoryPage = () => {
             className={cn(selectClass, "flex-1")}
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            title="Saralash"
+            title={tr("Saralash")}
           >
-            <option value="started_at">Boshlangan vaqti bo'yicha</option>
-            <option value="ended_at">Tugagan vaqti bo'yicha</option>
-            <option value="duration">Davomiylik bo'yicha</option>
-            <option value="opening">Boshlang'ich kassa bo'yicha</option>
-            <option value="expected">Kutilgan summa bo'yicha</option>
-            <option value="counted">Sanalgan summa bo'yicha</option>
-            <option value="diff">Farq bo'yicha</option>
-            <option value="user">Xodim ismi bo'yicha</option>
+            <option value="started_at">{tr("Boshlangan vaqti bo'yicha")}</option>
+            <option value="ended_at">{tr("Tugagan vaqti bo'yicha")}</option>
+            <option value="duration">{tr("Davomiylik bo'yicha")}</option>
+            <option value="opening">{tr("Boshlang'ich kassa bo'yicha")}</option>
+            <option value="expected">{tr("Kutilgan summa bo'yicha")}</option>
+            <option value="counted">{tr("Sanalgan summa bo'yicha")}</option>
+            <option value="diff">{tr("Farq bo'yicha")}</option>
+            <option value="user">{tr("Xodim ismi bo'yicha")}</option>
           </select>
           <button
             type="button"
             onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
             className="flex h-9 items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-600"
-            title="Saralash yo'nalishi"
+            title={tr("Saralash yo'nalishi")}
           >
             {sortDir === "asc" ? (
               <ChevronUp className="h-3.5 w-3.5" />
             ) : (
               <ChevronDown className="h-3.5 w-3.5" />
             )}
-            {sortDir === "asc" ? "O'sish" : "Kamayish"}
+            {sortDir === "asc" ? tr("O'sish") : tr("Kamayish")}
           </button>
         </div>
 
         {sorted.length === 0 ? (
           <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-            Sessiyalar topilmadi
+            {tr("Sessiyalar topilmadi")}
           </div>
         ) : (
           sorted.map((s) => {
@@ -979,7 +977,7 @@ export const ShiftsHistoryPage = () => {
                       {" – "}
                       {s.ended_at
                         ? format(new Date(s.ended_at), "dd.MM HH:mm")
-                        : "davom etmoqda"}
+                        : tr("davom etmoqda")}
                       {" · "}
                       {durationLabel(durationMins(s))}
                     </p>
@@ -987,7 +985,7 @@ export const ShiftsHistoryPage = () => {
                   {canEdit && s.status === "CLOSED" && (
                     <button
                       type="button"
-                      title="Sanalgan summani tuzatish"
+                      title={tr("Sanalgan summani tuzatish")}
                       onClick={(ev) => {
                         ev.stopPropagation()
                         openEdit(s)
@@ -1010,17 +1008,17 @@ export const ShiftsHistoryPage = () => {
                   </span>
                   {s.force_closed && (
                     <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                      majburiy
+                      {tr("majburiy")}
                     </span>
                   )}
                   {s.continue_after_end && (
                     <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">
-                      davom etgan
+                      {tr("davom etgan")}
                     </span>
                   )}
                   {s.corrections && s.corrections.length > 0 && (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                      tahrirlangan
+                      {tr("tahrirlangan")}
                     </span>
                   )}
                 </div>
@@ -1028,7 +1026,7 @@ export const ShiftsHistoryPage = () => {
                 {/* Kassa qisqacha: kutilgan / sanalgan / farq */}
                 <div className="mt-2.5 grid grid-cols-3 gap-1.5 text-center">
                   <div className="rounded-lg bg-gray-50 px-1 py-1.5">
-                    <p className="text-[10px] text-gray-400">Kutilgan</p>
+                    <p className="text-[10px] text-gray-400">{tr("Kutilgan")}</p>
                     <p className="truncate text-xs font-bold tabular-nums text-gray-800">
                       {s.expected_cash !== null && s.expected_cash !== undefined
                         ? fmt(s.expected_cash)
@@ -1036,7 +1034,7 @@ export const ShiftsHistoryPage = () => {
                     </p>
                   </div>
                   <div className="rounded-lg bg-gray-50 px-1 py-1.5">
-                    <p className="text-[10px] text-gray-400">Sanalgan</p>
+                    <p className="text-[10px] text-gray-400">{tr("Sanalgan")}</p>
                     <p className="truncate text-xs font-bold tabular-nums text-gray-800">
                       {s.counted_cash !== null && s.counted_cash !== undefined
                         ? fmt(s.counted_cash)
@@ -1063,7 +1061,7 @@ export const ShiftsHistoryPage = () => {
                             : "text-red-500"
                       )}
                     >
-                      Farq
+                      {tr("Farq")}
                     </p>
                     <p
                       className={cn(
@@ -1084,8 +1082,8 @@ export const ShiftsHistoryPage = () => {
                   <p className="mt-2 flex items-center gap-1 text-xs text-gray-500">
                     <ArrowRightLeft className="h-3 w-3 text-gray-400" />
                     {s.accepted_by_name
-                      ? `${s.accepted_by_name} qabul qilgan`
-                      : `${s.closed_by_name} majburiy yopgan`}
+                      ? tr("{{accepted_by_name}} qabul qilgan", { accepted_by_name: s.accepted_by_name })
+                      : tr("{{closed_by_name}} majburiy yopgan", { closed_by_name: String(s.closed_by_name) })}
                   </p>
                 )}
               </div>
@@ -1100,17 +1098,17 @@ export const ShiftsHistoryPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <SortHead label="Xodim" k="user" />
-                <SortHead label="Boshlangan" k="started_at" />
-                <SortHead label="Tugagan" k="ended_at" />
-                <SortHead label="Davomiylik" k="duration" />
-                <SortHead label="Boshlang'ich" k="opening" right />
-                <SortHead label="Kutilgan" k="expected" right />
-                <SortHead label="Sanalgan" k="counted" right />
-                <SortHead label="Farq" k="diff" right />
-                <TableHead>Holat</TableHead>
-                <TableHead>Topshirilgan</TableHead>
-                {canEdit && <TableHead className="text-right">Amallar</TableHead>}
+                <SortHead label={tr("Xodim")} k="user" />
+                <SortHead label={tr("Boshlangan")} k="started_at" />
+                <SortHead label={trc("shift", "Tugagan")} k="ended_at" />
+                <SortHead label={tr("Davomiylik")} k="duration" />
+                <SortHead label={tr("Boshlang'ich")} k="opening" right />
+                <SortHead label={tr("Kutilgan")} k="expected" right />
+                <SortHead label={tr("Sanalgan")} k="counted" right />
+                <SortHead label={tr("Farq")} k="diff" right />
+                <TableHead>{tr("Holat")}</TableHead>
+                <TableHead>{tr("Topshirilgan")}</TableHead>
+                {canEdit && <TableHead className="text-right">{tr("Amallar")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1120,7 +1118,7 @@ export const ShiftsHistoryPage = () => {
                     colSpan={canEdit ? 11 : 10}
                     className="py-8 text-center text-gray-400"
                   >
-                    Sessiyalar topilmadi
+                    {tr("Sessiyalar topilmadi")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1219,12 +1217,12 @@ export const ShiftsHistoryPage = () => {
                               className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-600"
                               title={s.notes || undefined}
                             >
-                              majburiy
+                              {tr("majburiy")}
                             </span>
                           )}
                           {s.continue_after_end && (
                             <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">
-                              davom etgan
+                              {tr("davom etgan")}
                             </span>
                           )}
                           {s.corrections && s.corrections.length > 0 && (
@@ -1232,7 +1230,7 @@ export const ShiftsHistoryPage = () => {
                               className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
                               title={correctionTitle(s)}
                             >
-                              tahrirlangan
+                              {tr("tahrirlangan")}
                             </span>
                           )}
                         </div>
@@ -1245,7 +1243,7 @@ export const ShiftsHistoryPage = () => {
                           </span>
                         ) : s.force_closed && s.closed_by_name ? (
                           <span className="text-gray-400">
-                            {s.closed_by_name} yopdi
+                            {tr("{{closed_by_name}} yopdi", { closed_by_name: s.closed_by_name })}
                           </span>
                         ) : (
                           "—"
@@ -1256,7 +1254,7 @@ export const ShiftsHistoryPage = () => {
                           {s.status === "CLOSED" && (
                             <button
                               type="button"
-                              title="Sanalgan summani tuzatish"
+                              title={tr("Sanalgan summani tuzatish")}
                               onClick={(ev) => {
                                 ev.stopPropagation()
                                 openEdit(s)
@@ -1307,18 +1305,18 @@ export const ShiftsHistoryPage = () => {
                     </span>
                     {detailTarget.force_closed && (
                       <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-600">
-                        majburiy yopilgan
+                        {tr("majburiy yopilgan")}
                       </span>
                     )}
                     {detailTarget.continue_after_end && (
                       <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">
-                        davom etgan
+                        {tr("davom etgan")}
                       </span>
                     )}
                     {detailTarget.corrections &&
                       detailTarget.corrections.length > 0 && (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                          tahrirlangan
+                          {tr("tahrirlangan")}
                         </span>
                       )}
                   </div>
@@ -1330,20 +1328,20 @@ export const ShiftsHistoryPage = () => {
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {[
                     [
-                      "Boshlangan",
+                      tr("Boshlangan"),
                       detailTarget.started_at
                         ? format(new Date(detailTarget.started_at), "dd.MM HH:mm")
                         : "—",
                     ],
                     [
-                      "Tugagan",
+                      trc("shift", "Tugagan"),
                       detailTarget.ended_at
                         ? format(new Date(detailTarget.ended_at), "dd.MM HH:mm")
                         : "—",
                     ],
-                    ["Davomiylik", durationLabel(durationMins(detailTarget))],
+                    [tr("Davomiylik"), durationLabel(durationMins(detailTarget))],
                     [
-                      "Qabul qilingan",
+                      tr("Qabul qilingan"),
                       detailTarget.accepted_at
                         ? format(new Date(detailTarget.accepted_at), "dd.MM HH:mm")
                         : "—",
@@ -1359,30 +1357,30 @@ export const ShiftsHistoryPage = () => {
                 {/* Kassa */}
                 <div>
                   <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                    Kassa
+                    {tr("Kassa")}
                   </p>
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
-                      <span className="text-gray-500">Boshlang'ich</span>
+                      <span className="text-gray-500">{tr("Boshlang'ich")}</span>
                       <span className="font-bold tabular-nums">
-                        {fmt(detailTarget.opening_cash)} so'm
+                        {tr("{{opening_cash}} so'm", { opening_cash: fmt(detailTarget.opening_cash) })}
                       </span>
                     </div>
                     <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
-                      <span className="text-gray-500">Kutilgan</span>
+                      <span className="text-gray-500">{tr("Kutilgan")}</span>
                       <span className="font-bold tabular-nums">
                         {detailTarget.expected_cash !== null &&
                         detailTarget.expected_cash !== undefined
-                          ? `${fmt(detailTarget.expected_cash)} so'm`
+                          ? tr("{{expected_cash}} so'm", { expected_cash: fmt(detailTarget.expected_cash) })
                           : "—"}
                       </span>
                     </div>
                     <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
-                      <span className="text-gray-500">Sanalgan</span>
+                      <span className="text-gray-500">{tr("Sanalgan")}</span>
                       <span className="font-bold tabular-nums">
                         {detailTarget.counted_cash !== null &&
                         detailTarget.counted_cash !== undefined
-                          ? `${fmt(detailTarget.counted_cash)} so'm`
+                          ? tr("{{counted_cash}} so'm", { counted_cash: fmt(detailTarget.counted_cash) })
                           : "—"}
                       </span>
                     </div>
@@ -1396,14 +1394,12 @@ export const ShiftsHistoryPage = () => {
                             : "bg-red-50 text-red-600"
                       )}
                     >
-                      <span>Farq</span>
+                      <span>{tr("Farq")}</span>
                       <span className="font-bold tabular-nums">
                         {detailTarget.status === "CLOSED"
-                          ? `${fmt(detailTarget.cash_diff)} so'm${
-                              Number(detailTarget.cash_diff || 0) === 0
-                                ? " — mos keldi"
-                                : ""
-                            }`
+                          ? tr("{{cash_diff}} so'm{{v}}", { cash_diff: fmt(detailTarget.cash_diff), v: Number(detailTarget.cash_diff || 0) === 0
+                                ? tr(" — mos keldi")
+                                : "" })
                           : "—"}
                       </span>
                     </div>
@@ -1416,12 +1412,12 @@ export const ShiftsHistoryPage = () => {
                     {detailTarget.accepted_by_name && (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-700 ring-1 ring-sky-200">
                         <ArrowRightLeft className="h-3 w-3" />
-                        Qabul qilgan: {detailTarget.accepted_by_name}
+                        {tr("Qabul qilgan: {{accepted_by_name}}", { accepted_by_name: detailTarget.accepted_by_name })}
                       </span>
                     )}
                     {detailTarget.force_closed && detailTarget.closed_by_name && (
                       <span className="rounded-full bg-red-50 px-2.5 py-1 font-medium text-red-600 ring-1 ring-red-200">
-                        Majburiy yopgan: {detailTarget.closed_by_name}
+                        {tr("Majburiy yopgan: {{closed_by_name}}", { closed_by_name: detailTarget.closed_by_name })}
                       </span>
                     )}
                   </div>
@@ -1430,7 +1426,7 @@ export const ShiftsHistoryPage = () => {
                 {/* Izoh */}
                 {detailTarget.notes && (
                   <div className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2 text-sm text-gray-600">
-                    <p className="text-[11px] font-medium text-gray-400">Izoh</p>
+                    <p className="text-[11px] font-medium text-gray-400">{tr("Izoh")}</p>
                     <p className="whitespace-pre-line">{detailTarget.notes}</p>
                   </div>
                 )}
@@ -1439,7 +1435,7 @@ export const ShiftsHistoryPage = () => {
                 {detailTarget.corrections && detailTarget.corrections.length > 0 && (
                   <div>
                     <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                      Tuzatishlar tarixi
+                      {tr("Tuzatishlar tarixi")}
                     </p>
                     <div className="space-y-1.5">
                       {detailTarget.corrections.map((c, i) => (
@@ -1451,9 +1447,9 @@ export const ShiftsHistoryPage = () => {
                             <span className="mr-1 text-gray-400 line-through">
                               {fmt(c.old_counted_cash)}
                             </span>
-                            → {fmt(c.new_counted_cash)} so'm
+                            {tr("→ {{new_counted_cash}} so'm", { new_counted_cash: fmt(c.new_counted_cash) })}
                             <span className="ml-2 font-normal text-amber-700/70">
-                              (farq: {fmt(c.old_diff)} → {fmt(c.new_diff)})
+                              {tr("(farq: {{old_diff}} → {{new_diff}})", { old_diff: fmt(c.old_diff), new_diff: fmt(c.new_diff) })}
                             </span>
                           </p>
                           <p className="mt-0.5 text-amber-700/80">
@@ -1480,10 +1476,10 @@ export const ShiftsHistoryPage = () => {
                     }}
                   >
                     <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                    Summani tuzatish
+                    {tr("Summani tuzatish")}
                   </Button>
                 )}
-                <Button onClick={() => setDetailTarget(null)}>Yopish</Button>
+                <Button onClick={() => setDetailTarget(null)}>{tr("Yopish")}</Button>
               </div>
             </>
           )}
@@ -1496,31 +1492,30 @@ export const ShiftsHistoryPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-4 w-4 text-amber-600" />
-              Sanalgan summani tuzatish
+              {tr("Sanalgan summani tuzatish")}
             </DialogTitle>
           </DialogHeader>
           {editTarget && (
             <div className="space-y-3 py-2">
               <p className="text-sm text-gray-600">
-                <b>{editTarget.user_name}</b> sessiyasi (
+                <b>{editTarget.user_name}</b>{" "}{tr("sessiyasi (")}
                 {editTarget.started_at &&
                   format(new Date(editTarget.started_at), "dd.MM HH:mm")}
-                ). Eski qiymat o'chirilmaydi — tuzatish tarixi bilan birga
-                saqlanadi va jadvalda "tahrirlangan" belgisi ko'rinadi.
+                {tr("). Eski qiymat o'chirilmaydi — tuzatish tarixi bilan birga saqlanadi va jadvalda \"tahrirlangan\" belgisi ko'rinadi.")}
               </p>
               <div className="flex flex-wrap gap-2 text-xs">
                 <span className="rounded-full bg-gray-50 px-2.5 py-1 font-medium text-gray-600 ring-1 ring-gray-200">
-                  Kutilgan:{" "}
-                  <b className="tabular-nums">{fmt(editTarget.expected_cash)}</b> so'm
+                  {tr("Kutilgan:")}{" "}
+                  <b className="tabular-nums">{fmt(editTarget.expected_cash)}</b>{" "}{tr("so'm")}
                 </span>
                 <span className="rounded-full bg-gray-50 px-2.5 py-1 font-medium text-gray-600 ring-1 ring-gray-200">
-                  Hozirgi sanalgan:{" "}
-                  <b className="tabular-nums">{fmt(editTarget.counted_cash)}</b> so'm
+                  {tr("Hozirgi sanalgan:")}{" "}
+                  <b className="tabular-nums">{fmt(editTarget.counted_cash)}</b>{" "}{tr("so'm")}
                 </span>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">
-                  Yangi sanalgan summa (so'm) *
+                  {tr("Yangi sanalgan summa (so'm) *")}
                 </label>
                 <Input
                   type="number"
@@ -1532,12 +1527,12 @@ export const ShiftsHistoryPage = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">
-                  Tuzatish sababi (izoh) *
+                  {tr("Tuzatish sababi (izoh) *")}
                 </label>
                 <Input
                   value={editNote}
                   onChange={(e) => setEditNote(e.target.value)}
-                  placeholder="Masalan: xodim bitta nol ortiqcha yozgan"
+                  placeholder={tr("Masalan: xodim bitta nol ortiqcha yozgan")}
                 />
               </div>
               {editError && (
@@ -1549,13 +1544,13 @@ export const ShiftsHistoryPage = () => {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditTarget(null)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={submitEdit} disabled={correctMutation.isPending}>
               {correctMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Tuzatishni saqlash
+              {tr("Tuzatishni saqlash")}
             </Button>
           </DialogFooter>
         </DialogContent>

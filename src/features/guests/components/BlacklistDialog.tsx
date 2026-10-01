@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { apiErrorMessage } from "@/lib/apiError"
 import type { Guest } from "@/types/api"
 import { useAddToBlacklist, useRemoveFromBlacklist } from "../api/blacklist"
+import { tr } from "@/i18n"
 
 /**
  * Mehmonni qora ro'yxatga qo'shish yoki chiqarish.
@@ -48,7 +49,7 @@ export function BlacklistDialog({ guest, onClose }: Props) {
       } else {
         const text = reason.trim()
         if (!text) {
-          setError("Sababni yozing — ro'yxat sababsiz foydasiz bo'lib qoladi")
+          setError(tr("Sababni yozing — ro'yxat sababsiz foydasiz bo'lib qoladi"))
           return
         }
         await add.mutateAsync({ id: guest.id, reason: text })
@@ -68,12 +69,12 @@ export function BlacklistDialog({ guest, onClose }: Props) {
             {listed ? (
               <>
                 <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                Qora ro'yxatdan chiqarish
+                {tr("Qora ro'yxatdan chiqarish")}
               </>
             ) : (
               <>
                 <Ban className="h-5 w-5 text-red-600" />
-                Qora ro'yxatga qo'shish
+                {tr("Qora ro'yxatga qo'shish")}
               </>
             )}
           </DialogTitle>
@@ -82,14 +83,14 @@ export function BlacklistDialog({ guest, onClose }: Props) {
         <p className="text-sm text-gray-700">
           <b>{name}</b>
           {listed
-            ? " qora ro'yxatdan chiqariladi va unga yana xizmat ko'rsatish mumkin bo'ladi."
-            : " qora ro'yxatga qo'shiladi. Sozlamada taqiq yoqiq bo'lsa, unga bron ochib bo'lmaydi."}
+            ? tr(" qora ro'yxatdan chiqariladi va unga yana xizmat ko'rsatish mumkin bo'ladi.")
+            : tr(" qora ro'yxatga qo'shiladi. Sozlamada taqiq yoqiq bo'lsa, unga bron ochib bo'lmaydi.")}
         </p>
 
         {listed && guest.blacklist_reason && (
           <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-              Ro'yxatga qo'shilish sababi
+              {tr("Ro'yxatga qo'shilish sababi")}
             </p>
             <p className="mt-0.5 text-sm text-gray-800">{guest.blacklist_reason}</p>
           </div>
@@ -97,16 +98,15 @@ export function BlacklistDialog({ guest, onClose }: Props) {
 
         {!listed && (
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Sabab *</label>
+            <label className="text-sm font-medium text-gray-700">{tr("Sabab *")}</label>
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Masalan: janjal ko'targan, mol-mulkka zarar yetkazgan"
+              placeholder={tr("Masalan: janjal ko'targan, mol-mulkka zarar yetkazgan")}
               autoFocus
             />
             <p className="text-[11px] text-gray-400">
-              Sabab ro'yxatda saqlanadi — keyin "nega bu odam ro'yxatda?" degan
-              savolga javob bo'ladi.
+              {tr("Sabab ro'yxatda saqlanadi — keyin \"nega bu odam ro'yxatda?\" degan savolga javob bo'ladi.")}
             </p>
           </div>
         )}
@@ -119,7 +119,7 @@ export function BlacklistDialog({ guest, onClose }: Props) {
 
         <DialogFooter className="flex-wrap gap-2">
           <Button variant="outline" onClick={onClose} disabled={pending}>
-            Bekor qilish
+            {tr("Bekor qilish")}
           </Button>
           <Button
             variant={listed ? "default" : "destructive"}
@@ -127,7 +127,7 @@ export function BlacklistDialog({ guest, onClose }: Props) {
             disabled={pending}
           >
             {pending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-            {listed ? "Ro'yxatdan chiqarish" : "Qora ro'yxatga qo'shish"}
+            {listed ? tr("Ro'yxatdan chiqarish") : tr("Qora ro'yxatga qo'shish")}
           </Button>
         </DialogFooter>
       </DialogContent>

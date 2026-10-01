@@ -27,14 +27,16 @@ import {
 } from "@/features/reservations/components/NewBookingDialog";
 import { addDaysStr, todayStr } from "@/features/reservations/lib/booking";
 import { cn } from "@/lib/utils";
+import { tr, trc } from "@/i18n";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 
 // Qolgan daqiqalarni odam o'qiydigan ko'rinishga keltiradi: "2 soat 15 daq"
 const formatMinutes = (mins: number): string => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  if (h <= 0) return `${m} daq`;
-  if (m === 0) return `${h} soat`;
-  return `${h} soat ${m} daq`;
+  if (h <= 0) return tr("{{m}} daq", { m });
+  if (m === 0) return tr("{{h}} soat", { h });
+  return tr("{{h}} soat {{m}} daq", { h, m });
 };
 
 interface NavbarProps {
@@ -163,7 +165,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
             type="button"
             onClick={onMenuClick}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
-            title="Menyu"
+            title={tr("Menyu")}
           >
             <Menu size={20} />
           </button>
@@ -179,7 +181,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
         {work &&
           (work.state === "on" ? (
             <span
-              title={`Ish vaqti: ${user?.work_start}–${user?.work_end}`}
+              title={tr("Ish vaqti: {{work_start}}–{{work_end}}", { work_start: String(user?.work_start), work_end: String(user?.work_end) })}
               className={cn(
                 "flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-xs font-semibold text-white shadow-sm",
                 work.remaining <= 30 ? "bg-amber-500" : "bg-emerald-600"
@@ -196,19 +198,19 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                 {user?.work_end}
               </span>
               <span>
-                <span className="hidden sm:inline">gacha · qoldi: </span>
+                <span className="hidden sm:inline">{tr("gacha · qoldi:")}{" "}</span>
                 {formatMinutes(work.remaining)}
               </span>
             </span>
           ) : (
             <span
-              title={`Ish vaqti: ${user?.work_start}–${user?.work_end}`}
+              title={tr("Ish vaqti: {{work_start}}–{{work_end}}", { work_start: String(user?.work_start), work_end: String(user?.work_end) })}
               className="flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500"
             >
               <Clock size={13} />
-              <span className="hidden sm:inline">Ish</span>
+              <span className="hidden sm:inline">{tr("Ish")}</span>
               {work.startLabel}
-              <span className="hidden sm:inline">da boshlanadi</span>
+              <span className="hidden sm:inline">{tr("da boshlanadi")}</span>
             </span>
           ))}
       </div>
@@ -218,19 +220,21 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          title="Sahifani yangilash"
+          title={tr("Sahifani yangilash")}
           className="flex items-center gap-1.5 rounded-full bg-primary-600 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-primary-500/30 transition-all hover:bg-primary-700 hover:shadow-primary-500/40 active:scale-95 disabled:opacity-70 sm:px-4 sm:text-sm"
         >
           <RotateCw size={16} className={cn(refreshing && "animate-spin")} />
           <span className="hidden sm:inline">
-            {refreshing ? "Yangilanmoqda..." : "Yangilash"}
+            {refreshing ? tr("Yangilanmoqda...") : tr("Yangilash")}
           </span>
         </button>
+        {/* Interfeys tili: o'zbekcha / ruscha / inglizcha */}
+        <LanguageSwitcher />
         <Button
           variant="ghost"
           size="icon"
           onClick={toggleTheme}
-          title={dark ? "Kun mavzusiga o'tish" : "Tun mavzusiga o'tish"}
+          title={dark ? tr("Kun mavzusiga o'tish") : tr("Tun mavzusiga o'tish")}
         >
           {dark ? (
             <Sun size={18} className="text-muted-foreground hover:text-foreground" />
@@ -250,7 +254,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
           variant="ghost"
           size="icon"
           onClick={() => setFaceDialogOpen(true)}
-          title="Yuz bilan kirishni sozlash"
+          title={tr("Yuz bilan kirishni sozlash")}
         >
           <ScanFace size={18} className="text-muted-foreground hover:text-foreground" />
         </Button>
@@ -259,7 +263,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            title="Profil"
+            title={tr("Profil")}
             className={cn(
               "flex items-center gap-2 rounded-lg px-1.5 py-1 text-sm font-medium transition-colors hover:bg-muted",
               menuOpen && "bg-muted"
@@ -299,7 +303,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                 className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <UserRound size={16} className="text-muted-foreground" />
-                Profil
+                {tr("Profil")}
               </Link>
               {/* Chiqish */}
               <button
@@ -311,7 +315,8 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                 className="flex w-full items-center gap-2.5 border-t border-border px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
               >
                 <LogOut size={16} />
-                Chiqish
+                {/* Tizimdan chiqish (Sign out) — oddiy tr("Chiqish") mehmon chiqishi */}
+                {trc("login", "Chiqish")}
               </button>
             </div>
           )}

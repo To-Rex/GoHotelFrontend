@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { tr } from "@/i18n"
 
 /**
  * Xodimning o'z yuzini biriktirish/boshqarish dialogi (navbar'dan ochiladi).
@@ -54,7 +55,7 @@ export function FaceEnrollDialog({ open, onOpenChange }: FaceEnrollDialogProps) 
     try {
       await enrollFace(photo)
       await refresh()
-      setNotice("Yuz namunasi muvaffaqiyatli biriktirildi")
+      setNotice(tr("Yuz namunasi muvaffaqiyatli biriktirildi"))
       return null
     } catch (e) {
       return faceErrorMessage(e)
@@ -62,12 +63,12 @@ export function FaceEnrollDialog({ open, onOpenChange }: FaceEnrollDialogProps) 
   }
 
   const removeAll = async () => {
-    if (!confirm("Barcha yuz namunalaringiz o'chirilsinmi? Yuz bilan kirish o'chadi.")) return
+    if (!confirm(tr("Barcha yuz namunalaringiz o'chirilsinmi? Yuz bilan kirish o'chadi."))) return
     setBusy(true)
     try {
       await deleteFaceProfiles()
       await refresh()
-      setNotice("Yuz namunalari o'chirildi")
+      setNotice(tr("Yuz namunalari o'chirildi"))
     } catch (e) {
       setNotice(faceErrorMessage(e))
     } finally {
@@ -81,14 +82,14 @@ export function FaceEnrollDialog({ open, onOpenChange }: FaceEnrollDialogProps) 
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ScanFace size={18} /> Yuz bilan kirish sozlamalari
+              <ScanFace size={18} />{" "}{tr("Yuz bilan kirish sozlamalari")}
             </DialogTitle>
           </DialogHeader>
 
           {status && !status.engine_available ? (
             <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-700">
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
-              Serverda yuz bilan kirish hozircha yoqilmagan.
+              {tr("Serverda yuz bilan kirish hozircha yoqilmagan.")}
             </p>
           ) : (
             <div className="space-y-3">
@@ -96,12 +97,11 @@ export function FaceEnrollDialog({ open, onOpenChange }: FaceEnrollDialogProps) 
                 {status?.enrolled ? (
                   <p className="flex items-center gap-2 font-medium text-emerald-700">
                     <CheckCircle2 size={16} />
-                    Yuzingiz biriktirilgan ({status.count} ta namuna)
+                    {tr("Yuzingiz biriktirilgan ({{count}} ta namuna)", { count: status.count })}
                   </p>
                 ) : (
                   <p className="text-muted-foreground">
-                    Yuzingiz hali biriktirilmagan. Biriktirsangiz, login sahifasida
-                    "Yuz bilan kirish" orqali parolsiz kira olasiz.
+                    {tr("Yuzingiz hali biriktirilmagan. Biriktirsangiz, login sahifasida \"Yuz bilan kirish\" orqali parolsiz kira olasiz.")}
                   </p>
                 )}
               </div>
@@ -113,14 +113,12 @@ export function FaceEnrollDialog({ open, onOpenChange }: FaceEnrollDialogProps) 
               )}
 
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Rasm saqlanmaydi — faqat yuzning raqamli belgisi (embedding).
-                Turli burchak/yorug'likda 2-3 ta namuna qo'shsangiz aniqlik oshadi
-                (ko'pi bilan 3 ta saqlanadi).
+                {tr("Rasm saqlanmaydi — faqat yuzning raqamli belgisi (embedding). Turli burchak/yorug'likda 2-3 ta namuna qo'shsangiz aniqlik oshadi (ko'pi bilan 3 ta saqlanadi).")}
               </p>
 
               <div className="grid grid-cols-2 gap-2">
                 <Button onClick={() => setCameraOpen(true)} className="gap-2">
-                  <Plus size={15} /> Yuz qo'shish
+                  <Plus size={15} />{" "}{tr("Yuz qo'shish")}
                 </Button>
                 <Button
                   variant="outline"
@@ -129,7 +127,7 @@ export function FaceEnrollDialog({ open, onOpenChange }: FaceEnrollDialogProps) 
                   className="gap-2 text-red-600 hover:text-red-700"
                 >
                   {busy ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-                  O'chirish
+                  {tr("O'chirish")}
                 </Button>
               </div>
             </div>
@@ -140,9 +138,9 @@ export function FaceEnrollDialog({ open, onOpenChange }: FaceEnrollDialogProps) 
       <FaceCameraDialog
         open={cameraOpen}
         onOpenChange={setCameraOpen}
-        title="Yuzni biriktirish"
-        actionLabel="Suratga olish va biriktirish"
-        hint="Yuzingizni oval ramkaga joylab, yorug' joyda tugmani bosing"
+        title={tr("Yuzni biriktirish")}
+        actionLabel={tr("Suratga olish va biriktirish")}
+        hint={tr("Yuzingizni oval ramkaga joylab, yorug' joyda tugmani bosing")}
         onCapture={handleCapture}
       />
     </>

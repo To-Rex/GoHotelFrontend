@@ -56,14 +56,15 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 
 const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Faol",
-  INACTIVE: "Nofaol",
-  TERMINATED: "Ishdan bo'shatilgan",
+  ACTIVE: tr("Faol"),
+  INACTIVE: tr("Nofaol"),
+  TERMINATED: tr("Ishdan bo'shatilgan"),
 }
 
 const statusBadge: Record<string, string> = {
@@ -73,9 +74,9 @@ const statusBadge: Record<string, string> = {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: "Super admin",
-  ADMIN: "Administrator",
-  EMPLOYEE: "Xodim",
+  SUPER_ADMIN: tr("Super admin"),
+  ADMIN: tr("Administrator"),
+  EMPLOYEE: tr("Xodim"),
 }
 
 // Dialog ichidagi forma bo'limi: kichik sarlavha (ikonka bilan) + maydonlar
@@ -233,11 +234,11 @@ export const EmployeesPage = () => {
       return
     }
     if (!EMPLOYEE_PHOTO_ACCEPT.split(",").includes(file.type)) {
-      setErrorMsg("Faqat JPG, PNG yoki WEBP rasm yuklash mumkin.")
+      setErrorMsg(tr("Faqat JPG, PNG yoki WEBP rasm yuklash mumkin."))
       return
     }
     if (file.size > EMPLOYEE_PHOTO_MAX_BYTES) {
-      setErrorMsg("Rasm hajmi 5 MB dan oshmasligi kerak.")
+      setErrorMsg(tr("Rasm hajmi 5 MB dan oshmasligi kerak."))
       return
     }
     setErrorMsg(null)
@@ -304,12 +305,12 @@ export const EmployeesPage = () => {
 
   const onSubmit = async () => {
     if (!firstName.trim() || !lastName.trim()) {
-      setErrorMsg("Ism va familiyani kiriting")
+      setErrorMsg(tr("Ism va familiyani kiriting"))
       return
     }
     const hoursNum = parseInt(workHours, 10)
     if (Number.isNaN(hoursNum) || hoursNum < 1 || hoursNum > 24) {
-      setErrorMsg("Kunlik ish soati 1 dan 24 gacha bo'lishi kerak")
+      setErrorMsg(tr("Kunlik ish soati 1 dan 24 gacha bo'lishi kerak"))
       return
     }
     try {
@@ -321,11 +322,11 @@ export const EmployeesPage = () => {
             : undefined
         const newPassword = isAdmin && password ? password : undefined
         if (newUsername && newUsername.length < 3) {
-          setErrorMsg("Login kamida 3 belgidan iborat bo'lishi kerak")
+          setErrorMsg(tr("Login kamida 3 belgidan iborat bo'lishi kerak"))
           return
         }
         if (newPassword && newPassword.length < 6) {
-          setErrorMsg("Yangi parol kamida 6 belgidan iborat bo'lishi kerak")
+          setErrorMsg(tr("Yangi parol kamida 6 belgidan iborat bo'lishi kerak"))
           return
         }
         await updateMutation.mutateAsync({
@@ -346,7 +347,7 @@ export const EmployeesPage = () => {
         const photoErr = await uploadPhotoFor(editing.id)
         if (photoErr) {
           setModalOpen(false)
-          alert("Ma'lumotlar saqlandi, lekin surat yuklanmadi:\n" + photoErr)
+          alert(tr("Ma'lumotlar saqlandi, lekin surat yuklanmadi:\n") + photoErr)
           return
         }
 
@@ -367,7 +368,7 @@ export const EmployeesPage = () => {
             } catch (permError) {
               setModalOpen(false)
               alert(
-                "Ma'lumotlar saqlandi, lekin rolni almashtirishda xatolik:\n" +
+                tr("Ma'lumotlar saqlandi, lekin rolni almashtirishda xatolik:\n") +
                   apiErrorMessage(permError)
               )
               return
@@ -376,21 +377,21 @@ export const EmployeesPage = () => {
         }
       } else {
         if (username.trim().length < 3) {
-          setErrorMsg("Login kamida 3 belgidan iborat bo'lishi kerak")
+          setErrorMsg(tr("Login kamida 3 belgidan iborat bo'lishi kerak"))
           return
         }
         if (password.length < 6) {
-          setErrorMsg("Parol kamida 6 belgidan iborat bo'lishi kerak")
+          setErrorMsg(tr("Parol kamida 6 belgidan iborat bo'lishi kerak"))
           return
         }
         if (!branchId) {
-          setErrorMsg("Filialni tanlang")
+          setErrorMsg(tr("Filialni tanlang"))
           return
         }
         const branch = branches.find((b) => b.id === branchId)
         const hotelId = user?.hotel_id || branch?.hotel_id
         if (!hotelId) {
-          setErrorMsg("Mehmonxona aniqlanmadi")
+          setErrorMsg(tr("Mehmonxona aniqlanmadi"))
           return
         }
         const created = await createMutation.mutateAsync({
@@ -412,7 +413,7 @@ export const EmployeesPage = () => {
         // shuning uchun surat xatosi yaratishni bekor qilmaydi
         const photoErr = await uploadPhotoFor(created.id)
         if (photoErr) {
-          alert("Xodim qo'shildi, lekin surat yuklanmadi:\n" + photoErr)
+          alert(tr("Xodim qo'shildi, lekin surat yuklanmadi:\n") + photoErr)
         }
 
         // Rol tanlangan bo'lsa — shablon ruxsatlarini avtomatik biriktiramiz.
@@ -432,9 +433,9 @@ export const EmployeesPage = () => {
           } catch (permError) {
             setModalOpen(false)
             alert(
-              "Xodim qo'shildi, lekin rol ruxsatlarini biriktirishda xatolik yuz berdi:\n" +
+              tr("Xodim qo'shildi, lekin rol ruxsatlarini biriktirishda xatolik yuz berdi:\n") +
                 apiErrorMessage(permError) +
-                "\nRolni keyinroq \"Ruxsatnomalar\" sahifasidan belgilashingiz mumkin."
+                tr("\nRolni keyinroq \"Ruxsatnomalar\" sahifasidan belgilashingiz mumkin.")
             )
             return
           }
@@ -447,7 +448,7 @@ export const EmployeesPage = () => {
   }
 
   const onDelete = async (e: Employee) => {
-    if (!confirm(`${e.first_name} ${e.last_name} xodimini o'chirasizmi?`)) return
+    if (!confirm(tr("{{first_name}} {{last_name}} xodimini o'chirasizmi?", { first_name: e.first_name, last_name: e.last_name }))) return
     try {
       await deleteMutation.mutateAsync(e.id)
     } catch (err) {
@@ -464,7 +465,7 @@ export const EmployeesPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Xodimlar</h1>
+        <h1 className="text-2xl font-bold">{tr("Xodimlar")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -480,7 +481,7 @@ export const EmployeesPage = () => {
     filtered.length === 0 ? (
       <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed py-14 text-gray-400">
         <UserCog className="h-8 w-8" />
-        <p className="text-sm">Xodimlar topilmadi</p>
+        <p className="text-sm">{tr("Xodimlar topilmadi")}</p>
       </div>
     ) : (
       /* auto-fill: ustunlar soni displayga qarab o'zi moslashadi */
@@ -542,7 +543,7 @@ export const EmployeesPage = () => {
                 <Clock className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
                 <span className="truncate">
                   {e.work_start || "09:00"}–{e.work_end || "18:00"} ·{" "}
-                  {e.work_hours_per_day ?? 8} soat
+                  {tr("{{count}} soat", { count: e.work_hours_per_day ?? 8 })}
                 </span>
               </p>
             </div>
@@ -552,7 +553,7 @@ export const EmployeesPage = () => {
                 {canEdit && (
                   <button
                     type="button"
-                    title="Tahrirlash"
+                    title={tr("Tahrirlash")}
                     onClick={() => openEdit(e)}
                     className="rounded-md bg-white/90 p-1.5 text-gray-400 shadow-sm ring-1 ring-gray-200 hover:text-gray-600"
                   >
@@ -562,7 +563,7 @@ export const EmployeesPage = () => {
                 {canDelete && e.id !== user?.id && (
                   <button
                     type="button"
-                    title="O'chirish"
+                    title={tr("O'chirish")}
                     onClick={() => onDelete(e)}
                     className="rounded-md bg-white/90 p-1.5 text-red-400 shadow-sm ring-1 ring-gray-200 hover:bg-red-50 hover:text-red-600"
                   >
@@ -584,14 +585,13 @@ export const EmployeesPage = () => {
             <UserCog className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Xodimlar</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{tr("Xodimlar")}</h1>
             <p className="text-sm text-gray-500">
-              Jami {employees.length} ta xodim ·{" "}
-              <span className="font-medium text-emerald-600">{activeCount} faol</span>
+              {tr("Jami {{count}} ta xodim ·", { count: employees.length })}{" "}
+              <span className="font-medium text-emerald-600">{tr("{{activeCount}} faol", { activeCount })}</span>
               {filtered.length !== employees.length && (
                 <span className="font-medium text-primary-700">
-                  {" "}
-                  · natija: {filtered.length} ta
+                  {" "}{tr("· natija: {{count}} ta", { count: filtered.length })}
                 </span>
               )}
             </p>
@@ -600,7 +600,7 @@ export const EmployeesPage = () => {
         {canCreate && (
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
-            Xodim qo'shish
+            {tr("Xodim qo'shish")}
           </Button>
         )}
       </div>
@@ -611,7 +611,7 @@ export const EmployeesPage = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             className="pl-9"
-            placeholder="Ism, login, telefon bo'yicha qidirish..."
+            placeholder={tr("Ism, login, telefon bo'yicha qidirish...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -620,7 +620,7 @@ export const EmployeesPage = () => {
           <button
             type="button"
             onClick={() => setViewMode("table")}
-            title="Jadval ko'rinishi"
+            title={tr("Jadval ko'rinishi")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
               viewMode === "table"
@@ -629,12 +629,12 @@ export const EmployeesPage = () => {
             )}
           >
             <List className="h-4 w-4" />
-            Jadval
+            {tr("Jadval")}
           </button>
           <button
             type="button"
             onClick={() => setViewMode("grid")}
-            title="Grid ko'rinishi"
+            title={tr("Grid ko'rinishi")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
               viewMode === "grid"
@@ -643,7 +643,7 @@ export const EmployeesPage = () => {
             )}
           >
             <LayoutGrid className="h-4 w-4" />
-            Grid
+            {tr("Grid")}
           </button>
         </div>
       </div>
@@ -657,9 +657,9 @@ export const EmployeesPage = () => {
       {canResetFaces && (
         <details className="rounded-2xl border bg-white p-4">
           <summary className="cursor-pointer select-none text-sm font-semibold text-gray-900">
-            Yuz bilan kirish — xodimlar holati
+            {tr("Yuz bilan kirish — xodimlar holati")}
             <span className="ml-2 font-normal text-gray-500">
-              yuzi tanilmay qolgan xodimning yuzini bekor qilish
+              {tr("yuzi tanilmay qolgan xodimning yuzini bekor qilish")}
             </span>
           </summary>
           <div className="mt-3">
@@ -681,15 +681,15 @@ export const EmployeesPage = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>F.I.Sh</TableHead>
-              <TableHead>Roli</TableHead>
-              <TableHead>Holat</TableHead>
-              <TableHead>Telefon</TableHead>
-              <TableHead>Filial</TableHead>
-              <TableHead>Ishga olingan</TableHead>
-              <TableHead>Ish vaqti</TableHead>
+              <TableHead>{tr("F.I.Sh")}</TableHead>
+              <TableHead>{tr("Roli")}</TableHead>
+              <TableHead>{tr("Holat")}</TableHead>
+              <TableHead>{tr("Telefon")}</TableHead>
+              <TableHead>{tr("Filial")}</TableHead>
+              <TableHead>{tr("Ishga olingan")}</TableHead>
+              <TableHead>{tr("Ish vaqti")}</TableHead>
               {(canEdit || canDelete) && (
-                <TableHead className="text-right">Amallar</TableHead>
+                <TableHead className="text-right">{tr("Amallar")}</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -697,7 +697,7 @@ export const EmployeesPage = () => {
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-6 text-gray-400">
-                  Xodimlar topilmadi
+                  {tr("Xodimlar topilmadi")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -748,7 +748,7 @@ export const EmployeesPage = () => {
                     {e.work_start || "09:00"}–{e.work_end || "18:00"}
                     <span className="text-xs text-gray-400">
                       {" "}
-                      · {e.work_hours_per_day ?? 8} soat
+                      · {tr("{{count}} soat", { count: e.work_hours_per_day ?? 8 })}
                     </span>
                   </TableCell>
                   {(canEdit || canDelete) && (
@@ -757,7 +757,7 @@ export const EmployeesPage = () => {
                         {canEdit && (
                           <Button variant="ghost" size="sm" onClick={() => openEdit(e)}>
                             <Pencil className="h-3.5 w-3.5 mr-1" />
-                            Tahrirlash
+                            {tr("Tahrirlash")}
                           </Button>
                         )}
                         {canDelete && e.id !== user?.id && (
@@ -768,7 +768,7 @@ export const EmployeesPage = () => {
                             onClick={() => onDelete(e)}
                           >
                             <Trash2 className="h-3.5 w-3.5 mr-1" />
-                            O'chirish
+                            {tr("O'chirish")}
                           </Button>
                         )}
                       </div>
@@ -799,12 +799,12 @@ export const EmployeesPage = () => {
             </div>
             <div>
               <DialogTitle className="text-base font-bold">
-                {editing ? "Xodimni tahrirlash" : "Yangi xodim"}
+                {editing ? tr("Xodimni tahrirlash") : tr("Yangi xodim")}
               </DialogTitle>
               <p className="mt-0.5 text-xs text-gray-500">
                 {editing
                   ? `${editing.first_name} ${editing.last_name} · @${editing.username}`
-                  : "Ma'lumotlarni to'ldiring — surat va rol ixtiyoriy"}
+                  : tr("Ma'lumotlarni to'ldiring — surat va rol ixtiyoriy")}
               </p>
             </div>
           </div>
@@ -812,17 +812,17 @@ export const EmployeesPage = () => {
           <div className="space-y-6 px-5 py-5">
             {/* Surat — bosib tanlanadi, ustiga borganda kamera chiqadi */}
             <div className="flex flex-col items-center gap-1.5">
-              <label className="group/photo relative block cursor-pointer" title="Surat tanlash">
+              <label className="group/photo relative block cursor-pointer" title={tr("Surat tanlash")}>
                 {photoPreview ? (
                   <img
                     src={photoPreview}
-                    alt="Surat"
+                    alt={tr("Surat")}
                     className="h-24 w-24 rounded-full border-2 border-primary-100 object-cover shadow-sm"
                   />
                 ) : editing && photosMap[editing.id] ? (
                   <img
                     src={photosMap[editing.id]}
-                    alt="Joriy surat"
+                    alt={tr("Joriy surat")}
                     className="h-24 w-24 rounded-full border-2 border-primary-100 object-cover shadow-sm"
                   />
                 ) : (
@@ -853,27 +853,27 @@ export const EmployeesPage = () => {
                   className="flex items-center gap-1 text-xs text-gray-400 transition-colors hover:text-red-500"
                 >
                   <X className="h-3 w-3" />
-                  Suratni olib tashlash
+                  {tr("Suratni olib tashlash")}
                 </button>
               ) : (
                 <p className="text-xs text-gray-400">
-                  Surat qo'shish uchun bosing (ixtiyoriy)
+                  {tr("Surat qo'shish uchun bosing (ixtiyoriy)")}
                 </p>
               )}
             </div>
 
-            <FormSection icon={UserRound} title="Shaxsiy ma'lumotlar">
+            <FormSection icon={UserRound} title={tr("Shaxsiy ma'lumotlar")}>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Ism *</label>
+                  <label className="text-xs font-medium text-gray-600">{tr("Ism *")}</label>
                   <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Familiya *</label>
+                  <label className="text-xs font-medium text-gray-600">{tr("Familiya *")}</label>
                   <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Telefon</label>
+                  <label className="text-xs font-medium text-gray-600">{tr("Telefon")}</label>
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -881,7 +881,7 @@ export const EmployeesPage = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Email</label>
+                  <label className="text-xs font-medium text-gray-600">{tr("Email")}</label>
                   <Input
                     type="email"
                     value={email}
@@ -893,51 +893,50 @@ export const EmployeesPage = () => {
 
             {/* Kirish hisobi: yaratishda hammaga, tahrirlashda faqat adminga */}
             {(!editing || isAdmin) && (
-              <FormSection icon={KeyRound} title="Kirish hisobi">
+              <FormSection icon={KeyRound} title={tr("Kirish hisobi")}>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-600">
-                      Login {!editing && "*"}
+                      {tr("Login")}{" "}{!editing && "*"}
                     </label>
                     <Input
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Kamida 3 belgi"
+                      placeholder={tr("Kamida 3 belgi")}
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-600">
-                      {editing ? "Yangi parol" : "Parol *"}
+                      {editing ? tr("Yangi parol") : tr("Parol *")}
                     </label>
                     <Input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder={
-                        editing ? "O'zgartirmaslik uchun bo'sh qoldiring" : "Kamida 6 belgi"
+                        editing ? tr("O'zgartirmaslik uchun bo'sh qoldiring") : tr("Kamida 6 belgi")
                       }
                     />
                   </div>
                 </div>
                 {editing && (
                   <p className="text-xs text-gray-400">
-                    Login yoki parol o'zgartirilsa, xodim keyingi kirishda yangi
-                    ma'lumotlardan foydalanadi.
+                    {tr("Login yoki parol o'zgartirilsa, xodim keyingi kirishda yangi ma'lumotlardan foydalanadi.")}
                   </p>
                 )}
               </FormSection>
             )}
 
-            <FormSection icon={Building2} title="Ish joyi">
+            <FormSection icon={Building2} title={tr("Ish joyi")}>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Filial *</label>
+                  <label className="text-xs font-medium text-gray-600">{tr("Filial *")}</label>
                   <select
                     className={selectClass}
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
                   >
-                    <option value="">Filialni tanlang</option>
+                    <option value="">{tr("Filialni tanlang")}</option>
                     {branches.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.name}
@@ -947,7 +946,7 @@ export const EmployeesPage = () => {
                 </div>
                 {editing ? (
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-600">Holat</label>
+                    <label className="text-xs font-medium text-gray-600">{tr("Holat")}</label>
                     <select
                       className={selectClass}
                       value={status}
@@ -963,7 +962,7 @@ export const EmployeesPage = () => {
                 ) : (
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-600">
-                      Ishga olish sanasi
+                      {tr("Ishga olish sanasi")}
                     </label>
                     <Input
                       type="date"
@@ -975,12 +974,12 @@ export const EmployeesPage = () => {
               </div>
             </FormSection>
             {/* Boshlanish vaqti + kunlik soat kiritiladi, tugashi avto hisoblanadi */}
-            <FormSection icon={Clock} title="Ish vaqti">
+            <FormSection icon={Clock} title={tr("Ish vaqti")}>
               <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-600">
-                      Boshlanishi
+                      {tr("Boshlanishi")}
                     </label>
                     <Input
                       type="time"
@@ -991,7 +990,7 @@ export const EmployeesPage = () => {
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-600">
-                      Kuniga (soat)
+                      {tr("Kuniga (soat)")}
                     </label>
                     <Input
                       type="number"
@@ -1004,7 +1003,7 @@ export const EmployeesPage = () => {
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-600">
-                      Tugashi (avto)
+                      {tr("Tugashi (avto)")}
                     </label>
                     <Input
                       type="time"
@@ -1016,8 +1015,7 @@ export const EmployeesPage = () => {
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-gray-400">
-                  Boshlanish vaqti va kunlik soatni kiriting — tugash vaqti
-                  avtomatik hisoblanadi.
+                  {tr("Boshlanish vaqti va kunlik soatni kiriting — tugash vaqti avtomatik hisoblanadi.")}
                 </p>
               </div>
             </FormSection>
@@ -1025,13 +1023,13 @@ export const EmployeesPage = () => {
                 Menejer faqat Farrosh va Texnik xizmatni tanlay oladi,
                 admin barcha rollarni (backend ham xuddi shuni tekshiradi) */}
             {!editing ? (
-              <FormSection icon={ShieldCheck} title={`Rol${!isAdmin ? " *" : ""}`}>
+              <FormSection icon={ShieldCheck} title={tr("Rol{{v}}", { v: !isAdmin ? " *" : "" })}>
                 <select
                   className={selectClass}
                   value={roleTemplateId}
                   onChange={(e) => setRoleTemplateId(e.target.value)}
                 >
-                  {isAdmin && <option value="">Rolsiz (keyin belgilanadi)</option>}
+                  {isAdmin && <option value="">{tr("Rolsiz (keyin belgilanadi)")}</option>}
                   {roleOptions.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
@@ -1039,24 +1037,22 @@ export const EmployeesPage = () => {
                   ))}
                 </select>
                 <p className="text-xs text-gray-400">
-                  Tanlangan rolga mos ruxsatlar xodimga avtomatik biriktiriladi.
+                  {tr("Tanlangan rolga mos ruxsatlar xodimga avtomatik biriktiriladi.")}
                 </p>
               </FormSection>
             ) : (
               editing.user_type !== "ADMIN" && (
-                <FormSection icon={ShieldCheck} title="Rol">
+                <FormSection icon={ShieldCheck} title={tr("Rol")}>
                   <select
                     className={selectClass}
                     value={roleTemplateId}
                     onChange={(e) => setRoleTemplateId(e.target.value)}
                   >
                     <option value="">
-                      O'zgartirilmasin (joriy:{" "}
-                      {editingRole?.name ||
+                      {tr("O'zgartirilmasin (joriy: {{v}})", { v: editingRole?.name ||
                         ((editingPerms as any[]).length > 0
-                          ? "maxsus to'plam"
-                          : "rolsiz")}
-                      )
+                          ? tr("maxsus to'plam")
+                          : tr("rolsiz")) })}
                     </option>
                     {roleOptions.map((t) => (
                       <option key={t.id} value={t.id}>
@@ -1065,10 +1061,9 @@ export const EmployeesPage = () => {
                     ))}
                   </select>
                   <p className="text-xs text-gray-400">
-                    Yangi rol tanlansa, xodim ruxsatlari shu rol shabloni bilan
-                    TO'LIQ almashtiriladi.
+                    {tr("Yangi rol tanlansa, xodim ruxsatlari shu rol shabloni bilan TO'LIQ almashtiriladi.")}
                     {!isAdmin &&
-                      " Menejer faqat Farrosh va Texnik xizmat rollarini biriktira oladi."}
+                      tr(" Menejer faqat Farrosh va Texnik xizmat rollarini biriktira oladi.")}
                   </p>
                 </FormSection>
               )
@@ -1084,11 +1079,11 @@ export const EmployeesPage = () => {
           {/* Futer — scrollda pastda qoladi */}
           <div className="sticky bottom-0 z-10 flex justify-end gap-2 rounded-b-lg border-t bg-white px-5 py-3.5">
             <Button variant="outline" onClick={() => setModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={onSubmit} disabled={saving} className="min-w-[120px]">
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editing ? "Saqlash" : "Qo'shish"}
+              {editing ? tr("Saqlash") : tr("Qo'shish")}
             </Button>
           </div>
         </DialogContent>

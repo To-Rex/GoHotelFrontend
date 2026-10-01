@@ -10,6 +10,7 @@ import {
   queryParams,
   type TableState,
 } from '@/lib/tableState';
+import { tr } from '@/i18n';
 
 /* Do'kon API qatlamı — mahsulotlar FIFO partiyalar bilan keladi,
    sotuvlar serverda partiya narxlari bo'yicha hisoblanadi. */
@@ -324,9 +325,9 @@ export interface ReceiptSettings {
 
 export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
   title: '',
-  subtitle: "Mini-do'kon cheki",
+  subtitle: tr("Mini-do'kon cheki"),
   header_note: '',
-  footer_text: 'Xaridingiz uchun rahmat!',
+  footer_text: tr("Xaridingiz uchun rahmat!"),
   footer_note: '',
   show_check_no: true,
   show_seller: true,

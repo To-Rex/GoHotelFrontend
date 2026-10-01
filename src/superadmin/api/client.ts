@@ -1,6 +1,7 @@
 import axios from "axios"
 
 import { API_URL } from "@/lib/api"
+import { tr } from "@/i18n"
 
 /**
  * Boshqaruv paneli uchun ALOHIDA HTTP mijozi.
@@ -52,5 +53,5 @@ export function panelError(error: unknown): string {
     const first = detail[0] as { msg?: string }
     if (first?.msg) return first.msg
   }
-  return "Xatolik yuz berdi. Qayta urinib ko'ring."
+  return tr("Xatolik yuz berdi. Qayta urinib ko'ring.")
 }

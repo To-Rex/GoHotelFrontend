@@ -1,0 +1,17 @@
+{
+  "Kutmoqda": "Pending",
+  "device::Tasdiqlangan": "Approved",
+  "Taqiqlangan": "Blocked",
+  "Xodimlar faqat tasdiqlangan qurilmadan kira oladi. Yangi qurilmadan urinish shu ro'yxatga tushadi va tasdiqni kutadi. Administrator bu tekshiruvdan ozod — u istalgan qurilmadan login, parol va yuz bilan kira oladi.": "Employees can sign in only from approved devices. A sign-in attempt from a new device lands in this list and waits for approval. The administrator is exempt from this check — they can sign in from any device with username, password and face.",
+  "Bu holatda qurilma yo'q": "No devices with this status",
+  "Hali birorta qurilma ro'yxatga tushmagan": "No devices have been registered yet",
+  "Siz hozir shu qurilmadan turibsiz": "You are using this device right now",
+  "Shu qurilma": "This device",
+  "oxirgi urinish: {{last_seen_at}}": "last attempt: {{last_seen_at}}",
+  "tasdiqlangan: {{approved_at}}": "approved: {{approved_at}}",
+  "Taqiqlash": "Block",
+  "Nom qo'yish": "Set name",
+  "Ro'yxatdan o'chirish": "Remove from list",
+  "Qurilma ro'yxatdan o'chiriladi. Keyingi urinishda u yangi sifatida qaytadi va yana tasdiq kutadi. Davom etasizmi?": "The device will be removed from the list. On its next sign-in attempt it will reappear as new and wait for approval again. Continue?",
+  "Masalan: Resepsiya kompyuteri": "E.g. Reception computer"
+}

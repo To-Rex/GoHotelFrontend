@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { createPortal } from "react-dom"
 import { X } from "lucide-react"
+import { tr } from "@/i18n"
 
 /**
  * Suratni katta formatda ko'rish oynasi.
@@ -40,14 +41,14 @@ export function ImageLightbox({
       className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 p-4"
       onClick={onClose}
       role="dialog"
-      aria-label={alt || "Surat"}
+      aria-label={alt || tr("Surat")}
     >
       <button
         type="button"
         onClick={onClose}
         className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
-        title="Yopish"
-        aria-label="Yopish"
+        title={tr("Yopish")}
+        aria-label={tr("Yopish")}
       >
         <X size={20} />
       </button>

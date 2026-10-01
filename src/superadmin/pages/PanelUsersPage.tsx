@@ -19,6 +19,7 @@ import {
   PanelInput,
   PanelNotice,
 } from "../components/ui"
+import { tr } from "@/i18n"
 
 /**
  * Panelga kira oladigan odamlar.
@@ -55,7 +56,7 @@ export function PanelUsersPage() {
       await create.mutateAsync(form)
       setAdding(false)
       setForm({ email: "", password: "", label: "" })
-      flash("Qo'shildi — endi shu pochta va parol bilan kira oladi")
+      flash(tr("Qo'shildi — endi shu pochta va parol bilan kira oladi"))
     } catch (e) {
       setError(panelError(e))
     }
@@ -69,7 +70,7 @@ export function PanelUsersPage() {
       await resetPassword.mutateAsync({ id: target.id, password })
       setTarget(null)
       setPassword("")
-      flash("Parol almashtirildi")
+      flash(tr("Parol almashtirildi"))
     } catch (e) {
       setError(panelError(e))
     }
@@ -85,12 +86,12 @@ export function PanelUsersPage() {
   }
 
   const drop = async (user: PanelUser) => {
-    if (!confirm(`${user.email} panel ro'yxatidan o'chiriladi. Davom etasizmi?`))
+    if (!confirm(tr("{{email}} panel ro'yxatidan o'chiriladi. Davom etasizmi?", { email: String(user.email) })))
       return
     setError(null)
     try {
       await remove.mutateAsync(user.id)
-      flash("O'chirildi")
+      flash(tr("O'chirildi"))
     } catch (e) {
       setError(panelError(e))
     }
@@ -99,13 +100,13 @@ export function PanelUsersPage() {
   return (
     <div>
       <PanelHeading
-        title="Panel foydalanuvchilari"
-        subtitle="Boshqaruv paneliga kira oladigan odamlar"
+        title={tr("Panel foydalanuvchilari")}
+        subtitle={tr("Boshqaruv paneliga kira oladigan odamlar")}
         action={
           isRoot ? (
             <PanelButton onClick={() => setAdding(true)}>
               <Plus className="h-4 w-4" />
-              Qo'shish
+              {tr("Qo'shish")}
             </PanelButton>
           ) : undefined
         }
@@ -123,10 +124,10 @@ export function PanelUsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-slate-900 text-left text-xs text-slate-400">
               <tr>
-                <th className="px-3 py-2 font-medium">Kim</th>
-                <th className="px-3 py-2 font-medium">Pochta</th>
-                <th className="px-3 py-2 font-medium">Oxirgi kirish</th>
-                <th className="px-3 py-2 font-medium">Holat</th>
+                <th className="px-3 py-2 font-medium">{tr("Kim")}</th>
+                <th className="px-3 py-2 font-medium">{tr("Pochta")}</th>
+                <th className="px-3 py-2 font-medium">{tr("Oxirgi kirish")}</th>
+                <th className="px-3 py-2 font-medium">{tr("Holat")}</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -159,7 +160,7 @@ export function PanelUsersPage() {
                           : "bg-slate-800 text-slate-400"
                       )}
                     >
-                      {user.is_active ? "Faol" : "To'xtatilgan"}
+                      {user.is_active ? tr("Faol") : tr("To'xtatilgan")}
                     </span>
                   </td>
                   <td className="px-3 py-2">
@@ -171,14 +172,14 @@ export function PanelUsersPage() {
                           onClick={() => setTarget(user)}
                         >
                           <KeyRound className="h-3.5 w-3.5" />
-                          Parol
+                          {tr("Parol")}
                         </PanelButton>
                         <PanelButton
                           variant="ghost"
                           className="h-7 px-2 text-xs"
                           onClick={() => toggle(user)}
                         >
-                          {user.is_active ? "To'xtatish" : "Faollashtirish"}
+                          {user.is_active ? tr("To'xtatish") : tr("Faollashtirish")}
                         </PanelButton>
                         <PanelButton
                           variant="danger"
@@ -199,19 +200,19 @@ export function PanelUsersPage() {
 
       <PanelDialog
         open={adding}
-        title="Panelga odam qo'shish"
+        title={tr("Panelga odam qo'shish")}
         onClose={() => setAdding(false)}
       >
         <form onSubmit={submitNew} className="space-y-3">
           <PanelInput
-            label="Pochta"
+            label={tr("Pochta")}
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             required
           />
           <PanelInput
-            label="Parol"
+            label={tr("Parol")}
             type="text"
             value={form.password}
             onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
@@ -219,13 +220,12 @@ export function PanelUsersPage() {
             required
           />
           <PanelInput
-            label="Nomi (ixtiyoriy)"
+            label={tr("Nomi (ixtiyoriy)")}
             value={form.label}
             onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
           />
           <p className="text-[11px] text-slate-500">
-            Parolni odamga o'zingiz yetkazasiz. U shu pochta va parol bilan
-            kiradi.
+            {tr("Parolni odamga o'zingiz yetkazasiz. U shu pochta va parol bilan kiradi.")}
           </p>
           {error && <PanelNotice>{error}</PanelNotice>}
           <div className="flex justify-end gap-2">
@@ -234,11 +234,11 @@ export function PanelUsersPage() {
               variant="ghost"
               onClick={() => setAdding(false)}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </PanelButton>
             <PanelButton type="submit" disabled={create.isPending}>
               {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Qo'shish
+              {tr("Qo'shish")}
             </PanelButton>
           </div>
         </form>
@@ -246,12 +246,12 @@ export function PanelUsersPage() {
 
       <PanelDialog
         open={!!target}
-        title={`${target?.email || ""} — yangi parol`}
+        title={tr("{{v}} — yangi parol", { v: target?.email || "" })}
         onClose={() => setTarget(null)}
       >
         <form onSubmit={submitPassword} className="space-y-3">
           <PanelInput
-            label="Yangi parol"
+            label={tr("Yangi parol")}
             type="text"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -265,13 +265,13 @@ export function PanelUsersPage() {
               variant="ghost"
               onClick={() => setTarget(null)}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </PanelButton>
             <PanelButton type="submit" disabled={resetPassword.isPending}>
               {resetPassword.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
-              Almashtirish
+              {tr("Almashtirish")}
             </PanelButton>
           </div>
         </form>

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr, trc } from "@/i18n"
 
 const selectClass =
   "w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -94,11 +95,11 @@ export const ServicesPage = () => {
 
   const onSvcSubmit = async () => {
     if (!svcName.trim()) {
-      setSvcError("Nomini kiriting")
+      setSvcError(tr("Nomini kiriting"))
       return
     }
     if (!editingSvc && !svcCode.trim()) {
-      setSvcError("Kodni kiriting (masalan: LAUNDRY)")
+      setSvcError(tr("Kodni kiriting (masalan: LAUNDRY)"))
       return
     }
     try {
@@ -142,7 +143,7 @@ export const ServicesPage = () => {
   const onHsSubmit = async () => {
     const price = Number(hsPrice)
     if (Number.isNaN(price) || price < 0) {
-      setHsError("Narxni to'g'ri kiriting")
+      setHsError(tr("Narxni to'g'ri kiriting"))
       return
     }
     try {
@@ -154,7 +155,7 @@ export const ServicesPage = () => {
         })
       } else {
         if (!hsServiceId) {
-          setHsError("Xizmatni tanlang")
+          setHsError(tr("Xizmatni tanlang"))
           return
         }
         await createHotelService.mutateAsync({
@@ -189,7 +190,7 @@ export const ServicesPage = () => {
   if (servicesLoading || hotelServicesLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Xizmatlar</h1>
+        <h1 className="text-2xl font-bold">{tr("Xizmatlar")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -202,15 +203,15 @@ export const ServicesPage = () => {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Xizmatlar</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{tr("Xizmatlar")}</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Mehmonxonangizda ko'rsatiladigan xizmatlar va ularning narxlari
+              {tr("Mehmonxonangizda ko'rsatiladigan xizmatlar va ularning narxlari")}
             </p>
           </div>
           {canManageHotelServices && (
             <Button onClick={openHsCreate} disabled={unlinkedServices.length === 0}>
               <Plus className="h-4 w-4 mr-2" />
-              Xizmat ulash
+              {tr("Xizmat ulash")}
             </Button>
           )}
         </div>
@@ -219,7 +220,7 @@ export const ServicesPage = () => {
         <div className="space-y-2.5 md:hidden">
           {hotelServices.length === 0 ? (
             <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-              Mehmonxonaga hali xizmatlar ulanmagan
+              {tr("Mehmonxonaga hali xizmatlar ulanmagan")}
             </div>
           ) : (
             hotelServices.map((hs) => (
@@ -245,18 +246,18 @@ export const ServicesPage = () => {
                         : "bg-gray-100 text-gray-500"
                     )}
                   >
-                    {hs.is_active ? "Faol" : "O'chirilgan"}
+                    {hs.is_active ? tr("Faol") : trc("toggle", "O'chirilgan")}
                   </span>
                 </div>
                 <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-2.5">
                   <span className="font-medium">
-                    {Number(hs.price || 0).toLocaleString()} So'm
+                    {tr("{{Number}} So'm", { Number: Number(hs.price || 0).toLocaleString() })}
                   </span>
                   {canManageHotelServices && (
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" onClick={() => openHsEdit(hs)}>
                         <Pencil className="h-3.5 w-3.5 mr-1" />
-                        Narx
+                        {tr("Narx")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -271,12 +272,12 @@ export const ServicesPage = () => {
                         {hs.is_active ? (
                           <>
                             <PowerOff className="h-3.5 w-3.5 mr-1" />
-                            O'chirish
+                            {trc("toggle", "O'chirish")}
                           </>
                         ) : (
                           <>
                             <Power className="h-3.5 w-3.5 mr-1" />
-                            Yoqish
+                            {tr("Yoqish")}
                           </>
                         )}
                       </Button>
@@ -293,13 +294,13 @@ export const ServicesPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Xizmat</TableHead>
-                <TableHead>Kod</TableHead>
-                <TableHead>Kategoriya</TableHead>
-                <TableHead>Narx</TableHead>
-                <TableHead>Holat</TableHead>
+                <TableHead>{tr("Xizmat")}</TableHead>
+                <TableHead>{tr("Kod")}</TableHead>
+                <TableHead>{tr("Kategoriya")}</TableHead>
+                <TableHead>{tr("Narx")}</TableHead>
+                <TableHead>{tr("Holat")}</TableHead>
                 {canManageHotelServices && (
-                  <TableHead className="text-right">Amallar</TableHead>
+                  <TableHead className="text-right">{tr("Amallar")}</TableHead>
                 )}
               </TableRow>
             </TableHeader>
@@ -307,7 +308,7 @@ export const ServicesPage = () => {
               {hotelServices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-6 text-gray-400">
-                    Mehmonxonaga hali xizmatlar ulanmagan
+                    {tr("Mehmonxonaga hali xizmatlar ulanmagan")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -326,7 +327,7 @@ export const ServicesPage = () => {
                     </TableCell>
                     <TableCell className="text-gray-600">{hs.category || "—"}</TableCell>
                     <TableCell className="font-medium">
-                      {Number(hs.price || 0).toLocaleString()} So'm
+                      {tr("{{Number}} So'm", { Number: Number(hs.price || 0).toLocaleString() })}
                     </TableCell>
                     <TableCell>
                       <span
@@ -337,7 +338,7 @@ export const ServicesPage = () => {
                             : "bg-gray-100 text-gray-500"
                         )}
                       >
-                        {hs.is_active ? "Faol" : "O'chirilgan"}
+                        {hs.is_active ? tr("Faol") : trc("toggle", "O'chirilgan")}
                       </span>
                     </TableCell>
                     {canManageHotelServices && (
@@ -345,7 +346,7 @@ export const ServicesPage = () => {
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="sm" onClick={() => openHsEdit(hs)}>
                             <Pencil className="h-3.5 w-3.5 mr-1" />
-                            Narx
+                            {tr("Narx")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -360,12 +361,12 @@ export const ServicesPage = () => {
                             {hs.is_active ? (
                               <>
                                 <PowerOff className="h-3.5 w-3.5 mr-1" />
-                                O'chirish
+                                {trc("toggle", "O'chirish")}
                               </>
                             ) : (
                               <>
                                 <Power className="h-3.5 w-3.5 mr-1" />
-                                Yoqish
+                                {tr("Yoqish")}
                               </>
                             )}
                           </Button>
@@ -384,15 +385,15 @@ export const ServicesPage = () => {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold tracking-tight">Xizmatlar katalogi</h2>
+            <h2 className="text-lg font-bold tracking-tight">{tr("Xizmatlar katalogi")}</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Umumiy xizmatlar ro'yxati — mehmonxonaga ulash uchun asos
+              {tr("Umumiy xizmatlar ro'yxati — mehmonxonaga ulash uchun asos")}
             </p>
           </div>
           {isAdmin && (
             <Button variant="outline" onClick={openSvcCreate}>
               <Plus className="h-4 w-4 mr-2" />
-              Katalogga qo'shish
+              {tr("Katalogga qo'shish")}
             </Button>
           )}
         </div>
@@ -401,7 +402,7 @@ export const ServicesPage = () => {
         <div className="space-y-2.5 md:hidden">
           {services.length === 0 ? (
             <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-              Katalog bo'sh
+              {tr("Katalog bo'sh")}
             </div>
           ) : (
             services.map((s) => (
@@ -417,7 +418,7 @@ export const ServicesPage = () => {
                   {isAdmin && (
                     <Button variant="ghost" size="sm" onClick={() => openSvcEdit(s)}>
                       <Pencil className="h-3.5 w-3.5 mr-1" />
-                      Tahrirlash
+                      {tr("Tahrirlash")}
                     </Button>
                   )}
                 </div>
@@ -432,18 +433,18 @@ export const ServicesPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nomi</TableHead>
-                <TableHead>Kod</TableHead>
-                <TableHead>Kategoriya</TableHead>
-                <TableHead>Tavsif</TableHead>
-                {isAdmin && <TableHead className="text-right">Amallar</TableHead>}
+                <TableHead>{tr("Nomi")}</TableHead>
+                <TableHead>{tr("Kod")}</TableHead>
+                <TableHead>{tr("Kategoriya")}</TableHead>
+                <TableHead>{tr("Tavsif")}</TableHead>
+                {isAdmin && <TableHead className="text-right">{tr("Amallar")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {services.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-6 text-gray-400">
-                    Katalog bo'sh
+                    {tr("Katalog bo'sh")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -461,7 +462,7 @@ export const ServicesPage = () => {
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" onClick={() => openSvcEdit(s)}>
                           <Pencil className="h-3.5 w-3.5 mr-1" />
-                          Tahrirlash
+                          {tr("Tahrirlash")}
                         </Button>
                       </TableCell>
                     )}
@@ -478,31 +479,31 @@ export const ServicesPage = () => {
         <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
             <DialogTitle>
-              {editingSvc ? "Xizmatni tahrirlash" : "Katalogga yangi xizmat"}
+              {editingSvc ? tr("Xizmatni tahrirlash") : tr("Katalogga yangi xizmat")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Nomi *</label>
+              <label className="text-sm font-medium">{tr("Nomi *")}</label>
               <Input
                 value={svcName}
                 onChange={(e) => setSvcName(e.target.value)}
-                placeholder="Masalan: Kir yuvish"
+                placeholder={tr("Masalan: Kir yuvish")}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Kod *</label>
+                <label className="text-sm font-medium">{tr("Kod *")}</label>
                 <Input
                   value={svcCode}
                   onChange={(e) => setSvcCode(e.target.value)}
                   placeholder="LAUNDRY"
                   disabled={!!editingSvc}
-                  title={editingSvc ? "Kodni o'zgartirib bo'lmaydi" : undefined}
+                  title={editingSvc ? tr("Kodni o'zgartirib bo'lmaydi") : undefined}
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Kategoriya</label>
+                <label className="text-sm font-medium">{tr("Kategoriya")}</label>
                 <Input
                   value={svcCategory}
                   onChange={(e) => setSvcCategory(e.target.value)}
@@ -511,11 +512,11 @@ export const ServicesPage = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Tavsif</label>
+              <label className="text-sm font-medium">{tr("Tavsif")}</label>
               <Input
                 value={svcDescription}
                 onChange={(e) => setSvcDescription(e.target.value)}
-                placeholder="Qisqacha tavsif"
+                placeholder={tr("Qisqacha tavsif")}
               />
             </div>
             {svcError && (
@@ -524,7 +525,7 @@ export const ServicesPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSvcModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button
               onClick={onSvcSubmit}
@@ -533,7 +534,7 @@ export const ServicesPage = () => {
               {(createService.isPending || updateService.isPending) && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              {editingSvc ? "Saqlash" : "Qo'shish"}
+              {editingSvc ? tr("Saqlash") : tr("Qo'shish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -544,19 +545,19 @@ export const ServicesPage = () => {
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle>
-              {editingHs ? `Narxni tahrirlash — ${editingHs.name}` : "Xizmatni ulash"}
+              {editingHs ? tr("Narxni tahrirlash — {{name}}", { name: editingHs.name }) : tr("Xizmatni ulash")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             {!editingHs && (
               <div className="space-y-1">
-                <label className="text-sm font-medium">Xizmat *</label>
+                <label className="text-sm font-medium">{tr("Xizmat *")}</label>
                 <select
                   className={selectClass}
                   value={hsServiceId}
                   onChange={(e) => setHsServiceId(e.target.value)}
                 >
-                  <option value="">Xizmatni tanlang</option>
+                  <option value="">{tr("Xizmatni tanlang")}</option>
                   {unlinkedServices.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.code})
@@ -566,13 +567,13 @@ export const ServicesPage = () => {
               </div>
             )}
             <div className="space-y-1">
-              <label className="text-sm font-medium">Narx (So'm) *</label>
+              <label className="text-sm font-medium">{tr("Narx (So'm) *")}</label>
               <Input
                 type="number"
                 min={0}
                 value={hsPrice}
                 onChange={(e) => setHsPrice(e.target.value)}
-                placeholder="Masalan: 50000"
+                placeholder={tr("Masalan: 50000")}
               />
             </div>
             {hsError && (
@@ -581,7 +582,7 @@ export const ServicesPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setHsModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button
               onClick={onHsSubmit}
@@ -590,7 +591,7 @@ export const ServicesPage = () => {
               {(createHotelService.isPending || updateHotelService.isPending) && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              {editingHs ? "Saqlash" : "Ulash"}
+              {editingHs ? tr("Saqlash") : tr("Ulash")}
             </Button>
           </DialogFooter>
         </DialogContent>

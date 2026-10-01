@@ -1,4 +1,5 @@
 import { format, addDays, parseISO } from "date-fns"
+import { tr } from "@/i18n"
 
 /* Bron hisob-kitobining umumiy qoidalari.
 
@@ -55,7 +56,7 @@ export function bookingErrorMessage(error: any): string {
       })
       .join("\n")
   }
-  return "Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring."
+  return tr("Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.")
 }
 
 /** Vaqtni "HH:MM" ko'rinishiga normallash ("14:00:00" -> "14:00"). */
@@ -300,6 +301,6 @@ export function debtHint(r: any): string {
   const debt = reservationDebt(r)
   if (debt <= 0) return ""
   const label =
-    debtLevelOf(r) === "overdue" ? "Chiqib ketgan, to'lanmagan" : "Qarz"
-  return ` · ${label}: ${debt.toLocaleString()} so'm`
+    debtLevelOf(r) === "overdue" ? tr("Chiqib ketgan, to'lanmagan") : tr("Qarz")
+  return tr(" · {{label}}: {{debt}} so'm", { label, debt: debt.toLocaleString() })
 }

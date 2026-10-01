@@ -22,6 +22,7 @@ import {
   type DeviceStatus,
   type TrustedDevice,
 } from "../api/devices"
+import { tr, trc } from "@/i18n"
 
 /**
  * Qurilmalarni tasdiqlash — administrator sahifasi.
@@ -33,9 +34,9 @@ import {
  */
 
 const STATUS_LABELS: Record<DeviceStatus, string> = {
-  PENDING: "Kutmoqda",
-  APPROVED: "Tasdiqlangan",
-  BLOCKED: "Taqiqlangan",
+  PENDING: tr("Kutmoqda"),
+  APPROVED: trc("device", "Tasdiqlangan"),
+  BLOCKED: tr("Taqiqlangan"),
 }
 
 const statusBadge: Record<DeviceStatus, string> = {
@@ -102,7 +103,7 @@ export const DevicesPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Qurilmalar</h1>
+        <h1 className="text-2xl font-bold">{tr("Qurilmalar")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-24 w-full" />
       </div>
@@ -112,12 +113,9 @@ export const DevicesPage = () => {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Qurilmalar</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{tr("Qurilmalar")}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Xodimlar faqat tasdiqlangan qurilmadan kira oladi. Yangi qurilmadan
-          urinish shu ro'yxatga tushadi va tasdiqni kutadi. Administrator bu
-          tekshiruvdan ozod — u istalgan qurilmadan login, parol va yuz bilan
-          kira oladi.
+          {tr("Xodimlar faqat tasdiqlangan qurilmadan kira oladi. Yangi qurilmadan urinish shu ro'yxatga tushadi va tasdiqni kutadi. Administrator bu tekshiruvdan ozod — u istalgan qurilmadan login, parol va yuz bilan kira oladi.")}
         </p>
       </div>
 
@@ -129,7 +127,7 @@ export const DevicesPage = () => {
 
       {/* Holat filtri */}
       <div className="flex flex-wrap gap-1.5">
-        {([["", "Barchasi"], ...Object.entries(STATUS_LABELS)] as [string, string][]).map(
+        {([["", tr("Barchasi")], ...Object.entries(STATUS_LABELS)] as [string, string][]).map(
           ([value, label]) => (
             <button
               key={value || "all"}
@@ -162,8 +160,8 @@ export const DevicesPage = () => {
           <MonitorSmartphone className="h-8 w-8" />
           <p className="text-sm">
             {statusFilter
-              ? "Bu holatda qurilma yo'q"
-              : "Hali birorta qurilma ro'yxatga tushmagan"}
+              ? tr("Bu holatda qurilma yo'q")
+              : tr("Hali birorta qurilma ro'yxatga tushmagan")}
           </p>
         </div>
       ) : (
@@ -198,10 +196,10 @@ export const DevicesPage = () => {
                         </span>
                         {isMine && (
                           <span
-                            title="Siz hozir shu qurilmadan turibsiz"
+                            title={tr("Siz hozir shu qurilmadan turibsiz")}
                             className="rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-medium text-primary-700"
                           >
-                            Shu qurilma
+                            {tr("Shu qurilma")}
                           </span>
                         )}
                       </div>
@@ -213,9 +211,9 @@ export const DevicesPage = () => {
                         {[
                           d.ip_address,
                           fmtDate(d.last_seen_at) &&
-                            `oxirgi urinish: ${fmtDate(d.last_seen_at)}`,
+                            tr("oxirgi urinish: {{last_seen_at}}", { last_seen_at: String(fmtDate(d.last_seen_at)) }),
                           fmtDate(d.approved_at) &&
-                            `tasdiqlangan: ${fmtDate(d.approved_at)}`,
+                            tr("tasdiqlangan: {{approved_at}}", { approved_at: String(fmtDate(d.approved_at)) }),
                         ]
                           .filter(Boolean)
                           .join(" · ")}
@@ -236,7 +234,7 @@ export const DevicesPage = () => {
                         }
                       >
                         <Check className="mr-1 h-3.5 w-3.5" />
-                        Tasdiqlash
+                        {tr("Tasdiqlash")}
                       </Button>
                     )}
                     {d.status !== "BLOCKED" && (
@@ -252,12 +250,12 @@ export const DevicesPage = () => {
                         }
                       >
                         <Ban className="mr-1 h-3.5 w-3.5" />
-                        Taqiqlash
+                        {tr("Taqiqlash")}
                       </Button>
                     )}
                     <button
                       type="button"
-                      title="Nom qo'yish"
+                      title={tr("Nom qo'yish")}
                       onClick={() => {
                         setEditing(d.id)
                         setLabelDraft(d.label || "")
@@ -268,12 +266,12 @@ export const DevicesPage = () => {
                     </button>
                     <button
                       type="button"
-                      title="Ro'yxatdan o'chirish"
+                      title={tr("Ro'yxatdan o'chirish")}
                       disabled={removeDevice.isPending}
                       onClick={() => {
                         if (
                           !confirm(
-                            "Qurilma ro'yxatdan o'chiriladi. Keyingi urinishda u yangi sifatida qaytadi va yana tasdiq kutadi. Davom etasizmi?"
+                            tr("Qurilma ro'yxatdan o'chiriladi. Keyingi urinishda u yangi sifatida qaytadi va yana tasdiq kutadi. Davom etasizmi?")
                           )
                         )
                           return
@@ -292,7 +290,7 @@ export const DevicesPage = () => {
                       className="h-8 w-56 text-sm"
                       value={labelDraft}
                       onChange={(e) => setLabelDraft(e.target.value)}
-                      placeholder="Masalan: Resepsiya kompyuteri"
+                      placeholder={tr("Masalan: Resepsiya kompyuteri")}
                     />
                     <Button
                       size="sm"
@@ -303,7 +301,7 @@ export const DevicesPage = () => {
                       {setStatus.isPending && (
                         <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                       )}
-                      Saqlash
+                      {tr("Saqlash")}
                     </Button>
                     <Button
                       size="sm"
@@ -311,7 +309,7 @@ export const DevicesPage = () => {
                       className="h-8 text-xs"
                       onClick={() => setEditing(null)}
                     >
-                      Bekor qilish
+                      {tr("Bekor qilish")}
                     </Button>
                   </div>
                 )}

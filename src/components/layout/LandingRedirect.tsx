@@ -10,6 +10,7 @@ import {
 } from "@/features/shifts/api/shifts"
 import { useNavOrder } from "@/features/settings/api/navOrder"
 import { firstSidebarRoute } from "./navLinks"
+import { tr } from "@/i18n"
 
 /** Kirish darvozasi manzili — App.tsx dagi marshrut bilan bir xil */
 export const LANDING_GATE_ROUTE = "/start"
@@ -52,9 +53,9 @@ export const LandingRedirect = () => {
   if (!canRoute(target)) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 py-20 text-center text-gray-500">
-        <p className="text-sm font-medium">Sizga hech qanday sahifa ochilmagan</p>
+        <p className="text-sm font-medium">{tr("Sizga hech qanday sahifa ochilmagan")}</p>
         <p className="text-xs text-gray-400">
-          Administratordan ruxsat so'rang.
+          {tr("Administratordan ruxsat so'rang.")}
         </p>
       </div>
     )

@@ -1,0 +1,110 @@
+{
+  "{{hours}} soat oldin": {
+    "one": "{{hours}} hour ago",
+    "other": "{{hours}} hours ago"
+  },
+  "{{count}} ta surat bitta odamga tegishli deb topildi": {
+    "one": "{{count}} photo matched to one person",
+    "other": "{{count}} photos matched to the same person"
+  },
+  "Guruh a'zolari bir-biriga unchalik o'xshamaydi — tekshirib ko'ring": "The photos in this group don't look very alike — please check",
+  " · {{count}} marta": {
+    "one": " · {{count}} time",
+    "other": " · {{count}} times"
+  },
+  "Filial topilmadi": "No branch found",
+  "Suratlar filial bo'yicha ajratiladi, lekin bu mehmonxonada filial yaratilmagan. Avval filial qo'shing.": "Photos are separated by branch, but this hotel has no branches yet. Add a branch first.",
+  "Kameradan yuz tanlash": "Pick a face from the camera",
+  "— tanlang —": "— select —",
+  "Har bir karta — bitta odam. Bir necha marta o'tgan bo'lsa suratlari birlashtirilgan va hammasi birga biriktiriladi.": "Each card is one person. If they passed by several times, their photos are merged and linked all together.",
+  "Suratlar filial bo'yicha ajratiladi — boshqa filialning kameralaridan kelgan yuzlar bu yerda ko'rinmaydi.": "Photos are separated by branch — faces from another branch's cameras aren't shown here.",
+  "Suratlarni olishda xatolik. Kamera agenti ishlayaptimi va kameralar filialga biriktirilganmi — tekshiring.": "Failed to load photos. Check that the camera agent is running and the cameras are assigned to a branch.",
+  "Bu filialda yangi yuz yo'q": "No new faces in this branch",
+  "Mehmon kamera oldidan o'tsa surat bir necha soniyada shu yerda paydo bo'ladi. Bo'sh qolsa — kamera bu filialga biriktirilmagan bo'lishi mumkin; administratordan so'rang (Sozlamalar → Kameralar).": "When a guest walks past the camera, the photo appears here within a few seconds. If it stays empty, the camera may not be assigned to this branch — ask your administrator (Settings → Cameras).",
+  "{{count}} ta surat biriktiriladi — bir nechtasidan yig'ilgan shablon aniqroq ishlaydi.": {
+    "one": "{{count}} photo will be linked — a template built from several photos is more accurate.",
+    "other": "{{count}} photos will be linked — a template built from several photos is more accurate."
+  },
+  "{{count}} ta surat biriktirildi": {
+    "one": "{{count}} photo linked",
+    "other": "{{count}} photos linked"
+  },
+  "Yuz biriktirildi": "Face linked",
+  "Biriktirib bo'lmadi.": "Couldn't link.",
+  "Mehmonning yuz ma'lumotlari butunlay o'chirilsinmi?\n\nShablonlar ham, saqlangan suratlar ham o'chadi va u boshqa avtomatik tanilmaydi.": "Permanently delete the guest's face data?\n\nBoth the templates and the saved photos will be deleted, and the guest will no longer be recognized automatically.",
+  "Yuz ma'lumotlari o'chirildi": "Face data deleted",
+  "O'chirib bo'lmadi.": "Couldn't delete.",
+  "Yuz holati tekshirilmoqda…": "Checking face status…",
+  "Yuz biriktirilgan": "Face linked",
+  " ({{profiles}} ko'rinish)": {
+    "one": " ({{profiles}} view)",
+    "other": " ({{profiles}} views)"
+  },
+  "Yana qo'shish": "Add more",
+  "Yuz biriktirilmagan": "No face linked",
+  "Kameradan biriktirish": "Link from camera",
+  "Suratni katta ko'rish": "Enlarge photo",
+  "Kamera tanigan mehmonlar": "Guests recognized by camera",
+  "Kamera tanidi": "Recognized by camera",
+  "Hozircha tanilgan mehmon yo'q.": "No recognized guests yet.",
+  " · {{visits}}-tashrif": " · visit #{{visits}}",
+  "Broni bor — kutib oling": "Has a booking — welcome them",
+  "Yangi bandlov ochish": "Create a new booking",
+  "Oxirgi {{WINDOW_MINUTES}} daqiqa · suratga bosib katta ko'ring": {
+    "one": "Last {{WINDOW_MINUTES}} minute · click a photo to enlarge",
+    "other": "Last {{WINDOW_MINUTES}} minutes · click a photo to enlarge"
+  },
+  "Bronini ochish": "Open booking",
+  "hech qachon": "never",
+  "{{Math}} kun oldin": {
+    "one": "{{Math}} day ago",
+    "other": "{{Math}} days ago"
+  },
+  "Saqlab bo'lmadi. Qayta urinib ko'ring.": "Couldn't save. Please try again.",
+  "{{camera_id}}{{v}} · oxirgi surat: {{last_seen_at}} · jami {{sightings_count}}": "{{camera_id}}{{v}} · last photo: {{last_seen_at}} · {{sightings_count}} total",
+  "— filial tanlanmagan —": "— no branch selected —",
+  "Kamerani vaqtincha o'chirish — hodisalari qabul qilinmaydi": "Temporarily disable the camera — its events won't be accepted",
+  "Kamerani qayta yoqish": "Re-enable the camera",
+  "Kameralar agent birinchi suratni yuborganda o'zi paydo bo'ladi. Filial biriktirilmagunicha ularning suratlari yangi mehmonga yuz biriktirish oynasida ko'rinmaydi.": "Cameras appear on their own once the agent sends its first photo. Until a branch is assigned, their photos don't show up in the dialog for linking a face to a new guest.",
+  "{{unassigned}} ta kamera filialga biriktirilmagan.": {
+    "one": "{{unassigned}} camera is not assigned to a branch.",
+    "other": "{{unassigned}} cameras are not assigned to a branch."
+  },
+  "Ularning suratlari hech qaysi filial ro'yxatiga tushmaydi — quyida filialni tanlang.": "Their photos don't appear in any branch's list — choose a branch below.",
+  "Kameralar ro'yxatini olishda xatolik. Backend yangilanganmi va migratsiya bajarilganmi — tekshiring.": "Failed to load the camera list. Check that the backend is updated and the migration has been run.",
+  "Hali kamera yo'q": "No cameras yet",
+  "GoHotels Vision agenti o'rnatilgan, kamera qo'shilgan va qurilma tokeni saqlangan bo'lishi kerak. Agent birinchi yuzni yuborishi bilan kamera shu ro'yxatda paydo bo'ladi.": "The GoHotels Vision agent must be installed, a camera added and the device token saved. The camera appears in this list as soon as the agent sends its first face.",
+  "Filialni o'zgartirish uchun xodimlarni boshqarish ruxsati kerak.": "Changing the branch requires the permission to manage employees.",
+  "hech qachon ulanmagan": "never connected",
+  "«{{name}}» uchun token tayyor.": "The token for \"{{name}}\" is ready.",
+  "U faqat hozir ko'rsatiladi — bazada ochiq saqlanmaydi. Nusxalab, agent o'rnatilgan kompyuterga kiriting.": "It is shown only now — it isn't stored in plain text in the database. Copy it and enter it on the computer where the agent is installed.",
+  "Agentga kiritish:": "How to enter it in the agent:",
+  "Kompyuterda": "On the computer, open the",
+  "GoHotels Vision": "GoHotels Vision",
+  "ilovasini oching": "app",
+  "Pastdagi": "Click the",
+  "tugmasini bosing": "button at the bottom",
+  "Shu tokenni qo'yib,": "Paste this token, click",
+  "so'ng": "and then",
+  "Nusxaladim, yopish": "I've copied it, close",
+  "Nom kiritilishi shart": "Name is required",
+  "Token yaratib bo'lmadi.": "Couldn't create the token.",
+  "«{{deviceName}}» tokeni bekor qilinsinmi?\n\nO'sha kompyuterdagi agent darhol ulana olmay qoladi va yangi token kiritish kerak bo'ladi.": "Revoke the token for \"{{deviceName}}\"?\n\nThe agent on that computer will lose its connection immediately and a new token will have to be entered.",
+  "Bekor qilib bo'lmadi.": "Couldn't revoke.",
+  "Har bir kamera kompyuteriga bitta token. Token muddatsiz va shu mehmonxonaga bog'langan.": "One token per camera computer. The token never expires and is tied to this hotel.",
+  "Yangi qurilma": "New device",
+  "Qurilma nomi": "Device name",
+  "Masalan: Qabulxona PC": "E.g. Reception PC",
+  "Filial (ixtiyoriy)": "Branch (optional)",
+  "— keyin kamera bo'yicha belgilanadi —": "— set per camera later —",
+  "Token yaratish": "Create token",
+  "Qurilmalar ro'yxatini olishda xatolik. Backend yangilanganmi — tekshiring.": "Failed to load the device list. Check that the backend is updated.",
+  "Hali qurilma yo'q": "No devices yet",
+  "Kamera kompyuteriga GoHotels Vision ilovasini o'rnating, so'ng shu yerda token yarating va uni ilovaga kiriting.": "Install the GoHotels Vision app on the camera computer, then create a token here and enter it in the app.",
+  "bekor qilingan": "token revoked",
+  "token …{{token_hint}} · {{last_seen_at}} · {{events_received}} hodisa{{v}}": "token …{{token_hint}} · {{last_seen_at}} · events: {{events_received}}{{v}}",
+  "agent::Token": "Token",
+  "agent::Tekshirish": "Test",
+  "agent::Saqlash": "Save",
+  "revoke::Bekor qilish": "Revoke"
+}

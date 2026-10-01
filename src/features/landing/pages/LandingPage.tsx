@@ -30,6 +30,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSeo } from "@/lib/seo"
+import { tr, trc } from "@/i18n"
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher"
 
 /**
  * GoHotel landing sahifasi — /landing va /leanding.
@@ -161,94 +163,94 @@ function Cloud({
 const FEATURES = [
   {
     icon: CalendarDays,
-    title: "Bron va band qilish",
-    text: "Soatlik va kunlik bronlar, jonli bandlov doskasi, surib ko'chirish va xona almashtirish — hammasi bir ekranda.",
+    title: tr("Bron va band qilish"),
+    text: tr("Soatlik va kunlik bronlar, jonli bandlov doskasi, surib ko'chirish va xona almashtirish — hammasi bir ekranda."),
     day: "text-orange-600 bg-orange-500/10",
     night: "text-amber-300 bg-amber-400/10",
   },
   {
     icon: Wallet,
-    title: "Kassa va smenalar",
-    text: "Smena topshirish parol tasdig'i bilan, \"ko'r sanash\" kassasi, kamomad nazorati va kunlik avtomatik kesim.",
+    title: tr("Kassa va smenalar"),
+    text: tr("Smena topshirish parol tasdig'i bilan, \"ko'r sanash\" kassasi, kamomad nazorati va kunlik avtomatik kesim."),
     day: "text-emerald-600 bg-emerald-500/10",
     night: "text-emerald-300 bg-emerald-400/10",
   },
   {
     icon: ScanLine,
-    title: "Hujjat skaneri",
-    text: "Passport va ID kartani kamera orqali soniyalarda o'qiydi — mehmon ma'lumotlari formaga o'zi tushadi.",
+    title: tr("Hujjat skaneri"),
+    text: tr("Passport va ID kartani kamera orqali soniyalarda o'qiydi — mehmon ma'lumotlari formaga o'zi tushadi."),
     day: "text-violet-600 bg-violet-500/10",
     night: "text-violet-300 bg-violet-400/10",
   },
   {
     icon: ScanFace,
-    title: "Yuz bilan kirish",
-    text: "Xodimlar parol termasdan, kameraga qarashning o'zida tizimga kiradi — tez va xavfsiz.",
+    title: tr("Yuz bilan kirish"),
+    text: tr("Xodimlar parol termasdan, kameraga qarashning o'zida tizimga kiradi — tez va xavfsiz."),
     day: "text-rose-600 bg-rose-500/10",
     night: "text-rose-300 bg-rose-400/10",
   },
   {
     icon: Package,
-    title: "Ombor nazorati",
-    text: "FIFO partiyalar, kirim-chiqim, spisaniye va inventarizatsiya — har bir mahsulot tannarxigacha hisobda.",
+    title: tr("Ombor nazorati"),
+    text: tr("FIFO partiyalar, kirim-chiqim, spisaniye va inventarizatsiya — har bir mahsulot tannarxigacha hisobda."),
     day: "text-amber-600 bg-amber-500/10",
     night: "text-orange-300 bg-orange-400/10",
   },
   {
     icon: BarChart3,
-    title: "Jonli statistika",
-    text: "Tushum, bandlik, smenalar va xodimlar samaradorligi — boshqaruv paneli har daqiqada yangilanadi.",
+    title: tr("Jonli statistika"),
+    text: tr("Tushum, bandlik, smenalar va xodimlar samaradorligi — boshqaruv paneli har daqiqada yangilanadi."),
     day: "text-teal-600 bg-teal-500/10",
     night: "text-teal-300 bg-teal-400/10",
   },
   {
     icon: Store,
-    title: "Mini-do'kon",
-    text: "Mehmonlarga savdo — bron hisobiga yoki naqd. Har sotuv moliya hisobotiga o'z-o'zidan tushadi.",
+    title: tr("Mini-do'kon"),
+    text: tr("Mehmonlarga savdo — bron hisobiga yoki naqd. Har sotuv moliya hisobotiga o'z-o'zidan tushadi."),
     day: "text-lime-600 bg-lime-500/10",
     night: "text-lime-300 bg-lime-400/10",
   },
   {
     icon: Smartphone,
-    title: "Har qanday qurilmada",
-    text: "O'rnatiladigan ilova (PWA), telefon-planshet-kompyuterga to'liq moslashgan, tun mavzusi bilan.",
+    title: tr("Har qanday qurilmada"),
+    text: tr("O'rnatiladigan ilova (PWA), telefon-planshet-kompyuterga to'liq moslashgan, tun mavzusi bilan."),
     day: "text-fuchsia-600 bg-fuchsia-500/10",
     night: "text-fuchsia-300 bg-fuchsia-400/10",
   },
 ]
 
 const MARQUEE = [
-  { icon: BedDouble, label: "Xonalar" },
-  { icon: CalendarDays, label: "Bandlov doskasi" },
-  { icon: Users, label: "Mehmonlar" },
-  { icon: Wallet, label: "Moliya" },
-  { icon: History, label: "Smenalar" },
-  { icon: Package, label: "Ombor" },
-  { icon: Store, label: "Do'kon" },
-  { icon: ClipboardList, label: "Xo'jalik ishlari" },
-  { icon: ScanLine, label: "Hujjat skaneri" },
-  { icon: ScanFace, label: "Yuz bilan kirish" },
-  { icon: ShieldCheck, label: "Ruxsatnomalar" },
-  { icon: BarChart3, label: "Hisobotlar" },
-  { icon: Moon, label: "Tun mavzusi" },
-  { icon: Smartphone, label: "PWA ilova" },
+  { icon: BedDouble, label: tr("Xonalar") },
+  { icon: CalendarDays, label: tr("Bandlov doskasi") },
+  { icon: Users, label: tr("Mehmonlar") },
+  { icon: Wallet, label: tr("Moliya") },
+  { icon: History, label: tr("Smenalar") },
+  { icon: Package, label: tr("Ombor") },
+  { icon: Store, label: tr("Do'kon") },
+  { icon: ClipboardList, label: tr("Xo'jalik ishlari") },
+  { icon: ScanLine, label: tr("Hujjat skaneri") },
+  { icon: ScanFace, label: tr("Yuz bilan kirish") },
+  { icon: ShieldCheck, label: tr("Ruxsatnomalar") },
+  { icon: BarChart3, label: tr("Hisobotlar") },
+  { icon: Moon, label: tr("Tun mavzusi") },
+  { icon: Smartphone, label: tr("PWA ilova") },
 ]
 
 const STEPS = [
   {
     n: "01",
-    title: "Kirasiz",
-    text: "Login yoki yuz bilan — tizim brauzerda ochiladi, hech narsa o'rnatish shart emas.",
+    title: tr("Kirasiz"),
+    text: tr("Login yoki yuz bilan — tizim brauzerda ochiladi, hech narsa o'rnatish shart emas."),
   },
   {
     n: "02",
-    title: "Sozlaysiz",
-    text: "Xonalar, narxlar, xodimlar va rollar bir necha daqiqada tayyor bo'ladi.",
+    title: tr("Sozlaysiz"),
+    text: tr("Xonalar, narxlar, xodimlar va rollar bir necha daqiqada tayyor bo'ladi."),
   },
   {
     n: "03",
-    title: "Boshqarasiz",
-    text: "Bron, kassa, ombor va hisobotlar — butun mehmonxona bitta ekranda.",
+    title: tr("Boshqarasiz"),
+    text: tr("Bron, kassa, ombor va hisobotlar — butun mehmonxona bitta ekranda."),
   },
 ]
 
@@ -256,134 +258,134 @@ const STEPS = [
 const ROLES = [
   {
     icon: Briefcase,
-    title: "Direktor",
+    title: tr("Direktor"),
     points: [
-      "Jonli tushum va bandlik statistikasi",
-      "Smenalar, kamomadlar va farqlar nazorati",
-      "Xodimlar samaradorligi reytingi",
-      "Har amal auditda — kim, qachon, nima qildi",
+      tr("Jonli tushum va bandlik statistikasi"),
+      tr("Smenalar, kamomadlar va farqlar nazorati"),
+      tr("Xodimlar samaradorligi reytingi"),
+      tr("Har amal auditda — kim, qachon, nima qildi"),
     ],
   },
   {
     icon: ShieldCheck,
-    title: "Menejer",
+    title: tr("Menejer"),
     points: [
-      "Bronlarni tahrirlash va xonalar boshqaruvi",
-      "Kassani majburiy yopish va tuzatish huquqi",
-      "Ombor: kirim, spisaniye, inventarizatsiya",
-      "Xodim yaratish va vazifalar taqsimoti",
+      tr("Bronlarni tahrirlash va xonalar boshqaruvi"),
+      tr("Kassani majburiy yopish va tuzatish huquqi"),
+      tr("Ombor: kirim, spisaniye, inventarizatsiya"),
+      tr("Xodim yaratish va vazifalar taqsimoti"),
     ],
   },
   {
     icon: BellRing,
-    title: "Resepshn",
+    title: tr("Resepshn"),
     points: [
-      "Bir bosishda bron — jonli doskada",
-      "Passport/ID skaneri — forma o'zi to'ladi",
-      "Kassa-smena: ochish, topshirish, qabul qilish",
-      "Do'kon savdosi va shaxsiy hisobot",
+      tr("Bir bosishda bron — jonli doskada"),
+      tr("Passport/ID skaneri — forma o'zi to'ladi"),
+      tr("Kassa-smena: ochish, topshirish, qabul qilish"),
+      tr("Do'kon savdosi va shaxsiy hisobot"),
     ],
   },
   {
     icon: Sparkles,
-    title: "Farrosh",
+    title: tr("Farrosh"),
     points: [
-      "O'z vazifalari ro'yxati — telefonida",
-      "Boshlash/yakunlash bir tugmada",
-      "Fotohisobot yuklash imkoniyati",
-      "Tozalash bitishi bilan bron o'zi yopiladi",
+      tr("O'z vazifalari ro'yxati — telefonida"),
+      tr("Boshlash/yakunlash bir tugmada"),
+      tr("Fotohisobot yuklash imkoniyati"),
+      tr("Tozalash bitishi bilan bron o'zi yopiladi"),
     ],
   },
 ]
 
 // Qog'oz daftar bilan taqqoslash
 const COMPARE = [
-  { old: "Bronni daftardan qidirish — daqiqalab vaqt", now: "Qidiruv va filtrlar — bir soniyada topiladi" },
-  { old: "Kassa hisobi qo'lda, xatolar yashirin qoladi", now: "\"Ko'r sanash\" — har so'm avtomatik solishtiriladi" },
-  { old: "Mehmon ma'lumotini qo'lda terish", now: "Skaner passportni 2 soniyada o'qiydi" },
-  { old: "Hisobot oy oxirida, taxminiy", now: "Jonli statistika — har daqiqada aniq" },
-  { old: "Kim nima qilgani noma'lum", now: "To'liq audit: kim, qachon, qancha" },
+  { old: tr("Bronni daftardan qidirish — daqiqalab vaqt"), now: tr("Qidiruv va filtrlar — bir soniyada topiladi") },
+  { old: tr("Kassa hisobi qo'lda, xatolar yashirin qoladi"), now: tr("\"Ko'r sanash\" — har so'm avtomatik solishtiriladi") },
+  { old: tr("Mehmon ma'lumotini qo'lda terish"), now: tr("Skaner passportni 2 soniyada o'qiydi") },
+  { old: tr("Hisobot oy oxirida, taxminiy"), now: tr("Jonli statistika — har daqiqada aniq") },
+  { old: tr("Kim nima qilgani noma'lum"), now: tr("To'liq audit: kim, qachon, qancha") },
 ]
 
 // Xavfsizlik kafolatlari
 const SECURITY = [
-  { icon: ShieldCheck, label: "Rollar va aniq ruxsatnomalar" },
-  { icon: Lock, label: "Parollar faqat hash ko'rinishida" },
-  { icon: History, label: "Har bir amal audit izida" },
-  { icon: ScanLine, label: "Skaner ma'lumoti qurilmadan chiqmaydi" },
-  { icon: Wallet, label: "Kunlik majburiy kassa kesimi" },
-  { icon: Smartphone, label: "HTTPS orqali xavfsiz ulanish" },
+  { icon: ShieldCheck, label: tr("Rollar va aniq ruxsatnomalar") },
+  { icon: Lock, label: tr("Parollar faqat hash ko'rinishida") },
+  { icon: History, label: tr("Har bir amal audit izida") },
+  { icon: ScanLine, label: tr("Skaner ma'lumoti qurilmadan chiqmaydi") },
+  { icon: Wallet, label: tr("Kunlik majburiy kassa kesimi") },
+  { icon: Smartphone, label: tr("HTTPS orqali xavfsiz ulanish") },
 ]
 
 // Ko'p so'raladigan savollar
 const FAQ = [
   {
-    q: "Tizimni ishlatish uchun nimadir o'rnatish kerakmi?",
-    a: "Yo'q — GoHotel brauzerda ishlaydi. Xohlasangiz, telefon yoki kompyuterga PWA ilova sifatida bir bosishda o'rnatib olasiz: alohida oynada, native ilovadek ochiladi va yangilanishlarni o'zi oladi.",
+    q: tr("Tizimni ishlatish uchun nimadir o'rnatish kerakmi?"),
+    a: tr("Yo'q — GoHotel brauzerda ishlaydi. Xohlasangiz, telefon yoki kompyuterga PWA ilova sifatida bir bosishda o'rnatib olasiz: alohida oynada, native ilovadek ochiladi va yangilanishlarni o'zi oladi."),
   },
   {
-    q: "Xodimlarim tizimda nimalarni ko'ra oladi?",
-    a: "Har xodimga rol va aniq ruxsatlar beriladi: resepshn faqat o'z ishini, farrosh faqat vazifalarini, menejer boshqaruvni ko'radi. Tannarxlar, hisobotlar va sozlamalar faqat rahbariyatga ochiq.",
+    q: tr("Xodimlarim tizimda nimalarni ko'ra oladi?"),
+    a: tr("Har xodimga rol va aniq ruxsatlar beriladi: resepshn faqat o'z ishini, farrosh faqat vazifalarini, menejer boshqaruvni ko'radi. Tannarxlar, hisobotlar va sozlamalar faqat rahbariyatga ochiq."),
   },
   {
-    q: "Kassa hisobi qanday nazorat qilinadi?",
-    a: "Har smena o'z kassasi bilan ochiladi. Topshirishda xodim pulni sanab kiritadi, tizim kutilgan summani hisoblab farqni chiqaradi. Farqlar (kamomad ham, ortiqcha ham) xodim nomiga yozilib, smenalar tarixida saqlanadi.",
+    q: tr("Kassa hisobi qanday nazorat qilinadi?"),
+    a: tr("Har smena o'z kassasi bilan ochiladi. Topshirishda xodim pulni sanab kiritadi, tizim kutilgan summani hisoblab farqni chiqaradi. Farqlar (kamomad ham, ortiqcha ham) xodim nomiga yozilib, smenalar tarixida saqlanadi."),
   },
   {
-    q: "Soatlik ijara ham qo'llab-quvvatlanadimi?",
-    a: "Ha — kunlik ham, soatlik ham. Jonli bandlov doskasida har ikkalasi yonma-yon ko'rinadi, soatlik bronlar orasida tozalash tanaffusi ham hisobga olinadi.",
+    q: tr("Soatlik ijara ham qo'llab-quvvatlanadimi?"),
+    a: tr("Ha — kunlik ham, soatlik ham. Jonli bandlov doskasida har ikkalasi yonma-yon ko'rinadi, soatlik bronlar orasida tozalash tanaffusi ham hisobga olinadi."),
   },
   {
-    q: "Internet uzilib qolsa nima bo'ladi?",
-    a: "Ma'lumotlar bulutdagi serverda xavfsiz saqlanadi — qurilmangiz almashsa ham hech narsa yo'qolmaydi. Aloqa tiklanishi bilan ish davom etadi, o'rnatilgan PWA esa qayta ochilishda so'nggi holatni ko'rsatadi.",
+    q: tr("Internet uzilib qolsa nima bo'ladi?"),
+    a: tr("Ma'lumotlar bulutdagi serverda xavfsiz saqlanadi — qurilmangiz almashsa ham hech narsa yo'qolmaydi. Aloqa tiklanishi bilan ish davom etadi, o'rnatilgan PWA esa qayta ochilishda so'nggi holatni ko'rsatadi."),
   },
   {
-    q: "Bir nechta filialim bor — hammasini boshqara olamanmi?",
-    a: "Ha, tizim ko'p filialli ishlashga mo'ljallangan: xonalar, xodimlar va bronlar filial kesimida yuritiladi, hisobotlar esa umumiy ko'rinishda jamlanadi.",
+    q: tr("Bir nechta filialim bor — hammasini boshqara olamanmi?"),
+    a: tr("Ha, tizim ko'p filialli ishlashga mo'ljallangan: xonalar, xodimlar va bronlar filial kesimida yuritiladi, hisobotlar esa umumiy ko'rinishda jamlanadi."),
   },
 ]
 
 // "Va yana" — tizimdagi mayda-yirik qulayliklar to'plami
 const EXTRAS = [
-  "Xona turlari va qavatlar",
-  "Qulayliklar katalogi",
-  "Qo'shimcha xizmatlar",
-  "Yagona mehmonlar bazasi",
-  "Dublikat mehmonni avto-aniqlash",
-  "Chegirmalar — foiz va summa",
-  "Qisman (bo'lib) to'lash",
-  "Xona almashtirish auditi",
-  "Soatlik bronlar orasida tanaffus",
-  "Muddati tugaganda avto check-out",
-  "Vazifalarni avto-yakunlash",
-  "Push bildirishnomalar",
-  "Navbarda ish vaqti hisoblagichi",
-  "Bir bosishda ma'lumot yangilash",
-  "To'liq o'zbek tilida",
-  "Ilova ichida tun/kun mavzusi",
+  tr("Xona turlari va qavatlar"),
+  tr("Qulayliklar katalogi"),
+  tr("Qo'shimcha xizmatlar"),
+  tr("Yagona mehmonlar bazasi"),
+  tr("Dublikat mehmonni avto-aniqlash"),
+  tr("Chegirmalar — foiz va summa"),
+  tr("Qisman (bo'lib) to'lash"),
+  tr("Xona almashtirish auditi"),
+  tr("Soatlik bronlar orasida tanaffus"),
+  tr("Muddati tugaganda avto check-out"),
+  tr("Vazifalarni avto-yakunlash"),
+  tr("Push bildirishnomalar"),
+  tr("Navbarda ish vaqti hisoblagichi"),
+  tr("Bir bosishda ma'lumot yangilash"),
+  tr("To'liq o'zbek tilida"),
+  tr("Ilova ichida tun/kun mavzusi"),
 ]
 
 // Doimiy rivojlanish xronologiyasi (so'nggi yirik yangiliklar)
 const TIMELINE = [
   {
-    title: "Smena va kassa tizimi",
-    text: "\"Ko'r sanash\", parol bilan topshirish, kamomad nazorati va smenalar tarixi.",
+    title: tr("Smena va kassa tizimi"),
+    text: tr("\"Ko'r sanash\", parol bilan topshirish, kamomad nazorati va smenalar tarixi."),
   },
   {
-    title: "Ombor moduli",
-    text: "FIFO partiyalar, kirim, spisaniye, inventarizatsiya va harakatlar jurnali.",
+    title: tr("Ombor moduli"),
+    text: tr("FIFO partiyalar, kirim, spisaniye, inventarizatsiya va harakatlar jurnali."),
   },
   {
-    title: "Tezkor hujjat skaneri",
-    text: "Nazorat raqamlari tekshiruvi bilan — endi yanada aniq va bir necha barobar tez.",
+    title: tr("Tezkor hujjat skaneri"),
+    text: tr("Nazorat raqamlari tekshiruvi bilan — endi yanada aniq va bir necha barobar tez."),
   },
   {
-    title: "Xonani almashtirish",
-    text: "Bo'sh xonalar ro'yxati, narx farqini avto-hisoblash va o'chirilmas audit.",
+    title: tr("Xonani almashtirish"),
+    text: tr("Bo'sh xonalar ro'yxati, narx farqini avto-hisoblash va o'chirilmas audit."),
   },
   {
-    title: "Profil va landing sahifalari",
-    text: "Har xodim o'z ruxsatlarini ko'radi; tizim bilan tanishuv sahifasi ikki sahnada.",
+    title: tr("Profil va landing sahifalari"),
+    text: tr("Har xodim o'z ruxsatlarini ko'radi; tizim bilan tanishuv sahifasi ikki sahnada."),
   },
 ]
 
@@ -413,22 +415,24 @@ const STARS = [
   { top: "83%", left: "34%", s: 2, d: "-1.8s" },
 ]
 
-// Qidiruv botlari uchun FAQ strukturaviy ma'lumoti (Google/Yandex rich results)
+// Qidiruv botlari uchun FAQ strukturaviy ma'lumoti (Google/Yandex rich results).
+// "@type" — schema.org texnik nomlari, tarjima qilinmaydi (aks holda botlar
+// tanimaydi); savol-javob matni esa sahifa tilida.
 const FAQ_LD = JSON.stringify({
   "@context": "https://schema.org",
-  "@type": "FAQPage",
+  "@type": /* i18n:skip — schema.org turi */ "FAQPage",
   mainEntity: FAQ.map((f) => ({
-    "@type": "Question",
+    "@type": /* i18n:skip */ "Question",
     name: f.q,
-    acceptedAnswer: { "@type": "Answer", text: f.a },
+    acceptedAnswer: { "@type": /* i18n:skip */ "Answer", text: f.a },
   })),
 })
 
 export const LandingPage = () => {
   useSeo({
-    title: "GoHotel — Mehmonxona boshqaruv tizimi (PMS) | Bron, kassa-smena, hisobotlar",
+    title: tr("GoHotel — Mehmonxona boshqaruv tizimi (PMS) | Bron, kassa-smena, hisobotlar"),
     description:
-      "GoHotel — mehmonxona, hostel va soatlik ijara uchun zamonaviy boshqaruv tizimi: jonli bandlov doskasi, kassa-smena nazorati, ombor va do'kon hisobi, xodimlar ruxsatlari, hisobotlar. Brauzerda ishlaydi, telefonga ilova sifatida o'rnatiladi.",
+      tr("GoHotel — mehmonxona, hostel va soatlik ijara uchun zamonaviy boshqaruv tizimi: jonli bandlov doskasi, kassa-smena nazorati, ombor va do'kon hisobi, xodimlar ruxsatlari, hisobotlar. Brauzerda ishlaydi, telefonga ilova sifatida o'rnatiladi."),
     canonicalPath: "/",
   })
   useReveal()
@@ -458,10 +462,10 @@ export const LandingPage = () => {
     const id = setInterval(() => setSlide((s) => (s + 1) % 4), 4000)
     return () => clearInterval(id)
   }, [])
-  const SLIDE_TITLES = ["Boshqaruv paneli", "Bandlov doskasi", "Smenalar", "Ombor"]
+  const SLIDE_TITLES = [tr("Boshqaruv paneli"), tr("Bandlov doskasi"), tr("Smenalar"), tr("Ombor")]
 
   useEffect(() => {
-    document.title = "GoHotel — Mehmonxona boshqaruv tizimi"
+    document.title = tr("GoHotel — Mehmonxona boshqaruv tizimi")
     return () => {
       document.title = "GoHotel"
     }
@@ -604,10 +608,10 @@ export const LandingPage = () => {
           )}
         >
           {[
-            ["#features", "Imkoniyatlar"],
-            ["#how", "Qanday ishlaydi"],
-            ["#stats", "Raqamlar"],
-            ["#faq", "Savollar"],
+            ["#features", tr("Imkoniyatlar")],
+            ["#how", tr("Qanday ishlaydi")],
+            ["#stats", tr("Raqamlar")],
+            ["#faq", tr("Savollar")],
           ].map(([href, label]) => (
             <a
               key={href}
@@ -625,11 +629,12 @@ export const LandingPage = () => {
         </nav>
 
         <div className="flex items-center gap-2.5">
+          <LanguageSwitcher scene={night ? "night" : "day"} />
           {/* Kun/Tun sahnasi almashtirgichi */}
           <button
             type="button"
             onClick={() => setNight((v) => !v)}
-            title={night ? "Kun sahnasiga o'tish" : "Tun sahnasiga o'tish"}
+            title={night ? tr("Kun sahnasiga o'tish") : tr("Tun sahnasiga o'tish")}
             className={cn(
               "relative flex h-9 w-[68px] items-center rounded-full border transition-colors duration-500",
               night ? "border-white/15 bg-white/10" : "border-orange-900/15 bg-white/80"
@@ -655,7 +660,7 @@ export const LandingPage = () => {
                 : "bg-zinc-900 text-white shadow-zinc-900/20"
             )}
           >
-            Kirish
+            {trc("login", "Kirish")}
           </Link>
         </div>
         </div>
@@ -680,18 +685,18 @@ export const LandingPage = () => {
             ) : (
               <Sun className="h-3.5 w-3.5 text-orange-500" />
             )}
-            Zamonaviy mehmonxonalar uchun yagona tizim
+            {tr("Zamonaviy mehmonxonalar uchun yagona tizim")}
           </p>
           <h1
             className="landing-reveal mt-5 text-3xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-6xl 2xl:text-7xl"
             style={{ transitionDelay: "80ms" }}
           >
-            Mehmonxonangizni{" "}
+            {tr("Mehmonxonangizni")}{" "}
             <span className="relative whitespace-nowrap">
               <span
                 className={cn("relative z-10", night ? "text-amber-300" : "text-orange-600")}
               >
-                bitta tizimda
+                {tr("bitta tizimda")}
               </span>
               <span
                 className={cn(
@@ -699,8 +704,7 @@ export const LandingPage = () => {
                   night ? "bg-amber-400/20" : "bg-orange-500/20"
                 )}
               />
-            </span>{" "}
-            boshqaring
+            </span>{" "}{tr("boshqaring")}
           </h1>
           <p
             className={cn(
@@ -709,9 +713,7 @@ export const LandingPage = () => {
             )}
             style={{ transitionDelay: "160ms" }}
           >
-            Bron, kassa-smena, ombor, do'kon va jonli hisobotlar — resepsiyadan
-            direktorgacha butun jamoa bitta oynada ishlaydi. Telefonda ham,
-            kompyuterda ham.
+            {tr("Bron, kassa-smena, ombor, do'kon va jonli hisobotlar — resepsiyadan direktorgacha butun jamoa bitta oynada ishlaydi. Telefonda ham, kompyuterda ham.")}
           </p>
           <div
             className="landing-reveal mt-8 flex flex-wrap items-center gap-3"
@@ -726,7 +728,7 @@ export const LandingPage = () => {
                   : "bg-orange-600 text-white shadow-orange-600/25 hover:bg-orange-500"
               )}
             >
-              Tizimga kirish
+              {tr("Tizimga kirish")}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <a
@@ -738,7 +740,7 @@ export const LandingPage = () => {
                   : "border-orange-900/15 bg-white/70 text-zinc-700 hover:border-orange-900/30 hover:bg-white"
               )}
             >
-              Imkoniyatlarni ko'rish
+              {tr("Imkoniyatlarni ko'rish")}
             </a>
           </div>
           <div
@@ -748,7 +750,7 @@ export const LandingPage = () => {
             )}
             style={{ transitionDelay: "320ms" }}
           >
-            {["O'rnatiladigan PWA ilova", "Yuz bilan kirish", "Hujjat skaneri"].map((t) => (
+            {[tr("O'rnatiladigan PWA ilova"), tr("Yuz bilan kirish"), tr("Hujjat skaneri")].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                 {t}
@@ -778,7 +780,7 @@ export const LandingPage = () => {
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
                 <span className="ml-3 truncate text-[10px] text-zinc-400">
-                  GoHotel · {SLIDE_TITLES[slide]}
+                  {tr("GoHotel · {{v}}", { v: SLIDE_TITLES[slide] })}
                 </span>
               </div>
 
@@ -796,10 +798,10 @@ export const LandingPage = () => {
               <div className="flex items-end justify-between gap-2">
                 <div>
                   <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
-                    11-avgust, seshanba
+                    {tr("11-avgust, seshanba")}
                   </p>
                   <p className="text-sm font-extrabold tracking-tight">
-                    Xayrli kun, Jasur!
+                    {tr("Xayrli kun, Jasur!")}
                   </p>
                 </div>
                 <p className="text-lg font-bold tabular-nums tracking-tight">14:32</p>
@@ -809,7 +811,7 @@ export const LandingPage = () => {
               <div className="mt-2.5 grid grid-cols-3 divide-x divide-zinc-100 rounded-xl border border-zinc-200">
                 <div className="p-2">
                   <p className="text-[7px] font-semibold uppercase tracking-wider text-zinc-400">
-                    Bugungi tushum
+                    {tr("Bugungi tushum")}
                   </p>
                   <p className="text-[11px] font-bold tabular-nums">4 250 000</p>
                   <svg viewBox="0 0 60 18" className="mt-1 h-3.5 w-full">
@@ -825,18 +827,18 @@ export const LandingPage = () => {
                 </div>
                 <div className="p-2">
                   <p className="text-[7px] font-semibold uppercase tracking-wider text-zinc-400">
-                    Sof natija
+                    {tr("Sof natija")}
                   </p>
                   <p className="text-[11px] font-bold tabular-nums text-emerald-600">
                     +3 180 000
                   </p>
                   <p className="mt-1 text-[6.5px] leading-tight text-zinc-400">
-                    tushum + do'kon − xarajat
+                    {tr("tushum + do'kon − xarajat")}
                   </p>
                 </div>
                 <div className="p-2">
                   <p className="text-[7px] font-semibold uppercase tracking-wider text-zinc-400">
-                    Bandlik
+                    {tr("Bandlik")}
                   </p>
                   <p className="text-[11px] font-bold tabular-nums">
                     86<span className="text-[8px] text-zinc-400">%</span>
@@ -850,9 +852,9 @@ export const LandingPage = () => {
               {/* KPI kartalari — aksent chiziqlar bilan */}
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {[
-                  { label: "Bugungi xarajat", value: "620 000", bar: "bg-red-500" },
-                  { label: "Do'kon (bugun)", value: "485 000", bar: "bg-violet-500" },
-                  { label: "Faol bandlovlar", value: "34", bar: "bg-sky-500" },
+                  { label: tr("Bugungi xarajat"), value: "620 000", bar: "bg-red-500" },
+                  { label: tr("Do'kon (bugun)"), value: "485 000", bar: "bg-violet-500" },
+                  { label: tr("Faol bandlovlar"), value: "34", bar: "bg-sky-500" },
                 ].map((t) => (
                   <div key={t.label} className="rounded-lg border border-zinc-200 p-1.5">
                     <p className="truncate text-[6.5px] font-medium text-zinc-400">
@@ -868,10 +870,10 @@ export const LandingPage = () => {
               <div className="mt-2 rounded-xl border border-zinc-200 p-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[7.5px] font-bold text-zinc-600">
-                    Oxirgi 7 kun tushumi
+                    {tr("Oxirgi 7 kun tushumi")}
                   </span>
                   <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[6.5px] font-semibold text-emerald-600">
-                    Jami: 28.4M So'm
+                    {tr("Jami: 28.4M So'm")}
                   </span>
                 </div>
                 <div className="mt-1.5 flex h-12 items-end gap-1 sm:h-14">
@@ -887,7 +889,7 @@ export const LandingPage = () => {
 
               {/* Xonalar holati — segmentli chiziq */}
               <div className="mt-2 rounded-xl border border-zinc-200 p-2">
-                <p className="text-[7.5px] font-bold text-zinc-600">Xonalar holati</p>
+                <p className="text-[7.5px] font-bold text-zinc-600">{tr("Xonalar holati")}</p>
                 <div className="mt-1.5 flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full">
                   <span className="w-[42%] bg-emerald-500" />
                   <span className="w-[26%] bg-red-500" />
@@ -896,10 +898,10 @@ export const LandingPage = () => {
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-0.5">
                   {[
-                    ["bg-emerald-500", "Bo'sh 13"],
-                    ["bg-red-500", "Band 8"],
-                    ["bg-blue-500", "Band qilingan 5"],
-                    ["bg-amber-500", "Tozalanmoqda 4"],
+                    ["bg-emerald-500", tr("Bo'sh 13")],
+                    ["bg-red-500", tr("Band 8")],
+                    ["bg-blue-500", tr("Band qilingan 5")],
+                    ["bg-amber-500", tr("Tozalanmoqda 4")],
                   ].map(([dot, label]) => (
                     <span
                       key={label}
@@ -919,7 +921,7 @@ export const LandingPage = () => {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   </span>
-                  Smena faol · kassa nazoratda
+                  {tr("Smena faol · kassa nazoratda")}
                 </span>
                 <TrendingUp className="h-3 w-3 flex-shrink-0 text-emerald-500" />
               </div>
@@ -936,10 +938,10 @@ export const LandingPage = () => {
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-extrabold tracking-tight">
-                      Bandlov doskasi
+                      {tr("Bandlov doskasi")}
                     </p>
                     <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[7.5px] font-semibold text-zinc-600">
-                      Bugun · 11-avgust
+                      {tr("Bugun · 11-avgust")}
                     </span>
                   </div>
                   {/* Soat shkalasi */}
@@ -951,12 +953,12 @@ export const LandingPage = () => {
                   {/* Xona qatorlari + bron bloklari */}
                   <div className="mt-1 space-y-1.5">
                     {[
-                      { room: "101", bars: [{ l: "4%", w: "30%", c: "bg-emerald-500", t: "Aliyev" }] },
-                      { room: "102", bars: [{ l: "20%", w: "42%", c: "bg-blue-500", t: "Karimova" }] },
-                      { room: "103", bars: [{ l: "8%", w: "22%", c: "bg-emerald-500", t: "Umarov" }, { l: "56%", w: "30%", c: "bg-amber-500", t: "Band" }] },
+                      { room: "101", bars: [{ l: "4%", w: "30%", c: "bg-emerald-500", t: tr("Aliyev") }] },
+                      { room: "102", bars: [{ l: "20%", w: "42%", c: "bg-blue-500", t: tr("Karimova") }] },
+                      { room: "103", bars: [{ l: "8%", w: "22%", c: "bg-emerald-500", t: tr("Umarov") }, { l: "56%", w: "30%", c: "bg-amber-500", t: tr("Band") }] },
                       { room: "104", bars: [] },
-                      { room: "105", bars: [{ l: "34%", w: "52%", c: "bg-blue-500", t: "Rahimov" }] },
-                      { room: "106", bars: [{ l: "12%", w: "70%", c: "bg-red-500", t: "Sobirova" }] },
+                      { room: "105", bars: [{ l: "34%", w: "52%", c: "bg-blue-500", t: tr("Rahimov") }] },
+                      { room: "106", bars: [{ l: "12%", w: "70%", c: "bg-red-500", t: tr("Sobirova") }] },
                     ].map((r) => (
                       <div key={r.room} className="flex items-center gap-1.5">
                         <span className="flex h-6 w-8 flex-shrink-0 items-center justify-center rounded-md bg-zinc-100 text-[8px] font-bold text-zinc-700">
@@ -977,7 +979,7 @@ export const LandingPage = () => {
                           ))}
                           {r.bars.length === 0 && (
                             <span className="absolute inset-0 flex items-center justify-center text-[6.5px] text-zinc-300">
-                              bo'sh
+                              {tr("bo'sh")}
                             </span>
                           )}
                         </div>
@@ -987,10 +989,10 @@ export const LandingPage = () => {
                   {/* Legenda */}
                   <div className="mt-2.5 flex flex-wrap gap-x-2.5 gap-y-1">
                     {[
-                      ["bg-emerald-500", "Kirilgan"],
-                      ["bg-blue-500", "Tasdiqlangan"],
-                      ["bg-amber-500", "Kutilmoqda"],
-                      ["bg-red-500", "Soatlik"],
+                      ["bg-emerald-500", tr("Kirilgan")],
+                      ["bg-blue-500", tr("Tasdiqlangan")],
+                      ["bg-amber-500", tr("Kutilmoqda")],
+                      ["bg-red-500", tr("Soatlik")],
                     ].map(([dot, label]) => (
                       <span
                         key={label}
@@ -1002,7 +1004,7 @@ export const LandingPage = () => {
                     ))}
                   </div>
                   <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[7.5px] font-semibold text-emerald-700">
-                    Xona bosilganda 1 soatlik bron darhol boshlanadi
+                    {tr("Xona bosilganda 1 soatlik bron darhol boshlanadi")}
                   </div>
                 </div>
 
@@ -1015,12 +1017,12 @@ export const LandingPage = () => {
                       : "pointer-events-none translate-x-5 opacity-0"
                   )}
                 >
-                  <p className="text-sm font-extrabold tracking-tight">Smenalar tarixi</p>
+                  <p className="text-sm font-extrabold tracking-tight">{tr("Smenalar tarixi")}</p>
                   <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                     {[
-                      { label: "Yopilgan", value: "6 ta", c: "text-emerald-600 bg-emerald-50" },
-                      { label: "Farqli", value: "1 ta", c: "text-red-600 bg-red-50" },
-                      { label: "Jami sanalgan", value: "12.4M", c: "text-zinc-700 bg-zinc-100" },
+                      { label: tr("Yopilgan"), value: tr("6 ta"), c: "text-emerald-600 bg-emerald-50" },
+                      { label: tr("Farqli"), value: tr("1 ta"), c: "text-red-600 bg-red-50" },
+                      { label: tr("Jami sanalgan"), value: "12.4M", c: "text-zinc-700 bg-zinc-100" },
                     ].map((s) => (
                       <div key={s.label} className={cn("rounded-lg p-1.5 text-center", s.c)}>
                         <p className="text-[9px] font-bold tabular-nums">{s.value}</p>
@@ -1030,10 +1032,10 @@ export const LandingPage = () => {
                   </div>
                   <div className="mt-2.5 space-y-1.5">
                     {[
-                      { n: "Dilnoza A.", t: "08:00–16:00", sum: "4 850 000", diff: "0", ok: true },
-                      { n: "Jasur T.", t: "16:00–00:00", sum: "3 920 000", diff: "0", ok: true },
-                      { n: "Aziz R.", t: "00:00–08:00", sum: "1 210 000", diff: "−50 000", ok: false },
-                      { n: "Malika S.", t: "08:00–16:00", sum: "2 460 000", diff: "0", ok: true },
+                      { n: tr("Dilnoza A."), t: "08:00–16:00", sum: "4 850 000", diff: "0", ok: true },
+                      { n: tr("Jasur T."), t: "16:00–00:00", sum: "3 920 000", diff: "0", ok: true },
+                      { n: tr("Aziz R."), t: "00:00–08:00", sum: "1 210 000", diff: "−50 000", ok: false },
+                      { n: tr("Malika S."), t: "08:00–16:00", sum: "2 460 000", diff: "0", ok: true },
                     ].map((r) => (
                       <div
                         key={r.n}
@@ -1057,7 +1059,7 @@ export const LandingPage = () => {
                               r.ok ? "text-emerald-600" : "text-red-600"
                             )}
                           >
-                            farq: {r.diff}
+                            {tr("farq: {{diff}}", { diff: r.diff })}
                           </p>
                         </div>
                       </div>
@@ -1065,7 +1067,7 @@ export const LandingPage = () => {
                   </div>
                   <div className="mt-2.5 flex items-center justify-between rounded-xl border border-zinc-200 px-2.5 py-1.5">
                     <span className="text-[7.5px] font-semibold text-zinc-600">
-                      "Ko'r sanash" — farq avtomatik aniqlanadi
+                      {tr("\"Ko'r sanash\" — farq avtomatik aniqlanadi")}
                     </span>
                     <ShieldCheck className="h-3 w-3 text-emerald-500" />
                   </div>
@@ -1081,16 +1083,16 @@ export const LandingPage = () => {
                   )}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-extrabold tracking-tight">Ombor</p>
+                    <p className="text-sm font-extrabold tracking-tight">{tr("Ombor")}</p>
                     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[7.5px] font-semibold text-amber-600">
-                      2 ta kam qoldiq
+                      {tr("2 ta kam qoldiq")}
                     </span>
                   </div>
                   <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                     {[
-                      { label: "Mahsulotlar", value: "24" },
-                      { label: "Ombor qiymati", value: "8.6M" },
-                      { label: "Bugungi kirim", value: "3 ta" },
+                      { label: tr("Mahsulotlar"), value: "24" },
+                      { label: tr("Ombor qiymati"), value: "8.6M" },
+                      { label: tr("Bugungi kirim"), value: tr("3 ta") },
                     ].map((s) => (
                       <div key={s.label} className="rounded-lg bg-zinc-100 p-1.5 text-center">
                         <p className="text-[9px] font-bold tabular-nums text-zinc-700">
@@ -1102,17 +1104,17 @@ export const LandingPage = () => {
                   </div>
                   <div className="mt-2.5 space-y-1.5">
                     {[
-                      { n: "Coca-Cola 0.5", q: 42, w: "84%", c: "bg-emerald-500" },
-                      { n: "Suv 1L", q: 35, w: "70%", c: "bg-emerald-500" },
-                      { n: "Shokolad", q: 8, w: "16%", c: "bg-amber-500" },
-                      { n: "Chips", q: 4, w: "8%", c: "bg-red-500" },
-                      { n: "Sok 0.3", q: 26, w: "52%", c: "bg-emerald-500" },
+                      { n: tr("Coca-Cola 0.5"), q: 42, w: "84%", c: "bg-emerald-500" },
+                      { n: tr("Suv 1L"), q: 35, w: "70%", c: "bg-emerald-500" },
+                      { n: tr("Shokolad"), q: 8, w: "16%", c: "bg-amber-500" },
+                      { n: tr("Chips"), q: 4, w: "8%", c: "bg-red-500" },
+                      { n: tr("Sok 0.3"), q: 26, w: "52%", c: "bg-emerald-500" },
                     ].map((p) => (
                       <div key={p.n} className="rounded-lg border border-zinc-100 px-2 py-1.5">
                         <div className="flex items-center justify-between">
                           <p className="text-[8px] font-bold">{p.n}</p>
                           <p className="text-[7.5px] font-semibold tabular-nums text-zinc-500">
-                            {p.q} dona
+                            {tr("{{q}} dona", { q: p.q })}
                           </p>
                         </div>
                         <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-zinc-100">
@@ -1126,7 +1128,7 @@ export const LandingPage = () => {
                   </div>
                   <div className="mt-2.5 flex items-center justify-between rounded-xl border border-zinc-200 px-2.5 py-1.5">
                     <span className="text-[7.5px] font-semibold text-zinc-600">
-                      FIFO partiyalar · tannarx nazorati
+                      {tr("FIFO partiyalar · tannarx nazorati")}
                     </span>
                     <Package className="h-3 w-3 text-amber-500" />
                   </div>
@@ -1166,9 +1168,9 @@ export const LandingPage = () => {
                 )}
               >
                 <BedDouble className="h-3.5 w-3.5 text-emerald-500" />
-                104-xona band qilindi
+                {tr("104-xona band qilindi")}
               </p>
-              <p className="mt-0.5 text-[10px] text-zinc-500">hozirgina · 2 kecha</p>
+              <p className="mt-0.5 text-[10px] text-zinc-500">{tr("hozirgina · 2 kecha")}</p>
             </div>
             <div
               className={cn(
@@ -1185,9 +1187,9 @@ export const LandingPage = () => {
                 )}
               >
                 <ScanLine className="h-3.5 w-3.5 text-violet-500" />
-                Passport o'qildi
+                {tr("Passport o'qildi")}
               </p>
-              <p className="mt-0.5 text-[10px] text-zinc-500">2 soniyada · avtomatik</p>
+              <p className="mt-0.5 text-[10px] text-zinc-500">{tr("2 soniyada · avtomatik")}</p>
             </div>
           </div>
           </div>
@@ -1252,10 +1254,10 @@ export const LandingPage = () => {
               night ? "text-amber-300" : "text-orange-600"
             )}
           >
-            Imkoniyatlar
+            {tr("Imkoniyatlar")}
           </p>
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
-            Har bir bo'lim — puxta o'ylangan
+            {tr("Har bir bo'lim — puxta o'ylangan")}
           </h2>
           <p
             className={cn(
@@ -1263,8 +1265,7 @@ export const LandingPage = () => {
               night ? "text-zinc-400" : "text-zinc-600"
             )}
           >
-            Kichik hosteldan yirik mehmonxonagacha — kundalik ishning har bir
-            qadami uchun tayyor vosita.
+            {tr("Kichik hosteldan yirik mehmonxonagacha — kundalik ishning har bir qadami uchun tayyor vosita.")}
           </p>
         </div>
         <div className="mt-10 grid gap-3.5 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
@@ -1321,10 +1322,10 @@ export const LandingPage = () => {
                 night ? "text-amber-300" : "text-orange-600"
               )}
             >
-              Qanday ishlaydi
+              {tr("Qanday ishlaydi")}
             </p>
             <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
-              3 qadamda ishga tushadi
+              {tr("3 qadamda ishga tushadi")}
             </h2>
           </div>
           <div className="mt-10 grid gap-4 sm:mt-12 md:grid-cols-3">
@@ -1374,10 +1375,10 @@ export const LandingPage = () => {
               night ? "text-amber-300" : "text-orange-600"
             )}
           >
-            Kim uchun
+            {tr("Kim uchun")}
           </p>
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
-            Har bir xodimga — o'z ish stoli
+            {tr("Har bir xodimga — o'z ish stoli")}
           </h2>
           <p
             className={cn(
@@ -1385,8 +1386,7 @@ export const LandingPage = () => {
               night ? "text-zinc-400" : "text-zinc-600"
             )}
           >
-            Rollar va ruxsatnomalar tizimi tufayli har kim faqat o'ziga
-            keraklisini ko'radi — ortiqcha narsa chalg'itmaydi.
+            {tr("Rollar va ruxsatnomalar tizimi tufayli har kim faqat o'ziga keraklisini ko'radi — ortiqcha narsa chalg'itmaydi.")}
           </p>
         </div>
         <div className="mt-10 grid gap-3.5 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
@@ -1438,10 +1438,10 @@ export const LandingPage = () => {
           )}
         >
           {[
-            { to: 15, suffix: "+", label: "Tayyor modul" },
-            { to: 2, suffix: " son.", label: "Hujjatni o'qish tezligi" },
-            { to: 100, suffix: "%", label: "Mobil moslashuv" },
-            { to: 24, suffix: "/7", label: "Doim ishlaydi" },
+            { to: 15, suffix: "+", label: tr("Tayyor modul") },
+            { to: 2, suffix: tr(" son."), label: tr("Hujjatni o'qish tezligi") },
+            { to: 100, suffix: "%", label: tr("Mobil moslashuv") },
+            { to: 24, suffix: "/7", label: tr("Doim ishlaydi") },
           ].map((s) => (
             <div key={s.label} className="text-center">
               <p
@@ -1480,10 +1480,10 @@ export const LandingPage = () => {
                 night ? "text-amber-300" : "text-orange-600"
               )}
             >
-              Nima o'zgaradi
+              {tr("Nima o'zgaradi")}
             </p>
             <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
-              Qog'oz daftardan — jonli tizimga
+              {tr("Qog'oz daftardan — jonli tizimga")}
             </h2>
           </div>
           <div className="mt-10 space-y-3 sm:mt-12">
@@ -1553,10 +1553,10 @@ export const LandingPage = () => {
               night ? "text-amber-300" : "text-orange-600"
             )}
           >
-            Va yana
+            {tr("Va yana")}
           </p>
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
-            Mayda-chuydasigacha o'ylangan qulayliklar
+            {tr("Mayda-chuydasigacha o'ylangan qulayliklar")}
           </h2>
         </div>
         <div className="mt-10 grid gap-2.5 sm:mt-12 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
@@ -1591,10 +1591,10 @@ export const LandingPage = () => {
                 night ? "text-amber-300" : "text-orange-600"
               )}
             >
-              Doimiy rivojlanish
+              {tr("Doimiy rivojlanish")}
             </p>
             <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
-              Tizim har hafta yangilanib boradi
+              {tr("Tizim har hafta yangilanib boradi")}
             </h2>
             <p
               className={cn(
@@ -1602,10 +1602,7 @@ export const LandingPage = () => {
                 night ? "text-zinc-400" : "text-zinc-600"
               )}
             >
-              GoHotel — tirik mahsulot: takliflaringiz tez orada tizimda paydo
-              bo'ladi. Yangilanishlar avtomatik yetib boradi — hech narsani
-              qo'lda o'rnatish shart emas. Mana so'nggi qo'shilganlaridan
-              ba'zilari:
+              {tr("GoHotel — tirik mahsulot: takliflaringiz tez orada tizimda paydo bo'ladi. Yangilanishlar avtomatik yetib boradi — hech narsani qo'lda o'rnatish shart emas. Mana so'nggi qo'shilganlaridan ba'zilari:")}
             </p>
             <div
               className={cn(
@@ -1619,7 +1616,7 @@ export const LandingPage = () => {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
-              Yangilanishlar avtomatik — PWA o'zi yangilanadi
+              {tr("Yangilanishlar avtomatik — PWA o'zi yangilanadi")}
             </div>
           </div>
           {/* Vertikal xronologiya */}
@@ -1677,10 +1674,10 @@ export const LandingPage = () => {
               night ? "text-amber-300" : "text-orange-600"
             )}
           >
-            Savol-javob
+            {tr("Savol-javob")}
           </p>
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
-            Ko'p so'raladigan savollar
+            {tr("Ko'p so'raladigan savollar")}
           </h2>
         </div>
         <div className="mt-10 gap-3 space-y-3 sm:mt-12 lg:columns-2 lg:space-y-0 [&>div]:lg:mb-3 [&>div]:lg:break-inside-avoid">
@@ -1738,11 +1735,10 @@ export const LandingPage = () => {
         >
           <div>
             <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">
-              Mehmonxonangizni{" "}
+              {tr("Mehmonxonangizni")}{" "}
               <span className={night ? "text-amber-300" : "text-orange-600"}>
-                bugundan
-              </span>{" "}
-              zamonaviy boshqaring
+                {tr("bugundan")}
+              </span>{" "}{tr("zamonaviy boshqaring")}
             </h2>
             <p
               className={cn(
@@ -1750,14 +1746,13 @@ export const LandingPage = () => {
                 night ? "text-zinc-400" : "text-zinc-600"
               )}
             >
-              Qog'oz daftarlar va tarqoq jadvallar o'rniga — bitta tezkor tizim.
-              Kirish bir daqiqa ham olmaydi.
+              {tr("Qog'oz daftarlar va tarqoq jadvallar o'rniga — bitta tezkor tizim. Kirish bir daqiqa ham olmaydi.")}
             </p>
             <ul className="mt-5 space-y-2">
               {[
-                "Hech narsa o'rnatilmaydi — brauzerda ochiladi",
-                "Xodimlar yarim soatda o'rganib oladi",
-                "Ma'lumotlaringiz xavfsiz bulut serverda",
+                tr("Hech narsa o'rnatilmaydi — brauzerda ochiladi"),
+                tr("Xodimlar yarim soatda o'rganib oladi"),
+                tr("Ma'lumotlaringiz xavfsiz bulut serverda"),
               ].map((t) => (
                 <li
                   key={t}
@@ -1782,11 +1777,11 @@ export const LandingPage = () => {
                   : "bg-orange-600 text-white shadow-orange-600/25 hover:bg-orange-500"
               )}
             >
-              Hoziroq boshlash
+              {tr("Hoziroq boshlash")}
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
             <p className={cn("text-xs", night ? "text-zinc-500" : "text-zinc-500")}>
-              Yuz bilan yoki login-parol orqali kirish
+              {tr("Yuz bilan yoki login-parol orqali kirish")}
             </p>
           </div>
         </div>
@@ -1820,8 +1815,7 @@ export const LandingPage = () => {
                 night ? "text-zinc-400" : "text-zinc-600"
               )}
             >
-              Mehmonxona, hostel va soatlik ijara uchun zamonaviy boshqaruv
-              tizimi — bron qilishdan hisobotgacha.
+              {tr("Mehmonxona, hostel va soatlik ijara uchun zamonaviy boshqaruv tizimi — bron qilishdan hisobotgacha.")}
             </p>
           </div>
           <div>
@@ -1831,7 +1825,7 @@ export const LandingPage = () => {
                 night ? "text-zinc-300" : "text-zinc-700"
               )}
             >
-              Sahifa
+              {tr("Sahifa")}
             </p>
             <ul
               className={cn(
@@ -1840,10 +1834,10 @@ export const LandingPage = () => {
               )}
             >
               {[
-                ["#features", "Imkoniyatlar"],
-                ["#how", "Qanday ishlaydi"],
-                ["#stats", "Raqamlar"],
-                ["#faq", "Savol-javob"],
+                ["#features", tr("Imkoniyatlar")],
+                ["#how", tr("Qanday ishlaydi")],
+                ["#stats", tr("Raqamlar")],
+                ["#faq", tr("Savol-javob")],
               ].map(([href, label]) => (
                 <li key={href}>
                   <a
@@ -1866,7 +1860,7 @@ export const LandingPage = () => {
                 night ? "text-zinc-300" : "text-zinc-700"
               )}
             >
-              Modullar
+              {tr("Modullar")}
             </p>
             <ul
               className={cn(
@@ -1874,10 +1868,10 @@ export const LandingPage = () => {
                 night ? "text-zinc-400" : "text-zinc-600"
               )}
             >
-              <li>Bandlov doskasi va bronlar</li>
-              <li>Kassa, smenalar va moliya</li>
-              <li>Ombor va mini-do'kon</li>
-              <li>Xo'jalik ishlari va hisobotlar</li>
+              <li>{tr("Bandlov doskasi va bronlar")}</li>
+              <li>{tr("Kassa, smenalar va moliya")}</li>
+              <li>{tr("Ombor va mini-do'kon")}</li>
+              <li>{tr("Xo'jalik ishlari va hisobotlar")}</li>
             </ul>
           </div>
           <div>
@@ -1887,7 +1881,7 @@ export const LandingPage = () => {
                 night ? "text-zinc-300" : "text-zinc-700"
               )}
             >
-              Boshlash
+              {trc("nav", "Boshlash")}
             </p>
             <ul
               className={cn(
@@ -1905,11 +1899,11 @@ export const LandingPage = () => {
                       : "text-orange-600 hover:text-orange-500"
                   )}
                 >
-                  Tizimga kirish →
+                  {tr("Tizimga kirish →")}
                 </Link>
               </li>
-              <li>Telefonga PWA sifatida o'rnatish mumkin</li>
-              <li>Yuz bilan kirishni sozlash ilova ichida</li>
+              <li>{tr("Telefonga PWA sifatida o'rnatish mumkin")}</li>
+              <li>{tr("Yuz bilan kirishni sozlash ilova ichida")}</li>
             </ul>
           </div>
         </div>
@@ -1925,9 +1919,9 @@ export const LandingPage = () => {
               "text-zinc-500"
             )}
           >
-            <span>© {new Date().getFullYear()} GoHotel — mehmonxona boshqaruv tizimi</span>
+            <span>{tr("© {{year}} GoHotel — mehmonxona boshqaruv tizimi", { year: new Date().getFullYear() })}</span>
             <span className="flex items-center gap-1.5">
-              O'zbekistonda ishlab chiqilgan
+              {tr("O'zbekistonda ishlab chiqilgan")}
               <span className={night ? "text-amber-300" : "text-orange-500"}>♥</span>
             </span>
           </div>

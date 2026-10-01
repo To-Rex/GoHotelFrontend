@@ -28,24 +28,25 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 // Belgi (ikonka) tanlovlari — GoHotelAdmin bilan bir xil ro'yxat
 const ICON_OPTIONS = [
-  { value: "", label: "Belgisiz" },
-  { value: "wifi", label: "Wi-Fi" },
-  { value: "tv", label: "Televizor" },
-  { value: "wind", label: "Konditsioner" },
-  { value: "bath", label: "Vanna" },
-  { value: "coffee", label: "Qahva" },
-  { value: "parking", label: "Avtoturargoh" },
-  { value: "pool", label: "Basseyn" },
-  { value: "gym", label: "Sport zali" },
-  { value: "spa", label: "Spa" },
-  { value: "restaurant", label: "Restoran" },
-  { value: "bar", label: "Bar" },
-  { value: "laundry", label: "Kir yuvish" },
-  { value: "safe", label: "Seyf" },
-  { value: "fridge", label: "Muzlatgich" },
+  { value: "", label: tr("Belgisiz") },
+  { value: "wifi", label: tr("Wi-Fi") },
+  { value: "tv", label: tr("Televizor") },
+  { value: "wind", label: tr("Konditsioner") },
+  { value: "bath", label: tr("Vanna") },
+  { value: "coffee", label: tr("Qahva") },
+  { value: "parking", label: tr("Avtoturargoh") },
+  { value: "pool", label: tr("Basseyn") },
+  { value: "gym", label: tr("Sport zali") },
+  { value: "spa", label: tr("Spa") },
+  { value: "restaurant", label: tr("Restoran") },
+  { value: "bar", label: tr("Bar") },
+  { value: "laundry", label: tr("Kir yuvish") },
+  { value: "safe", label: tr("Seyf") },
+  { value: "fridge", label: tr("Muzlatgich") },
 ]
 
 const iconLabel = (icon?: string | null) =>
@@ -93,7 +94,7 @@ export const AmenitiesPage = () => {
 
   const onSubmit = async () => {
     if (!name.trim()) {
-      setErrorMsg("Nomini kiriting")
+      setErrorMsg(tr("Nomini kiriting"))
       return
     }
     try {
@@ -116,7 +117,7 @@ export const AmenitiesPage = () => {
   }
 
   const onDelete = async (a: Amenity) => {
-    if (!confirm(`"${a.name}" qulayligini o'chirasizmi?`)) return
+    if (!confirm(tr("\"{{name}}\" qulayligini o'chirasizmi?", { name: a.name }))) return
     try {
       await deleteMutation.mutateAsync(a.id)
     } catch (e) {
@@ -137,7 +138,7 @@ export const AmenitiesPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Qulayliklar</h1>
+        <h1 className="text-2xl font-bold">{tr("Qulayliklar")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -148,22 +149,22 @@ export const AmenitiesPage = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Qulayliklar</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("Qulayliklar")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Xona va mehmonxona qulayliklari katalogi
+            {tr("Xona va mehmonxona qulayliklari katalogi")}
           </p>
         </div>
         {isAdmin && (
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
-            Qulaylik qo'shish
+            {tr("Qulaylik qo'shish")}
           </Button>
         )}
       </div>
 
       <div className="max-w-xs">
         <Input
-          placeholder="Qidirish..."
+          placeholder={tr("Qidirish...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -173,7 +174,7 @@ export const AmenitiesPage = () => {
       <div className="space-y-2.5 md:hidden">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-            Qulayliklar topilmadi
+            {tr("Qulayliklar topilmadi")}
           </div>
         ) : (
           filtered.map((a) => (
@@ -188,7 +189,7 @@ export const AmenitiesPage = () => {
                       {a.name}
                     </p>
                     <p className="mt-0.5 text-[11px] leading-tight text-gray-600">
-                      Belgi: {iconLabel(a.icon)}
+                      {tr("Belgi: {{icon}}", { icon: iconLabel(a.icon) })}
                     </p>
                   </div>
                 </div>
@@ -197,7 +198,7 @@ export const AmenitiesPage = () => {
                   type="button"
                   disabled={!isAdmin || updateMutation.isPending}
                   onClick={() => isAdmin && onToggleStatus(a)}
-                  title={isAdmin ? "Holatni o'zgartirish" : undefined}
+                  title={isAdmin ? tr("Holatni o'zgartirish") : undefined}
                   className={cn(
                     "flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
                     a.is_active
@@ -206,7 +207,7 @@ export const AmenitiesPage = () => {
                     isAdmin && "cursor-pointer hover:opacity-80"
                   )}
                 >
-                  {a.is_active ? "Faol" : "Nofaol"}
+                  {a.is_active ? tr("Faol") : tr("Nofaol")}
                 </button>
               </div>
 
@@ -214,7 +215,7 @@ export const AmenitiesPage = () => {
                 <div className="mt-3 flex items-center gap-1 border-t border-gray-100 pt-2.5">
                   <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
                     <Pencil className="h-3.5 w-3.5 mr-1" />
-                    Tahrirlash
+                    {tr("Tahrirlash")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -223,7 +224,7 @@ export const AmenitiesPage = () => {
                     onClick={() => onDelete(a)}
                   >
                     <Trash2 className="h-3.5 w-3.5 mr-1" />
-                    O'chirish
+                    {tr("O'chirish")}
                   </Button>
                 </div>
               )}
@@ -237,17 +238,17 @@ export const AmenitiesPage = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nomi</TableHead>
-              <TableHead>Belgi</TableHead>
-              <TableHead>Holat</TableHead>
-              {isAdmin && <TableHead className="text-right">Amallar</TableHead>}
+              <TableHead>{tr("Nomi")}</TableHead>
+              <TableHead>{tr("Belgi")}</TableHead>
+              <TableHead>{tr("Holat")}</TableHead>
+              {isAdmin && <TableHead className="text-right">{tr("Amallar")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-6 text-gray-400">
-                  Qulayliklar topilmadi
+                  {tr("Qulayliklar topilmadi")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -267,7 +268,7 @@ export const AmenitiesPage = () => {
                       type="button"
                       disabled={!isAdmin || updateMutation.isPending}
                       onClick={() => isAdmin && onToggleStatus(a)}
-                      title={isAdmin ? "Holatni o'zgartirish" : undefined}
+                      title={isAdmin ? tr("Holatni o'zgartirish") : undefined}
                       className={cn(
                         "text-xs font-medium px-2 py-0.5 rounded-full",
                         a.is_active
@@ -276,7 +277,7 @@ export const AmenitiesPage = () => {
                         isAdmin && "cursor-pointer hover:opacity-80"
                       )}
                     >
-                      {a.is_active ? "Faol" : "Nofaol"}
+                      {a.is_active ? tr("Faol") : tr("Nofaol")}
                     </button>
                   </TableCell>
                   {isAdmin && (
@@ -284,7 +285,7 @@ export const AmenitiesPage = () => {
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
                           <Pencil className="h-3.5 w-3.5 mr-1" />
-                          Tahrirlash
+                          {tr("Tahrirlash")}
                         </Button>
                         <Button
                           variant="ghost"
@@ -293,7 +294,7 @@ export const AmenitiesPage = () => {
                           onClick={() => onDelete(a)}
                         >
                           <Trash2 className="h-3.5 w-3.5 mr-1" />
-                          O'chirish
+                          {tr("O'chirish")}
                         </Button>
                       </div>
                     </TableCell>
@@ -309,20 +310,20 @@ export const AmenitiesPage = () => {
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Qulaylikni tahrirlash" : "Yangi qulaylik"}
+              {editing ? tr("Qulaylikni tahrirlash") : tr("Yangi qulaylik")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Nomi *</label>
+              <label className="text-sm font-medium">{tr("Nomi *")}</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Masalan: Wi-Fi, Konditsioner"
+                placeholder={tr("Masalan: Wi-Fi, Konditsioner")}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Belgi</label>
+              <label className="text-sm font-medium">{tr("Belgi")}</label>
               <select
                 className={selectClass}
                 value={icon}
@@ -341,11 +342,11 @@ export const AmenitiesPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={onSubmit} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editing ? "Saqlash" : "Qo'shish"}
+              {editing ? tr("Saqlash") : tr("Qo'shish")}
             </Button>
           </DialogFooter>
         </DialogContent>

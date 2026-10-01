@@ -20,6 +20,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import { tr } from "@/i18n"
 
 export const FloorsPage = () => {
   const { can } = usePermissions()
@@ -80,13 +81,13 @@ export const FloorsPage = () => {
     e?.response?.data?.detail
       ? typeof e.response.data.detail === "string"
         ? e.response.data.detail
-        : "Xatolik yuz berdi"
-      : "Xatolik yuz berdi"
+        : tr("Xatolik yuz berdi")
+      : tr("Xatolik yuz berdi")
 
   const onSubmit = async () => {
     const num = parseInt(floorNumber, 10)
     if (Number.isNaN(num)) {
-      setErrorMsg("Qavat raqamini kiriting")
+      setErrorMsg(tr("Qavat raqamini kiriting"))
       return
     }
     try {
@@ -115,8 +116,8 @@ export const FloorsPage = () => {
     const roomCount = roomCountByFloor[f.id] || 0
     const warning =
       roomCount > 0
-        ? `${f.floor_number}-qavatni o'chirasizmi? DIQQAT: unga biriktirilgan ${roomCount} ta xona ham birga o'chiriladi!`
-        : `${f.floor_number}-qavatni o'chirasizmi?`
+        ? tr("{{floor_number}}-qavatni o'chirasizmi? DIQQAT: unga biriktirilgan {{roomCount}} ta xona ham birga o'chiriladi!", { floor_number: f.floor_number, roomCount })
+        : tr("{{floor_number}}-qavatni o'chirasizmi?", { floor_number: f.floor_number })
     if (!confirm(warning)) return
     try {
       await deleteMutation.mutateAsync(f.id)
@@ -130,7 +131,7 @@ export const FloorsPage = () => {
   if (branchesLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Qavatlar</h1>
+        <h1 className="text-2xl font-bold">{tr("Qavatlar")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -141,15 +142,15 @@ export const FloorsPage = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Qavatlar</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("Qavatlar")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Filial qavatlarini boshqarish · {floors.length} ta qavat
+            {tr("Filial qavatlarini boshqarish · {{count}} ta qavat", { count: floors.length })}
           </p>
         </div>
         {canCreate && branchId && (
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
-            Qavat qo'shish
+            {tr("Qavat qo'shish")}
           </Button>
         )}
       </div>
@@ -158,7 +159,7 @@ export const FloorsPage = () => {
         <div className="rounded-lg border bg-white py-14">
           <div className="flex flex-col items-center gap-2 text-gray-400">
             <Building2 className="h-8 w-8" />
-            <p className="text-sm">Filiallar topilmadi</p>
+            <p className="text-sm">{tr("Filiallar topilmadi")}</p>
           </div>
         </div>
       ) : (
@@ -166,7 +167,7 @@ export const FloorsPage = () => {
           {/* Filial tanlash (bir nechta bo'lsa) */}
           {branches.length > 1 && (
             <div className="max-w-xs space-y-1">
-              <label className="text-sm font-medium">Filial</label>
+              <label className="text-sm font-medium">{tr("Filial")}</label>
               <select
                 className="w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 value={branchId}
@@ -191,11 +192,11 @@ export const FloorsPage = () => {
             <div className="rounded-lg border bg-white py-14">
               <div className="flex flex-col items-center gap-2 text-gray-400">
                 <Layers className="h-8 w-8" />
-                <p className="text-sm">Bu filialda hali qavatlar yo'q</p>
+                <p className="text-sm">{tr("Bu filialda hali qavatlar yo'q")}</p>
                 {canCreate && (
                   <Button variant="outline" size="sm" className="mt-2" onClick={openCreate}>
                     <Plus className="h-4 w-4 mr-1.5" />
-                    Birinchi qavatni qo'shish
+                    {tr("Birinchi qavatni qo'shish")}
                   </Button>
                 )}
               </div>
@@ -220,7 +221,7 @@ export const FloorsPage = () => {
                           {canEdit && (
                             <button
                               type="button"
-                              title="Tahrirlash"
+                              title={tr("Tahrirlash")}
                               onClick={() => openEdit(f)}
                               className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                             >
@@ -230,7 +231,7 @@ export const FloorsPage = () => {
                           {canDelete && (
                             <button
                               type="button"
-                              title="O'chirish"
+                              title={tr("O'chirish")}
                               onClick={() => onDelete(f)}
                               className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
                             >
@@ -242,18 +243,18 @@ export const FloorsPage = () => {
                     </div>
 
                     <p className="mt-3 text-lg font-bold text-gray-900 leading-tight truncate">
-                      {f.name || `${f.floor_number}-qavat`}
+                      {f.name || tr("{{floor_number}}-qavat", { floor_number: String(f.floor_number) })}
                     </p>
-                    <p className="text-xs text-gray-400">Qavat raqami: {f.floor_number}</p>
+                    <p className="text-xs text-gray-400">{tr("Qavat raqami:")}{" "}{f.floor_number}</p>
 
                     <div className="mt-3 flex items-center gap-1.5 border-t pt-3 text-sm text-gray-600">
                       <DoorOpen className="h-4 w-4 text-gray-400" />
                       {roomCount > 0 ? (
                         <span>
-                          <span className="font-semibold text-gray-900">{roomCount}</span> ta xona
+                          <span className="font-semibold text-gray-900">{roomCount}</span>{" "}{tr("ta xona", { count: roomCount })}
                         </span>
                       ) : (
-                        <span className="text-gray-400">Xonalar yo'q</span>
+                        <span className="text-gray-400">{tr("Xonalar yo'q")}</span>
                       )}
                     </div>
                   </div>
@@ -267,35 +268,35 @@ export const FloorsPage = () => {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>{editing ? "Qavatni tahrirlash" : "Yangi qavat"}</DialogTitle>
+            <DialogTitle>{editing ? tr("Qavatni tahrirlash") : tr("Yangi qavat")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Qavat raqami *</label>
+              <label className="text-sm font-medium">{tr("Qavat raqami *")}</label>
               <Input
                 type="number"
                 value={floorNumber}
                 onChange={(e) => setFloorNumber(e.target.value)}
-                placeholder="Masalan: 1"
+                placeholder={tr("Masalan: 1")}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Qavat nomi</label>
+              <label className="text-sm font-medium">{tr("Qavat nomi")}</label>
               <Input
                 value={floorName}
                 onChange={(e) => setFloorName(e.target.value)}
-                placeholder="Masalan: Yerto'la, Lobbi"
+                placeholder={tr("Masalan: Yerto'la, Lobbi")}
               />
             </div>
             {errorMsg && <p className="text-sm text-red-500">{errorMsg}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={onSubmit} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editing ? "Saqlash" : "Qo'shish"}
+              {editing ? tr("Saqlash") : tr("Qo'shish")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -20,16 +20,17 @@ import {
   setSearch,
   toggleSort,
 } from "@/lib/tableState"
+import { tr, trc } from "@/i18n"
 
 /** Hisob-fakturalar jadvali — sahifalab, qidirib va saralab. */
 
 const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Qoralama",
-  ISSUED: "Taqdim etilgan",
-  PARTIALLY_PAID: "Qisman to'langan",
-  PAID: "To'langan",
-  VOID: "Bekor qilingan",
-  REFUNDED: "Qaytarilgan",
+  DRAFT: tr("Qoralama"),
+  ISSUED: tr("Taqdim etilgan"),
+  PARTIALLY_PAID: tr("Qisman to'langan"),
+  PAID: tr("To'langan"),
+  VOID: trc("invoice", "Bekor qilingan"),
+  REFUNDED: tr("Qaytarilgan"),
 }
 
 const statusBadge: Record<string, string> = {
@@ -91,8 +92,8 @@ export function InvoicesSection({
   const pages = pageCount(total)
   const sort = (column: string) => setState((s) => toggleSort(s, column))
   const empty = state.search
-    ? "Qidiruv bo'yicha hisob-faktura topilmadi"
-    : "Tanlangan davrda hisob-fakturalar yo'q"
+    ? tr("Qidiruv bo'yicha hisob-faktura topilmadi")
+    : tr("Tanlangan davrda hisob-fakturalar yo'q")
 
   const pager = (
     <TablePager
@@ -114,14 +115,14 @@ export function InvoicesSection({
           className="w-full sm:w-64"
           value={state.search}
           onChange={(value) => setState((s) => setSearch(s, value))}
-          placeholder="Hujjat raqami bo'yicha..."
+          placeholder={tr("Hujjat raqami bo'yicha...")}
         />
         <select
           className={cn(selectClass, "w-auto min-w-[170px]")}
           value={status}
           onChange={(e) => onStatus(e.target.value)}
         >
-          <option value="">Barcha holatlar</option>
+          <option value="">{tr("Barcha holatlar")}</option>
           {Object.entries(STATUS_LABELS).map(([v, l]) => (
             <option key={v} value={v}>
               {l}
@@ -155,7 +156,7 @@ export function InvoicesSection({
                           {inv.invoice_number}
                         </p>
                         <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
-                          {inv.invoice_date || "-"} · muddati: {inv.due_date || "-"}
+                          {tr("{{v}} · muddati: {{v2}}", { v: inv.invoice_date || "-", v2: inv.due_date || "-" })}
                         </p>
                       </div>
                       <span
@@ -169,36 +170,36 @@ export function InvoicesSection({
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t pt-2.5 text-sm">
                       <div>
-                        <p className="text-[11px] text-gray-400">Umumiy summa</p>
+                        <p className="text-[11px] text-gray-400">{tr("Umumiy summa")}</p>
                         <p className="font-medium text-gray-900">
-                          {fmt(inv.total_amount)} So'm
+                          {tr("{{total_amount}} So'm", { total_amount: fmt(inv.total_amount) })}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-400">To'landi</p>
+                        <p className="text-[11px] text-gray-400">{tr("To'landi")}</p>
                         <p className="font-semibold text-green-600">
-                          {fmt(inv.paid_amount)} So'm
+                          {tr("{{paid_amount}} So'm", { paid_amount: fmt(inv.paid_amount) })}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-400">Chegirma</p>
+                        <p className="text-[11px] text-gray-400">{tr("Chegirma")}</p>
                         {Number(inv.discount_amount || 0) > 0 ? (
                           <p className="font-medium text-red-500">
-                            −{fmt(inv.discount_amount)} So'm
+                            {tr("−{{discount_amount}} So'm", { discount_amount: fmt(inv.discount_amount) })}
                           </p>
                         ) : (
                           <p className="text-gray-300">—</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-400">Qoldiq</p>
+                        <p className="text-[11px] text-gray-400">{tr("Qoldiq")}</p>
                         <p
                           className={cn(
                             "font-semibold",
                             remaining > 0 ? "text-amber-600" : "text-gray-400"
                           )}
                         >
-                          {fmt(remaining)} So'm
+                          {tr("{{remaining}} So'm", { remaining: fmt(remaining) })}
                         </p>
                       </div>
                     </div>
@@ -219,7 +220,7 @@ export function InvoicesSection({
                     dir={state.sortDir}
                     onSort={sort}
                   >
-                    Raqami
+                    {tr("Raqami")}
                   </SortableHead>
                   <SortableHead
                     column="invoice_date"
@@ -227,7 +228,7 @@ export function InvoicesSection({
                     dir={state.sortDir}
                     onSort={sort}
                   >
-                    Sana
+                    {tr("Sana")}
                   </SortableHead>
                   <SortableHead
                     column="due_date"
@@ -235,7 +236,7 @@ export function InvoicesSection({
                     dir={state.sortDir}
                     onSort={sort}
                   >
-                    Muddati
+                    {tr("Muddati")}
                   </SortableHead>
                   <SortableHead
                     column="status"
@@ -243,7 +244,7 @@ export function InvoicesSection({
                     dir={state.sortDir}
                     onSort={sort}
                   >
-                    Holati
+                    {tr("Holati")}
                   </SortableHead>
                   <SortableHead
                     column="discount_amount"
@@ -252,7 +253,7 @@ export function InvoicesSection({
                     onSort={sort}
                     align="right"
                   >
-                    Chegirma
+                    {tr("Chegirma")}
                   </SortableHead>
                   <SortableHead
                     column="total_amount"
@@ -261,7 +262,7 @@ export function InvoicesSection({
                     onSort={sort}
                     align="right"
                   >
-                    Umumiy summa
+                    {tr("Umumiy summa")}
                   </SortableHead>
                   <SortableHead
                     column="paid_amount"
@@ -270,7 +271,7 @@ export function InvoicesSection({
                     onSort={sort}
                     align="right"
                   >
-                    To'landi
+                    {tr("To'landi")}
                   </SortableHead>
                   <SortableHead
                     column="remaining"
@@ -279,7 +280,7 @@ export function InvoicesSection({
                     onSort={sort}
                     align="right"
                   >
-                    Qoldiq
+                    {tr("Qoldiq")}
                   </SortableHead>
                 </TableRow>
               </TableHeader>
@@ -313,17 +314,17 @@ export function InvoicesSection({
                         <TableCell className="text-right">
                           {Number(inv.discount_amount || 0) > 0 ? (
                             <span className="font-medium text-red-500">
-                              −{fmt(inv.discount_amount)} So'm
+                              {tr("−{{discount_amount}} So'm", { discount_amount: fmt(inv.discount_amount) })}
                             </span>
                           ) : (
                             <span className="text-gray-300">—</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {fmt(inv.total_amount)} So'm
+                          {tr("{{total_amount}} So'm", { total_amount: fmt(inv.total_amount) })}
                         </TableCell>
                         <TableCell className="text-right text-green-600 font-semibold">
-                          {fmt(inv.paid_amount)} So'm
+                          {tr("{{paid_amount}} So'm", { paid_amount: fmt(inv.paid_amount) })}
                         </TableCell>
                         <TableCell
                           className={cn(
@@ -331,7 +332,7 @@ export function InvoicesSection({
                             remaining > 0 ? "text-amber-600" : "text-gray-400"
                           )}
                         >
-                          {fmt(remaining)} So'm
+                          {tr("{{remaining}} So'm", { remaining: fmt(remaining) })}
                         </TableCell>
                       </TableRow>
                     )

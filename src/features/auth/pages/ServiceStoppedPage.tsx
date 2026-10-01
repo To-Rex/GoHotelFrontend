@@ -9,6 +9,7 @@ import {
 } from "@/lib/hotelBlock"
 import { useSeo } from "@/lib/seo"
 import { cn } from "@/lib/utils"
+import { tr, trc } from "@/i18n"
 
 /**
  * Mehmonxona xizmati to'xtatilgan holat.
@@ -32,36 +33,36 @@ const CONTENT: Record<
   { title: string; icon: typeof PowerOff; tone: string; body: string }
 > = {
   HOTEL_INACTIVE: {
-    title: "Xizmat to'xtatilgan",
+    title: tr("Xizmat to'xtatilgan"),
     icon: PowerOff,
     tone: "bg-red-50 text-red-600",
     body:
-      "Mehmonxonangiz uchun tizim vaqtincha o'chirib qo'yilgan. Bu dasturdagi " +
-      "nosozlik emas — barcha bronlar, to'lovlar va hisobotlar joyida turibdi " +
-      "va xizmat tiklangan zahoti hammasi avvalgidek ochiladi.",
+      tr("Mehmonxonangiz uchun tizim vaqtincha o'chirib qo'yilgan. Bu dasturdagi ") +
+      tr("nosozlik emas — barcha bronlar, to'lovlar va hisobotlar joyida turibdi ") +
+      tr("va xizmat tiklangan zahoti hammasi avvalgidek ochiladi."),
   },
   HOTEL_SUSPENDED: {
-    title: "Xizmat vaqtincha to'xtatilgan",
+    title: tr("Xizmat vaqtincha to'xtatilgan"),
     icon: PauseCircle,
     tone: "bg-amber-50 text-amber-600",
     body:
-      "Mehmonxonangiz uchun tizim vaqtincha to'xtatib turilgan. Ma'lumotlaringiz " +
-      "saqlanmoqda; xizmat tiklangach ishni shu yerdan davom ettirasiz.",
+      tr("Mehmonxonangiz uchun tizim vaqtincha to'xtatib turilgan. Ma'lumotlaringiz ") +
+      tr("saqlanmoqda; xizmat tiklangach ishni shu yerdan davom ettirasiz."),
   },
   HOTEL_NOT_FOUND: {
-    title: "Mehmonxona topilmadi",
+    title: tr("Mehmonxona topilmadi"),
     icon: PowerOff,
     tone: "bg-red-50 text-red-600",
     body:
-      "Hisobingiz bog'langan mehmonxona tizimda topilmadi. Tizim ma'muriga " +
-      "murojaat qiling.",
+      tr("Hisobingiz bog'langan mehmonxona tizimda topilmadi. Tizim ma'muriga ") +
+      tr("murojaat qiling."),
   },
 }
 
 export const ServiceStoppedPage = () => {
   useSeo({
-    title: "Xizmat to'xtatilgan — GoHotel",
-    description: "Mehmonxona uchun tizim vaqtincha to'xtatilgan.",
+    title: tr("Xizmat to'xtatilgan — GoHotel"),
+    description: tr("Mehmonxona uchun tizim vaqtincha to'xtatilgan."),
     canonicalPath: "/service-stopped",
     noindex: true,
   })
@@ -121,19 +122,17 @@ export const ServiceStoppedPage = () => {
         <div className="mt-4 flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-800">
           <LifeBuoy className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>
-            Xizmatni tiklash uchun tizim ma'muriga murojaat qiling. Tiklangach
-            "Qayta tekshirish" tugmasi ishni davom ettiradi — qaytadan kirish
-            shart emas.
+            {tr("Xizmatni tiklash uchun tizim ma'muriga murojaat qiling. Tiklangach \"Qayta tekshirish\" tugmasi ishni davom ettiradi — qaytadan kirish shart emas.")}
           </span>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
           <Button type="button" onClick={retry}>
             <RefreshCw className="mr-1.5 h-4 w-4" />
-            Qayta tekshirish
+            {tr("Qayta tekshirish")}
           </Button>
           <Button type="button" variant="outline" onClick={signOut}>
-            Chiqish
+            {trc("login", "Chiqish")}
           </Button>
         </div>
       </div>

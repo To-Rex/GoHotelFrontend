@@ -79,7 +79,10 @@ import {
   PAYMENT_METHODS as CANONICAL_METHODS,
   PAYMENT_METHOD_LABELS,
 } from "@/lib/paymentMethods"
+import { tr, trc } from "@/i18n"
 
+// i18n:keys — mahsulot kategoriyasi bazaga o'zbekcha yoziladi va filtrda
+// solishtiriladi; ekranda tr(kategoriya) bilan tarjima qilinadi
 const CATEGORIES = ["Ichimliklar", "Shirinliklar", "Gazaklar", "Boshqa"]
 
 const EMOJI_SUGGESTIONS = ["🥤", "💧", "☕", "🧃", "🍫", "🍬", "🍪", "🍩", "🍟", "🥜", "🍿", "🧴"]
@@ -173,7 +176,7 @@ export const ShopPage = () => {
       .filter((r) => r.status === "CONFIRMED" || r.status === "CHECKED_IN")
       .map((r) => ({
         id: r.id,
-        label: `${roomNo(r.room_id)}-xona — ${guestName(r.guest_id) || r.reservation_number}`,
+        label: tr("{{room_id}}-xona — {{v}}", { room_id: String(roomNo(r.room_id)), v: guestName(r.guest_id) || r.reservation_number }),
         room: roomNo(r.room_id),
       }))
       .sort((a, b) => String(a.room).localeCompare(String(b.room), undefined, { numeric: true }))
@@ -250,7 +253,7 @@ export const ShopPage = () => {
       const sum = splitParts.reduce((s, p) => s + p.amount, 0)
       if (!splitParts.length || Math.abs(sum - cartTotal) > 0.01) {
         setSellError(
-          `Bo'laklar jami (${fmt(sum)}) savat summasiga (${fmt(cartTotal)}) teng bo'lishi kerak`
+          tr("Bo'laklar jami ({{sum}}) savat summasiga ({{cartTotal}}) teng bo'lishi kerak", { sum: fmt(sum), cartTotal: fmt(cartTotal) })
         )
         return
       }
@@ -272,8 +275,8 @@ export const ShopPage = () => {
       setSplitRows((rows) => rows.map((r) => ({ ...r, amount: "" })))
       setSoldBanner(
         sale.status === "PAID"
-          ? `${fmt(sale.total_amount)} So'm — sotuv qayd etildi`
-          : `${fmt(sale.total_amount)} So'm — bron hisobiga yozildi`
+          ? tr("{{total_amount}} So'm — sotuv qayd etildi", { total_amount: fmt(sale.total_amount) })
+          : tr("{{total_amount}} So'm — bron hisobiga yozildi", { total_amount: fmt(sale.total_amount) })
       )
       window.setTimeout(() => setSoldBanner(null), 3500)
       // Chek yoqilgan bo'lsa avtomatik chiqariladi (kutmasdan, fonda)
@@ -300,9 +303,9 @@ export const ShopPage = () => {
   )
 
   const presets = [
-    { key: "today", label: "Bugun", from: todayStr, to: todayStr },
-    { key: "week", label: "7 kun", from: format(subDays(new Date(), 6), "yyyy-MM-dd"), to: todayStr },
-    { key: "month", label: "30 kun", from: format(subDays(new Date(), 29), "yyyy-MM-dd"), to: todayStr },
+    { key: "today", label: tr("Bugun"), from: todayStr, to: todayStr },
+    { key: "week", label: tr("7 kun"), from: format(subDays(new Date(), 6), "yyyy-MM-dd"), to: todayStr },
+    { key: "month", label: tr("30 kun"), from: format(subDays(new Date(), 29), "yyyy-MM-dd"), to: todayStr },
   ]
 
   // ---- Mahsulot dialogi ----
@@ -336,7 +339,7 @@ export const ShopPage = () => {
 
   const submitProduct = async () => {
     if (!pName.trim()) {
-      setPError("Mahsulot nomini kiriting")
+      setPError(tr("Mahsulot nomini kiriting"))
       return
     }
     try {
@@ -362,7 +365,7 @@ export const ShopPage = () => {
   }
 
   const onDeleteProduct = async (p: ShopProduct) => {
-    if (!confirm(`"${p.name}" mahsulotini o'chirasizmi?`)) return
+    if (!confirm(tr("\"{{name}}\" mahsulotini o'chirasizmi?", { name: p.name }))) return
     try {
       await deleteProduct.mutateAsync(p.id)
       setCart((prev) => prev.filter((i) => i.productId !== p.id))
@@ -395,11 +398,11 @@ export const ShopPage = () => {
     const qty = parseInt(bQty, 10)
     const price = Number(bSalePrice)
     if (!qty || qty <= 0) {
-      setBError("Miqdor 0 dan katta bo'lishi kerak")
+      setBError(tr("Miqdor 0 dan katta bo'lishi kerak"))
       return
     }
     if (!price || price <= 0) {
-      setBError("Sotish narxi 0 dan katta bo'lishi kerak")
+      setBError(tr("Sotish narxi 0 dan katta bo'lishi kerak"))
       return
     }
     try {
@@ -500,7 +503,7 @@ export const ShopPage = () => {
     const total = Number(payTarget.total_amount || 0)
     if (!parts.length || Math.abs(sum - total) > 0.01) {
       setPayError(
-        `Bo'laklar jami (${fmt(sum)}) summaga (${fmt(total)}) teng bo'lishi kerak`
+        tr("Bo'laklar jami ({{sum}}) summaga ({{total}}) teng bo'lishi kerak", { sum: fmt(sum), total: fmt(total) })
       )
       return
     }
@@ -519,7 +522,7 @@ export const ShopPage = () => {
   }
 
   const onCancelSale = async (s: ShopSale) => {
-    if (!confirm("Sotuv bekor qilinib, mahsulotlar omborga qaytarilsinmi?")) return
+    if (!confirm(tr("Sotuv bekor qilinib, mahsulotlar omborga qaytarilsinmi?"))) return
     try {
       await cancelSale.mutateAsync(s.id)
     } catch (e) {
@@ -566,7 +569,7 @@ export const ShopPage = () => {
       receiptDesign
     )
     if (!r.ok) {
-      setPrintError(r.error || "Chek chiqmadi")
+      setPrintError(r.error || tr("Chek chiqmadi"))
       setPrintRetrySale(sale)
     } else {
       setPrintError(null)
@@ -588,8 +591,8 @@ export const ShopPage = () => {
     const r = await printTest()
     setPrinterTest(
       r.ok
-        ? { ok: true, msg: "Sinov chek yuborildi — printerni tekshiring" }
-        : { ok: false, msg: r.error || "Xato" }
+        ? { ok: true, msg: tr("Sinov chek yuborildi — printerni tekshiring") }
+        : { ok: false, msg: r.error || tr("Xato") }
     )
     setPrinterBusy(false)
   }
@@ -609,15 +612,15 @@ export const ShopPage = () => {
             <Store className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Do'kon</h1>
+            <h1 className="text-xl font-bold tracking-tight">{tr("Do'kon")}</h1>
             <p className="text-sm text-muted-foreground">
-              Sotuvlar FIFO partiyalar asosida — narx eng eski partiyadan olinadi
+              {tr("Sotuvlar FIFO partiyalar asosida — narx eng eski partiyadan olinadi")}
             </p>
           </div>
         </div>
         {canManage && (
           <Button onClick={openCreateProduct} className="gap-2">
-            <Plus size={16} /> Mahsulot qo'shish
+            <Plus size={16} />{" "}{tr("Mahsulot qo'shish")}
           </Button>
         )}
       </div>
@@ -662,27 +665,27 @@ export const ShopPage = () => {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Receipt size={15} /> Sotuvlar
+            <Receipt size={15} />{" "}{tr("Sotuvlar")}
           </div>
-          <p className="mt-1 text-2xl font-bold">{(sales as ShopSale[]).length} ta</p>
+          <p className="mt-1 text-2xl font-bold">{tr("{{count}} ta", { count: (sales as ShopSale[]).length })}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ShoppingCart size={15} /> Sotilgan mahsulot
+            <ShoppingCart size={15} />{" "}{tr("Sotilgan mahsulot")}
           </div>
-          <p className="mt-1 text-2xl font-bold">{itemsSold} dona</p>
+          <p className="mt-1 text-2xl font-bold">{tr("{{itemsSold}} dona", { itemsSold })}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Banknote size={15} /> Tushum (to'langan)
+            <Banknote size={15} />{" "}{tr("Tushum (to'langan)")}
           </div>
-          <p className="mt-1 text-2xl font-bold text-emerald-600">{fmt(paidRevenue)} So'm</p>
+          <p className="mt-1 text-2xl font-bold text-emerald-600">{tr("{{paidRevenue}} So'm", { paidRevenue: fmt(paidRevenue) })}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <BedDouble size={15} /> Bronlarda (kutilmoqda)
+            <BedDouble size={15} />{" "}{tr("Bronlarda (kutilmoqda)")}
           </div>
-          <p className="mt-1 text-2xl font-bold text-amber-600">{fmt(pendingRevenue)} So'm</p>
+          <p className="mt-1 text-2xl font-bold text-amber-600">{tr("{{pendingRevenue}} So'm", { pendingRevenue: fmt(pendingRevenue) })}</p>
         </div>
       </div>
 
@@ -698,12 +701,12 @@ export const ShopPage = () => {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Mahsulot qidirish..."
+                placeholder={tr("Mahsulot qidirish...")}
                 className="pl-9"
               />
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {["Barchasi", ...CATEGORIES].map((c) => (
+              {[/* i18n:keys */ "Barchasi", ...CATEGORIES].map((c) => (
                 <button
                   key={c}
                   onClick={() => setCategory(c)}
@@ -714,7 +717,7 @@ export const ShopPage = () => {
                       : "border-border bg-background text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  {c}
+                  {tr(c)}
                 </button>
               ))}
             </div>
@@ -729,10 +732,10 @@ export const ShopPage = () => {
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-14 text-center text-muted-foreground">
               <PackageOpen size={32} className="opacity-60" />
-              <p className="text-sm">Mahsulot topilmadi</p>
+              <p className="text-sm">{tr("Mahsulot topilmadi")}</p>
               {canManage && (
                 <Button variant="outline" size="sm" onClick={openCreateProduct} className="mt-1 gap-1.5">
-                  <Plus size={14} /> Birinchi mahsulotni qo'shing
+                  <Plus size={14} />{" "}{tr("Birinchi mahsulotni qo'shing")}
                 </Button>
               )}
             </div>
@@ -763,11 +766,11 @@ export const ShopPage = () => {
                     </div>
                     <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight">{p.name}</p>
                     <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      {p.category || "—"}
+                      {p.category ? tr(p.category) : "—"}
                       {p.batches.filter((b) => b.remaining > 0).length > 1 && (
                         <span
                           className="inline-flex items-center gap-0.5 text-[10px] text-primary"
-                          title="Bir nechta partiya — narx FIFO bo'yicha"
+                          title={tr("Bir nechta partiya — narx FIFO bo'yicha")}
                         >
                           <Layers size={11} />
                           {p.batches.filter((b) => b.remaining > 0).length}
@@ -776,10 +779,10 @@ export const ShopPage = () => {
                     </p>
                     <div className="mt-2 flex items-end justify-between">
                       <span className="text-sm font-bold text-primary">
-                        {p.current_price != null ? `${fmt(p.current_price)} So'm` : "Narx yo'q"}
+                        {p.current_price != null ? tr("{{current_price}} So'm", { current_price: fmt(p.current_price) }) : tr("Narx yo'q")}
                       </span>
                       {out ? (
-                        <Badge variant="destructive" className="text-[10px]">Tugagan</Badge>
+                        <Badge variant="destructive" className="text-[10px]">{tr("Tugagan")}</Badge>
                       ) : (
                         <span
                           className={cn(
@@ -787,13 +790,13 @@ export const ShopPage = () => {
                             left <= 3 ? "font-medium text-amber-600" : "text-muted-foreground"
                           )}
                         >
-                          {left} dona
+                          {tr("{{left}} dona", { left })}
                         </span>
                       )}
                     </div>
                     {!p.is_active && (
                       <Badge variant="secondary" className="absolute left-2 top-2 text-[10px]">
-                        Nofaol
+                        {tr("Nofaol")}
                       </Badge>
                     )}
                     {canManage && (
@@ -804,7 +807,7 @@ export const ShopPage = () => {
                             openBatch(p)
                           }}
                           className="flex h-7 w-7 items-center justify-center rounded-md bg-background/90 text-emerald-600 shadow-sm ring-1 ring-border hover:bg-emerald-600 hover:text-white"
-                          title="Partiya qo'shish (kirim)"
+                          title={tr("Partiya qo'shish (kirim)")}
                         >
                           <PackagePlus size={13} />
                         </button>
@@ -814,7 +817,7 @@ export const ShopPage = () => {
                             openEditProduct(p)
                           }}
                           className="flex h-7 w-7 items-center justify-center rounded-md bg-background/90 text-muted-foreground shadow-sm ring-1 ring-border hover:text-foreground"
-                          title="Tahrirlash"
+                          title={tr("Tahrirlash")}
                         >
                           <Pencil size={13} />
                         </button>
@@ -824,7 +827,7 @@ export const ShopPage = () => {
                             onDeleteProduct(p)
                           }}
                           className="flex h-7 w-7 items-center justify-center rounded-md bg-background/90 text-destructive shadow-sm ring-1 ring-border hover:bg-destructive hover:text-white"
-                          title="O'chirish"
+                          title={tr("O'chirish")}
                         >
                           <Trash2 size={13} />
                         </button>
@@ -839,9 +842,9 @@ export const ShopPage = () => {
           {/* Sotuvlar jadvali */}
           <div className="rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h2 className="text-sm font-semibold">Sotuvlar</h2>
+              <h2 className="text-sm font-semibold">{tr("Sotuvlar")}</h2>
               <span className="text-xs text-muted-foreground">
-                {(sales as ShopSale[]).length} ta
+                {tr("{{count}} ta", { count: (sales as ShopSale[]).length })}
               </span>
             </div>
             {salesLoading ? (
@@ -851,7 +854,7 @@ export const ShopPage = () => {
               </div>
             ) : (sales as ShopSale[]).length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Tanlangan davrda sotuv yo'q
+                {tr("Tanlangan davrda sotuv yo'q")}
               </p>
             ) : (
               <>
@@ -862,7 +865,7 @@ export const ShopPage = () => {
                       key={s.id}
                       role="button"
                       tabIndex={0}
-                      title="Batafsil ko'rish"
+                      title={tr("Batafsil ko'rish")}
                       onClick={() => openDetail(s)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") openDetail(s)
@@ -884,7 +887,7 @@ export const ShopPage = () => {
                           </Badge>
                         ) : (
                           <Badge className="flex-shrink-0 bg-amber-100 text-[11px] text-amber-700 hover:bg-amber-100">
-                            Bron: {s.reservation_number || "—"}
+                            {tr("Bron: {{v}}", { v: s.reservation_number || "—" })}
                           </Badge>
                         )}
                       </div>
@@ -892,7 +895,7 @@ export const ShopPage = () => {
                         {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
                       </p>
                       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2.5">
-                        <span className="text-sm font-semibold">{fmt(s.total_amount)} So'm</span>
+                        <span className="text-sm font-semibold">{tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}</span>
                         <div className="flex items-center gap-1">
                           {s.status === "PENDING" && (
                             <Button
@@ -904,7 +907,7 @@ export const ShopPage = () => {
                                 openPay(s)
                               }}
                             >
-                              <Banknote size={13} /> To'lash
+                              <Banknote size={13} />{" "}{tr("To'lash")}
                             </Button>
                           )}
                           {canManage && (
@@ -914,7 +917,7 @@ export const ShopPage = () => {
                                 onCancelSale(s)
                               }}
                               className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                              title="Bekor qilish (ombor qaytadi)"
+                              title={tr("Bekor qilish (ombor qaytadi)")}
                             >
                               <Trash2 size={13} />
                             </button>
@@ -929,11 +932,11 @@ export const ShopPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Vaqt</TableHead>
-                      <TableHead>Mahsulotlar</TableHead>
-                      <TableHead>Sotuvchi</TableHead>
-                      <TableHead>To'lov</TableHead>
-                      <TableHead className="text-right">Summa</TableHead>
+                      <TableHead>{tr("Vaqt")}</TableHead>
+                      <TableHead>{tr("Mahsulotlar")}</TableHead>
+                      <TableHead>{tr("Sotuvchi")}</TableHead>
+                      <TableHead>{tr("To'lov")}</TableHead>
+                      <TableHead className="text-right">{tr("Summa")}</TableHead>
                       <TableHead className="w-[1%]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -943,7 +946,7 @@ export const ShopPage = () => {
                         key={s.id}
                         onClick={() => openDetail(s)}
                         className="cursor-pointer"
-                        title="Batafsil ko'rish"
+                        title={tr("Batafsil ko'rish")}
                       >
                         <TableCell className="whitespace-nowrap text-sm">
                           {s.created_at ? format(new Date(s.created_at), "dd.MM HH:mm") : "—"}
@@ -961,12 +964,12 @@ export const ShopPage = () => {
                             </Badge>
                           ) : (
                             <Badge className="bg-amber-100 text-[11px] text-amber-700 hover:bg-amber-100">
-                              Bron: {s.reservation_number || "—"}
+                              {tr("Bron: {{v}}", { v: s.reservation_number || "—" })}
                             </Badge>
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right text-sm font-semibold">
-                          {fmt(s.total_amount)} So'm
+                          {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1">
@@ -980,7 +983,7 @@ export const ShopPage = () => {
                                   openPay(s)
                                 }}
                               >
-                                <Banknote size={13} /> To'lash
+                                <Banknote size={13} />{" "}{tr("To'lash")}
                               </Button>
                             )}
                             {canManage && (
@@ -990,7 +993,7 @@ export const ShopPage = () => {
                                   onCancelSale(s)
                                 }}
                                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                title="Bekor qilish (ombor qaytadi)"
+                                title={tr("Bekor qilish (ombor qaytadi)")}
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -1012,7 +1015,7 @@ export const ShopPage = () => {
           <div className="rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h2 className="flex items-center gap-2 text-sm font-semibold">
-                <ShoppingCart size={16} /> Savat
+                <ShoppingCart size={16} />{" "}{tr("Savat")}
                 {cartCount > 0 && (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
                     {cartCount}
@@ -1024,7 +1027,7 @@ export const ShopPage = () => {
                   onClick={() => setCart([])}
                   className="text-xs text-muted-foreground transition-colors hover:text-destructive"
                 >
-                  Tozalash
+                  {trc("clear", "Tozalash")}
                 </button>
               )}
             </div>
@@ -1045,7 +1048,7 @@ export const ShopPage = () => {
                     onClick={() => void doPrintReceipt(printRetrySale)}
                     className="flex flex-shrink-0 items-center gap-1 rounded-md border border-amber-300 px-2 py-1 text-[11px] font-semibold hover:bg-amber-100"
                   >
-                    <RefreshCw size={11} /> Qayta
+                    <RefreshCw size={11} />{" "}{tr("Qayta")}
                   </button>
                 )}
                 <button
@@ -1063,8 +1066,8 @@ export const ShopPage = () => {
             {cart.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-muted-foreground">
                 <ShoppingCart size={28} className="opacity-50" />
-                <p className="text-sm">Savat bo'sh</p>
-                <p className="text-xs">Sotish uchun mahsulot ustiga bosing</p>
+                <p className="text-sm">{tr("Savat bo'sh")}</p>
+                <p className="text-xs">{tr("Sotish uchun mahsulot ustiga bosing")}</p>
               </div>
             ) : (
               <div className="max-h-[280px] space-y-1 overflow-y-auto px-3 py-2">
@@ -1080,7 +1083,7 @@ export const ShopPage = () => {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{p.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {line.qty} dona ={" "}
+                          {tr("{{qty}} dona =", { qty: line.qty })}{" "}
                           <span className="font-semibold text-foreground">{fmt(lineTotal)}</span>
                         </p>
                       </div>
@@ -1118,7 +1121,7 @@ export const ShopPage = () => {
                       : "border-border text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  <Banknote size={14} /> Oddiy sotuv
+                  <Banknote size={14} />{" "}{tr("Oddiy sotuv")}
                 </button>
                 <button
                   onClick={() => setSaleMode("RESERVATION")}
@@ -1129,7 +1132,7 @@ export const ShopPage = () => {
                       : "border-border text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  <BedDouble size={14} /> Bronga yozish
+                  <BedDouble size={14} />{" "}{tr("Bronga yozish")}
                 </button>
               </div>
 
@@ -1160,7 +1163,7 @@ export const ShopPage = () => {
                           <Input
                             type="number"
                             min={0}
-                            placeholder="Summa"
+                            placeholder={tr("Summa")}
                             value={row.amount}
                             onChange={(e) =>
                               updateSplitRow(i, { amount: e.target.value })
@@ -1170,10 +1173,10 @@ export const ShopPage = () => {
                           <button
                             type="button"
                             onClick={() => fillSplitRemaining(i)}
-                            title="Qolgan summani shu qatorga yozish"
+                            title={tr("Qolgan summani shu qatorga yozish")}
                             className="flex-shrink-0 rounded-md border border-border bg-background px-1.5 py-1.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
                           >
-                            Qoldiq
+                            {tr("Qoldiq")}
                           </button>
                           <select
                             value={row.method}
@@ -1215,7 +1218,7 @@ export const ShopPage = () => {
                             }
                             className="text-[11px] font-medium text-primary hover:underline"
                           >
-                            + Yana usul qo'shish
+                            {tr("+ Yana usul qo'shish")}
                           </button>
                         ) : (
                           <span />
@@ -1238,8 +1241,8 @@ export const ShopPage = () => {
                     className="text-[11px] font-medium text-primary hover:underline"
                   >
                     {splitMode
-                      ? "← Oddiy to'lovga qaytish"
-                      : "Bo'lib to'lash (naqd + karta + o'tkazma)"}
+                      ? tr("← Oddiy to'lovga qaytish")
+                      : tr("Bo'lib to'lash (naqd + karta + o'tkazma)")}
                   </button>
                 </div>
               ) : (
@@ -1249,7 +1252,7 @@ export const ShopPage = () => {
                     onChange={(e) => setReservationId(e.target.value)}
                     className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
-                    <option value="">Bronni tanlang...</option>
+                    <option value="">{tr("Bronni tanlang...")}</option>
                     {activeReservations.map((r) => (
                       <option key={r.id} value={r.id}>
                         {r.label}
@@ -1257,7 +1260,7 @@ export const ShopPage = () => {
                     ))}
                   </select>
                   <p className="text-[11px] text-muted-foreground">
-                    To'lov keyin olinadi — mehmon chiqishida "To'lash" tugmasi bilan yopiladi
+                    {tr("To'lov keyin olinadi — mehmon chiqishida \"To'lash\" tugmasi bilan yopiladi")}
                   </p>
                 </div>
               )}
@@ -1267,8 +1270,8 @@ export const ShopPage = () => {
               )}
 
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">Jami:</span>
-                <span className="text-xl font-bold">{fmt(cartTotal)} So'm</span>
+                <span className="text-sm text-muted-foreground">{tr("Jami:")}</span>
+                <span className="text-xl font-bold">{tr("{{cartTotal}} So'm", { cartTotal: fmt(cartTotal) })}</span>
               </div>
 
               {/* Chek rejimi — o'chirilsa cheksiz sotiladi (hech narsa o'zgarmaydi) */}
@@ -1292,7 +1295,7 @@ export const ShopPage = () => {
                     />
                   </span>
                   <Printer size={13} />
-                  {receiptOn ? "Chek chiqariladi" : "Cheksiz sotish"}
+                  {receiptOn ? tr("Chek chiqariladi") : tr("Cheksiz sotish")}
                 </button>
                 <button
                   type="button"
@@ -1301,7 +1304,7 @@ export const ShopPage = () => {
                     setPrinterTest(null)
                     setPrinterModal(true)
                   }}
-                  title="Chek printeri sozlamalari"
+                  title={tr("Chek printeri sozlamalari")}
                   className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Settings2 size={14} />
@@ -1318,7 +1321,7 @@ export const ShopPage = () => {
                 ) : (
                   <CheckCircle2 size={18} />
                 )}
-                {saleMode === "RESERVATION" ? "Bronga yozish" : "Sotish"}
+                {saleMode === "RESERVATION" ? tr("Bronga yozish") : tr("Sotish")}
               </Button>
             </div>
           </div>
@@ -1329,16 +1332,16 @@ export const ShopPage = () => {
       <Dialog open={productModal} onOpenChange={setProductModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}</DialogTitle>
+            <DialogTitle>{editing ? tr("Mahsulotni tahrirlash") : tr("Yangi mahsulot")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-sm font-medium">Nomi</label>
-              <Input value={pName} onChange={(e) => setPName(e.target.value)} placeholder="Coca-Cola 0.5L" />
+              <label className="mb-1 block text-sm font-medium">{tr("Nomi")}</label>
+              <Input value={pName} onChange={(e) => setPName(e.target.value)} placeholder={tr("Coca-Cola 0.5L")} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium">Kategoriya</label>
+                <label className="mb-1 block text-sm font-medium">{tr("Kategoriya")}</label>
                 <select
                   value={pCategory}
                   onChange={(e) => setPCategory(e.target.value)}
@@ -1346,13 +1349,13 @@ export const ShopPage = () => {
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
-                      {c}
+                      {tr(c)}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Belgi</label>
+                <label className="mb-1 block text-sm font-medium">{tr("Belgi")}</label>
                 <div className="flex flex-wrap gap-1">
                   {EMOJI_SUGGESTIONS.slice(0, 6).map((e) => (
                     <button
@@ -1378,26 +1381,25 @@ export const ShopPage = () => {
                   onChange={(e) => setPActive(e.target.checked)}
                   className="h-4 w-4 rounded border-border"
                 />
-                Faol (sotuvda ko'rinadi)
+                {tr("Faol (sotuvda ko'rinadi)")}
               </label>
             )}
             {!editing && (
               <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-                Mahsulot yaratilgach, unga <b>partiya qo'shing</b> (miqdor + narx) — shundan
-                keyin sotuvga chiqadi.
+                {tr("Mahsulot yaratilgach, unga")}{" "}<b>{tr("partiya qo'shing")}</b>{" "}{tr("(miqdor + narx) — shundan keyin sotuvga chiqadi.")}
               </p>
             )}
             {pError && <p className="text-sm font-medium text-destructive">{pError}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setProductModal(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={submitProduct} disabled={createProduct.isPending || updateProduct.isPending}>
               {(createProduct.isPending || updateProduct.isPending) && (
                 <Loader2 size={15} className="mr-1.5 animate-spin" />
               )}
-              {editing ? "Saqlash" : "Qo'shish"}
+              {editing ? tr("Saqlash") : tr("Qo'shish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1408,23 +1410,21 @@ export const ShopPage = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              Partiya qo'shish — {batchProduct?.emoji} {batchProduct?.name}
+              {tr("Partiya qo'shish —")}{" "}{batchProduct?.emoji} {batchProduct?.name}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {batchProduct && batchProduct.batches.length > 0 && (
               <div className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-                Mavjud partiyalar:{" "}
-                {batchProduct.batches
+                {tr("Mavjud partiyalar: {{v}}. Yangi partiya navbatga qo'shiladi — avval eskisi sotiladi (FIFO).", { v: batchProduct.batches
                   .filter((b) => b.remaining > 0)
-                  .map((b) => `${b.remaining} dona @ ${fmt(b.sale_price)}`)
-                  .join(", ") || "qoldiq yo'q"}
-                . Yangi partiya navbatga qo'shiladi — avval eskisi sotiladi (FIFO).
+                  .map((b) => tr("{{remaining}} dona @ {{sale_price}}", { remaining: b.remaining, sale_price: fmt(b.sale_price) }))
+                  .join(", ") || tr("qoldiq yo'q") })}
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium">Miqdor (dona)</label>
+                <label className="mb-1 block text-sm font-medium">{tr("Miqdor (dona)")}</label>
                 <Input
                   type="number"
                   min={1}
@@ -1435,7 +1435,7 @@ export const ShopPage = () => {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Sotish narxi (So'm)</label>
+                <label className="mb-1 block text-sm font-medium">{tr("Sotish narxi (So'm)")}</label>
                 <Input
                   type="number"
                   min={0}
@@ -1447,7 +1447,7 @@ export const ShopPage = () => {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">
-                Olish narxi (ixtiyoriy, foyda hisobi uchun)
+                {tr("Olish narxi (ixtiyoriy, foyda hisobi uchun)")}
               </label>
               <Input
                 type="number"
@@ -1461,11 +1461,11 @@ export const ShopPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBatchModal(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={submitBatch} disabled={addBatch.isPending}>
               {addBatch.isPending && <Loader2 size={15} className="mr-1.5 animate-spin" />}
-              Kirim qilish
+              {tr("Kirim qilish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1476,7 +1476,7 @@ export const ShopPage = () => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Receipt size={18} /> Sotuv tafsilotlari
+              <Receipt size={18} />{" "}{tr("Sotuv tafsilotlari")}
             </DialogTitle>
           </DialogHeader>
           {detailSale && (
@@ -1484,19 +1484,19 @@ export const ShopPage = () => {
               {/* Umumiy ma'lumot */}
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-muted/60 p-3 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">Holat</p>
+                  <p className="text-xs text-muted-foreground">{tr("Holat")}</p>
                   {detailSale.status === "PAID" ? (
                     <Badge className="mt-0.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                      To'langan
+                      {tr("To'langan")}
                     </Badge>
                   ) : (
                     <Badge className="mt-0.5 bg-amber-100 text-amber-700 hover:bg-amber-100">
-                      Bronda (kutilmoqda)
+                      {tr("Bronda (kutilmoqda)")}
                     </Badge>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">To'lov usuli</p>
+                  <p className="text-xs text-muted-foreground">{tr("To'lov usuli")}</p>
                   <p className="mt-0.5 font-medium">
                     {detailSale.payments && detailSale.payments.length > 0
                       ? detailSale.payments
@@ -1512,7 +1512,7 @@ export const ShopPage = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Sotuv vaqti</p>
+                  <p className="text-xs text-muted-foreground">{tr("Sotuv vaqti")}</p>
                   <p className="mt-0.5 font-medium">
                     {detailSale.created_at
                       ? format(new Date(detailSale.created_at), "dd.MM.yyyy HH:mm")
@@ -1520,7 +1520,7 @@ export const ShopPage = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">To'langan vaqt</p>
+                  <p className="text-xs text-muted-foreground">{tr("To'langan vaqt")}</p>
                   <p className="mt-0.5 font-medium">
                     {detailSale.paid_at
                       ? format(new Date(detailSale.paid_at), "dd.MM.yyyy HH:mm")
@@ -1528,16 +1528,16 @@ export const ShopPage = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Sotuvchi</p>
+                  <p className="text-xs text-muted-foreground">{tr("Sotuvchi")}</p>
                   <p className="mt-0.5 font-medium">{detailSale.created_by_name || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Bron</p>
+                  <p className="text-xs text-muted-foreground">{tr("Bron")}</p>
                   <p className="mt-0.5 font-medium">{detailSale.reservation_number || "—"}</p>
                 </div>
                 {detailSale.reservation_id && (
                   <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">Mijoz</p>
+                    <p className="text-xs text-muted-foreground">{tr("Mijoz")}</p>
                     <p className="mt-0.5 font-medium">{detailGuestName || "—"}</p>
                   </div>
                 )}
@@ -1564,10 +1564,10 @@ export const ShopPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Mahsulot</TableHead>
-                      <TableHead className="text-right">Narx</TableHead>
-                      <TableHead className="text-right">Soni</TableHead>
-                      <TableHead className="text-right">Jami</TableHead>
+                      <TableHead>{tr("Mahsulot")}</TableHead>
+                      <TableHead className="text-right">{tr("Narx")}</TableHead>
+                      <TableHead className="text-right">{tr("Soni")}</TableHead>
+                      <TableHead className="text-right">{tr("Jami")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1587,8 +1587,8 @@ export const ShopPage = () => {
                 </Table>
                 </div>
                 <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
-                  <span className="text-sm text-muted-foreground">Jami:</span>
-                  <span className="text-lg font-bold">{fmt(detailSale.total_amount)} So'm</span>
+                  <span className="text-sm text-muted-foreground">{tr("Jami:")}</span>
+                  <span className="text-lg font-bold">{tr("{{total_amount}} So'm", { total_amount: fmt(detailSale.total_amount) })}</span>
                 </div>
               </div>
 
@@ -1609,7 +1609,7 @@ export const ShopPage = () => {
                   ) : (
                     <Printer size={16} />
                   )}
-                  Chek chiqarish
+                  {tr("Chek chiqarish")}
                 </Button>
                 {detailSale.status === "PENDING" && (
                   <Button
@@ -1619,7 +1619,7 @@ export const ShopPage = () => {
                       openPay(detailSale)
                     }}
                   >
-                    <Banknote size={16} /> To'lovni qabul qilish
+                    <Banknote size={16} />{" "}{tr("To'lovni qabul qilish")}
                   </Button>
                 )}
               </div>
@@ -1636,13 +1636,13 @@ export const ShopPage = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Printer size={18} /> Chek printeri (TPrints)
+              <Printer size={18} />{" "}{tr("Chek printeri (TPrints)")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                Print-server manzili
+                {tr("Print-server manzili")}
               </label>
               <Input
                 value={printerUrl}
@@ -1651,12 +1651,8 @@ export const ShopPage = () => {
                 className="mt-1"
               />
               <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-                Chek chiqishi uchun kassa kompyuterida TPrints dasturi ishlab
-                turishi kerak. Odatiy manzil:{" "}
-                <b className="text-foreground">http://127.0.0.1:9100</b>. Printer
-                boshqa kompyuterda bo'lsa, o'sha kompyuter IP manzilini yozing
-                (masalan http://192.168.1.102:9100). Sozlama shu qurilmaning
-                o'zida saqlanadi.
+                {tr("Chek chiqishi uchun kassa kompyuterida TPrints dasturi ishlab turishi kerak. Odatiy manzil:")}{" "}
+                <b className="text-foreground">http://127.0.0.1:9100</b>{tr(". Printer boshqa kompyuterda bo'lsa, o'sha kompyuter IP manzilini yozing (masalan http://192.168.1.102:9100). Sozlama shu qurilmaning o'zida saqlanadi.")}
               </p>
             </div>
             {printerTest && (
@@ -1682,7 +1678,7 @@ export const ShopPage = () => {
                 ) : (
                   <RefreshCw size={14} />
                 )}
-                Tekshirish
+                {tr("Tekshirish")}
               </Button>
               <Button
                 variant="outline"
@@ -1691,10 +1687,10 @@ export const ShopPage = () => {
                 disabled={printerBusy}
                 onClick={sendTestPrint}
               >
-                <Receipt size={14} /> Sinov chek
+                <Receipt size={14} />{" "}{tr("Sinov chek")}
               </Button>
               <Button size="sm" className="ml-auto" onClick={savePrinter}>
-                Saqlash
+                {tr("Saqlash")}
               </Button>
             </div>
           </div>
@@ -1705,17 +1701,17 @@ export const ShopPage = () => {
       <Dialog open={payModal} onOpenChange={setPayModal}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>To'lovni qabul qilish</DialogTitle>
+            <DialogTitle>{tr("To'lovni qabul qilish")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
               {payTarget?.reservation_number && (
                 <>
-                  Bron: <b>{payTarget.reservation_number}</b> ·{" "}
+                  {tr("Bron:")}{" "}<b>{payTarget.reservation_number}</b> ·{" "}
                 </>
               )}
-              Summa:{" "}
-              <b className="text-foreground">{fmt(payTarget?.total_amount || 0)} So'm</b>
+              {tr("Summa:")}{" "}
+              <b className="text-foreground">{tr("{{fmt}} So'm", { fmt: fmt(payTarget?.total_amount || 0) })}</b>
             </p>
             {!paySplitOn ? (
               <div className="grid grid-cols-3 gap-1.5">
@@ -1738,7 +1734,7 @@ export const ShopPage = () => {
                     <Input
                       type="number"
                       min={0}
-                      placeholder="Summa"
+                      placeholder={tr("Summa")}
                       value={row.amount}
                       onChange={(e) =>
                         updatePaySplitRow(i, { amount: e.target.value })
@@ -1748,10 +1744,10 @@ export const ShopPage = () => {
                     <button
                       type="button"
                       onClick={() => fillPaySplitRemaining(i)}
-                      title="Qolgan summani shu qatorga yozish"
+                      title={tr("Qolgan summani shu qatorga yozish")}
                       className="flex-shrink-0 rounded-md border border-border bg-background px-1.5 py-1.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
                     >
-                      Qoldiq
+                      {tr("Qoldiq")}
                     </button>
                     <select
                       value={row.method}
@@ -1792,7 +1788,7 @@ export const ShopPage = () => {
                     }
                     className="text-[11px] font-medium text-primary hover:underline"
                   >
-                    + Yana usul qo'shish
+                    {tr("+ Yana usul qo'shish")}
                   </button>
                 )}
                 <Button
@@ -1804,7 +1800,7 @@ export const ShopPage = () => {
                   {paySale.isPending && (
                     <Loader2 size={14} className="animate-spin" />
                   )}
-                  To'lovni qabul qilish
+                  {tr("To'lovni qabul qilish")}
                 </Button>
               </div>
             )}
@@ -1814,8 +1810,8 @@ export const ShopPage = () => {
               className="text-[11px] font-medium text-primary hover:underline"
             >
               {paySplitOn
-                ? "← Bitta usul bilan to'lash"
-                : "Bo'lib to'lash (naqd + karta + o'tkazma)"}
+                ? tr("← Bitta usul bilan to'lash")
+                : tr("Bo'lib to'lash (naqd + karta + o'tkazma)")}
             </button>
             {payError && <p className="text-sm font-medium text-destructive">{payError}</p>}
           </div>

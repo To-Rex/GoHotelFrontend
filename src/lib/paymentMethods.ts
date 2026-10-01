@@ -1,3 +1,4 @@
+import { tr } from "@/i18n"
 /* To'lov usullari — YAGONA ro'yxat.
 
    Xodim to'rtta usuldan birini tanlaydi. Ro'yxat shu yerda bitta bo'lgani
@@ -10,26 +11,26 @@
    o'rnida ko'rinadi. */
 
 export const PAYMENT_METHODS = [
-  { value: "CASH", label: "Naqd pul" },
-  { value: "CARD", label: "Bank kartasi" },
-  { value: "ONLINE", label: "Online to'lov" },
-  { value: "BANK_TRANSFER", label: "Bank o'tkazmasi" },
+  { value: "CASH", label: tr("Naqd pul") },
+  { value: "CARD", label: tr("Bank kartasi") },
+  { value: "ONLINE", label: tr("Online to'lov") },
+  { value: "BANK_TRANSFER", label: tr("Bank o'tkazmasi") },
 ] as const
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number]["value"]
 
 /** Kod -> nom. Eski kodlar ham bor: tarix o'qilishi kerak. */
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  CASH: "Naqd pul",
-  CARD: "Bank kartasi",
-  ONLINE: "Online to'lov",
-  BANK_TRANSFER: "Bank o'tkazmasi",
+  CASH: tr("Naqd pul"),
+  CARD: tr("Bank kartasi"),
+  ONLINE: tr("Online to'lov"),
+  BANK_TRANSFER: tr("Bank o'tkazmasi"),
   // Eski kodlar — endi tanlanmaydi, lekin bazadagi yozuvlarda uchraydi
-  CREDIT_CARD: "Bank kartasi",
-  DEBIT_CARD: "Bank kartasi",
-  MOBILE_PAYMENT: "Online to'lov",
-  TRANSFER: "Bank o'tkazmasi",
-  MIXED: "Aralash",
+  CREDIT_CARD: tr("Bank kartasi"),
+  DEBIT_CARD: tr("Bank kartasi"),
+  MOBILE_PAYMENT: tr("Online to'lov"),
+  TRANSFER: tr("Bank o'tkazmasi"),
+  MIXED: tr("Aralash"),
 }
 
 /** Eski kodni kanonik usulga keltirish (hisobot ustunlari uchun). */

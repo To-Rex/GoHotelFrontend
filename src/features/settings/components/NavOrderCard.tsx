@@ -16,6 +16,7 @@ import {
   type NavLink,
 } from "@/components/layout/navLinks"
 import { useNavOrder, useSaveNavOrder, applyNavOrder } from "../api/navOrder"
+import { tr } from "@/i18n"
 
 /* Yon menyu tartibi — administrator uchun.
 
@@ -83,7 +84,7 @@ const Group = ({
             endDrag()
           }}
           onDragEnd={endDrag}
-          title="Ushlab surib joyini o'zgartiring"
+          title={tr("Ushlab surib joyini o'zgartiring")}
           className={cn(
             "flex cursor-grab items-center gap-3 bg-white px-3 py-2 transition-colors active:cursor-grabbing",
             dragIndex === index
@@ -105,7 +106,7 @@ const Group = ({
               type="button"
               onClick={() => onMove(index, -1)}
               disabled={index === 0}
-              title="Yuqoriga"
+              title={tr("Yuqoriga")}
               className={cn(
                 "flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 transition-colors",
                 index === 0
@@ -119,7 +120,7 @@ const Group = ({
               type="button"
               onClick={() => onMove(index, 1)}
               disabled={index === items.length - 1}
-              title="Pastga"
+              title={tr("Pastga")}
               className={cn(
                 "flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 transition-colors",
                 index === items.length - 1
@@ -219,13 +220,13 @@ export const NavOrderCard = () => {
     <>
       <div className="grid gap-4 md:grid-cols-2">
         <Group
-          title="Asosiy sahifalar"
+          title={tr("Asosiy sahifalar")}
           items={main}
           onMove={(i, d) => move(main, setMain, i, d)}
           onReorder={(from, to) => reorder(main, setMain, from, to)}
         />
         <Group
-          title="Administratsiya"
+          title={tr("Administratsiya")}
           items={admin}
           onMove={(i, d) => move(admin, setAdmin, i, d)}
           onReorder={(from, to) => reorder(admin, setAdmin, from, to)}
@@ -233,9 +234,7 @@ export const NavOrderCard = () => {
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-gray-400">
-        Bandni sichqoncha bilan ushlab surib joyini o'zgartiring — yoki
-        yonidagi o'q tugmalaridan foydalaning. Xodim faqat o'ziga ruxsat
-        berilgan sahifalarni ko'radi, tartib esa hamma uchun bir xil bo'ladi.
+        {tr("Bandni sichqoncha bilan ushlab surib joyini o'zgartiring — yoki yonidagi o'q tugmalaridan foydalaning. Xodim faqat o'ziga ruxsat berilgan sahifalarni ko'radi, tartib esa hamma uchun bir xil bo'ladi.")}
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
@@ -245,15 +244,15 @@ export const NavOrderCard = () => {
           className="min-w-[120px]"
         >
           {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Saqlash
+          {tr("Saqlash")}
         </Button>
         <Button type="button" variant="outline" onClick={resetOrder} className="gap-2">
           <RotateCcw className="h-4 w-4" />
-          Standart tartib
+          {tr("Standart tartib")}
         </Button>
         {saved && (
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-            <CheckCircle2 className="h-4 w-4" /> Saqlandi
+            <CheckCircle2 className="h-4 w-4" />{" "}{tr("Saqlandi")}
           </span>
         )}
         {error && <span className="text-sm text-red-500">{error}</span>}

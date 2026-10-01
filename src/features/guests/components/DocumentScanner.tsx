@@ -52,6 +52,7 @@ import {
 } from "./documentScannerTypes"
 import { parseMrzText } from "./mrzParser"
 import { DocumentCaptureGuide } from "./DocumentCaptureGuide"
+import { tr } from "@/i18n"
 
 export type { ScannedDoc } from "./documentScannerTypes"
 
@@ -461,7 +462,7 @@ function visualResultFromAccumulator(
     verified: false,
     requiresReview: true,
     scannedSides: [side],
-    warnings: ["Vizual OCR natijasi — formaga qo‘llashdan oldin tekshiring"],
+    warnings: [tr("Vizual OCR natijasi — formaga qo‘llashdan oldin tekshiring")],
     fieldConfidence: {},
   }
   if (doc.personalNumber && pinflContext && type === "ID_CARD" && isLikelyUzbekPinfl(doc.personalNumber)) {
@@ -696,7 +697,7 @@ async function recognizeDocument(
       const qrConfirmed = qrCorroboratesDocument(qrPayload, mrz?.doc)
       if (mrz && qrConfirmed) mrz.doc.qrConfirmed = true
       if (mrz && !quality.usable) {
-        mrz.doc.warnings = [...(mrz.doc.warnings ?? []), "MRZ zonasi yetarlicha tiniq emas — qayta oling yoki tekshirib tasdiqlang"]
+        mrz.doc.warnings = [...(mrz.doc.warnings ?? []), tr("MRZ zonasi yetarlicha tiniq emas — qayta oling yoki tekshirib tasdiqlang")]
         mrz.doc.requiresReview = true
       }
       return { recognition: mrz, quality, rectified: normalized.rectified, qrConfirmed }
@@ -715,7 +716,7 @@ async function recognizeDocument(
   if (recognition && !quality.usable) {
     recognition.doc.warnings = [
       ...(recognition.doc.warnings ?? []),
-      "Rasm sifati past bo‘lgani uchun natijani albatta tekshiring",
+      tr("Rasm sifati past bo‘lgani uchun natijani albatta tekshiring"),
     ]
     recognition.doc.requiresReview = true
   }
@@ -780,15 +781,15 @@ const activeSides = (type: DocumentType, mode: ScanMode): DocumentSide[] =>
 const CAPTURE_WIDTH = 1500
 
 const SIDE_TITLES: Record<DocumentSide, string> = {
-  front: "ID kartaning old tomoni",
-  back: "ID kartaning orqa tomoni",
-  passport: "Passportning ma’lumotlar sahifasi",
+  front: tr("ID kartaning old tomoni"),
+  back: tr("ID kartaning orqa tomoni"),
+  passport: tr("Passportning ma’lumotlar sahifasi"),
 }
 
 const SIDE_HINTS: Record<DocumentSide, string> = {
-  front: "Surat va yozuvlar turgan tomonni ramkaga to‘liq joylang",
-  back: "Pastda ikki-uch qator mayda belgilar (MRZ) turgan tomonni oling",
-  passport: "Surat va MRZ qatorlari bitta kadrga to‘liq tushsin",
+  front: tr("Surat va yozuvlar turgan tomonni ramkaga to‘liq joylang"),
+  back: tr("Pastda ikki-uch qator mayda belgilar (MRZ) turgan tomonni oling"),
+  passport: tr("Surat va MRZ qatorlari bitta kadrga to‘liq tushsin"),
 }
 
 const CHECK_STYLES = {
@@ -883,7 +884,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     setCameraError(null)
     stopCamera()
     if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError("Bu brauzer kamerani qo‘llamaydi — rasm yuklab davom eting")
+      setCameraError(tr("Bu brauzer kamerani qo‘llamaydi — rasm yuklab davom eting"))
       return false
     }
     try {
@@ -924,8 +925,8 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
     } catch (error: any) {
       setCameraError(
         error?.name === "NotAllowedError"
-          ? "Kamera ruxsati berilmadi — brauzer sozlamasidan ruxsat bering yoki rasm yuklang"
-          : "Kamera ochilmadi — boshqa kamera yoki rasm yuklashni sinab ko‘ring"
+          ? tr("Kamera ruxsati berilmadi — brauzer sozlamasidan ruxsat bering yoki rasm yuklang")
+          : tr("Kamera ochilmadi — boshqa kamera yoki rasm yuklashni sinab ko‘ring")
       )
       return false
     }
@@ -1099,7 +1100,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       await track.applyConstraints({ advanced: [{ torch: next }] })
       setTorchOn(next)
     } catch {
-      setCameraError("Kamera chirog‘ini yoqib bo‘lmadi")
+      setCameraError(tr("Kamera chirog‘ini yoqib bo‘lmadi"))
     }
   }, [torchOn, torchSupported])
 
@@ -1151,7 +1152,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       storeShot(currentSide, canvas)
       stopCamera()
     } catch {
-      setCameraError("Rasmni o‘qib bo‘lmadi — boshqa rasm tanlang")
+      setCameraError(tr("Rasmni o‘qib bo‘lmadi — boshqa rasm tanlang"))
     }
   }
 
@@ -1180,7 +1181,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       requiresReview: true,
       warnings: [
         ...(merged.warnings ?? []),
-        "Server bilan bog‘lanib bo‘lmadi — hujjat qurilmada o‘qildi, maydonlarni tekshiring",
+        tr("Server bilan bog‘lanib bo‘lmadi — hujjat qurilmada o‘qildi, maydonlarni tekshiring"),
       ],
     }
   }, [])
@@ -1191,7 +1192,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   const failScan = (message: string) => {
     if (scanModeRef.current === "mrz" && mrzRetriesRef.current < 4) {
       mrzRetriesRef.current += 1
-      setMrzRetryNote(`O'qilmadi (${mrzRetriesRef.current}) — yana urinilyapti…`)
+      setMrzRetryNote(tr("O'qilmadi ({{current}}) — yana urinilyapti…", { current: mrzRetriesRef.current }))
       clearShots()
       setPhase("capture")
       return
@@ -1244,7 +1245,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       const doc = await scanOnDevice()
       if (!doc) {
         failScan(
-          "Hujjat o‘qilmadi. Kadrlar tiniq, yaltirashsiz va hujjat to‘liq ramkada bo‘lsin."
+          tr("Hujjat o‘qilmadi. Kadrlar tiniq, yaltirashsiz va hujjat to‘liq ramkada bo‘lsin.")
         )
         return
       }
@@ -1253,7 +1254,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       setResult(doc)
       setPhase("result")
     } catch {
-      failScan("Hujjatni o‘qishda xatolik yuz berdi. Qayta urinib ko‘ring.")
+      failScan(tr("Hujjatni o‘qishda xatolik yuz berdi. Qayta urinib ko‘ring."))
     }
   }
 
@@ -1279,7 +1280,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ScanLine size={18} /> Hujjat skaneri
+            <ScanLine size={18} />{" "}{tr("Hujjat skaneri")}
             {/* Faol rejim ko'rinib turadi — sozlama ta'sir qilyaptimi,
                 taxmin qilib o'tirilmaydi */}
             <span className="ml-auto flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
@@ -1294,13 +1295,13 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 )}
               >
                 {scanMode === "mrz"
-                  ? "Rejim: MRZ"
+                  ? tr("Rejim: MRZ")
                   : scanMode === "visual"
-                    ? "Rejim: Vizual"
-                    : "Rejim: Avto"}
+                    ? tr("Rejim: Vizual")
+                    : tr("Rejim: Avto")}
               </span>
               <span className="rounded-full bg-muted px-2 py-0.5">
-                {scanSettings?.engine === "device" ? "Qurilma" : "Server"}
+                {scanSettings?.engine === "device" ? tr("Qurilma") : tr("Server")}
               </span>
             </span>
           </DialogTitle>
@@ -1320,7 +1321,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
 
         {phase === "select" && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Qaysi hujjat skanerlanadi?</p>
+            <p className="text-sm text-muted-foreground">{tr("Qaysi hujjat skanerlanadi?")}</p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -1330,11 +1331,11 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <CreditCard size={24} />
                 </span>
-                <span className="text-sm font-semibold">ID karta</span>
+                <span className="text-sm font-semibold">{tr("ID karta")}</span>
                 <span className="text-[11px] leading-snug text-muted-foreground">
                   {scanMode === "mrz"
-                    ? "MRZ rejimi: faqat orqa tomoni olinadi"
-                    : "Ikkala tomoni olinadi — ular bir-birini tasdiqlaydi"}
+                    ? tr("MRZ rejimi: faqat orqa tomoni olinadi")
+                    : tr("Ikkala tomoni olinadi — ular bir-birini tasdiqlaydi")}
                 </span>
               </button>
               <button
@@ -1345,9 +1346,9 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <BookUser size={24} />
                 </span>
-                <span className="text-sm font-semibold">Passport</span>
+                <span className="text-sm font-semibold">{tr("Passport")}</span>
                 <span className="text-[11px] leading-snug text-muted-foreground">
-                  Bitta sahifa yetarli — unda MRZ ham bor
+                  {tr("Bitta sahifa yetarli — unda MRZ ham bor")}
                 </span>
               </button>
             </div>
@@ -1386,20 +1387,19 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 </div>
                 <p className="flex items-start gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
                   <CheckCircle2 size={14} className="mt-0.5 shrink-0" />
-                  Kadr olindi. Yozuvlar aniq o‘qilayotganini tekshiring — bulutli yoki
-                  yaltiragan bo‘lsa qayta oling.
+                  {tr("Kadr olindi. Yozuvlar aniq o‘qilayotganini tekshiring — bulutli yoki yaltiragan bo‘lsa qayta oling.")}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={retakeCurrent} className="gap-2">
-                    <RefreshCw size={15} /> Qayta olish
+                    <RefreshCw size={15} />{" "}{tr("Qayta olish")}
                   </Button>
                   {stepIndex < sides.length - 1 ? (
                     <Button onClick={() => setStepIndex(stepIndex + 1)} className="gap-2">
-                      Keyingi tomon <ArrowRight size={15} />
+                      {tr("Keyingi tomon")}{" "}<ArrowRight size={15} />
                     </Button>
                   ) : (
                     <Button onClick={submit} disabled={!allCaptured} className="gap-2">
-                      <ScanLine size={15} /> Tekshirishga yuborish
+                      <ScanLine size={15} />{" "}{tr("Tekshirishga yuborish")}
                     </Button>
                   )}
                 </div>
@@ -1409,7 +1409,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                     onClick={() => setStepIndex(stepIndex - 1)}
                     className="flex w-full items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                   >
-                    <ArrowLeft size={13} /> Oldingi tomonga qaytish
+                    <ArrowLeft size={13} />{" "}{tr("Oldingi tomonga qaytish")}
                   </button>
                 )}
               </>
@@ -1435,12 +1435,12 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                   >
                     {scanMode === "mrz"
                       ? mrzSeen
-                        ? "MRZ o'qilmoqda — qimirlatmang..."
+                        ? tr("MRZ o'qilmoqda — qimirlatmang...")
                         : mrzRetryNote ||
-                          "MRZ qatorlari (pastdagi mayda belgilar) ramkada ko'rinsin"
+                          tr("MRZ qatorlari (pastdagi mayda belgilar) ramkada ko'rinsin")
                       : docDetected
-                        ? "Tayyor — suratga oling"
-                        : "Hujjatni ramkaga joylang"}
+                        ? tr("Tayyor — suratga oling")
+                        : tr("Hujjatni ramkaga joylang")}
                   </div>
                   <p className="pointer-events-none absolute inset-x-2 bottom-12 text-center text-[11px] font-medium text-white/95">
                     {SIDE_HINTS[currentSide]}
@@ -1454,7 +1454,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      title="Rasm yuklash"
+                      title={tr("Rasm yuklash")}
                       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
                     >
                       <ImageUp size={18} />
@@ -1468,7 +1468,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                         }`}
                       >
                         <ScanLine size={20} />
-                        {mrzSeen ? "MRZ o'qilmoqda..." : "MRZ kutilmoqda"}
+                        {mrzSeen ? tr("MRZ o'qilmoqda...") : tr("MRZ kutilmoqda")}
                       </div>
                     ) : (
                     <Button
@@ -1479,14 +1479,14 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                         docDetected ? "bg-emerald-600 hover:bg-emerald-700" : ""
                       }`}
                     >
-                      <Camera size={20} /> Suratga olish
+                      <Camera size={20} />{" "}{tr("Suratga olish")}
                     </Button>
                     )}
                     {torchSupported ? (
                       <button
                         type="button"
                         onClick={() => void toggleTorch()}
-                        title={torchOn ? "Chiroqni o‘chirish" : "Chiroqni yoqish"}
+                        title={torchOn ? tr("Chiroqni o‘chirish") : tr("Chiroqni yoqish")}
                         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full backdrop-blur transition-colors ${
                           torchOn ? "bg-amber-400 text-gray-900" : "bg-white/15 text-white hover:bg-white/25"
                         }`}
@@ -1522,7 +1522,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
               }}
               className="flex w-full items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft size={13} /> Hujjat turini almashtirish
+              <ArrowLeft size={13} />{" "}{tr("Hujjat turini almashtirish")}
             </button>
           </div>
         )}
@@ -1531,13 +1531,12 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
           <div className="flex flex-col items-center gap-3 py-10">
             <Loader2 size={32} className="animate-spin text-primary" />
             <p className="text-sm font-medium">
-              Hujjat tekshirilmoqda…{" "}
-              {serverPreferred && !serverFellBack ? "" : progress > 0 ? `${progress}%` : ""}
+              {tr("Hujjat tekshirilmoqda… {{v}}", { v: serverPreferred && !serverFellBack ? "" : progress > 0 ? `${progress}%` : "" })}
             </p>
             <p className="max-w-xs text-center text-xs text-muted-foreground">
               {serverPreferred && !serverFellBack
-                ? "MRZ nazorat raqamlari tekshirilmoqda va ikki tomon bir-biriga solishtirilmoqda."
-                : "Server bilan bog‘lanib bo‘lmadi — hujjat shu qurilmada o‘qilmoqda."}
+                ? tr("MRZ nazorat raqamlari tekshirilmoqda va ikki tomon bir-biriga solishtirilmoqda.")
+                : tr("Server bilan bog‘lanib bo‘lmadi — hujjat shu qurilmada o‘qilmoqda.")}
             </p>
           </div>
         )}
@@ -1559,25 +1558,25 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 <AlertCircle size={16} className="mt-0.5 shrink-0" />
               )}
               {result.verified
-                ? "Hujjat tasdiqlandi: nazorat raqamlari to‘g‘ri va ikki manba bir-biriga mos."
+                ? tr("Hujjat tasdiqlandi: nazorat raqamlari to‘g‘ri va ikki manba bir-biriga mos.")
                 : failed.length
-                  ? "Hujjat tasdiqlanmadi — quyidagi nomuvofiqliklarni tekshiring."
-                  : "Ma’lumot olindi, lekin to‘liq tasdiqlanmadi — qiymatlarni hujjat bilan solishtiring."}
+                  ? tr("Hujjat tasdiqlanmadi — quyidagi nomuvofiqliklarni tekshiring.")
+                  : tr("Ma’lumot olindi, lekin to‘liq tasdiqlanmadi — qiymatlarni hujjat bilan solishtiring.")}
             </p>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-muted/60 p-3 text-sm">
-              <div><p className="text-xs text-muted-foreground">Familiya</p><p className="mt-0.5 font-medium">{result.lastName || "—"}</p></div>
-              <div><p className="text-xs text-muted-foreground">Ism</p><p className="mt-0.5 font-medium">{result.firstName || "—"}</p></div>
-              <div><p className="text-xs text-muted-foreground">Tug‘ilgan sana</p><p className="mt-0.5 font-medium">{result.birthDate || "—"}</p></div>
-              <div><p className="text-xs text-muted-foreground">Hujjat raqami</p><p className="mt-0.5 font-medium">{result.documentNumber || "—"}</p></div>
-              <div><p className="text-xs text-muted-foreground">JSHSHIR</p><p className="mt-0.5 font-medium">{result.personalNumber || "—"}</p></div>
-              <div><p className="text-xs text-muted-foreground">Amal qilish muddati</p><p className="mt-0.5 font-medium">{result.expiryDate || "—"}</p></div>
+              <div><p className="text-xs text-muted-foreground">{tr("Familiya")}</p><p className="mt-0.5 font-medium">{result.lastName || "—"}</p></div>
+              <div><p className="text-xs text-muted-foreground">{tr("Ism")}</p><p className="mt-0.5 font-medium">{result.firstName || "—"}</p></div>
+              <div><p className="text-xs text-muted-foreground">{tr("Tug‘ilgan sana")}</p><p className="mt-0.5 font-medium">{result.birthDate || "—"}</p></div>
+              <div><p className="text-xs text-muted-foreground">{tr("Hujjat raqami")}</p><p className="mt-0.5 font-medium">{result.documentNumber || "—"}</p></div>
+              <div><p className="text-xs text-muted-foreground">{tr("JSHSHIR")}</p><p className="mt-0.5 font-medium">{result.personalNumber || "—"}</p></div>
+              <div><p className="text-xs text-muted-foreground">{tr("Amal qilish muddati")}</p><p className="mt-0.5 font-medium">{result.expiryDate || "—"}</p></div>
             </div>
 
             {checks.length > 0 ? (
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Tekshiruvlar ({checks.length - failed.length - warned.length}/{checks.length} muvaffaqiyatli)
+                  {tr("Tekshiruvlar ({{v}}/{{count}} muvaffaqiyatli)", { v: checks.length - failed.length - warned.length, count: checks.length })}
                 </p>
                 <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border p-1.5">
                   {[...failed, ...warned, ...checks.filter((check) => check.status === "ok")].map((check) => {
@@ -1612,10 +1611,10 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 }}
                 className="gap-2"
               >
-                <RefreshCw size={15} /> Qayta skanerlash
+                <RefreshCw size={15} />{" "}{tr("Qayta skanerlash")}
               </Button>
               <Button onClick={apply} className="gap-2">
-                <CheckCircle2 size={15} /> {result.verified ? "Formani to‘ldirish" : "Tekshirib, qo‘llash"}
+                <CheckCircle2 size={15} /> {result.verified ? tr("Formani to‘ldirish") : tr("Tekshirib, qo‘llash")}
               </Button>
             </div>
           </div>
@@ -1628,7 +1627,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" onClick={() => setPhase("capture")} className="gap-2">
-                <ArrowLeft size={15} /> Kadrlarga qaytish
+                <ArrowLeft size={15} />{" "}{tr("Kadrlarga qaytish")}
               </Button>
               <Button
                 onClick={() => {
@@ -1637,7 +1636,7 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
                 }}
                 className="gap-2"
               >
-                <RefreshCw size={15} /> Boshidan
+                <RefreshCw size={15} />{" "}{tr("Boshidan")}
               </Button>
             </div>
           </div>

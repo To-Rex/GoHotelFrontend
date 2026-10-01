@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { applyNavOrder } from "@/features/settings/api/navOrder"
+import { tr, trc } from "@/i18n"
 
 /* Yon menyu sahifalari — YAGONA ro'yxat.
 
@@ -42,33 +43,34 @@ export interface NavLink {
 
 /** Asosiy ish sahifalari */
 export const MAIN_NAV_LINKS: NavLink[] = [
-  { name: "Boshqaruv", href: "/", icon: LayoutDashboard },
-  { name: "Bron qilish", href: "/booking", icon: CalendarDays },
-  { name: "Xonalar", href: "/rooms", icon: DoorOpen },
-  { name: "Qavatlar", href: "/floors", icon: Layers },
-  { name: "Mehmonlar", href: "/guests", icon: Users },
-  { name: "Moliya", href: "/finance", icon: Wallet },
-  { name: "Xarajatlar", href: "/expenses", icon: TrendingDown },
-  { name: "Do'kon", href: "/shop", icon: Store },
-  { name: "Kassa hisobotlari", href: "/cash-reports", icon: Banknote },
-  { name: "Mening hisobotim", href: "/my-reports", icon: FileBarChart },
-  { name: "Xabarlar", href: "/messages", icon: MessageSquare },
-  { name: "Taklif va shikoyatlar", href: "/feedback", icon: BookOpenText },
-  { name: "Qurilmalar", href: "/devices", icon: MonitorSmartphone },
-  { name: "Ilovalar", href: "/apps", icon: AppWindow },
-  { name: "Sozlamalar", href: "/settings", icon: Settings },
+  { name: tr("Boshqaruv"), href: "/", icon: LayoutDashboard },
+  // Sahifa nomi ("Booking"/"Бронирование"), "Bron qilish" amali emas
+  { name: trc("nav", "Bron qilish"), href: "/booking", icon: CalendarDays },
+  { name: tr("Xonalar"), href: "/rooms", icon: DoorOpen },
+  { name: tr("Qavatlar"), href: "/floors", icon: Layers },
+  { name: tr("Mehmonlar"), href: "/guests", icon: Users },
+  { name: tr("Moliya"), href: "/finance", icon: Wallet },
+  { name: tr("Xarajatlar"), href: "/expenses", icon: TrendingDown },
+  { name: tr("Do'kon"), href: "/shop", icon: Store },
+  { name: tr("Kassa hisobotlari"), href: "/cash-reports", icon: Banknote },
+  { name: tr("Mening hisobotim"), href: "/my-reports", icon: FileBarChart },
+  { name: tr("Xabarlar"), href: "/messages", icon: MessageSquare },
+  { name: tr("Taklif va shikoyatlar"), href: "/feedback", icon: BookOpenText },
+  { name: tr("Qurilmalar"), href: "/devices", icon: MonitorSmartphone },
+  { name: tr("Ilovalar"), href: "/apps", icon: AppWindow },
+  { name: tr("Sozlamalar"), href: "/settings", icon: Settings },
 ]
 
 /** Boshqaruv (administratsiya) bo'limlari — ruxsati borlarga ko'rinadi */
 export const MANAGEMENT_NAV_LINKS: NavLink[] = [
-  { name: "Xona turlari", href: "/room-types", icon: BedDouble },
-  { name: "Qulayliklar", href: "/amenities", icon: Sparkles },
-  { name: "Xizmatlar", href: "/services", icon: ConciergeBell },
-  { name: "Ombor", href: "/warehouse", icon: Warehouse },
-  { name: "Xo'jalik ishlari", href: "/housekeeping", icon: ClipboardList },
-  { name: "Xodimlar", href: "/employees", icon: UserCog },
-  { name: "Smenalar", href: "/shifts", icon: History },
-  { name: "Ruxsatnomalar", href: "/permissions", icon: ShieldCheck },
+  { name: tr("Xona turlari"), href: "/room-types", icon: BedDouble },
+  { name: tr("Qulayliklar"), href: "/amenities", icon: Sparkles },
+  { name: tr("Xizmatlar"), href: "/services", icon: ConciergeBell },
+  { name: tr("Ombor"), href: "/warehouse", icon: Warehouse },
+  { name: tr("Xo'jalik ishlari"), href: "/housekeeping", icon: ClipboardList },
+  { name: tr("Xodimlar"), href: "/employees", icon: UserCog },
+  { name: tr("Smenalar"), href: "/shifts", icon: History },
+  { name: tr("Ruxsatnomalar"), href: "/permissions", icon: ShieldCheck },
 ]
 
 /**

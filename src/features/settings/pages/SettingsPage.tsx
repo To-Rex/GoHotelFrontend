@@ -93,46 +93,47 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { tr, trc } from "@/i18n"
 
 // Natija jadvalidagi nomlarni o'zbekchaga o'girish
 const TABLE_LABELS: Record<string, string> = {
-  checklist_items: "Chek-list bandlari",
-  invoice_items: "Hisob-faktura bandlari",
-  problems: "Muammolar",
-  housekeeping_tasks: "Xo'jalik vazifalari",
-  reservation_services: "Bron xizmatlari",
-  payments: "To'lovlar",
-  invoice_line_items: "Hisob-faktura qatorlari",
-  journal_entry_lines: "Jurnal qatorlari",
-  journal_entries: "Jurnal yozuvlari",
-  invoices: "Hisob-fakturalar",
-  reservations: "Bronlar",
-  incoming_calls: "Kiruvchi qo'ng'iroqlar",
-  document_scans: "Telefon skanerlari",
-  notifications: "Bildirishnomalar",
-  audit_logs: "Audit loglari",
-  reports: "Hisobotlar",
-  room_status_history: "Xona holati tarixi",
-  shift_sessions: "Smenalar va kassa sessiyalari",
-  shop_sales: "Do'kon sotuvlari",
-  shop_sale_items: "Do'kon sotuv qatorlari",
-  shop_writeoffs: "Do'kon hisobdan chiqarishlari",
-  shop_batches: "Do'kon partiyalari",
-  shop_products: "Do'kon mahsulotlari",
-  file_attachments: "Fayllar",
-  rooms_reset: "Bo'sh holatga qaytarilgan xonalar",
-  user_permissions: "Ruxsat biriktiruvlari",
-  user_sessions: "Xodim sessiyalari",
-  users: "Xodimlar",
+  checklist_items: tr("Chek-list bandlari"),
+  invoice_items: tr("Hisob-faktura bandlari"),
+  problems: tr("Muammolar"),
+  housekeeping_tasks: tr("Xo'jalik vazifalari"),
+  reservation_services: tr("Bron xizmatlari"),
+  payments: tr("To'lovlar"),
+  invoice_line_items: tr("Hisob-faktura qatorlari"),
+  journal_entry_lines: tr("Jurnal qatorlari"),
+  journal_entries: tr("Jurnal yozuvlari"),
+  invoices: tr("Hisob-fakturalar"),
+  reservations: tr("Bronlar"),
+  incoming_calls: tr("Kiruvchi qo'ng'iroqlar"),
+  document_scans: tr("Telefon skanerlari"),
+  notifications: tr("Bildirishnomalar"),
+  audit_logs: tr("Audit loglari"),
+  reports: tr("Hisobotlar"),
+  room_status_history: tr("Xona holati tarixi"),
+  shift_sessions: tr("Smenalar va kassa sessiyalari"),
+  shop_sales: tr("Do'kon sotuvlari"),
+  shop_sale_items: tr("Do'kon sotuv qatorlari"),
+  shop_writeoffs: tr("Do'kon hisobdan chiqarishlari"),
+  shop_batches: tr("Do'kon partiyalari"),
+  shop_products: tr("Do'kon mahsulotlari"),
+  file_attachments: tr("Fayllar"),
+  rooms_reset: tr("Bo'sh holatga qaytarilgan xonalar"),
+  user_permissions: tr("Ruxsat biriktiruvlari"),
+  user_sessions: tr("Xodim sessiyalari"),
+  users: tr("Xodimlar"),
 }
 
 // Avto-yakunlash sozlamasidagi vazifa turlari (nom + ikonka)
 const HK_TYPES: Array<{ key: string; label: string; icon: LucideIcon }> = [
-  { key: "CLEANING", label: "Tozalash", icon: Sparkles },
-  { key: "DEEP_CLEANING", label: "Chuqur tozalash", icon: Brush },
-  { key: "MAINTENANCE", label: "Ta'mirlash", icon: Wrench },
-  { key: "INSPECTION", label: "Tekshiruv", icon: ClipboardCheck },
-  { key: "TURN_DOWN", label: "Kechki tayyorlash", icon: Moon },
+  { key: "CLEANING", label: tr("Tozalash"), icon: Sparkles },
+  { key: "DEEP_CLEANING", label: tr("Chuqur tozalash"), icon: Brush },
+  { key: "MAINTENANCE", label: tr("Ta'mirlash"), icon: Wrench },
+  { key: "INSPECTION", label: tr("Tekshiruv"), icon: ClipboardCheck },
+  { key: "TURN_DOWN", label: tr("Kechki tayyorlash"), icon: Moon },
 ]
 
 /* Sozlamalar bo'limlari.
@@ -146,64 +147,64 @@ const HK_TYPES: Array<{ key: string; label: string; icon: LucideIcon }> = [
 const SETTING_GROUPS = [
   {
     key: "booking",
-    label: "Bron va mehmonlar",
-    desc: "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash va hujjat skaneri",
+    label: tr("Bron va mehmonlar"),
+    desc: tr("Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash va hujjat skaneri"),
     icon: CalendarClock,
     iconClass: "bg-indigo-50 text-indigo-600",
     cards: ["booking-default", "discount-rules", "booking-edit", "scanner"],
   },
   {
     key: "cash",
-    label: "Kassa va smena",
-    desc: "Smenali rejim, kunlik kassa kesimi va uning majburiyligi",
+    label: tr("Kassa va smena"),
+    desc: tr("Smenali rejim, kunlik kassa kesimi va uning majburiyligi"),
     icon: Wallet,
     iconClass: "bg-violet-50 text-violet-600",
     cards: ["shift"],
   },
   {
     key: "receipt",
-    label: "Chek va printer",
-    desc: "Chek printeriga ulanish va chekning ko'rinishi",
+    label: tr("Chek va printer"),
+    desc: tr("Chek printeriga ulanish va chekning ko'rinishi"),
     icon: Receipt,
     iconClass: "bg-emerald-50 text-emerald-600",
     cards: ["tprints", "receipt"],
   },
   {
     key: "housekeeping",
-    label: "Xo'jalik ishlari",
-    desc: "Vazifalarni farroshlarga taqsimlash, ish bandlari va avtomatik yakunlash vaqtlari",
+    label: tr("Xo'jalik ishlari"),
+    desc: tr("Vazifalarni farroshlarga taqsimlash, ish bandlari va avtomatik yakunlash vaqtlari"),
     icon: Timer,
     iconClass: "bg-primary-50 text-primary-600",
     cards: ["assign-mode", "checklist-templates", "auto-complete"],
   },
   {
     key: "cameras",
-    label: "Kameralar",
-    desc: "Yuz tanish kameralarini filiallarga biriktirish — qaysi filial xodimi qaysi suratlarni ko'radi",
+    label: tr("Kameralar"),
+    desc: tr("Yuz tanish kameralarini filiallarga biriktirish — qaysi filial xodimi qaysi suratlarni ko'radi"),
     icon: Video,
     iconClass: "bg-sky-50 text-sky-600",
     cards: ["vision-devices", "vision-cameras"],
   },
   {
     key: "appearance",
-    label: "Ko'rinish",
-    desc: "Yon menyudagi sahifalar tartibi — mehmonxonaning barcha xodimlari uchun",
+    label: tr("Ko'rinish"),
+    desc: tr("Yon menyudagi sahifalar tartibi — mehmonxonaning barcha xodimlari uchun"),
     icon: ListOrdered,
     iconClass: "bg-amber-50 text-amber-600",
     cards: ["nav-order"],
   },
   {
     key: "sms",
-    label: "SMS xabarnomalar",
-    desc: "Har filial uchun Xabarchi API kaliti — bron va to'lovda mijozga SMS",
+    label: tr("SMS xabarnomalar"),
+    desc: tr("Har filial uchun Xabarchi API kaliti — bron va to'lovda mijozga SMS"),
     icon: MessageSquareText,
     iconClass: "bg-teal-50 text-teal-600",
     cards: ["sms-keys"],
   },
   {
     key: "danger",
-    label: "Xavfli hudud",
-    desc: "Operatsion ma'lumotlarni tozalash — qaytarib bo'lmaydigan amal",
+    label: tr("Xavfli hudud"),
+    desc: tr("Operatsion ma'lumotlarni tozalash — qaytarib bo'lmaydigan amal"),
     icon: AlertTriangle,
     iconClass: "bg-red-50 text-red-600",
     cards: ["reset"],
@@ -312,11 +313,11 @@ function SaveRow({
     <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
       <Button onClick={onSave} disabled={pending} className="min-w-[120px]">
         {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Saqlash
+        {tr("Saqlash")}
       </Button>
       {saved && (
         <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-          <CheckCircle2 className="h-4 w-4" /> Saqlandi
+          <CheckCircle2 className="h-4 w-4" />{" "}{tr("Saqlandi")}
         </span>
       )}
       {error && <span className="text-sm text-red-500">{error}</span>}
@@ -535,7 +536,7 @@ export const SettingsPage = () => {
   const onSaveFeePercent = async () => {
     const n = Number(feePercent)
     if (!Number.isFinite(n) || n < 0 || n > 100) {
-      setFeeError("Foiz 0 dan 100 gacha bo'lishi kerak")
+      setFeeError(tr("Foiz 0 dan 100 gacha bo'lishi kerak"))
       return
     }
     setFeeError(null)
@@ -560,7 +561,7 @@ export const SettingsPage = () => {
     setEditWinSaved(false)
     const n = parseInt(windowMinutes, 10)
     if (Number.isNaN(n) || n < 0 || n > 1440) {
-      setEditWinError("0 dan 1440 gacha daqiqa kiriting (0 — cheklovsiz)")
+      setEditWinError(tr("0 dan 1440 gacha daqiqa kiriting (0 — cheklovsiz)"))
       return
     }
     try {
@@ -651,8 +652,8 @@ export const SettingsPage = () => {
     const r = await printTest()
     setTpMsg(
       r.ok
-        ? { ok: true, text: "Sinov chek yuborildi — printerni tekshiring" }
-        : { ok: false, text: r.error || "Xato" }
+        ? { ok: true, text: tr("Sinov chek yuborildi — printerni tekshiring") }
+        : { ok: false, text: r.error || tr("Xato") }
     )
     setTpBusy(null)
   }
@@ -667,10 +668,10 @@ export const SettingsPage = () => {
     setTpFound(found)
     setTpMsg(
       found.length
-        ? { ok: true, text: `${found.length} ta TPrints server topildi — kerakligini tanlang` }
+        ? { ok: true, text: tr("{{count}} ta TPrints server topildi — kerakligini tanlang", { count: found.length }) }
         : {
             ok: false,
-            text: "TPrints topilmadi — kassa kompyuterida dastur ishlab turganini tekshiring",
+            text: tr("TPrints topilmadi — kassa kompyuterida dastur ishlab turganini tekshiring"),
           }
     )
     setTpBusy(null)
@@ -680,15 +681,15 @@ export const SettingsPage = () => {
   const tpPick = (u: string) => {
     setTpUrl(u)
     savePrinterUrl(u)
-    setTpMsg({ ok: true, text: `Tanlandi va saqlandi: ${u}` })
+    setTpMsg({ ok: true, text: tr("Tanlandi va saqlandi: {{u}}", { u }) })
   }
 
   if (!isAdmin) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Sozlamalar</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{tr("Sozlamalar")}</h1>
         <p className="text-sm text-gray-500">
-          Bu sahifa faqat administratorlar uchun.
+          {tr("Bu sahifa faqat administratorlar uchun.")}
         </p>
       </div>
     )
@@ -698,18 +699,18 @@ export const SettingsPage = () => {
     {
       key: "operational" as const,
       icon: Database,
-      title: "Operatsion ma'lumotlarni tozalash",
+      title: tr("Operatsion ma'lumotlarni tozalash"),
       description:
-        "Bronlar, hisob-fakturalar, to'lovlar, xarajatlar, xo'jalik vazifalari, do'kon (sotuvlar, mahsulotlar va ombor qoldig'i), smenalar va kassa sessiyalari, bildirishnomalar va tarix o'chiriladi. Mehmonlar bazasi va hujjatlari SAQLANADI — mehmon hech qachon o'chirilmaydi.",
-      keeps: "Saqlanadi: xodimlar, ruxsatlar, xonalar, qavatlar, turlar, xizmatlar.",
+        tr("Bronlar, hisob-fakturalar, to'lovlar, xarajatlar, xo'jalik vazifalari, do'kon (sotuvlar, mahsulotlar va ombor qoldig'i), smenalar va kassa sessiyalari, bildirishnomalar va tarix o'chiriladi. Mehmonlar bazasi va hujjatlari SAQLANADI — mehmon hech qachon o'chirilmaydi."),
+      keeps: tr("Saqlanadi: xodimlar, ruxsatlar, xonalar, qavatlar, turlar, xizmatlar."),
     },
     {
       key: "full" as const,
       icon: Users,
-      title: "To'liq tozalash (xodimlar bilan)",
+      title: tr("To'liq tozalash (xodimlar bilan)"),
       description:
-        "Yuqoridagilarga qo'shimcha: barcha xodimlar (EMPLOYEE), ularning ruxsatlari va sessiyalari ham o'chiriladi.",
-      keeps: "Saqlanadi: administrator hisoblari, ruxsatlar katalogi va mehmonxona tuzilmasi.",
+        tr("Yuqoridagilarga qo'shimcha: barcha xodimlar (EMPLOYEE), ularning ruxsatlari va sessiyalari ham o'chiriladi."),
+      keeps: tr("Saqlanadi: administrator hisoblari, ruxsatlar katalogi va mehmonxona tuzilmasi."),
     },
   ]
 
@@ -722,9 +723,9 @@ export const SettingsPage = () => {
             <Settings className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Sozlamalar</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{tr("Sozlamalar")}</h1>
             <p className="text-sm text-gray-500">
-              {user?.hotel_name || "Mehmonxona"} uchun tizim sozlamalari
+              {tr("{{v}} uchun tizim sozlamalari", { v: user?.hotel_name || tr("Mehmonxona") })}
             </p>
           </div>
         </div>
@@ -750,20 +751,20 @@ export const SettingsPage = () => {
                 id="booking-default"
                 icon={CalendarClock}
                 iconClass="bg-indigo-50 text-indigo-600"
-                title="Standart bron turi"
-                desc="Bron qilish va Xonalar sahifasida «Yangi bandlov» oynasi qaysi tur bilan ochilishi. Xodim oynada turni istagancha almashtira oladi."
+                title={tr("Standart bron turi")}
+                desc={tr("Bron qilish va Xonalar sahifasida «Yangi bandlov» oynasi qaysi tur bilan ochilishi. Xodim oynada turni istagancha almashtira oladi.")}
               >
                 <div className="grid gap-3 md:grid-cols-2">
                   {[
                     {
                       key: "DAILY" as const,
-                      title: "Kunlik",
-                      text: "Oyna kunlik bron bilan ochiladi: kirish va chiqish sanasi tanlanadi.",
+                      title: tr("Kunlik"),
+                      text: tr("Oyna kunlik bron bilan ochiladi: kirish va chiqish sanasi tanlanadi."),
                     },
                     {
                       key: "HOURLY" as const,
-                      title: "Soatlik",
-                      text: "Oyna soatlik bron bilan ochiladi: bo'sh vaqt avtomatik tanlanib, davomiylik bir bosishda belgilanadi.",
+                      title: tr("Soatlik"),
+                      text: tr("Oyna soatlik bron bilan ochiladi: bo'sh vaqt avtomatik tanlanib, davomiylik bir bosishda belgilanadi."),
                     },
                   ].map((m) => (
                     <button
@@ -786,9 +787,7 @@ export const SettingsPage = () => {
                   ))}
                 </div>
                 <p className="mt-3 text-xs leading-relaxed text-gray-400">
-                  Xona bugun allaqachon soatlik bronlar bilan ishlayotgan bo'lsa, oyna
-                  standart turdan qat'i nazar soatlik ochiladi — xodim yana soat
-                  qo'shmoqchi bo'lishi ehtimoli yuqori.
+                  {tr("Xona bugun allaqachon soatlik bronlar bilan ishlayotgan bo'lsa, oyna standart turdan qat'i nazar soatlik ochiladi — xodim yana soat qo'shmoqchi bo'lishi ehtimoli yuqori.")}
                 </p>
 
                 {/* Xonadagi har bir kishini ro'yxatga olish */}
@@ -800,12 +799,12 @@ export const SettingsPage = () => {
                   />
                   <span className="text-sm">
                     <b className="font-medium text-gray-900">
-                      Xonadagi har bir mehmon ro'yxatga olinsin
+                      {tr("Xonadagi har bir mehmon ro'yxatga olinsin")}
                     </b>
                     <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
                       {requireAllGuests
-                        ? "Mehmonlar soni nechta bo'lsa, shuncha mehmon kiritilmaguncha bron yaratilmaydi. Hamrohlar bazaga qo'shiladi — keyingi safar qidiruvda topiladi va hujjati saqlanib qoladi."
-                        : "Hamrohlarni kiritish ixtiyoriy: xodim faqat asosiy mehmon bilan ham bron qila oladi. Hamrohlar bo'limi baribir ko'rinadi, xohlasa to'ldiradi."}
+                        ? tr("Mehmonlar soni nechta bo'lsa, shuncha mehmon kiritilmaguncha bron yaratilmaydi. Hamrohlar bazaga qo'shiladi — keyingi safar qidiruvda topiladi va hujjati saqlanib qoladi.")
+                        : tr("Hamrohlarni kiritish ixtiyoriy: xodim faqat asosiy mehmon bilan ham bron qila oladi. Hamrohlar bo'limi baribir ko'rinadi, xohlasa to'ldiradi.")}
                     </span>
                   </span>
                 </label>
@@ -822,8 +821,8 @@ export const SettingsPage = () => {
             id="discount-rules"
             icon={Percent}
             iconClass="bg-rose-50 text-rose-600"
-            title="Chegirma qoidalari"
-            desc="Kim qancha chegirma bera olishi. Kunlik va soatlik bron alohida sozlanadi; 0 qiymati «cheklovsiz» degani."
+            title={tr("Chegirma qoidalari")}
+            desc={tr("Kim qancha chegirma bera olishi. Kunlik va soatlik bron alohida sozlanadi; 0 qiymati «cheklovsiz» degani.")}
           >
             <DiscountRulesCard />
           </SettingCard>
@@ -833,11 +832,11 @@ export const SettingsPage = () => {
                 id="booking-edit"
                 icon={CalendarCog}
                 iconClass="bg-sky-50 text-sky-600"
-                title="Bron tahriri"
-                desc="Xodim bron yaratilgandan keyin necha daqiqa ichida xonani almashtira olishi. Administrator istalgan payt tahrirlaydi. 0 — cheklovsiz."
+                title={tr("Bron tahriri")}
+                desc={tr("Xodim bron yaratilgandan keyin necha daqiqa ichida xonani almashtira olishi. Administrator istalgan payt tahrirlaydi. 0 — cheklovsiz.")}
               >
                 <label className="text-xs font-medium text-gray-600">
-                  Tahrirlash oynasi (daqiqa)
+                  {tr("Tahrirlash oynasi (daqiqa)")}
                 </label>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <Input
@@ -862,7 +861,7 @@ export const SettingsPage = () => {
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       )}
                     >
-                      {m === "0" ? "Cheklovsiz" : `${m} daq`}
+                      {m === "0" ? tr("Cheklovsiz") : tr("{{m}} daq", { m })}
                     </button>
                   ))}
                 </div>
@@ -879,8 +878,8 @@ export const SettingsPage = () => {
                 id="blacklist"
                 icon={Ban}
                 iconClass="bg-red-50 text-red-600"
-                title="Qora ro'yxat"
-                desc="Qora ro'yxatdagi mehmonga bron ochishni taqiqlash. Yoqilgan bo'lsa xodim unga umuman bron ocha olmaydi; o'chirilgan bo'lsa ro'yxat faqat belgi bo'lib qoladi va qaror xodimga havola qilinadi. Ro'yxatga qo'shishni faqat administrator bajaradi."
+                title={tr("Qora ro'yxat")}
+                desc={tr("Qora ro'yxatdagi mehmonga bron ochishni taqiqlash. Yoqilgan bo'lsa xodim unga umuman bron ocha olmaydi; o'chirilgan bo'lsa ro'yxat faqat belgi bo'lib qoladi va qaror xodimga havola qilinadi. Ro'yxatga qo'shishni faqat administrator bajaradi.")}
               >
                 <label className="flex cursor-pointer items-start gap-3">
                   <input
@@ -891,15 +890,15 @@ export const SettingsPage = () => {
                     disabled={saveBlacklistMutation.isPending}
                   />
                   <span className="text-sm text-gray-700">
-                    Qora ro'yxatdagi mehmonga bron ochish taqiqlansin
+                    {tr("Qora ro'yxatdagi mehmonga bron ochish taqiqlansin")}
                     <span className="block text-xs text-gray-400">
-                      Standart holat — taqiqlangan
+                      {tr("Standart holat — taqiqlangan")}
                     </span>
                   </span>
                 </label>
                 {blSaved && (
                   <p className="mt-2 text-xs font-medium text-emerald-600">
-                    Saqlandi
+                    {tr("Saqlandi")}
                   </p>
                 )}
                 {blError && (
@@ -912,8 +911,8 @@ export const SettingsPage = () => {
                 id="cancellation"
                 icon={Undo2}
                 iconClass="bg-rose-50 text-rose-600"
-                title="Bekor qilishda qaytarim"
-                desc="Bron bekor qilinganda mehmonga to'langan pulning qancha qismi qaytariladi. Bu yerda ushlab qolinadigan foiz ko'rsatiladi: 0% — pul to'liq qaytariladi, 100% — umuman qaytarilmaydi. Bekor qilish oynasida xodim summani o'zgartira oladi."
+                title={tr("Bekor qilishda qaytarim")}
+                desc={tr("Bron bekor qilinganda mehmonga to'langan pulning qancha qismi qaytariladi. Bu yerda ushlab qolinadigan foiz ko'rsatiladi: 0% — pul to'liq qaytariladi, 100% — umuman qaytarilmaydi. Bekor qilish oynasida xodim summani o'zgartira oladi.")}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <Input
@@ -925,7 +924,7 @@ export const SettingsPage = () => {
                     onChange={(e) => setFeePercent(e.target.value)}
                     placeholder="0"
                   />
-                  <span className="text-sm text-gray-500">% ushlab qolinadi</span>
+                  <span className="text-sm text-gray-500">{tr("% ushlab qolinadi")}</span>
                   {/* Tez tanlovlar */}
                   {["0", "10", "25", "50", "100"].map((v) => (
                     <button
@@ -939,7 +938,7 @@ export const SettingsPage = () => {
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       )}
                     >
-                      {v === "0" ? "To'liq qaytarish" : `${v}%`}
+                      {v === "0" ? tr("To'liq qaytarish") : `${v}%`}
                     </button>
                   ))}
                 </div>
@@ -956,26 +955,26 @@ export const SettingsPage = () => {
                 id="scanner"
                 icon={ScanLine}
                 iconClass="bg-sky-50 text-sky-600"
-                title="Hujjat skaneri"
-                desc="Passport va ID kartadan ma'lumot olish usuli. Quyidagi rejim faqat QURILMADA o'qishga taalluqli: serverda o'qilganda MRZ ham, hujjat yuzasidagi yozuvlar ham har doim o'qilib, bir-biriga solishtiriladi."
+                title={tr("Hujjat skaneri")}
+                desc={tr("Passport va ID kartadan ma'lumot olish usuli. Quyidagi rejim faqat QURILMADA o'qishga taalluqli: serverda o'qilganda MRZ ham, hujjat yuzasidagi yozuvlar ham har doim o'qilib, bir-biriga solishtiriladi.")}
               >
                 <div className="grid gap-2.5">
                   {(
                     [
                       {
                         key: "auto" as const,
-                        title: "Avtomatik (tavsiya etiladi)",
-                        text: "Avval MRZ o'qiladi — topilmasa hujjat yuzasidagi yozuvlarga o'tadi. Har qanday hujjat bilan ishlaydi.",
+                        title: tr("Avtomatik (tavsiya etiladi)"),
+                        text: tr("Avval MRZ o'qiladi — topilmasa hujjat yuzasidagi yozuvlarga o'tadi. Har qanday hujjat bilan ishlaydi."),
                       },
                       {
                         key: "mrz" as const,
-                        title: "Faqat MRZ",
-                        text: "Faqat mashina o'qiydigan zona. Eng tez va eng aniq: nazorat raqamlari bilan tekshiriladi, xato o'qish formaga tushmaydi.",
+                        title: tr("Faqat MRZ"),
+                        text: tr("Faqat mashina o'qiydigan zona. Eng tez va eng aniq: nazorat raqamlari bilan tekshiriladi, xato o'qish formaga tushmaydi."),
                       },
                       {
                         key: "visual" as const,
-                        title: "Faqat vizual",
-                        text: "Hujjat yuzasidagi yozuvlar o'qiladi. MRZ zonasi yo'q yoki shikastlangan hujjatlar uchun; aniqligi yorug'likka bog'liq.",
+                        title: tr("Faqat vizual"),
+                        text: tr("Hujjat yuzasidagi yozuvlar o'qiladi. MRZ zonasi yo'q yoki shikastlangan hujjatlar uchun; aniqligi yorug'likka bog'liq."),
                       },
                     ]
                   ).map((m) => (
@@ -1004,20 +1003,20 @@ export const SettingsPage = () => {
                 </div>
 
                 <p className="mt-5 mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  O'qish qayerda bajariladi
+                  {tr("O'qish qayerda bajariladi")}
                 </p>
                 <div className="grid gap-2.5">
                   {(
                     [
                       {
                         key: "server" as const,
-                        title: "Serverda (tavsiya etiladi)",
-                        text: "Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Rasm serverda saqlanmaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi.",
+                        title: tr("Serverda (tavsiya etiladi)"),
+                        text: tr("Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Rasm serverda saqlanmaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi."),
                       },
                       {
                         key: "device" as const,
-                        title: "Qurilmada",
-                        text: "Hujjat rasmi qurilmadan umuman chiqmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi.",
+                        title: tr("Qurilmada"),
+                        text: tr("Hujjat rasmi qurilmadan umuman chiqmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi."),
                       },
                     ]
                   ).map((m) => {
@@ -1043,7 +1042,7 @@ export const SettingsPage = () => {
                         <p className="mt-1 text-xs leading-snug text-gray-600">{m.text}</p>
                         {unavailable && (
                           <p className="mt-1.5 text-xs font-medium text-amber-700">
-                            Bu serverda o'qish moduli o'rnatilmagan — hozircha faqat qurilmada ishlaydi.
+                            {tr("Bu serverda o'qish moduli o'rnatilmagan — hozircha faqat qurilmada ishlaydi.")}
                           </p>
                         )}
                       </button>
@@ -1051,8 +1050,7 @@ export const SettingsPage = () => {
                   })}
                 </div>
                 <p className="mt-3 text-xs leading-relaxed text-gray-400">
-                  Qaysi usul tanlangan bo'lsa ham, hujjat rasmi hech qaerda saqlanmaydi:
-                  serverda faqat xotirada o'qiladi va javob qaytgach yo'qoladi.
+                  {tr("Qaysi usul tanlangan bo'lsa ham, hujjat rasmi hech qaerda saqlanmaydi: serverda faqat xotirada o'qiladi va javob qaytgach yo'qoladi.")}
                 </p>
                 <SaveRow
                   onSave={onSaveScan}
@@ -1072,20 +1070,20 @@ export const SettingsPage = () => {
                 id="shift"
                 icon={Wallet}
                 iconClass="bg-violet-50 text-violet-600"
-                title="Smena va kassa"
-                desc='Kassali rejimda xodimlar smenani ochadi/topshiradi, kassa "ko&apos;r sanash" bilan yopiladi va har kuni belgilangan vaqtda kesiladi.'
+                title={tr("Smena va kassa")}
+                desc={tr("Kassali rejimda xodimlar smenani ochadi/topshiradi, kassa \"ko'r sanash\" bilan yopiladi va har kuni belgilangan vaqtda kesiladi.")}
               >
                 <div className="grid gap-3 md:grid-cols-2">
                   {[
                     {
                       key: "simple" as const,
-                      title: "Oddiy rejim",
-                      text: "Smena va kassa nazorati yo'q — hamma hozirgidek ishlaydi. Kichik jamoalar uchun qulay.",
+                      title: tr("Oddiy rejim"),
+                      text: tr("Smena va kassa nazorati yo'q — hamma hozirgidek ishlaydi. Kichik jamoalar uchun qulay."),
                     },
                     {
                       key: "cash" as const,
-                      title: "Kassali rejim",
-                      text: "Smena topshirish (keyingi xodim parol bilan qabul qiladi), kassa \"ko'r sanash\" bilan yopiladi, farqlar xodim hisobiga yoziladi. Yopilmagan smena boshqa xodimni bloklaydi.",
+                      title: tr("Kassali rejim"),
+                      text: tr("Smena topshirish (keyingi xodim parol bilan qabul qiladi), kassa \"ko'r sanash\" bilan yopiladi, farqlar xodim hisobiga yoziladi. Yopilmagan smena boshqa xodimni bloklaydi."),
                     },
                   ].map((m) => (
                     <button
@@ -1111,7 +1109,7 @@ export const SettingsPage = () => {
                 {shiftMode === "cash" && (
                   <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50/60 p-3.5">
                     <label className="text-xs font-medium text-gray-600">
-                      Kunlik kassa kesimi vaqti
+                      {tr("Kunlik kassa kesimi vaqti")}
                     </label>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2">
                       <Input
@@ -1138,8 +1136,7 @@ export const SettingsPage = () => {
                       ))}
                     </div>
                     <p className="mt-2 text-xs text-gray-400">
-                      Tungi smena kesilib qolmasligi uchun ertalabki soat (06:00)
-                      qulay.
+                      {tr("Tungi smena kesilib qolmasligi uchun ertalabki soat (06:00) qulay.")}
                     </p>
 
                     {/* Kesim majburiymi — ish to'xtaydimi yoki faqat eslatiladimi */}
@@ -1151,12 +1148,12 @@ export const SettingsPage = () => {
                       />
                       <span className="text-sm">
                         <b className="font-medium text-gray-900">
-                          Kesim vaqtida kassa topshirish majburiy
+                          {tr("Kesim vaqtida kassa topshirish majburiy")}
                         </b>
                         <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
                           {dayCloseRequired
-                            ? "Kesim vaqti kelgach xodim kassani topshirmaguncha bron va to'lov qabul qila olmaydi — faqat kassa va hisobot sahifalari ochiq qoladi."
-                            : "Xodim ishlashda davom etaveradi, kassa hisobotlari sahifasida esa eslatma turadi. Diqqat: topshirilmagan pul kassada yig'ilib boradi va har kungi farqni kuzatish qiyinlashadi."}
+                            ? tr("Kesim vaqti kelgach xodim kassani topshirmaguncha bron va to'lov qabul qila olmaydi — faqat kassa va hisobot sahifalari ochiq qoladi.")
+                            : tr("Xodim ishlashda davom etaveradi, kassa hisobotlari sahifasida esa eslatma turadi. Diqqat: topshirilmagan pul kassada yig'ilib boradi va har kungi farqni kuzatish qiyinlashadi.")}
                         </span>
                       </span>
                     </label>
@@ -1181,11 +1178,11 @@ export const SettingsPage = () => {
                 id="tprints"
                 icon={Printer}
                 iconClass="bg-slate-100 text-slate-600"
-                title="Chek printeri (TPrints)"
-                desc="Do'kon cheklari kassa kompyuterida ishlab turgan TPrints dasturi orqali chiqadi. Manzil har kassa qurilmasining o'zida saqlanadi — mehmonxona bo'ylab umumiy emas."
+                title={tr("Chek printeri (TPrints)")}
+                desc={tr("Do'kon cheklari kassa kompyuterida ishlab turgan TPrints dasturi orqali chiqadi. Manzil har kassa qurilmasining o'zida saqlanadi — mehmonxona bo'ylab umumiy emas.")}
               >
                 <label className="text-xs font-medium text-gray-600">
-                  Print-server manzili
+                  {tr("Print-server manzili")}
                 </label>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <Input
@@ -1201,14 +1198,11 @@ export const SettingsPage = () => {
                     className="gap-1.5"
                   >
                     {tpSaved && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-                    {tpSaved ? "Saqlandi" : "Saqlash"}
+                    {tpSaved ? tr("Saqlandi") : tr("Saqlash")}
                   </Button>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                  Odatiy: http://127.0.0.1:9100 (shu kompyuter). Printer boshqa
-                  kompyuterda bo'lsa o'sha kompyuter IP'sini yozing — "Qidirish"
-                  maydondagi IP tarmog'ini ham to'liq skan qiladi (masalan
-                  http://192.168.1.1:9100 yozib qidirsangiz, 192.168.1.* tekshiriladi).
+                  {tr("Odatiy: http://127.0.0.1:9100 (shu kompyuter). Printer boshqa kompyuterda bo'lsa o'sha kompyuter IP'sini yozing — \"Qidirish\" maydondagi IP tarmog'ini ham to'liq skan qiladi (masalan http://192.168.1.1:9100 yozib qidirsangiz, 192.168.1.* tekshiriladi).")}
                 </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1224,7 +1218,7 @@ export const SettingsPage = () => {
                     ) : (
                       <RefreshCw className="h-4 w-4" />
                     )}
-                    Tekshirish
+                    {tr("Tekshirish")}
                   </Button>
                   <Button
                     variant="outline"
@@ -1238,7 +1232,7 @@ export const SettingsPage = () => {
                     ) : (
                       <Receipt className="h-4 w-4" />
                     )}
-                    Sinov chek
+                    {tr("Sinov chek")}
                   </Button>
                   <Button
                     variant="outline"
@@ -1252,11 +1246,11 @@ export const SettingsPage = () => {
                     ) : (
                       <Search className="h-4 w-4" />
                     )}
-                    Qidirish
+                    {tr("Qidirish")}
                   </Button>
                   {tpProgress && (
                     <span className="text-xs tabular-nums text-gray-400">
-                      skan: {tpProgress[0]}/{tpProgress[1]}
+                      {tr("skan: {{v}}/{{v2}}", { v: tpProgress[0], v2: tpProgress[1] })}
                     </span>
                   )}
                 </div>
@@ -1292,8 +1286,7 @@ export const SettingsPage = () => {
                             {f.url}
                           </span>
                           <span className="block text-[11px] text-gray-500">
-                            {f.app} {f.version} · {f.printers} ta printer
-                            {f.defaultPrinter ? ` · standart: ${f.defaultPrinter}` : ""}
+                            {tr("{{app}} {{version}} · {{printers}} ta printer{{v}}", { app: f.app, version: f.version, printers: f.printers, v: f.defaultPrinter ? tr(" · standart: {{defaultPrinter}}", { defaultPrinter: f.defaultPrinter }) : "" })}
                           </span>
                         </span>
                         {tpUrl === f.url && (
@@ -1310,17 +1303,16 @@ export const SettingsPage = () => {
                 id="receipt"
                 icon={Printer}
                 iconClass="bg-emerald-50 text-emerald-600"
-                title="Chek dizayni"
-                desc="Do'kon chekining ko'rinishi: sarlavha, izohlar, ko'rsatiladigan maydonlar, QR-kod va qog'oz kengligi. Har mehmonxona o'z dizaynini alohida saqlaydi — boshqalar bilan aralashmaydi."
+                title={tr("Chek dizayni")}
+                desc={tr("Do'kon chekining ko'rinishi: sarlavha, izohlar, ko'rsatiladigan maydonlar, QR-kod va qog'oz kengligi. Har mehmonxona o'z dizaynini alohida saqlaydi — boshqalar bilan aralashmaydi.")}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="max-w-xs text-sm leading-relaxed text-gray-600">
-                    Chek jonli ko'rinish bilan alohida sahifada tahrirlanadi va
-                    printerda sinab ko'riladi.
+                    {tr("Chek jonli ko'rinish bilan alohida sahifada tahrirlanadi va printerda sinab ko'riladi.")}
                   </p>
                   <Button asChild>
                     <Link to="/settings/receipt" className="gap-2">
-                      Tahrirlash <ArrowRight className="h-4 w-4" />
+                      {tr("Tahrirlash")}{" "}<ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
                 </div>
@@ -1336,20 +1328,20 @@ export const SettingsPage = () => {
                 id="assign-mode"
                 icon={Users}
                 iconClass="bg-violet-50 text-violet-600"
-                title="Vazifalarni taqsimlash"
-                desc="Tozalash vazifasi yaratilganda u qaysi farroshga tushadi. Ikkala rejimda ham faqat ish vaqtidagi farroshlar hisobga olinadi."
+                title={tr("Vazifalarni taqsimlash")}
+                desc={tr("Tozalash vazifasi yaratilganda u qaysi farroshga tushadi. Ikkala rejimda ham faqat ish vaqtidagi farroshlar hisobga olinadi.")}
               >
                 <div className="grid gap-3 md:grid-cols-2">
                   {[
                     {
                       key: "queue" as const,
-                      title: "Navbat bilan biriktirish",
-                      text: "Vazifa bitta farroshga biriktiriladi: avval bo'sh turgani, band bo'lsa eng kam vazifalisi, teng bo'lsa navbatdagisi. Xabar faqat o'shanga boradi.",
+                      title: tr("Navbat bilan biriktirish"),
+                      text: tr("Vazifa bitta farroshga biriktiriladi: avval bo'sh turgani, band bo'lsa eng kam vazifalisi, teng bo'lsa navbatdagisi. Xabar faqat o'shanga boradi."),
                     },
                     {
                       key: "claim" as const,
-                      title: "Hammaga yuborish — kim birinchi olsa",
-                      text: "Vazifa biriktirilmaydi: ish vaqtidagi barcha farroshlarga xabar va ro'yxatda ko'rinadi. Kim birinchi «Boshlash»ni bossa, vazifa o'shanga o'tadi.",
+                      title: tr("Hammaga yuborish — kim birinchi olsa"),
+                      text: tr("Vazifa biriktirilmaydi: ish vaqtidagi barcha farroshlarga xabar va ro'yxatda ko'rinadi. Kim birinchi «Boshlash»ni bossa, vazifa o'shanga o'tadi."),
                     },
                   ].map((m) => (
                     <button
@@ -1384,8 +1376,8 @@ export const SettingsPage = () => {
                 id="checklist-templates"
                 icon={ListChecks}
                 iconClass="bg-emerald-50 text-emerald-600"
-                title="Vazifa bandlari"
-                desc="Farrosh mobil ilovada shu ro&apos;yxatni ko&apos;radi va har bandni belgilab boradi. Hammasi belgilanganda vazifa yakunlanadi va xona bo&apos;shaydi."
+                title={tr("Vazifa bandlari")}
+                desc={tr("Farrosh mobil ilovada shu ro'yxatni ko'radi va har bandni belgilab boradi. Hammasi belgilanganda vazifa yakunlanadi va xona bo'shaydi.")}
               >
                 <ChecklistTemplateEditor />
               </SettingCard>
@@ -1395,8 +1387,8 @@ export const SettingsPage = () => {
                 id="auto-complete"
                 icon={Timer}
                 iconClass="bg-primary-50 text-primary-600"
-                title="Vazifalarni avtomatik yakunlash"
-                desc='Belgilangan vaqt ichida qo&apos;lda yakunlanmagan xo&apos;jalik vazifasini tizim o&apos;zi yopadi (jadvalda "avto" belgisi bilan). 0 — shu tur uchun o&apos;chirilgan.'
+                title={tr("Vazifalarni avtomatik yakunlash")}
+                desc={tr("Belgilangan vaqt ichida qo'lda yakunlanmagan xo'jalik vazifasini tizim o'zi yopadi (jadvalda \"avto\" belgisi bilan). 0 — shu tur uchun o'chirilgan.")}
               >
                 {/* Umumiy o'chirgich — o'chirilganda quyidagi vaqtlar ishlamaydi,
                     lekin saqlanib turadi */}
@@ -1408,12 +1400,12 @@ export const SettingsPage = () => {
                   />
                   <span className="text-sm">
                     <b className="font-medium text-gray-900">
-                      Vazifalar avtomatik yakunlansin
+                      {tr("Vazifalar avtomatik yakunlansin")}
                     </b>
                     <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
                       {hkEnabled
-                        ? "Quyidagi vaqt o'tgach tizim vazifani o'zi yopadi va xona holatini yangilaydi."
-                        : "O'chirilgan: tizim hech qanday vazifani o'zi yopmaydi. Xona holati faqat farrosh yoki menejer/admin vazifani yakunlaganda o'zgaradi. Vaqtlar saqlanib turadi — qayta yoqilganda tiklanadi."}
+                        ? tr("Quyidagi vaqt o'tgach tizim vazifani o'zi yopadi va xona holatini yangilaydi.")
+                        : tr("O'chirilgan: tizim hech qanday vazifani o'zi yopmaydi. Xona holati faqat farrosh yoki menejer/admin vazifani yakunlaganda o'zgaradi. Vaqtlar saqlanib turadi — qayta yoqilganda tiklanadi.")}
                     </span>
                   </span>
                 </label>
@@ -1446,7 +1438,7 @@ export const SettingsPage = () => {
                           }
                           placeholder={String(hkSettings?.defaults?.[t.key] ?? "")}
                         />
-                        <span className="text-[11px] text-gray-400">daq</span>
+                        <span className="text-[11px] text-gray-400">{tr("daq")}</span>
                       </div>
                     </div>
                   ))}
@@ -1471,8 +1463,8 @@ export const SettingsPage = () => {
                 id="vision-devices"
                 icon={Monitor}
                 iconClass="bg-sky-50 text-sky-600"
-                title="Kamera kompyuterlari va tokenlar"
-                desc="Har bir kamera kompyuteriga bitta token yarating va uni GoHotels Vision ilovasiga kiriting. Tokensiz agent serverga ulanmaydi va quyidagi kameralar ro'yxati bo'sh qoladi."
+                title={tr("Kamera kompyuterlari va tokenlar")}
+                desc={tr("Har bir kamera kompyuteriga bitta token yarating va uni GoHotels Vision ilovasiga kiriting. Tokensiz agent serverga ulanmaydi va quyidagi kameralar ro'yxati bo'sh qoladi.")}
               >
                 <VisionDevicesCard />
               </SettingCard>
@@ -1481,8 +1473,8 @@ export const SettingsPage = () => {
                 id="vision-cameras"
                 icon={Video}
                 iconClass="bg-sky-50 text-sky-600"
-                title="Yuz tanish kameralari"
-                desc="Har bir kamera qaysi filialda turishini belgilang. Yangi mehmonga yuz biriktirishda xodim faqat o'z filiali kameralaridan kelgan suratlarni ko'radi — boshqa filialning odamini tasodifan biriktirib qo'ymasligi uchun."
+                title={tr("Yuz tanish kameralari")}
+                desc={tr("Har bir kamera qaysi filialda turishini belgilang. Yangi mehmonga yuz biriktirishda xodim faqat o'z filiali kameralaridan kelgan suratlarni ko'radi — boshqa filialning odamini tasodifan biriktirib qo'ymasligi uchun.")}
               >
                 <VisionCamerasCard />
               </SettingCard>
@@ -1496,8 +1488,8 @@ export const SettingsPage = () => {
                 id="nav-order"
                 icon={ListOrdered}
                 iconClass="bg-amber-50 text-amber-600"
-                title="Menyu tartibi"
-                desc="Chapdagi menyuda sahifalar qanday ketma-ketlikda turishini belgilang. Tartib mehmonxonaning barcha xodimlariga amal qiladi."
+                title={tr("Menyu tartibi")}
+                desc={tr("Chapdagi menyuda sahifalar qanday ketma-ketlikda turishini belgilang. Tartib mehmonxonaning barcha xodimlariga amal qiladi.")}
               >
                 <NavOrderCard />
               </SettingCard>
@@ -1514,7 +1506,7 @@ export const SettingsPage = () => {
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                   <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm">
                     <CheckCircle2 className="h-4 w-4" />
-                    {result.message} — jami {result.total_deleted} ta yozuv o'chirildi
+                    {tr("{{message}} — jami {{total_deleted}} ta yozuv o'chirildi", { message: result.message, total_deleted: result.total_deleted })}
                   </div>
                   <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-1">
                     {Object.entries(result.deleted)
@@ -1541,18 +1533,17 @@ export const SettingsPage = () => {
                     <AlertTriangle className="h-5 w-5" />
                   </span>
                   <div>
-                    <h2 className="font-bold text-red-700">Xavfli hudud — ma'lumotlarni tozalash</h2>
+                    <h2 className="font-bold text-red-700">{tr("Xavfli hudud — ma'lumotlarni tozalash")}</h2>
                     <p className="mt-0.5 text-xs text-red-600/70">
-                      Qaytarib bo'lmaydigan amal — faqat to'liq ishonch bilan bajaring
+                      {tr("Qaytarib bo'lmaydigan amal — faqat to'liq ishonch bilan bajaring")}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-4 p-5">
                   <p className="text-sm text-gray-600">
-                    Tizimni "yangidek" holatga qaytarish. Bu amal{" "}
-                    <span className="font-semibold text-red-600">qaytarib bo'lmaydi</span> va
-                    faqat sizning mehmonxonangiz ma'lumotlariga ta'sir qiladi.
+                    {tr("Tizimni \"yangidek\" holatga qaytarish. Bu amal")}{" "}
+                    <span className="font-semibold text-red-600">{tr("qaytarib bo'lmaydi")}</span>{" "}{tr("va faqat sizning mehmonxonangiz ma'lumotlariga ta'sir qiladi.")}
                   </p>
 
                   {/* Rejim tanlash */}
@@ -1592,7 +1583,7 @@ export const SettingsPage = () => {
                   <div className="flex flex-wrap items-end gap-3 border-t pt-4">
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-gray-600">
-                        Tasdiqlash uchun <span className="font-mono font-bold">RESET</span> deb yozing
+                        {tr("Tasdiqlash uchun")}{" "}<span className="font-mono font-bold">RESET</span>{" "}{tr("deb yozing")}
                       </label>
                       <Input
                         className="w-56"
@@ -1607,7 +1598,7 @@ export const SettingsPage = () => {
                       onClick={() => setDialogOpen(true)}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Tozalashni boshlash
+                      {trc("clear", "Tozalashni boshlash")}
                     </Button>
                   </div>
                 </div>
@@ -1625,25 +1616,25 @@ export const SettingsPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="h-5 w-5" />
-              Rostdan ham tozalaysizmi?
+              {tr("Rostdan ham tozalaysizmi?")}
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 space-y-2 text-sm text-gray-600">
             <p>
-              Tanlangan rejim:{" "}
+              {tr("Tanlangan rejim:")}{" "}
               <span className="font-semibold text-gray-900">
                 {options.find((o) => o.key === scope)?.title}
               </span>
             </p>
             <p>
-              Bu amal <span className="font-semibold text-red-600">qaytarib bo'lmaydi</span>.
+              {tr("Bu amal")}{" "}<span className="font-semibold text-red-600">{tr("qaytarib bo'lmaydi")}</span>.
               {scope === "full" &&
-                " Barcha xodimlar o'chiriladi — faqat administrator hisoblari qoladi."}
+                tr(" Barcha xodimlar o'chiriladi — faqat administrator hisoblari qoladi.")}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button
               variant="destructive"
@@ -1651,7 +1642,7 @@ export const SettingsPage = () => {
               disabled={resetMutation.isPending}
             >
               {resetMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Ha, tozalansin
+              {tr("Ha, tozalansin")}
             </Button>
           </DialogFooter>
         </DialogContent>

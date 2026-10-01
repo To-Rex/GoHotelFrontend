@@ -23,6 +23,7 @@ import {
   toggleSort,
   type TableState,
 } from "@/lib/tableState"
+import { tr } from "@/i18n"
 
 /**
  * Do'kon: bronga yozilgan qarzlar va davrdagi to'langan savdolar.
@@ -147,13 +148,13 @@ export function ShopSection({
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-bold tracking-tight text-gray-800">
-              Do'kon qarzlari (bronga yozilgan)
+              {tr("Do'kon qarzlari (bronga yozilgan)")}
             </h2>
             <TableSearch
               className="w-full sm:w-72"
               value={debts.state.search}
               onChange={(value) => debts.setState((s) => setSearch(s, value))}
-              placeholder="Bron raqami yoki mahsulot..."
+              placeholder={tr("Bron raqami yoki mahsulot...")}
             />
           </div>
 
@@ -171,7 +172,7 @@ export function ShopSection({
                     </p>
                   </div>
                   <span className="flex-shrink-0 font-semibold text-amber-600">
-                    {fmt(s.total_amount)} So'm
+                    {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
                   </span>
                 </div>
                 <p className="mt-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs text-gray-500">
@@ -186,16 +187,16 @@ export function ShopSection({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Bron</TableHead>
+                  <TableHead>{tr("Bron")}</TableHead>
                   <SortableHead
                     column="created_at"
                     active={debts.state.sortBy}
                     dir={debts.state.sortDir}
                     onSort={debts.sort}
                   >
-                    Vaqt
+                    {tr("Vaqt")}
                   </SortableHead>
-                  <TableHead>Mahsulotlar</TableHead>
+                  <TableHead>{tr("Mahsulotlar")}</TableHead>
                   <SortableHead
                     column="total_amount"
                     active={debts.state.sortBy}
@@ -203,7 +204,7 @@ export function ShopSection({
                     onSort={debts.sort}
                     align="right"
                   >
-                    Summa
+                    {tr("Summa")}
                   </SortableHead>
                 </TableRow>
               </TableHeader>
@@ -211,7 +212,7 @@ export function ShopSection({
                 {debts.rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-6 text-gray-400">
-                      Qidiruv bo'yicha qarz topilmadi
+                      {tr("Qidiruv bo'yicha qarz topilmadi")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -225,7 +226,7 @@ export function ShopSection({
                         {itemsText(s)}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-amber-600">
-                        {fmt(s.total_amount)} So'm
+                        {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
                       </TableCell>
                     </TableRow>
                   ))
@@ -239,8 +240,7 @@ export function ShopSection({
           </div>
 
           <p className="text-[11px] text-gray-400">
-            To'lov Do'kon sahifasidagi "To'lash" tugmasi orqali qabul qilinadi —
-            shundan so'ng summa tanlangan kun tushumiga qo'shiladi.
+            {tr("To'lov Do'kon sahifasidagi \"To'lash\" tugmasi orqali qabul qilinadi — shundan so'ng summa tanlangan kun tushumiga qo'shiladi.")}
           </p>
         </div>
       )}
@@ -248,12 +248,12 @@ export function ShopSection({
       {/* Do'kon sotuvlari (to'langan) — davr bo'yicha */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-bold tracking-tight text-gray-800">Do'kon sotuvlari</h2>
+          <h2 className="text-base font-bold tracking-tight text-gray-800">{tr("Do'kon sotuvlari")}</h2>
           <TableSearch
             className="w-full sm:w-72"
             value={paid.state.search}
             onChange={(value) => paid.setState((s) => setSearch(s, value))}
-            placeholder="Bron raqami yoki mahsulot..."
+            placeholder={tr("Bron raqami yoki mahsulot...")}
           />
         </div>
 
@@ -262,8 +262,8 @@ export function ShopSection({
           {paid.rows.length === 0 ? (
             <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
               {paid.state.search
-                ? "Qidiruv bo'yicha sotuv topilmadi"
-                : "Tanlangan davrda sotuv yo'q"}
+                ? tr("Qidiruv bo'yicha sotuv topilmadi")
+                : tr("Tanlangan davrda sotuv yo'q")}
             </div>
           ) : (
             paid.rows.map((s) => (
@@ -274,11 +274,11 @@ export function ShopSection({
                       {stamp(s.paid_at)}
                     </p>
                     <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
-                      Bron: {s.reservation_number || "—"}
+                      {tr("Bron: {{v}}", { v: s.reservation_number || "—" })}
                     </p>
                   </div>
                   <span className="flex-shrink-0 font-semibold text-green-600">
-                    {fmt(s.total_amount)} So'm
+                    {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
                   </span>
                 </div>
                 <div className="mt-2">
@@ -307,11 +307,11 @@ export function ShopSection({
                   dir={paid.state.sortDir}
                   onSort={paid.sort}
                 >
-                  To'langan vaqt
+                  {tr("To'langan vaqt")}
                 </SortableHead>
-                <TableHead>Mahsulotlar</TableHead>
-                <TableHead>To'lov turi</TableHead>
-                <TableHead>Bron</TableHead>
+                <TableHead>{tr("Mahsulotlar")}</TableHead>
+                <TableHead>{tr("To'lov turi")}</TableHead>
+                <TableHead>{tr("Bron")}</TableHead>
                 <SortableHead
                   column="total_amount"
                   active={paid.state.sortBy}
@@ -319,7 +319,7 @@ export function ShopSection({
                   onSort={paid.sort}
                   align="right"
                 >
-                  Summa
+                  {tr("Summa")}
                 </SortableHead>
               </TableRow>
             </TableHeader>
@@ -328,8 +328,8 @@ export function ShopSection({
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-6 text-gray-400">
                     {paid.state.search
-                      ? "Qidiruv bo'yicha sotuv topilmadi"
-                      : "Tanlangan davrda sotuv yo'q"}
+                      ? tr("Qidiruv bo'yicha sotuv topilmadi")
+                      : tr("Tanlangan davrda sotuv yo'q")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -350,7 +350,7 @@ export function ShopSection({
                       {s.reservation_number || "—"}
                     </TableCell>
                     <TableCell className="text-right text-green-600 font-semibold">
-                      {fmt(s.total_amount)} So'm
+                      {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
                     </TableCell>
                   </TableRow>
                 ))

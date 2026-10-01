@@ -1,3 +1,4 @@
+import { tr } from "@/i18n"
 /**
  * Qurilma identifikatori.
  *
@@ -63,5 +64,5 @@ export function describeDevice(userAgent: string): string {
     /Safari\//i.test(ua) ? "Safari" : null
 
   const parts = [os, browser].filter(Boolean)
-  return parts.length ? parts.join(" · ") : "Noma'lum qurilma"
+  return parts.length ? parts.join(" · ") : tr("Noma'lum qurilma")
 }

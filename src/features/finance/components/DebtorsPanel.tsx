@@ -10,6 +10,7 @@ import {
   type DebtorReservation,
   type DebtorsParams,
 } from "../api/debtors"
+import { tr } from "@/i18n"
 
 /**
  * Qarzdorlar ro'yxati.
@@ -42,8 +43,8 @@ const daysSince = (value?: string | null): number | null => {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  CHECKED_IN: "Kirgan",
-  CHECKED_OUT: "Chiqgan",
+  CHECKED_IN: tr("Kirgan"),
+  CHECKED_OUT: tr("Chiqgan"),
 }
 
 interface Props extends DebtorsParams {
@@ -59,7 +60,7 @@ interface Props extends DebtorsParams {
 
 export function DebtorsPanel({
   mode = "reservations",
-  title = "Qarzdorlar",
+  title = tr("Qarzdorlar"),
   initialLimit = 5,
   className,
   onGuestClick,
@@ -93,12 +94,12 @@ export function DebtorsPanel({
         </h3>
         {!!summary && summary.count > 0 && (
           <p className="text-sm">
-            <span className="text-gray-500">Jami qarz: </span>
+            <span className="text-gray-500">{tr("Jami qarz:")}{" "}</span>
             <b className="tabular-nums text-amber-700">
-              {fmt(summary.total_debt)} So'm
+              {tr("{{total_debt}} So'm", { total_debt: fmt(summary.total_debt) })}
             </b>
             <span className="ml-1.5 text-xs text-gray-500">
-              ({mode === "guests" ? summary.guests : summary.count} ta)
+              {tr("({{v}} ta)", { v: mode === "guests" ? summary.guests : summary.count })}
             </span>
           </p>
         )}
@@ -108,14 +109,13 @@ export function DebtorsPanel({
           aytib qo'yamiz, aks holda raqamlar davr bilan mos kelmagani
           xato bo'lib tuyulardi */}
       <p className="mt-0.5 text-[11px] text-gray-500">
-        To'liq to'lanmagan bronlar — davr tanlovidan qat'i nazar, barcha
-        ochiq qarzlar.
+        {tr("To'liq to'lanmagan bronlar — davr tanlovidan qat'i nazar, barcha ochiq qarzlar.")}
       </p>
 
       {isLoading && (
         <div className="flex items-center gap-2 py-6 text-sm text-gray-400">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Yuklanmoqda...
+          {tr("Yuklanmoqda...")}
         </div>
       )}
 
@@ -175,10 +175,10 @@ export function DebtorsPanel({
                     <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium leading-tight text-gray-900">
                       <UserIcon className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
                       {(isGuestRow ? guest.guest_name : res.guest_name) ||
-                        "Ism ko'rsatilmagan"}
+                        tr("Ism ko'rsatilmagan")}
                       {!isGuestRow && res.room_number && (
                         <span className="text-xs font-normal text-gray-500">
-                          · {res.room_number}-xona
+                          {tr("· {{room_number}}-xona", { room_number: res.room_number })}
                         </span>
                       )}
                       {!isGuestRow && STATUS_LABELS[res.status] && (
@@ -196,16 +196,16 @@ export function DebtorsPanel({
                       )}
                       {isGuestRow ? (
                         <>
-                          <span>{guest.reservations} ta bron</span>
+                          <span>{tr("{{reservations}} ta bron", { reservations: guest.reservations })}</span>
                           {fmtDate(guest.oldest_check_out) && (
-                            <span>eng eskisi: {fmtDate(guest.oldest_check_out)}</span>
+                            <span>{tr("eng eskisi:")}{" "}{fmtDate(guest.oldest_check_out)}</span>
                           )}
                         </>
                       ) : (
                         <>
                           <span>{res.reservation_number}</span>
                           {fmtDate(res.check_out_date) && (
-                            <span>chiqqan: {fmtDate(res.check_out_date)}</span>
+                            <span>{tr("chiqqan:")}{" "}{fmtDate(res.check_out_date)}</span>
                           )}
                           {res.created_by_name && <span>{res.created_by_name}</span>}
                         </>
@@ -218,7 +218,7 @@ export function DebtorsPanel({
                             overdue > 7 ? "text-red-600" : "text-amber-600"
                           )}
                         >
-                          {overdue} kundan beri
+                          {tr("{{overdue}} kundan beri", { overdue })}
                         </span>
                       )}
                     </p>
@@ -227,7 +227,7 @@ export function DebtorsPanel({
                   <div className="text-right">
                     <p className="text-sm font-bold tabular-nums text-amber-700">
                       {fmt(row.debt_amount)}{" "}
-                      <span className="text-xs font-normal text-gray-400">So'm</span>
+                      <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
                     </p>
                     {!isGuestRow && (
                       <p className="text-[11px] tabular-nums text-gray-400">
@@ -255,8 +255,8 @@ export function DebtorsPanel({
                 )}
               />
               {expanded
-                ? "Yig'ish"
-                : `Yana ${rows.length - initialLimit} tasi`}
+                ? tr("Yig'ish")
+                : tr("Yana {{v}} tasi", { v: rows.length - initialLimit })}
             </Button>
           )}
         </>

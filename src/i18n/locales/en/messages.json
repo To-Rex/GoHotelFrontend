@@ -1,0 +1,27 @@
+{
+  "bugun {{d}}": "today {{d}}",
+  "Xabar matnini kiriting": "Enter the message text",
+  "Xodimlar o'rtasidagi so'rov va xabarlar": "Requests and messages between employees",
+  "{{openCount}} ta ochiq": "{{openCount}} open",
+  "Yangi xabar yoki so'rov": "New message or request",
+  "Masalan: 104-xona bo'shaganini tekshirib qo'ying...": "E.g. Please check whether room 104 has been vacated...",
+  "Xona (ixtiyoriy)": "Room (optional)",
+  "Yuborish": "Send",
+  "Ochiq ({{openCount}})": "Open ({{openCount}})",
+  "Bajarilgan ({{doneCount}})": "Done ({{doneCount}})",
+  "Faqat oxirgi ikki kunlik xabarlarni ko'rsatish": "Show only messages from the last two days",
+  "Ikki kundan avvalgi xabarlarni ham ko'rsatish": "Also show messages older than two days",
+  "Oxirgi 2 kun": "Last 2 days",
+  "Avvalgilarini ko'rsatish": "Show earlier",
+  "Barcha xabarlar ko'rsatilmoqda": "Showing all messages",
+  "Oxirgi {{DEFAULT_MESSAGE_DAYS}} kunlik xabarlar · bajarilmagan so'rovlar muddatidan qat'i nazar ko'rinadi": {
+    "one": "Messages from the last {{DEFAULT_MESSAGE_DAYS}} day · open requests are shown regardless of age",
+    "other": "Messages from the last {{DEFAULT_MESSAGE_DAYS}} days · open requests are shown regardless of age"
+  },
+  "Hozircha xabarlar yo'q": "No messages yet",
+  "Bu bo'limda xabar yo'q": "No messages in this section",
+  "Avvalgi xabarlarni ko'rsatish": "Show earlier messages",
+  "(siz)": "(you)",
+  "{{v}} bajardi{{v2}}": "Done by {{v}}{{v2}}",
+  "action::Bajarildi": "Mark done"
+}

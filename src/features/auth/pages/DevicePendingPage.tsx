@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useSeo } from "@/lib/seo"
 import { describeDevice, getDeviceId } from "@/lib/deviceId"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 /**
  * Qurilma tasdiqlanmagan xodim uchun sahifa.
@@ -31,34 +32,34 @@ const CONTENT: Record<
   { title: string; icon: typeof MonitorSmartphone; tone: string; body: string }
 > = {
   DEVICE_PENDING: {
-    title: "Qurilma tasdiqlanmagan",
+    title: tr("Qurilma tasdiqlanmagan"),
     icon: MonitorSmartphone,
     tone: "bg-amber-50 text-amber-600",
     body:
-      "Login va parolingiz to'g'ri. Lekin bu qurilmadan birinchi marta kirilyapti, " +
-      "shuning uchun administrator uni tasdiqlashi kerak. So'rovingiz yuborildi.",
+      tr("Login va parolingiz to'g'ri. Lekin bu qurilmadan birinchi marta kirilyapti, ") +
+      tr("shuning uchun administrator uni tasdiqlashi kerak. So'rovingiz yuborildi."),
   },
   DEVICE_BLOCKED: {
-    title: "Bu qurilmadan kirish taqiqlangan",
+    title: tr("Bu qurilmadan kirish taqiqlangan"),
     icon: Ban,
     tone: "bg-red-50 text-red-600",
     body:
-      "Administrator bu qurilmani taqiqlagan. Agar bu xato bo'lsa, unga murojaat qiling.",
+      tr("Administrator bu qurilmani taqiqlagan. Agar bu xato bo'lsa, unga murojaat qiling."),
   },
   DEVICE_UNKNOWN: {
-    title: "Qurilma aniqlanmadi",
+    title: tr("Qurilma aniqlanmadi"),
     icon: ShieldAlert,
     tone: "bg-red-50 text-red-600",
     body:
-      "Brauzer ma'lumot saqlashiga ruxsat bering. Shaxsiy (yashirin) rejimda " +
-      "qurilmani aniqlab bo'lmaydi — oddiy oynada oching.",
+      tr("Brauzer ma'lumot saqlashiga ruxsat bering. Shaxsiy (yashirin) rejimda ") +
+      tr("qurilmani aniqlab bo'lmaydi — oddiy oynada oching."),
   },
 }
 
 export const DevicePendingPage = () => {
   useSeo({
-    title: "Qurilma tasdig'i — GoHotel",
-    description: "Bu qurilmadan kirish uchun administrator tasdig'i kerak.",
+    title: tr("Qurilma tasdig'i — GoHotel"),
+    description: tr("Bu qurilmadan kirish uchun administrator tasdig'i kerak."),
     canonicalPath: "/device-pending",
   })
 
@@ -112,8 +113,7 @@ export const DevicePendingPage = () => {
 
         {reason === "DEVICE_PENDING" && (
           <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Administrator "Qurilmalar" sahifasida tasdiqlagach, shu yerdan
-            odatdagidek kira olasiz.
+            {tr("Administrator \"Qurilmalar\" sahifasida tasdiqlagach, shu yerdan odatdagidek kira olasiz.")}
           </p>
         )}
 
@@ -122,7 +122,7 @@ export const DevicePendingPage = () => {
         {deviceId && (
           <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
             <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
-              Qurilma raqami
+              {tr("Qurilma raqami")}
             </p>
             <p className="mt-1 break-all font-mono text-xs text-zinc-700">
               {deviceId}
@@ -142,17 +142,17 @@ export const DevicePendingPage = () => {
               ) : (
                 <Copy className="mr-1 h-3.5 w-3.5" />
               )}
-              {copied ? "Nusxalandi" : "Nusxalash"}
+              {copied ? tr("Nusxalandi") : tr("Nusxalash")}
             </Button>
           </div>
         )}
 
         <div className="mt-5 flex flex-wrap gap-2">
           <Button type="button" onClick={() => navigate("/login")}>
-            Qayta urinish
+            {tr("Qayta urinish")}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link to="/login">Kirish sahifasi</Link>
+            <Link to="/login">{tr("Kirish sahifasi")}</Link>
           </Button>
         </div>
       </div>

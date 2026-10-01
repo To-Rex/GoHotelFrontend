@@ -10,6 +10,7 @@ import {
   useTestPush,
 } from "../api/panel"
 import { PanelButton, PanelCard, PanelNotice } from "../components/ui"
+import { tr } from "@/i18n"
 
 /**
  * Push (Firebase) kalitini panel orqali boshqarish.
@@ -21,13 +22,13 @@ import { PanelButton, PanelCard, PanelNotice } from "../components/ui"
  */
 
 const SOURCE_LABELS: Record<string, string> = {
-  panel: "Panel orqali yuklangan",
-  "env(FIREBASE_CREDENTIALS_JSON)": "Server env-varidan",
-  none: "Kalit yo'q",
+  panel: tr("Panel orqali yuklangan"),
+  "env(FIREBASE_CREDENTIALS_JSON)": tr("Server env-varidan"),
+  none: tr("Kalit yo'q"),
 }
 
 function sourceLabel(source: string): string {
-  if (source.startsWith("file(")) return "Serverdagi fayldan"
+  if (source.startsWith("file(")) return tr("Serverdagi fayldan")
   return SOURCE_LABELS[source] || source
 }
 
@@ -55,8 +56,8 @@ export function PushConfigCard() {
       setCredentials("")
       flash(
         result.configured
-          ? `Kalit qabul qilindi — push ishga tushdi (${result.project_id || "loyiha"})`
-          : "Kalit saqlandi, lekin Firebase ishga tushmadi — quyidagi xatoga qarang"
+          ? tr("Kalit qabul qilindi — push ishga tushdi ({{v}})", { v: result.project_id || tr("loyiha") })
+          : tr("Kalit saqlandi, lekin Firebase ishga tushmadi — quyidagi xatoga qarang")
       )
     } catch (e) {
       setError(panelError(e))
@@ -66,15 +67,15 @@ export function PushConfigCard() {
   const drop = async () => {
     if (
       !confirm(
-        "Panel orqali yuklangan kalit o'chiriladi. Serverda env/fayl kaliti " +
-          "bo'lsa tizim unga qaytadi, bo'lmasa push o'chadi. Davom etasizmi?"
+        tr("Panel orqali yuklangan kalit o'chiriladi. Serverda env/fayl kaliti ") +
+          tr("bo'lsa tizim unga qaytadi, bo'lmasa push o'chadi. Davom etasizmi?")
       )
     )
       return
     setError(null)
     try {
       await remove.mutateAsync()
-      flash("Panel kaliti o'chirildi")
+      flash(tr("Panel kaliti o'chirildi"))
     } catch (e) {
       setError(panelError(e))
     }
@@ -86,8 +87,8 @@ export function PushConfigCard() {
       const result = await test.mutateAsync(testToken)
       flash(
         result.sent > 0
-          ? "Sinov push yuborildi — telefonga qarang"
-          : "Yuborilmadi: kalit sozlanmagan yoki token yaroqsiz"
+          ? tr("Sinov push yuborildi — telefonga qarang")
+          : tr("Yuborilmadi: kalit sozlanmagan yoki token yaroqsiz")
       )
     } catch (e) {
       setError(panelError(e))
@@ -100,7 +101,7 @@ export function PushConfigCard() {
         <div className="flex items-center gap-2 pb-1">
           <BellRing className="h-4 w-4 text-slate-500" />
           <span className="text-sm font-semibold text-slate-200">
-            Push (Firebase)
+            {tr("Push (Firebase)")}
           </span>
           {status && (
             <span
@@ -111,7 +112,7 @@ export function PushConfigCard() {
                   : "bg-red-500/15 text-red-300"
               )}
             >
-              {status.configured ? "Ishlayapti" : "Sozlanmagan"}
+              {status.configured ? tr("Ishlayapti") : tr("Sozlanmagan")}
             </span>
           )}
         </div>
@@ -124,7 +125,7 @@ export function PushConfigCard() {
           status && (
             <div className="space-y-1 rounded-lg border border-white/5 bg-slate-950/40 px-3 py-2 text-xs text-slate-400">
               <p>
-                Kalit manbai:{" "}
+                {tr("Kalit manbai:")}{" "}
                 <span className="text-slate-200">
                   {sourceLabel(status.credential_source)}
                 </span>
@@ -134,17 +135,15 @@ export function PushConfigCard() {
               </p>
               {status.panel_key_stored && !status.panel_key_readable && (
                 <p className="text-amber-400">
-                  Saqlangan kalit ochilmadi (server siri almashgan) — qayta
-                  yuklang.
+                  {tr("Saqlangan kalit ochilmadi (server siri almashgan) — qayta yuklang.")}
                 </p>
               )}
               {status.error && (
-                <p className="text-red-400">Xato: {status.error}</p>
+                <p className="text-red-400">{tr("Xato: {{error}}", { error: status.error })}</p>
               )}
               {status.updated_at && (
                 <p className="text-slate-500">
-                  Oxirgi yangilanish:{" "}
-                  {new Date(status.updated_at).toLocaleString("uz-UZ")}
+                  {tr("Oxirgi yangilanish: {{toLocaleString}}", { toLocaleString: new Date(status.updated_at).toLocaleString("uz-UZ") })}
                 </p>
               )}
             </div>
@@ -157,20 +156,18 @@ export function PushConfigCard() {
         <form onSubmit={submit} className="space-y-2">
           <label className="block space-y-1">
             <span className="text-xs font-medium text-slate-400">
-              Service-account kaliti (JSON yoki base64)
+              {tr("Service-account kaliti (JSON yoki base64)")}
             </span>
             <textarea
               value={credentials}
               onChange={(e) => setCredentials(e.target.value)}
               rows={4}
-              placeholder='{"type": "service_account", "project_id": ...}'
+              placeholder={/* i18n:skip — JSON namunasi */ '{"type": "service_account", "project_id": ...}'}
               className="w-full rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none"
             />
           </label>
           <p className="text-[11px] text-slate-500">
-            Firebase Console → Project settings → Service accounts → Generate
-            new private key. Kalit shifrlangan holda saqlanadi va yuklangan
-            zahoti restartsiz kuchga kiradi.
+            {tr("Firebase Console → Project settings → Service accounts → Generate new private key. Kalit shifrlangan holda saqlanadi va yuklangan zahoti restartsiz kuchga kiradi.")}
           </p>
           <div className="flex flex-wrap gap-2">
             <PanelButton
@@ -182,7 +179,7 @@ export function PushConfigCard() {
               ) : (
                 <UploadCloud className="h-4 w-4" />
               )}
-              Kalitni saqlash
+              {tr("Kalitni saqlash")}
             </PanelButton>
             {status?.panel_key_stored && (
               <PanelButton
@@ -192,7 +189,7 @@ export function PushConfigCard() {
                 onClick={drop}
               >
                 <Trash2 className="h-4 w-4" />
-                O'chirish
+                {tr("O'chirish")}
               </PanelButton>
             )}
           </div>
@@ -204,7 +201,7 @@ export function PushConfigCard() {
             <input
               value={testToken}
               onChange={(e) => setTestToken(e.target.value)}
-              placeholder="Sinov uchun FCM token..."
+              placeholder={tr("Sinov uchun FCM token...")}
               className="h-9 min-w-0 flex-1 rounded-lg border border-white/10 bg-slate-950/60 px-3 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none"
             />
             <PanelButton
@@ -218,7 +215,7 @@ export function PushConfigCard() {
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              Sinov
+              {tr("Sinov")}
             </PanelButton>
           </div>
         </div>

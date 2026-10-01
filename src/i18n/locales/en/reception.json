@@ -1,0 +1,17 @@
+{
+  "Qo'ng'iroqlar": "Calls",
+  "Yaqinda qo'ng'iroq bo'lmadi": "No recent calls",
+  "Notanish raqam": "Unknown number",
+  "{{room_number}}-xonada turibdi": "Staying in room {{room_number}}",
+  "Oxirgi {{WINDOW_MINUTES}} daqiqa": {
+    "one": "Last {{WINDOW_MINUTES}} minute",
+    "other": "Last {{WINDOW_MINUTES}} minutes"
+  },
+  "Telefonda skanerlangan hujjatlar": "Documents scanned on a phone",
+  "Skanerlangan hujjatlar": "Scanned documents",
+  "Telefondan yuborilgan — bosilganda bandlov oynasi ochiladi": "Sent from a phone — click to open the booking window",
+  "Hozircha skan yo'q": "No scans yet",
+  "Nomsiz hujjat": "Unnamed document",
+  "Bazadan topildi — bron ochiladi": "Found in the database — the booking window will open",
+  "Yangi mijoz — maydonlar to'ldiriladi": "New guest — the fields will be prefilled"
+}

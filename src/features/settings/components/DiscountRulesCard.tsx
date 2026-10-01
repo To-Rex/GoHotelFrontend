@@ -12,6 +12,7 @@ import {
   type DiscountRule,
   type DiscountRules,
 } from "../api/discountRules"
+import { tr } from "@/i18n"
 
 /* Chegirma qoidalari — administrator uchun.
 
@@ -32,27 +33,27 @@ const FIELDS: Array<{
 }> = [
   {
     key: "max_percent",
-    label: () => "Eng ko'p foiz",
-    hint: "0 — cheklovsiz",
+    label: () => tr("Eng ko'p foiz"),
+    hint: tr("0 — cheklovsiz"),
     suffix: "%",
     max: 100,
   },
   {
     key: "max_amount",
-    label: () => "Eng ko'p summa",
-    hint: "0 — cheklovsiz",
-    suffix: "so'm",
+    label: () => tr("Eng ko'p summa"),
+    hint: tr("0 — cheklovsiz"),
+    suffix: tr("so'm"),
   },
   {
     key: "min_duration",
-    label: (unit) => `Eng qisqa davomiylik (${unit})`,
-    hint: "shu qiymatdan qisqa bronga chegirma berilmaydi",
+    label: (unit) => tr("Eng qisqa davomiylik ({{unit}})", { unit }),
+    hint: tr("shu qiymatdan qisqa bronga chegirma berilmaydi"),
     suffix: "",
   },
   {
     key: "max_duration",
-    label: (unit) => `Eng uzun davomiylik (${unit})`,
-    hint: "shu qiymatdan uzun bronga chegirma berilmaydi",
+    label: (unit) => tr("Eng uzun davomiylik ({{unit}})", { unit }),
+    hint: tr("shu qiymatdan uzun bronga chegirma berilmaydi"),
     suffix: "",
   },
 ]
@@ -79,8 +80,8 @@ const RuleEditor = ({
         <span className="block text-sm font-semibold text-gray-900">{title}</span>
         <span className="mt-0.5 block text-xs text-gray-500">
           {rule.enabled
-            ? "Chegirma berish mumkin — chegaralar quyida"
-            : "Chegirma berish o'chirilgan: bron oynasida maydon yopiladi"}
+            ? tr("Chegirma berish mumkin — chegaralar quyida")
+            : tr("Chegirma berish o'chirilgan: bron oynasida maydon yopiladi")}
         </span>
       </span>
     </label>
@@ -165,23 +166,21 @@ export const DiscountRulesCard = () => {
     <>
       <div className="grid gap-4 xl:grid-cols-2">
         <RuleEditor
-          title="Kunlik bron"
-          unit="kecha"
+          title={tr("Kunlik bron")}
+          unit={tr("kecha")}
           rule={rules.daily}
           onChange={(next) => update("daily", next)}
         />
         <RuleEditor
-          title="Soatlik bron"
-          unit="soat"
+          title={tr("Soatlik bron")}
+          unit={tr("soat")}
           rule={rules.hourly}
           onChange={(next) => update("hourly", next)}
         />
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-gray-400">
-        Chegara ikki xil o'lchovda ishlaydi: xodim foizda kiritsa ham, so'mda
-        kiritsa ham ikkalasi tekshiriladi — biri orqali ikkinchisini chetlab
-        o'tib bo'lmaydi. Tekshiruv serverda ham takrorlanadi.
+        {tr("Chegara ikki xil o'lchovda ishlaydi: xodim foizda kiritsa ham, so'mda kiritsa ham ikkalasi tekshiriladi — biri orqali ikkinchisini chetlab o'tib bo'lmaydi. Tekshiruv serverda ham takrorlanadi.")}
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
@@ -191,11 +190,11 @@ export const DiscountRulesCard = () => {
           className="min-w-[120px]"
         >
           {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Saqlash
+          {tr("Saqlash")}
         </Button>
         {savedFlag && (
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-            <CheckCircle2 className="h-4 w-4" /> Saqlandi
+            <CheckCircle2 className="h-4 w-4" />{" "}{tr("Saqlandi")}
           </span>
         )}
         {error && <span className="text-sm text-red-500">{error}</span>}

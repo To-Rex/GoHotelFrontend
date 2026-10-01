@@ -21,6 +21,7 @@ import {
 import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { sanitizePassport } from "../lib/booking"
+import { tr } from "@/i18n"
 
 /* Xonadagi hamrohlar.
 
@@ -70,7 +71,7 @@ interface Props {
 }
 
 const guestName = (g: any) =>
-  `${g.first_name || ""} ${g.last_name || ""}`.trim() || "Ismsiz mehmon"
+  `${g.first_name || ""} ${g.last_name || ""}`.trim() || tr("Ismsiz mehmon")
 
 export const CompanionGuests = ({
   adults,
@@ -138,7 +139,7 @@ export const CompanionGuests = ({
       setFaceFile(file)
     } catch {
       setFaceFile(null)
-      onError("Surat yuklanmadi, lekin yuz baribir biriktiriladi.")
+      onError(tr("Surat yuklanmadi, lekin yuz baribir biriktiriladi."))
     }
     setPickedFace(group)
   }
@@ -214,7 +215,7 @@ export const CompanionGuests = ({
         id: guestId,
         name: g
           ? guestName(g)
-          : `${doc.firstName || ""} ${doc.lastName || ""}`.trim() || "Mehmon",
+          : `${doc.firstName || ""} ${doc.lastName || ""}`.trim() || tr("Mehmon"),
       })
       return
     }
@@ -282,7 +283,7 @@ export const CompanionGuests = ({
 
   const saveNewGuest = async (index: number) => {
     if (!newGuest?.first_name.trim()) {
-      onError("Hamroh mehmonning ismini kiriting.")
+      onError(tr("Hamroh mehmonning ismini kiriting."))
       return
     }
     try {
@@ -329,7 +330,7 @@ export const CompanionGuests = ({
         } catch (enrollError) {
           console.error("Yuzni biriktirishda xatolik", enrollError)
           onError(
-            "Hamroh saqlandi, lekin yuz biriktirilmadi — uni qabulxona panelidan qayta biriktirishingiz mumkin."
+            tr("Hamroh saqlandi, lekin yuz biriktirilmadi — uni qabulxona panelidan qayta biriktirishingiz mumkin.")
           )
         }
       }
@@ -337,7 +338,7 @@ export const CompanionGuests = ({
       setAt(index, { id: created.id, name: guestName(created) })
     } catch (e: any) {
       onError(
-        e?.response?.data?.detail || "Hamroh mehmonni saqlab bo'lmadi. Qayta urinib ko'ring."
+        e?.response?.data?.detail || tr("Hamroh mehmonni saqlab bo'lmadi. Qayta urinib ko'ring.")
       )
     }
   }
@@ -347,10 +348,10 @@ export const CompanionGuests = ({
       {!hideHeader && (
         <div className="flex items-center justify-between gap-2">
           <label className="text-sm font-medium text-gray-700">
-            Hamrohlar{" "}
+            {tr("Hamrohlar")}{" "}
             <span className={cn("text-xs", required ? "text-red-500" : "text-gray-400")}>
               ({value.length}/{slots}
-              {required ? " — majburiy" : ""})
+              {required ? tr(" — majburiy") : ""})
             </span>
           </label>
         </div>
@@ -376,7 +377,7 @@ export const CompanionGuests = ({
                 <button
                   type="button"
                   onClick={() => setExpandedSlot(expanded ? null : index)}
-                  title="Tahrirlash va yuz biriktirish"
+                  title={tr("Tahrirlash va yuz biriktirish")}
                   className="flex-shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
                   <ChevronDown
@@ -389,7 +390,7 @@ export const CompanionGuests = ({
                 <button
                   type="button"
                   onClick={() => setAt(index, null)}
-                  title="Ro'yxatdan olib tashlash"
+                  title={tr("Ro'yxatdan olib tashlash")}
                   className="flex-shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
                   <X className="h-4 w-4" />
@@ -427,7 +428,7 @@ export const CompanionGuests = ({
             {!isActive ? (
               <div className="flex items-center gap-2">
                 <span className="min-w-0 flex-1 truncate text-sm text-gray-500">
-                  {slotLabel ? slotLabel(index) : `${index + 2}-mehmon tanlanmagan`}
+                  {slotLabel ? slotLabel(index) : tr("{{n}}-mehmon tanlanmagan", { n: index + 2 })}
                 </span>
                 <button
                   type="button"
@@ -438,7 +439,7 @@ export const CompanionGuests = ({
                   }}
                   className="flex-shrink-0 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
                 >
-                  Tanlash
+                  {tr("Tanlash")}
                 </button>
                 {/* Hamroh ham mijoz — yangisini shu yerning o'zida qo'shish
                     mumkin (ilgari bu qidiruv ichidagi kichik havola edi) */}
@@ -454,17 +455,17 @@ export const CompanionGuests = ({
                     className="flex flex-shrink-0 items-center gap-1 rounded-md border border-primary-200 bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100"
                   >
                     <UserPlus className="h-3.5 w-3.5" />
-                    Yangi mijoz
+                    {tr("Yangi mijoz")}
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setScanSlot(index)}
-                  title="Passport yoki ID kartani skanerlash"
+                  title={tr("Passport yoki ID kartani skanerlash")}
                   className="flex flex-shrink-0 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
                 >
                   <ScanLine className="h-3.5 w-3.5" />
-                  Skaner
+                  {tr("Skaner")}
                 </button>
               </div>
             ) : newGuest ? (
@@ -473,7 +474,7 @@ export const CompanionGuests = ({
                 <div className="grid grid-cols-2 gap-2">
                   <Input
                     className="h-9"
-                    placeholder="Ism *"
+                    placeholder={tr("Ism *")}
                     value={newGuest.first_name}
                     onChange={(e) =>
                       setNewGuest({ ...newGuest, first_name: e.target.value })
@@ -481,7 +482,7 @@ export const CompanionGuests = ({
                   />
                   <Input
                     className="h-9"
-                    placeholder="Familiya"
+                    placeholder={tr("Familiya")}
                     value={newGuest.last_name}
                     onChange={(e) =>
                       setNewGuest({ ...newGuest, last_name: e.target.value })
@@ -491,13 +492,13 @@ export const CompanionGuests = ({
                 <div className="grid grid-cols-2 gap-2">
                   <Input
                     className="h-9"
-                    placeholder="Telefon"
+                    placeholder={tr("Telefon")}
                     value={newGuest.phone}
                     onChange={(e) => setNewGuest({ ...newGuest, phone: e.target.value })}
                   />
                   <Input
                     className="h-9"
-                    placeholder="Passport"
+                    placeholder={tr("Passport")}
                     autoCapitalize="characters"
                     value={newGuest.passport_number}
                     onChange={(e) =>
@@ -511,7 +512,7 @@ export const CompanionGuests = ({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="mb-0.5 block text-[11px] font-medium text-gray-500">
-                      Tug'ilgan sana
+                      {tr("Tug'ilgan sana")}
                     </label>
                     <BirthDateSelect
                       value={newGuest.birth_date}
@@ -522,7 +523,7 @@ export const CompanionGuests = ({
                   </div>
                   <div>
                     <label className="mb-0.5 block text-[11px] font-medium text-gray-500">
-                      Fuqaroligi
+                      {tr("Fuqaroligi")}
                     </label>
                     <select
                       className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -533,7 +534,7 @@ export const CompanionGuests = ({
                     >
                       {NATIONALITIES.map((n) => (
                         <option key={n} value={n}>
-                          {n}
+                          {tr(n)}
                         </option>
                       ))}
                     </select>
@@ -542,7 +543,7 @@ export const CompanionGuests = ({
                 {newGuest.nationality === "Boshqa" && (
                   <Input
                     className="h-9"
-                    placeholder="Fuqaroligini kiriting"
+                    placeholder={tr("Fuqaroligini kiriting")}
                     value={newGuest.nationality_other}
                     onChange={(e) =>
                       setNewGuest({ ...newGuest, nationality_other: e.target.value })
@@ -552,7 +553,7 @@ export const CompanionGuests = ({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="mb-0.5 block text-[11px] font-medium text-gray-500">
-                      Hujjat turi
+                      {tr("Hujjat turi")}
                     </label>
                     <select
                       className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -570,11 +571,11 @@ export const CompanionGuests = ({
                   </div>
                   <div>
                     <label className="mb-0.5 block text-[11px] font-medium text-gray-500">
-                      Shaxsiy raqam/JSHSHIR
+                      {tr("Shaxsiy raqam/JSHSHIR")}
                     </label>
                     <Input
                       className="h-9"
-                      placeholder="JSHSHIR"
+                      placeholder={tr("JSHSHIR")}
                       value={newGuest.id_document_number}
                       onChange={(e) =>
                         setNewGuest({
@@ -587,7 +588,7 @@ export const CompanionGuests = ({
                 </div>
                 <Input
                   className="h-9"
-                  placeholder="Manzil"
+                  placeholder={tr("Manzil")}
                   value={newGuest.address}
                   onChange={(e) =>
                     setNewGuest({ ...newGuest, address: e.target.value })
@@ -600,14 +601,12 @@ export const CompanionGuests = ({
                   <div className="flex items-center gap-2 rounded-md border border-primary-200 bg-primary-50/60 px-2.5 py-1.5">
                     <Video className="h-4 w-4 flex-shrink-0 text-primary-600" />
                     <span className="min-w-0 flex-1 truncate text-[11px] text-primary-700">
-                      {pickedFace.camera_name || pickedFace.camera_id} kamerasidan
-                      {pickedFace.count > 1 ? ` · ${pickedFace.count} ta surat` : ""} —
-                      hamroh saqlangach yuzi biriktiriladi
+                      {tr("{{camera}} kamerasidan{{photos}} — hamroh saqlangach yuzi biriktiriladi", { camera: pickedFace.camera_name || pickedFace.camera_id, photos: pickedFace.count > 1 ? tr(" · {{count}} ta surat", { count: pickedFace.count }) : "" })}
                     </span>
                     <button
                       type="button"
                       onClick={clearFace}
-                      title="Yuz tanlovini bekor qilish"
+                      title={tr("Yuz tanlovini bekor qilish")}
                       className="flex-shrink-0 rounded-md p-0.5 text-primary-400 transition-colors hover:bg-primary-100 hover:text-primary-600"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -620,9 +619,9 @@ export const CompanionGuests = ({
                     className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-primary-300 bg-primary-50/40 px-2.5 py-2 text-xs font-medium text-primary-700 transition-colors hover:border-primary-500 hover:bg-primary-50"
                   >
                     <Video className="h-4 w-4 text-primary-500" />
-                    Filial kamerasidan yuz biriktirish
+                    {tr("Filial kamerasidan yuz biriktirish")}
                     <span className="font-normal text-primary-500/80">
-                      · keyingi tashrifda avtomatik tanaladi
+                      {tr("· keyingi tashrifda avtomatik tanaladi")}
                     </span>
                   </button>
                 )}
@@ -636,7 +635,7 @@ export const CompanionGuests = ({
                     {createGuestMutation.isPending && (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     )}
-                    Saqlash
+                    {tr("Saqlash")}
                   </button>
                   <button
                     type="button"
@@ -646,7 +645,7 @@ export const CompanionGuests = ({
                     }}
                     className="rounded-md px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100"
                   >
-                    Ro'yxatga qaytish
+                    {tr("Ro'yxatga qaytish")}
                   </button>
                 </div>
               </div>
@@ -657,7 +656,7 @@ export const CompanionGuests = ({
                   <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
                   <Input
                     className="h-9 pl-8"
-                    placeholder="Ism, telefon yoki passport..."
+                    placeholder={tr("Ism, telefon yoki passport...")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     autoFocus
@@ -678,14 +677,13 @@ export const CompanionGuests = ({
                     ))}
                     {found.length === 0 && (
                       <p className="px-2.5 py-3 text-center text-xs text-gray-400">
-                        Mijoz topilmadi
+                        {tr("Mijoz topilmadi")}
                       </p>
                     )}
                   </div>
                 ) : (
                   <p className="px-1 text-xs leading-relaxed text-gray-400">
-                    Mijozni topish uchun ism, telefon yoki passport raqamini
-                    yozing — yoki hujjatini skanerlang
+                    {tr("Mijozni topish uchun ism, telefon yoki passport raqamini yozing — yoki hujjatini skanerlang")}
                   </p>
                 )}
                 <div className="flex items-center gap-2">
@@ -698,7 +696,7 @@ export const CompanionGuests = ({
                       className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                     >
                       <UserPlus className="h-3.5 w-3.5" />
-                      + Yangi mijoz qo'shish
+                      {tr("+ Yangi mijoz qo'shish")}
                     </button>
                   )}
                   <button
@@ -706,7 +704,7 @@ export const CompanionGuests = ({
                     onClick={() => setActiveSlot(null)}
                     className="ml-auto rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
                   >
-                    Yopish
+                    {tr("Yopish")}
                   </button>
                 </div>
               </div>

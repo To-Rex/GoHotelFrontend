@@ -17,6 +17,7 @@ import {
   useVisionCameras,
   type VisionCamera,
 } from "../api/vision"
+import { tr, trc } from "@/i18n"
 
 /**
  * Kamerani filialga biriktirish.
@@ -33,14 +34,14 @@ import {
  */
 
 function timeAgo(iso?: string | null): string {
-  if (!iso) return "hech qachon"
+  if (!iso) return tr("hech qachon")
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
-  if (seconds < 60) return "hozirgina"
+  if (seconds < 60) return tr("hozirgina")
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} daq. oldin`
+  if (minutes < 60) return tr("{{minutes}} daq. oldin", { minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} soat oldin`
-  return `${Math.floor(hours / 24)} kun oldin`
+  if (hours < 24) return tr("{{hours}} soat oldin", { hours })
+  return tr("{{Math}} kun oldin", { Math: Math.floor(hours / 24) })
 }
 
 function CameraRow({
@@ -63,7 +64,7 @@ function CameraRow({
       await update.mutateAsync({ id: camera.id, ...patch })
       setSavedAt(Date.now())
     } catch (e: any) {
-      onError(e?.response?.data?.detail || "Saqlab bo'lmadi. Qayta urinib ko'ring.")
+      onError(e?.response?.data?.detail || tr("Saqlab bo'lmadi. Qayta urinib ko'ring."))
     }
   }
 
@@ -95,9 +96,7 @@ function CameraRow({
           {camera.name || camera.camera_id}
         </p>
         <p className="truncate text-[11px] text-gray-500">
-          {camera.camera_id}
-          {camera.device_name ? ` · ${camera.device_name}` : ""} · oxirgi surat:{" "}
-          {timeAgo(camera.last_seen_at)} · jami {camera.sightings_count}
+          {tr("{{camera_id}}{{v}} · oxirgi surat: {{last_seen_at}} · jami {{sightings_count}}", { camera_id: camera.camera_id, v: camera.device_name ? ` · ${camera.device_name}` : "", last_seen_at: timeAgo(camera.last_seen_at), sightings_count: camera.sightings_count })}
         </p>
       </div>
 
@@ -108,7 +107,7 @@ function CameraRow({
           disabled={!canManage || update.isPending}
           onChange={(e) => apply({ branch_id: e.target.value || null })}
         >
-          <option value="">— filial tanlanmagan —</option>
+          <option value="">{tr("— filial tanlanmagan —")}</option>
           {branches.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
@@ -124,11 +123,11 @@ function CameraRow({
           onClick={() => apply({ is_active: !camera.is_active })}
           title={
             camera.is_active
-              ? "Kamerani vaqtincha o'chirish — hodisalari qabul qilinmaydi"
-              : "Kamerani qayta yoqish"
+              ? tr("Kamerani vaqtincha o'chirish — hodisalari qabul qilinmaydi")
+              : tr("Kamerani qayta yoqish")
           }
         >
-          {camera.is_active ? "O'chirish" : "Yoqish"}
+          {camera.is_active ? trc("toggle", "O'chirish") : tr("Yoqish")}
         </Button>
 
         <span className="w-5">
@@ -160,9 +159,7 @@ export function VisionCamerasCard() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-gray-500">
-          Kameralar agent birinchi suratni yuborganda o'zi paydo bo'ladi. Filial
-          biriktirilmagunicha ularning suratlari yangi mehmonga yuz biriktirish
-          oynasida ko'rinmaydi.
+          {tr("Kameralar agent birinchi suratni yuborganda o'zi paydo bo'ladi. Filial biriktirilmagunicha ularning suratlari yangi mehmonga yuz biriktirish oynasida ko'rinmaydi.")}
         </p>
         <Button
           type="button"
@@ -172,7 +169,7 @@ export function VisionCamerasCard() {
           disabled={isFetching}
         >
           <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", isFetching && "animate-spin")} />
-          Yangilash
+          {tr("Yangilash")}
         </Button>
       </div>
 
@@ -181,10 +178,8 @@ export function VisionCamerasCard() {
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
           <p className="text-sm text-amber-800">
             <span className="font-medium">
-              {unassigned} ta kamera filialga biriktirilmagan.
-            </span>{" "}
-            Ularning suratlari hech qaysi filial ro'yxatiga tushmaydi — quyida
-            filialni tanlang.
+              {tr("{{unassigned}} ta kamera filialga biriktirilmagan.", { unassigned })}
+            </span>{" "}{tr("Ularning suratlari hech qaysi filial ro'yxatiga tushmaydi — quyida filialni tanlang.")}
           </p>
         </div>
       )}
@@ -195,17 +190,14 @@ export function VisionCamerasCard() {
         </div>
       ) : isError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          Kameralar ro'yxatini olishda xatolik. Backend yangilanganmi va
-          migratsiya bajarilganmi — tekshiring.
+          {tr("Kameralar ro'yxatini olishda xatolik. Backend yangilanganmi va migratsiya bajarilganmi — tekshiring.")}
         </div>
       ) : cameras.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-300 p-6 text-center">
           <Video className="h-7 w-7 text-gray-300" />
-          <p className="text-sm font-medium text-gray-600">Hali kamera yo'q</p>
+          <p className="text-sm font-medium text-gray-600">{tr("Hali kamera yo'q")}</p>
           <p className="max-w-md text-xs text-gray-400">
-            GoHotels Vision agenti o'rnatilgan, kamera qo'shilgan va qurilma
-            tokeni saqlangan bo'lishi kerak. Agent birinchi yuzni yuborishi
-            bilan kamera shu ro'yxatda paydo bo'ladi.
+            {tr("GoHotels Vision agenti o'rnatilgan, kamera qo'shilgan va qurilma tokeni saqlangan bo'lishi kerak. Agent birinchi yuzni yuborishi bilan kamera shu ro'yxatda paydo bo'ladi.")}
           </p>
         </div>
       ) : (
@@ -224,7 +216,7 @@ export function VisionCamerasCard() {
 
       {!canManage && cameras.length > 0 && (
         <p className="text-xs text-gray-400">
-          Filialni o'zgartirish uchun xodimlarni boshqarish ruxsati kerak.
+          {tr("Filialni o'zgartirish uchun xodimlarni boshqarish ruxsati kerak.")}
         </p>
       )}
       {error && <p className="text-sm text-red-500">{error}</p>}

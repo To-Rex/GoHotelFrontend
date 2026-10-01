@@ -21,6 +21,8 @@ import {
 import { cn } from "@/lib/utils"
 import { PANEL_TOKEN_KEY } from "../api/client"
 import { panelLogout, usePanelMe } from "../api/panel"
+import { tr, trc } from "@/i18n"
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher"
 
 /**
  * Panel qobig'i: chapda menyu, o'ngda sahifa.
@@ -36,28 +38,28 @@ import { panelLogout, usePanelMe } from "../api/panel"
 
 const GROUPS = [
   {
-    title: "Nazorat",
+    title: tr("Nazorat"),
     links: [
-      { to: "/panel", end: true, label: "Umumiy", icon: LayoutDashboard },
-      { to: "/panel/reservations", label: "Bronlar", icon: CalendarRange },
-      { to: "/panel/finance", label: "Moliya", icon: Wallet },
+      { to: "/panel", end: true, label: tr("Umumiy"), icon: LayoutDashboard },
+      { to: "/panel/reservations", label: tr("Bronlar"), icon: CalendarRange },
+      { to: "/panel/finance", label: tr("Moliya"), icon: Wallet },
     ],
   },
   {
-    title: "Obyektlar",
+    title: tr("Obyektlar"),
     links: [
-      { to: "/panel/hotels", label: "Mehmonxonalar", icon: Building2 },
-      { to: "/panel/guests", label: "Mehmonlar", icon: UserRound },
+      { to: "/panel/hotels", label: tr("Mehmonxonalar"), icon: Building2 },
+      { to: "/panel/guests", label: tr("Mehmonlar"), icon: UserRound },
     ],
   },
   {
-    title: "Tizim",
+    title: tr("Tizim"),
     links: [
-      { to: "/panel/apps", label: "Dasturlar do'koni", icon: PackageOpen },
-      { to: "/panel/users", label: "Panel foydalanuvchilari", icon: Users },
-      { to: "/panel/audit", label: "Harakatlar tarixi", icon: ScrollText },
-      { to: "/panel/api-logs", label: "So'rovlar jurnali", icon: Activity },
-      { to: "/panel/security", label: "Xavfsizlik", icon: KeyRound },
+      { to: "/panel/apps", label: tr("Dasturlar do'koni"), icon: PackageOpen },
+      { to: "/panel/users", label: tr("Panel foydalanuvchilari"), icon: Users },
+      { to: "/panel/audit", label: tr("Harakatlar tarixi"), icon: ScrollText },
+      { to: "/panel/api-logs", label: tr("So'rovlar jurnali"), icon: Activity },
+      { to: "/panel/security", label: tr("Xavfsizlik"), icon: KeyRound },
     ],
   },
 ]
@@ -146,7 +148,7 @@ export function PanelLayout() {
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 lg:hidden"
-          aria-label="Menyu"
+          aria-label={tr("Menyu")}
         >
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -155,18 +157,19 @@ export function PanelLayout() {
           <ShieldCheck className="h-4 w-4 text-emerald-400" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold leading-tight">Boshqaruv paneli</p>
+          <p className="text-sm font-semibold leading-tight">{tr("Boshqaruv paneli")}</p>
           <p className="hidden text-[11px] leading-tight text-slate-500 sm:block">
-            Barcha mehmonxonalar ustidan nazorat
+            {tr("Barcha mehmonxonalar ustidan nazorat")}
           </p>
         </div>
 
         <div className="ml-auto flex items-center gap-3">
+          <LanguageSwitcher scene="night" />
           <span className="hidden items-center gap-2 text-xs text-slate-400 sm:flex">
             {me.label}
             {me.is_root && (
               <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                egasi
+                {tr("egasi")}
               </span>
             )}
           </span>
@@ -174,8 +177,8 @@ export function PanelLayout() {
             type="button"
             onClick={signOut}
             className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-100"
-            title="Chiqish"
-            aria-label="Chiqish"
+            title={trc("login", "Chiqish")}
+            aria-label={trc("login", "Chiqish")}
           >
             <LogOut className="h-4 w-4" />
           </button>

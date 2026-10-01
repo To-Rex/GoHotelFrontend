@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/auth"
 import { useReceiptSettings } from "@/features/shop/api/shop"
 import { printReservationReceipt, type ReservationReceiptData } from "@/lib/tprints"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 /** Chek uchun yetarli bo'lgan eng kichik ma'lumot.
  *
@@ -121,7 +122,7 @@ export const ReservationReceiptButton = ({
       setDone(true)
       window.setTimeout(() => setDone(false), 2500)
     } else {
-      setError(result.error || "Chek chiqmadi — printer ulanishini tekshiring")
+      setError(result.error || tr("Chek chiqmadi — printer ulanishini tekshiring"))
     }
   }
 
@@ -133,7 +134,7 @@ export const ReservationReceiptButton = ({
         size={compact ? "sm" : "default"}
         onClick={doPrint}
         disabled={busy}
-        title="Bron cheki"
+        title={tr("Bron cheki")}
         className="gap-2"
       >
         {busy ? (
@@ -141,7 +142,7 @@ export const ReservationReceiptButton = ({
         ) : (
           <Printer className="h-4 w-4" />
         )}
-        {compact ? "" : done ? "Chek chiqdi" : "Chek chiqarish"}
+        {compact ? "" : done ? tr("Chek chiqdi") : tr("Chek chiqarish")}
       </Button>
       {error && (
         <span className="max-w-[260px] text-[11px] leading-snug text-red-600">

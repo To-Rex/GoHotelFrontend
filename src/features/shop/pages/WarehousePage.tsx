@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { tr, trc } from "@/i18n"
 
 const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 
@@ -53,10 +54,10 @@ const MOVE_TYPES: Record<
   string,
   { label: string; chip: string; sign: "in" | "out" | "both" }
 > = {
-  KIRIM: { label: "Kirim", chip: "bg-emerald-100 text-emerald-700", sign: "in" },
-  SOTUV: { label: "Sotuv", chip: "bg-blue-100 text-blue-700", sign: "out" },
-  SPISANIYE: { label: "Spisaniye", chip: "bg-red-100 text-red-600", sign: "out" },
-  INVENTAR: { label: "Inventarizatsiya", chip: "bg-violet-100 text-violet-700", sign: "both" },
+  KIRIM: { label: trc("stock", "Kirim"), chip: "bg-emerald-100 text-emerald-700", sign: "in" },
+  SOTUV: { label: tr("Sotuv"), chip: "bg-blue-100 text-blue-700", sign: "out" },
+  SPISANIYE: { label: tr("Spisaniye"), chip: "bg-red-100 text-red-600", sign: "out" },
+  INVENTAR: { label: tr("Inventarizatsiya"), chip: "bg-violet-100 text-violet-700", sign: "both" },
 }
 
 // Mahsulot bo'yicha hisoblangan ombor ko'rsatkichlari
@@ -96,7 +97,8 @@ export const WarehousePage = () => {
       list = list.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          (p.category || "").toLowerCase().includes(q)
+          // Kategoriya ekranda tarjima qilingan nomi bilan ko'rinadi — qidiruv ham shu nom bo'yicha
+          tr(p.category || "").toLowerCase().includes(q)
       )
     }
     if (onlyLow) list = list.filter((p) => p.stock <= LOW_STOCK)
@@ -142,16 +144,16 @@ export const WarehousePage = () => {
     const qty = parseInt(kQty, 10)
     const sale = Number(kSale)
     if (Number.isNaN(qty) || qty <= 0) {
-      setKError("Miqdorni to'g'ri kiriting")
+      setKError(tr("Miqdorni to'g'ri kiriting"))
       return
     }
     if (kSale.trim() === "" || Number.isNaN(sale) || sale <= 0) {
-      setKError("Sotish narxini kiriting")
+      setKError(tr("Sotish narxini kiriting"))
       return
     }
     const cost = kCost.trim() === "" ? undefined : Number(kCost)
     if (cost !== undefined && (Number.isNaN(cost) || cost < 0)) {
-      setKError("Tannarx noto'g'ri")
+      setKError(tr("Tannarx noto'g'ri"))
       return
     }
     try {
@@ -178,15 +180,15 @@ export const WarehousePage = () => {
     if (!writeoffFor) return
     const qty = parseInt(wQty, 10)
     if (Number.isNaN(qty) || qty <= 0) {
-      setWError("Miqdorni to'g'ri kiriting")
+      setWError(tr("Miqdorni to'g'ri kiriting"))
       return
     }
     if (qty > writeoffFor.stock) {
-      setWError(`Omborda faqat ${writeoffFor.stock} ta bor`)
+      setWError(tr("Omborda faqat {{stock}} ta bor", { stock: writeoffFor.stock }))
       return
     }
     if (wReason.trim().length < 3) {
-      setWError("Sababni yozing (majburiy)")
+      setWError(tr("Sababni yozing (majburiy)"))
       return
     }
     try {
@@ -211,12 +213,12 @@ export const WarehousePage = () => {
   const submitInv = async () => {
     if (!invFor) return
     if (invCounted.trim() === "") {
-      setInvError("Sanalgan miqdorni kiriting")
+      setInvError(tr("Sanalgan miqdorni kiriting"))
       return
     }
     const counted = parseInt(invCounted, 10)
     if (Number.isNaN(counted) || counted < 0) {
-      setInvError("Miqdor noto'g'ri")
+      setInvError(tr("Miqdor noto'g'ri"))
       return
     }
     try {
@@ -233,7 +235,7 @@ export const WarehousePage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Ombor</h1>
+        <h1 className="text-2xl font-bold">{tr("Ombor")}</h1>
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -244,30 +246,30 @@ export const WarehousePage = () => {
     {
       icon: Package,
       accent: "bg-primary-50 text-primary-600",
-      label: "Mahsulot turlari",
-      value: `${products.length} ta`,
-      sub: `${filtered.length} ta ko'rsatilmoqda`,
+      label: tr("Mahsulot turlari"),
+      value: tr("{{count}} ta", { count: products.length }),
+      sub: tr("{{count}} ta ko'rsatilmoqda", { count: filtered.length }),
     },
     {
       icon: Layers,
       accent: "bg-sky-50 text-sky-600",
-      label: "Umumiy qoldiq",
-      value: `${fmt(totalUnits)} dona`,
-      sub: "barcha mahsulotlar bo'yicha",
+      label: tr("Umumiy qoldiq"),
+      value: tr("{{totalUnits}} dona", { totalUnits: fmt(totalUnits) }),
+      sub: tr("barcha mahsulotlar bo'yicha"),
     },
     {
       icon: Coins,
       accent: "bg-emerald-50 text-emerald-600",
-      label: "Ombor qiymati",
-      value: `${fmt(totalValue)} So'm`,
-      sub: "tannarx bo'yicha (yo'q bo'lsa narxda)",
+      label: tr("Ombor qiymati"),
+      value: tr("{{totalValue}} So'm", { totalValue: fmt(totalValue) }),
+      sub: tr("tannarx bo'yicha (yo'q bo'lsa narxda)"),
     },
     {
       icon: AlertTriangle,
       accent: lowCount ? "bg-red-50 text-red-500" : "bg-gray-50 text-gray-400",
-      label: "Kam qoldiq",
-      value: `${lowCount} ta`,
-      sub: `${LOW_STOCK} ta va undan oz qolganlar`,
+      label: tr("Kam qoldiq"),
+      value: tr("{{lowCount}} ta", { lowCount }),
+      sub: tr("{{LOW_STOCK}} ta va undan oz qolganlar", { LOW_STOCK }),
     },
   ]
 
@@ -281,7 +283,7 @@ export const WarehousePage = () => {
         }}
         className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
       >
-        <PackagePlus className="h-3 w-3" /> Kirim
+        <PackagePlus className="h-3 w-3" />{" "}{trc("stock", "Kirim")}
       </button>
       <button
         type="button"
@@ -291,7 +293,7 @@ export const WarehousePage = () => {
         }}
         className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100"
       >
-        <PackageMinus className="h-3 w-3" /> Spisaniye
+        <PackageMinus className="h-3 w-3" />{" "}{tr("Spisaniye")}
       </button>
       <button
         type="button"
@@ -301,7 +303,7 @@ export const WarehousePage = () => {
         }}
         className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100"
       >
-        <ClipboardCheck className="h-3 w-3" /> Inventar
+        <ClipboardCheck className="h-3 w-3" />{" "}{tr("Inventar")}
       </button>
     </div>
   )
@@ -315,9 +317,9 @@ export const WarehousePage = () => {
             <Warehouse className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Ombor</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{tr("Ombor")}</h1>
             <p className="text-sm text-gray-500">
-              Qoldiqlar, kirim, spisaniye va inventarizatsiya
+              {tr("Qoldiqlar, kirim, spisaniye va inventarizatsiya")}
             </p>
           </div>
         </div>
@@ -354,7 +356,7 @@ export const WarehousePage = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             className="pl-9"
-            placeholder="Mahsulot yoki kategoriya bo'yicha qidirish..."
+            placeholder={tr("Mahsulot yoki kategoriya bo'yicha qidirish...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -370,7 +372,7 @@ export const WarehousePage = () => {
           )}
         >
           <AlertTriangle className="h-3 w-3" />
-          Kam qoldiq
+          {tr("Kam qoldiq")}
         </button>
       </div>
 
@@ -378,7 +380,7 @@ export const WarehousePage = () => {
       <div className="space-y-2.5 md:hidden">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-            Mahsulotlar topilmadi
+            {tr("Mahsulotlar topilmadi")}
           </div>
         ) : (
           filtered.map((p) => {
@@ -406,12 +408,12 @@ export const WarehousePage = () => {
                         {p.name}
                         {!p.is_active && (
                           <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
-                            nofaol
+                            {tr("nofaol")}
                           </span>
                         )}
                       </p>
                       <p className="text-[11px] text-gray-400">
-                        {p.category || "Kategoriyasiz"} · {st.activeBatches} partiya
+                        {tr("{{v}} · {{activeBatches}} partiya", { v: p.category ? tr(p.category) : tr("Kategoriyasiz"), activeBatches: st.activeBatches })}
                       </p>
                     </div>
                   </div>
@@ -423,24 +425,24 @@ export const WarehousePage = () => {
                         : "bg-emerald-100 text-emerald-700"
                     )}
                   >
-                    {p.stock} ta
+                    {tr("{{stock}} ta", { stock: p.stock })}
                   </span>
                 </div>
                 <div className="mt-2 grid grid-cols-3 gap-1.5 text-center">
                   <div className="rounded-lg bg-gray-50 px-1 py-1.5">
-                    <p className="text-[10px] text-gray-400">Narx</p>
+                    <p className="text-[10px] text-gray-400">{tr("Narx")}</p>
                     <p className="truncate text-xs font-bold tabular-nums text-gray-800">
                       {p.current_price !== null ? fmt(p.current_price) : "—"}
                     </p>
                   </div>
                   <div className="rounded-lg bg-gray-50 px-1 py-1.5">
-                    <p className="text-[10px] text-gray-400">Tannarx</p>
+                    <p className="text-[10px] text-gray-400">{tr("Tannarx")}</p>
                     <p className="truncate text-xs font-bold tabular-nums text-gray-800">
                       {st.lastCost !== null ? fmt(st.lastCost) : "—"}
                     </p>
                   </div>
                   <div className="rounded-lg bg-gray-50 px-1 py-1.5">
-                    <p className="text-[10px] text-gray-400">Qiymat</p>
+                    <p className="text-[10px] text-gray-400">{tr("Qiymat")}</p>
                     <p className="truncate text-xs font-bold tabular-nums text-gray-800">
                       {fmt(st.value)}
                     </p>
@@ -461,21 +463,21 @@ export const WarehousePage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Mahsulot</TableHead>
-                <TableHead>Kategoriya</TableHead>
-                <TableHead className="text-right">Qoldiq</TableHead>
-                <TableHead className="text-right">Partiyalar</TableHead>
-                <TableHead className="text-right">Joriy narx</TableHead>
-                <TableHead className="text-right">Oxirgi tannarx</TableHead>
-                <TableHead className="text-right">Ombor qiymati</TableHead>
-                <TableHead className="text-right">Amallar</TableHead>
+                <TableHead>{tr("Mahsulot")}</TableHead>
+                <TableHead>{tr("Kategoriya")}</TableHead>
+                <TableHead className="text-right">{trc("stock", "Qoldiq")}</TableHead>
+                <TableHead className="text-right">{tr("Partiyalar")}</TableHead>
+                <TableHead className="text-right">{tr("Joriy narx")}</TableHead>
+                <TableHead className="text-right">{tr("Oxirgi tannarx")}</TableHead>
+                <TableHead className="text-right">{tr("Ombor qiymati")}</TableHead>
+                <TableHead className="text-right">{tr("Amallar")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="py-8 text-center text-gray-400">
-                    Mahsulotlar topilmadi
+                    {tr("Mahsulotlar topilmadi")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -500,14 +502,14 @@ export const WarehousePage = () => {
                             {p.name}
                             {!p.is_active && (
                               <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
-                                nofaol
+                                {tr("nofaol")}
                               </span>
                             )}
                           </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-gray-600">
-                        {p.category || "—"}
+                        {p.category ? tr(p.category) : "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <span
@@ -519,7 +521,7 @@ export const WarehousePage = () => {
                           )}
                         >
                           {low && <AlertTriangle className="h-3 w-3" />}
-                          {p.stock} ta
+                          {tr("{{stock}} ta", { stock: p.stock })}
                         </span>
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-gray-600">
@@ -547,7 +549,7 @@ export const WarehousePage = () => {
       {/* Harakatlar jurnali */}
       <div className="rounded-2xl border bg-white overflow-hidden">
         <p className="border-b bg-gray-50/70 px-4 py-2.5 text-xs font-semibold text-gray-600">
-          Harakatlar jurnali (oxirgi {movements.length} ta)
+          {tr("Harakatlar jurnali (oxirgi {{count}} ta)", { count: movements.length })}
         </p>
         {movesLoading ? (
           <div className="flex justify-center py-8">
@@ -555,7 +557,7 @@ export const WarehousePage = () => {
           </div>
         ) : movements.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-400">
-            Harakatlar hali yo'q
+            {tr("Harakatlar hali yo'q")}
           </p>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -598,12 +600,11 @@ export const WarehousePage = () => {
                       inbound ? "text-emerald-600" : "text-red-600"
                     )}
                   >
-                    {inbound ? "+" : ""}
-                    {m.quantity} ta
+                    {tr("{{v}}{{quantity}} ta", { v: inbound ? "+" : "", quantity: m.quantity })}
                   </span>
                   {m.amount !== null && (
                     <span className="tabular-nums text-gray-500">
-                      {fmt(m.amount)} So'm
+                      {tr("{{amount}} So'm", { amount: fmt(m.amount) })}
                     </span>
                   )}
                   <span className="text-xs text-gray-400">
@@ -631,13 +632,13 @@ export const WarehousePage = () => {
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>
-              {batchesFor?.emoji || "📦"} {batchesFor?.name} — partiyalar
+              {batchesFor?.emoji || "📦"} {batchesFor?.name}{" "}{tr("— partiyalar")}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-[60vh] space-y-2 overflow-y-auto py-2">
             {batchesFor && batchesFor.batches.length === 0 && (
               <p className="py-6 text-center text-sm text-gray-400">
-                Partiyalar yo'q — "Kirim" orqali qo'shing
+                {tr("Partiyalar yo'q — \"Kirim\" orqali qo'shing")}
               </p>
             )}
             {batchesFor &&
@@ -651,7 +652,7 @@ export const WarehousePage = () => {
                 >
                   <div>
                     <p className="font-medium text-gray-900">
-                      {b.remaining} / {b.quantity} ta qoldi
+                      {tr("{{remaining}} / {{quantity}} ta qoldi", { remaining: b.remaining, quantity: b.quantity })}
                     </p>
                     <p className="text-xs text-gray-400">
                       {b.created_at
@@ -661,17 +662,17 @@ export const WarehousePage = () => {
                   </div>
                   <div className="text-right text-xs">
                     <p className="font-semibold tabular-nums text-gray-800">
-                      Narx: {fmt(b.sale_price)} So'm
+                      {tr("Narx: {{sale_price}} So'm", { sale_price: fmt(b.sale_price) })}
                     </p>
                     <p className="tabular-nums text-gray-500">
-                      Tannarx: {b.cost_price !== null ? `${fmt(b.cost_price)} So'm` : "—"}
+                      {tr("Tannarx: {{v}}", { v: b.cost_price !== null ? tr("{{cost_price}} So'm", { cost_price: fmt(b.cost_price) }) : "—" })}
                     </p>
                   </div>
                 </div>
               ))}
           </div>
           <DialogFooter>
-            <Button onClick={() => setBatchesFor(null)}>Yopish</Button>
+            <Button onClick={() => setBatchesFor(null)}>{tr("Yopish")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -682,12 +683,12 @@ export const WarehousePage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PackagePlus className="h-4 w-4 text-emerald-600" />
-              Kirim — {kirimFor?.name}
+              {tr("Kirim —")}{" "}{kirimFor?.name}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Miqdor (dona) *</label>
+              <label className="text-xs font-medium text-gray-600">{tr("Miqdor (dona) *")}</label>
               <Input
                 type="number"
                 min={1}
@@ -699,7 +700,7 @@ export const WarehousePage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">
-                  Sotish narxi *
+                  {tr("Sotish narxi *")}
                 </label>
                 <Input
                   type="number"
@@ -709,13 +710,13 @@ export const WarehousePage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Tannarx</label>
+                <label className="text-xs font-medium text-gray-600">{tr("Tannarx")}</label>
                 <Input
                   type="number"
                   min={0}
                   value={kCost}
                   onChange={(e) => setKCost(e.target.value)}
-                  placeholder="Ixtiyoriy"
+                  placeholder={tr("Ixtiyoriy")}
                 />
               </div>
             </div>
@@ -727,13 +728,13 @@ export const WarehousePage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setKirimFor(null)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={submitKirim} disabled={addBatchMutation.isPending}>
               {addBatchMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Qo'shish
+              {tr("Qo'shish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -745,16 +746,15 @@ export const WarehousePage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PackageMinus className="h-4 w-4 text-red-500" />
-              Spisaniye — {writeoffFor?.name}
+              {tr("Spisaniye —")}{" "}{writeoffFor?.name}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="rounded-xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600">
-              Omborda hozir: <b>{writeoffFor?.stock} ta</b>. Chiqarilgan mahsulot
-              FIFO tartibida (eng eski partiyadan) yechiladi va jurnalga yoziladi.
+              {tr("Omborda hozir:")}{" "}<b>{writeoffFor?.stock}{" "}{tr("ta")}</b>{tr(". Chiqarilgan mahsulot FIFO tartibida (eng eski partiyadan) yechiladi va jurnalga yoziladi.")}
             </p>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Miqdor (dona) *</label>
+              <label className="text-xs font-medium text-gray-600">{tr("Miqdor (dona) *")}</label>
               <Input
                 type="number"
                 min={1}
@@ -765,11 +765,11 @@ export const WarehousePage = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Sabab *</label>
+              <label className="text-xs font-medium text-gray-600">{tr("Sabab *")}</label>
               <Input
                 value={wReason}
                 onChange={(e) => setWReason(e.target.value)}
-                placeholder="Masalan: muddati o'tgan, singan..."
+                placeholder={tr("Masalan: muddati o'tgan, singan...")}
               />
             </div>
             {wError && (
@@ -780,7 +780,7 @@ export const WarehousePage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setWriteoffFor(null)}>
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button
               variant="destructive"
@@ -790,7 +790,7 @@ export const WarehousePage = () => {
               {writeoffMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Spisaniye qilish
+              {tr("Spisaniye qilish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -802,19 +802,17 @@ export const WarehousePage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4 text-violet-600" />
-              Inventarizatsiya — {invFor?.name}
+              {tr("Inventarizatsiya —")}{" "}{invFor?.name}
             </DialogTitle>
           </DialogHeader>
           {invResult === null ? (
             <div className="space-y-3 py-2">
               <p className="rounded-xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600">
-                Tizim bo'yicha qoldiq: <b>{invFor?.stock} ta</b>. Omborda haqiqiy
-                sanab chiqilgan miqdorni kiriting — farq avtomatik tuzatiladi va
-                jurnalga yoziladi.
+                {tr("Tizim bo'yicha qoldiq:")}{" "}<b>{invFor?.stock}{" "}{tr("ta")}</b>{tr(". Omborda haqiqiy sanab chiqilgan miqdorni kiriting — farq avtomatik tuzatiladi va jurnalga yoziladi.")}
               </p>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">
-                  Sanalgan miqdor (dona) *
+                  {tr("Sanalgan miqdor (dona) *")}
                 </label>
                 <Input
                   type="number"
@@ -843,10 +841,10 @@ export const WarehousePage = () => {
                 )}
               >
                 {invResult === 0
-                  ? "Farq yo'q — qoldiq tizim bilan mos keldi."
+                  ? tr("Farq yo'q — qoldiq tizim bilan mos keldi.")
                   : invResult < 0
-                    ? `Kamomad: ${-invResult} ta ombordan chiqarildi.`
-                    : `Ortiqcha: ${invResult} ta qoldiqqa qo'shildi.`}
+                    ? tr("Kamomad: {{v}} ta ombordan chiqarildi.", { v: -invResult })
+                    : tr("Ortiqcha: {{invResult}} ta qoldiqqa qo'shildi.", { invResult })}
               </div>
             </div>
           )}
@@ -854,17 +852,17 @@ export const WarehousePage = () => {
             {invResult === null ? (
               <>
                 <Button variant="outline" onClick={() => setInvFor(null)}>
-                  Bekor qilish
+                  {tr("Bekor qilish")}
                 </Button>
                 <Button onClick={submitInv} disabled={inventoryMutation.isPending}>
                   {inventoryMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Tasdiqlash
+                  {tr("Tasdiqlash")}
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setInvFor(null)}>Yopish</Button>
+              <Button onClick={() => setInvFor(null)}>{tr("Yopish")}</Button>
             )}
           </DialogFooter>
         </DialogContent>

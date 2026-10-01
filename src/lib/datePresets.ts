@@ -1,4 +1,5 @@
 import { format, subDays, startOfMonth } from "date-fns"
+import { tr } from "@/i18n"
 
 /**
  * Hisobot sahifalaridagi "tez davr" tugmalari.
@@ -43,12 +44,12 @@ export function buildDatePresets(
   const yesterdayStr = iso(subDays(today, 1))
 
   return [
-    { key: "today", label: "Bugun", from: todayStr, to: todayStr },
+    { key: "today", label: tr("Bugun"), from: todayStr, to: todayStr },
     ...(options.withYesterday
       ? [
           {
             key: "yesterday",
-            label: "Kecha",
+            label: tr("Kecha"),
             from: yesterdayStr,
             to: yesterdayStr,
           },
@@ -56,18 +57,18 @@ export function buildDatePresets(
       : []),
     {
       key: "week",
-      label: "Oxirgi 7 kun",
+      label: tr("Oxirgi 7 kun"),
       from: iso(subDays(today, 6)),
       to: todayStr,
     },
     {
       key: "month",
-      label: "Shu oy",
+      label: tr("Shu oy"),
       from: iso(startOfMonth(today)),
       to: todayStr,
     },
     // Bo'sh sanalar = serverga date_from/date_to yuborilmaydi
-    { key: "all", label: "Barcha davr", from: "", to: "" },
+    { key: "all", label: tr("Barcha davr"), from: "", to: "" },
   ]
 }
 

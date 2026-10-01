@@ -1,9 +1,4 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import './index.css'
-import App from './App'
-import { startServiceWorkerUpdates } from './lib/swUpdate'
+import { initI18n } from './i18n'
 
 // Tun mavzusi: saqlangan tanlov render'dan OLDIN qo'llanadi — sahifa ochilishida
 // "oq miltillash" bo'lmasligi uchun. Standart — kun (hozirgi dizayn).
@@ -15,17 +10,8 @@ try {
   /* localStorage yopiq bo'lsa — kun mavzusi */
 }
 
-// Ochiq sahifa yangi deploydan xabardor bo'lib tursin — resepsiya
-// kompyuterida ilova kun bo'yi ochiq turadi va aks holda eski kod
-// ekranda qolib ketardi
-startServiceWorkerUpdates()
-
-const queryClient = new QueryClient()
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+// Avval til (rus/ingliz bo'lsa lug'ati) — keyin ilovaning o'zi. Ilova
+// modullari ichidagi tr("...") lar import paytida hisoblanadi, shuning
+// uchun ular til aniq bo'lgandan keyin yuklanishi shart. O'zbek tilida
+// initI18n hech narsa yuklamaydi — ilova avvalgidek darhol ochiladi.
+void initI18n().finally(() => import('./bootstrap'))

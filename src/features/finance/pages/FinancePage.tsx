@@ -23,6 +23,7 @@ import { InvoicesSection } from "../components/InvoicesSection"
 import { PaymentsSection } from "../components/PaymentsSection"
 import { ShopSection } from "../components/ShopSection"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
+import { tr } from "@/i18n"
 
 /**
  * Moliya sahifasi.
@@ -55,29 +56,29 @@ const fmt = (n: number) => Number(n || 0).toLocaleString()
 const SECTIONS = [
   {
     key: "overview",
-    label: "Umumiy",
-    desc: "Davr yakuni, qarzdorlar va pul harakati usullar bo'yicha",
+    label: tr("Umumiy"),
+    desc: tr("Davr yakuni, qarzdorlar va pul harakati usullar bo'yicha"),
     icon: LayoutDashboard,
     iconClass: "bg-primary-50 text-primary-600",
   },
   {
     key: "payments",
-    label: "To'lovlar",
-    desc: "Davrda qabul qilingan to'lovlar — qidirish va saralash mumkin",
+    label: tr("To'lovlar"),
+    desc: tr("Davrda qabul qilingan to'lovlar — qidirish va saralash mumkin"),
     icon: Wallet,
     iconClass: "bg-emerald-50 text-emerald-600",
   },
   {
     key: "shop",
-    label: "Do'kon",
-    desc: "Bronga yozilgan qarzlar va davrda to'langan savdolar",
+    label: tr("Do'kon"),
+    desc: tr("Bronga yozilgan qarzlar va davrda to'langan savdolar"),
     icon: Store,
     iconClass: "bg-violet-50 text-violet-600",
   },
   {
     key: "invoices",
-    label: "Hisob-fakturalar",
-    desc: "Hujjatlar, to'langan summa va qolgan qarz",
+    label: tr("Hisob-fakturalar"),
+    desc: tr("Hujjatlar, to'langan summa va qolgan qarz"),
     icon: ReceiptText,
     iconClass: "bg-blue-50 text-blue-600",
   },
@@ -251,7 +252,7 @@ export const FinancePage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Moliya</h1>
+        <h1 className="text-2xl font-bold">{tr("Moliya")}</h1>
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -262,7 +263,7 @@ export const FinancePage = () => {
   }
 
   if (isError || !summary) {
-    return <div>Xatolik yuz berdi. Iltimos qayta urining.</div>
+    return <div>{tr("Xatolik yuz berdi. Iltimos qayta urining.")}</div>
   }
 
   const expensesTotal = summary.expense_total
@@ -276,63 +277,63 @@ export const FinancePage = () => {
 
   const cards = [
     {
-      label: "Tushum (to'lovlar)",
-      value: `${fmt(summary.income)} So'm`,
-      sub: `${summary.payment_count} ta to'lov`,
+      label: tr("Tushum (to'lovlar)"),
+      value: tr("{{income}} So'm", { income: fmt(summary.income) }),
+      sub: tr("{{payment_count}} ta to'lov", { payment_count: summary.payment_count }),
       icon: Wallet,
       accent: "bg-emerald-50 text-emerald-600",
     },
     {
-      label: "Hisob-fakturalar",
-      value: `${fmt(summary.invoice_total)} So'm`,
+      label: tr("Hisob-fakturalar"),
+      value: tr("{{invoice_total}} So'm", { invoice_total: fmt(summary.invoice_total) }),
       sub:
         summary.invoice_discount > 0
-          ? `${summary.invoice_count} ta hujjat · chegirma −${fmt(summary.invoice_discount)} So'm`
-          : `${summary.invoice_count} ta hujjat`,
+          ? tr("{{invoice_count}} ta hujjat · chegirma −{{invoice_discount}} So'm", { invoice_count: summary.invoice_count, invoice_discount: fmt(summary.invoice_discount) })
+          : tr("{{invoice_count}} ta hujjat", { invoice_count: summary.invoice_count }),
       icon: ReceiptText,
       accent: "bg-blue-50 text-blue-600",
     },
     {
-      label: "To'langan",
-      value: `${fmt(summary.invoice_paid)} So'm`,
-      sub: "hisob-fakturalar bo'yicha",
+      label: tr("To'langan"),
+      value: tr("{{invoice_paid}} So'm", { invoice_paid: fmt(summary.invoice_paid) }),
+      sub: tr("hisob-fakturalar bo'yicha"),
       icon: CircleDollarSign,
       accent: "bg-sky-50 text-sky-600",
     },
     {
-      label: "Qarzdorlik",
-      value: `${fmt(summary.debt)} So'm`,
-      sub: "to'lanmagan qoldiq",
+      label: tr("Qarzdorlik"),
+      value: tr("{{debt}} So'm", { debt: fmt(summary.debt) }),
+      sub: tr("to'lanmagan qoldiq"),
       icon: AlertCircle,
       accent: "bg-amber-50 text-amber-600",
     },
     {
-      label: "Do'kon tushumi",
-      value: `${fmt(summary.shop_revenue)} So'm`,
-      sub: `${summary.shop_paid_count} ta to'langan sotuv`,
+      label: tr("Do'kon tushumi"),
+      value: tr("{{shop_revenue}} So'm", { shop_revenue: fmt(summary.shop_revenue) }),
+      sub: tr("{{shop_paid_count}} ta to'langan sotuv", { shop_paid_count: summary.shop_paid_count }),
       icon: Store,
       accent: "bg-violet-50 text-violet-600",
     },
     {
-      label: "Do'kon qarzi (bronda)",
-      value: `${fmt(summary.shop_debt)} So'm`,
-      sub: `${summary.shop_debt_count} ta to'lanmagan sotuv`,
+      label: tr("Do'kon qarzi (bronda)"),
+      value: tr("{{shop_debt}} So'm", { shop_debt: fmt(summary.shop_debt) }),
+      sub: tr("{{shop_debt_count}} ta to'lanmagan sotuv", { shop_debt_count: summary.shop_debt_count }),
       icon: BedDouble,
       accent: "bg-orange-50 text-orange-600",
     },
     {
-      label: "Naqd qoldiq",
-      value: `${fmt(cashOnHand)} So'm`,
-      sub: "naqd tushum − naqd xarajat",
+      label: tr("Naqd qoldiq"),
+      value: tr("{{cashOnHand}} So'm", { cashOnHand: fmt(cashOnHand) }),
+      sub: tr("naqd tushum − naqd xarajat"),
       icon: Banknote,
       accent: "bg-emerald-50 text-emerald-600",
     },
     ...(summary.refunds > 0
       ? [
           {
-            label: "Qaytarilgan",
-            value: `${fmt(summary.refunds)} So'm`,
-            sub: "tushumdan allaqachon ayirilgan",
+            label: tr("Qaytarilgan"),
+            value: tr("{{refunds}} So'm", { refunds: fmt(summary.refunds) }),
+            sub: tr("tushumdan allaqachon ayirilgan"),
             icon: Undo2,
             accent: "bg-rose-50 text-rose-600",
           },
@@ -342,9 +343,9 @@ export const FinancePage = () => {
     ...(canExpenses
       ? [
           {
-            label: "Xarajatlar",
-            value: `${fmt(expensesTotal)} So'm`,
-            sub: `${summary.expense_count} ta chiqim`,
+            label: tr("Xarajatlar"),
+            value: tr("{{expensesTotal}} So'm", { expensesTotal: fmt(expensesTotal) }),
+            sub: tr("{{expense_count}} ta chiqim", { expense_count: summary.expense_count }),
             icon: TrendingDown,
             accent: "bg-red-50 text-red-600",
           },
@@ -356,11 +357,11 @@ export const FinancePage = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Moliya</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("Moliya")}</h1>
           <p className="text-sm text-gray-500 mt-1">
             {dateFrom || dateTo
-              ? `Hisobot davri: ${dateFrom || "..."} — ${dateTo || "..."}`
-              : "Hisobot davri: barcha davr"}
+              ? tr("Hisobot davri: {{v}} — {{v2}}", { v: dateFrom || "...", v2: dateTo || "..." })
+              : tr("Hisobot davri: barcha davr")}
           </p>
         </div>
       </div>
@@ -387,7 +388,7 @@ export const FinancePage = () => {
         </div>
         <div className="flex items-end gap-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Sanadan</label>
+            <label className="text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
             <Input
               type="date"
               className="w-40"
@@ -397,7 +398,7 @@ export const FinancePage = () => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Sanagacha</label>
+            <label className="text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
             <Input
               type="date"
               className="w-40"
@@ -492,14 +493,14 @@ export const FinancePage = () => {
                         )}
                       </span>
                       <div>
-                        <p className="text-sm font-semibold text-gray-600">Sof natija</p>
+                        <p className="text-sm font-semibold text-gray-600">{tr("Sof natija")}</p>
                         <p
                           className={cn(
                             "text-2xl sm:text-3xl font-bold tabular-nums leading-tight",
                             netPositive ? "text-emerald-700" : "text-red-700"
                           )}
                         >
-                          {fmt(netResult)} So'm
+                          {tr("{{netResult}} So'm", { netResult: fmt(netResult) })}
                         </p>
                       </div>
                     </div>
@@ -507,21 +508,21 @@ export const FinancePage = () => {
                     {/* Hisob-kitobi — qaysi raqamlardan yig'ilgani */}
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
                       <span className="whitespace-nowrap">
-                        Tushum{" "}
+                        {tr("Tushum")}{" "}
                         <b className="font-semibold text-gray-700 tabular-nums">
                           {fmt(summary.income)}
                         </b>
                       </span>
                       <span className="text-gray-300">+</span>
                       <span className="whitespace-nowrap">
-                        Do'kon{" "}
+                        {tr("Do'kon")}{" "}
                         <b className="font-semibold text-gray-700 tabular-nums">
                           {fmt(summary.shop_revenue)}
                         </b>
                       </span>
                       <span className="text-gray-300">−</span>
                       <span className="whitespace-nowrap">
-                        Xarajat{" "}
+                        {tr("Xarajat")}{" "}
                         <b className="font-semibold text-gray-700 tabular-nums">
                           {fmt(expensesTotal)}
                         </b>
@@ -540,16 +541,16 @@ export const FinancePage = () => {
                   Tanlangan davrga BOG'LANMAGAN va bu ataylab: qarz davr hodisasi
                   emas, joriy holat. Ilgari u davr bilan cheklangan edi va "Bugun"
                   tanlanganda ro'yxat deyarli doim bo'sh chiqardi. */}
-              <DebtorsPanel title="Qarzdorlar (bronlar bo'yicha)" initialLimit={6} />
+              <DebtorsPanel title={tr("Qarzdorlar (bronlar bo'yicha)")} initialLimit={6} />
 
               {/* To'lov usullari bo'yicha to'liq tafsilot */}
               <div className="overflow-hidden rounded-lg border bg-white">
                 <div className="flex items-center justify-between border-b px-4 py-3">
                   <h2 className="text-lg font-bold tracking-tight">
-                    To'lov usullari bo'yicha
+                    {tr("To'lov usullari bo'yicha")}
                   </h2>
                   <span className="text-xs text-gray-400">
-                    qaytarimlar tushumdan ayirilgan
+                    {tr("qaytarimlar tushumdan ayirilgan")}
                   </span>
                 </div>
                 <div className="overflow-x-auto">
@@ -557,22 +558,22 @@ export const FinancePage = () => {
                     <thead>
                       <tr className="border-b bg-gray-50/80 text-left">
                         <th className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Usul
+                          {tr("Usul")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Bron to'lovlari
+                          {tr("Bron to'lovlari")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Do'kon
+                          {tr("Do'kon")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Jami tushum
+                          {tr("Jami tushum")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Xarajat
+                          {tr("Xarajat")}
                         </th>
                         <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                          Sof
+                          {tr("Sof")}
                         </th>
                       </tr>
                     </thead>
@@ -583,7 +584,7 @@ export const FinancePage = () => {
                             colSpan={6}
                             className="px-4 py-8 text-center text-sm text-gray-400"
                           >
-                            Tanlangan davrda pul harakati bo'lmagan
+                            {tr("Tanlangan davrda pul harakati bo'lmagan")}
                           </td>
                         </tr>
                       ) : (
@@ -619,7 +620,7 @@ export const FinancePage = () => {
                     {methodRows.length > 0 && (
                       <tfoot>
                         <tr className="border-t-2 bg-gray-50/60 font-semibold">
-                          <td className="px-4 py-2">Jami</td>
+                          <td className="px-4 py-2">{tr("Jami")}</td>
                           <td className="px-4 py-2 text-right tabular-nums">
                             {fmt(methodTotals.pay)}
                           </td>
@@ -647,9 +648,7 @@ export const FinancePage = () => {
                 </div>
                 {summary.shop_debt > 0 && (
                   <p className="border-t px-4 py-2.5 text-xs text-gray-500">
-                    Bronga yozilgan {summary.shop_debt_count} ta to'lanmagan do'kon
-                    savdosi ({fmt(summary.shop_debt)} so'm) tushumga kirmagan —{" "}
-                    pul hali olinmagan.
+                    {tr("Bronga yozilgan {{shop_debt_count}} ta to'lanmagan do'kon savdosi ({{shop_debt}} so'm) tushumga kirmagan — pul hali olinmagan.", { shop_debt_count: summary.shop_debt_count, shop_debt: fmt(summary.shop_debt) })}
                   </p>
                 )}
               </div>
@@ -658,19 +657,21 @@ export const FinancePage = () => {
               {expenseCategories.length > 0 && (
                 <div className="overflow-hidden rounded-lg border bg-white">
                   <div className="flex items-center justify-between border-b px-4 py-3">
-                    <h2 className="text-lg font-bold tracking-tight">Xarajatlar toifasi</h2>
+                    <h2 className="text-lg font-bold tracking-tight">{tr("Xarajatlar toifasi")}</h2>
                     <span className="text-xs text-gray-400">
-                      jami {fmt(expensesTotal)} So'm
+                      {tr("jami {{expensesTotal}} So'm", { expensesTotal: fmt(expensesTotal) })}
                     </span>
                   </div>
                   <ul className="divide-y divide-gray-100">
                     {expenseCategories.map((c) => {
+                      // c.name bazadagi o'zbekcha kategoriya (i18n:keys; bo'shi
+                      // serverda "Boshqa") — kalit sifatida o'zi, ekranda tr(c.name)
                       const share = expensesTotal > 0 ? (c.total / expensesTotal) * 100 : 0
                       return (
                         <li key={c.name} className="flex items-center gap-3 px-4 py-2.5">
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium text-gray-800">
-                              {c.name}
+                              {tr(c.name)}
                             </span>
                             <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                               <span
@@ -681,10 +682,10 @@ export const FinancePage = () => {
                           </span>
                           <span className="flex-shrink-0 text-right">
                             <span className="block text-sm font-bold tabular-nums text-gray-900">
-                              {fmt(c.total)} So'm
+                              {tr("{{total}} So'm", { total: fmt(c.total) })}
                             </span>
                             <span className="block text-[11px] text-gray-400">
-                              {c.count} ta · {share.toFixed(0)}%
+                              {tr("{{count}} ta · {{share}}%", { count: c.count, share: share.toFixed(0) })}
                             </span>
                           </span>
                         </li>

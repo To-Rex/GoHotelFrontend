@@ -13,6 +13,7 @@ import { OverlayDialog } from "@/components/ui/overlay-dialog"
 import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { useAcknowledgeCall, useIncomingCalls, type IncomingCall } from "../api/calls"
+import { tr } from "@/i18n"
 
 /**
  * Kiruvchi qo'ng'iroqlar — navbardagi kichik panel.
@@ -45,10 +46,10 @@ function timeAgo(iso: string | null): string {
     0,
     Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
   )
-  if (seconds < 60) return "hozirgina"
+  if (seconds < 60) return tr("hozirgina")
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} daq. oldin`
-  return `${Math.floor(minutes / 60)} soat oldin`
+  if (minutes < 60) return tr("{{minutes}} daq. oldin", { minutes })
+  return tr("{{hours}} soat oldin", { hours: Math.floor(minutes / 60) })
 }
 
 export function IncomingCallsMenu({
@@ -113,8 +114,8 @@ export function IncomingCallsMenu({
             ? "bg-muted text-foreground"
             : "text-muted-foreground hover:bg-muted"
         )}
-        title="Kiruvchi qo'ng'iroqlar"
-        aria-label="Kiruvchi qo'ng'iroqlar"
+        title={tr("Kiruvchi qo'ng'iroqlar")}
+        aria-label={tr("Kiruvchi qo'ng'iroqlar")}
       >
         <PhoneIncoming size={18} />
         {calls.length > 0 && (
@@ -128,9 +129,9 @@ export function IncomingCallsMenu({
         <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-background shadow-lg">
           <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
             <Phone size={14} className="text-muted-foreground" />
-            <span className="text-sm font-semibold">Qo'ng'iroqlar</span>
+            <span className="text-sm font-semibold">{tr("Qo'ng'iroqlar")}</span>
             <span className="ml-auto text-[11px] text-muted-foreground">
-              oxirgi {WINDOW_MINUTES} daqiqa
+              {tr("oxirgi {{WINDOW_MINUTES}} daqiqa", { WINDOW_MINUTES })}
             </span>
             <button
               type="button"
@@ -139,8 +140,8 @@ export function IncomingCallsMenu({
                 setExpanded(true)
               }}
               className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              title="Kattaroq ko'rish"
-              aria-label="Kattaroq ko'rish"
+              title={tr("Kattaroq ko'rish")}
+              aria-label={tr("Kattaroq ko'rish")}
             >
               <Maximize2 size={14} />
             </button>
@@ -148,7 +149,7 @@ export function IncomingCallsMenu({
 
           {calls.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Yaqinda qo'ng'iroq bo'lmadi
+              {tr("Yaqinda qo'ng'iroq bo'lmadi")}
             </p>
           ) : (
             <ul className="max-h-96 divide-y divide-border overflow-y-auto">
@@ -179,7 +180,7 @@ export function IncomingCallsMenu({
 
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
-                        {call.guest_name || "Notanish raqam"}
+                        {call.guest_name || tr("Notanish raqam")}
                       </p>
                       <p className="truncate text-[11px] text-muted-foreground">
                         {call.phone}
@@ -188,7 +189,7 @@ export function IncomingCallsMenu({
                       {call.room_number && (
                         <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-primary-700">
                           <BedDouble size={11} />
-                          {call.room_number}-xonada turibdi
+                          {tr("{{room_number}}-xonada turibdi", { room_number: call.room_number })}
                         </p>
                       )}
                     </div>
@@ -196,8 +197,8 @@ export function IncomingCallsMenu({
                     <button
                       type="button"
                       onClick={(e) => dismiss(e, call)}
-                      title="Yopish"
-                      aria-label="Yopish"
+                      title={tr("Yopish")}
+                      aria-label={tr("Yopish")}
                       className="flex-shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
                       <X size={14} />
@@ -214,13 +215,13 @@ export function IncomingCallsMenu({
         open={expanded}
         onClose={() => setExpanded(false)}
         icon={<PhoneIncoming size={18} className="text-muted-foreground" />}
-        title="Kiruvchi qo'ng'iroqlar"
-        subtitle={`Oxirgi ${WINDOW_MINUTES} daqiqa`}
+        title={tr("Kiruvchi qo'ng'iroqlar")}
+        subtitle={tr("Oxirgi {{WINDOW_MINUTES}} daqiqa", { WINDOW_MINUTES })}
         maxWidth="max-w-xl"
       >
         {calls.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Yaqinda qo'ng'iroq bo'lmadi
+            {tr("Yaqinda qo'ng'iroq bo'lmadi")}
           </p>
         ) : (
           <ul className="space-y-2">
@@ -242,7 +243,7 @@ export function IncomingCallsMenu({
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-base font-semibold">
-                    {call.guest_name || "Notanish raqam"}
+                    {call.guest_name || tr("Notanish raqam")}
                   </p>
                   <p className="truncate text-sm text-muted-foreground">
                     {call.phone}
@@ -251,7 +252,7 @@ export function IncomingCallsMenu({
                   {call.room_number && (
                     <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-primary-700">
                       <BedDouble size={12} />
-                      {call.room_number}-xonada turibdi
+                      {tr("{{room_number}}-xonada turibdi", { room_number: call.room_number })}
                     </p>
                   )}
                 </div>
@@ -262,14 +263,14 @@ export function IncomingCallsMenu({
                     onClick={() => pick(call)}
                     className="rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-700"
                   >
-                    Bandlov ochish
+                    {tr("Bandlov ochish")}
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={(e) => dismiss(e, call)}
-                  title="Yopish"
-                  aria-label="Yopish"
+                  title={tr("Yopish")}
+                  aria-label={tr("Yopish")}
                   className="rounded-lg border border-border p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <X size={14} />

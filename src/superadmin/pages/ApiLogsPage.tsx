@@ -8,6 +8,7 @@ import {
   type ApiLogEntry,
 } from "../api/panel"
 import { PanelButton, PanelEmpty, PanelHeading, PanelInput, PanelSelect } from "../components/ui"
+import { tr, trc } from "@/i18n"
 
 /**
  * So'rovlar jurnali — backendga kelayotgan so'rovlar jonli ko'rinishda.
@@ -37,36 +38,36 @@ export function ApiLogsPage() {
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PanelHeading
-          title="So'rovlar jurnali"
-          subtitle={`Backendga kelgan oxirgi ${data?.max_entries ?? 500} ta so'rov — faqat xotirada, diskka yozilmaydi`}
+          title={tr("So'rovlar jurnali")}
+          subtitle={tr("Backendga kelgan oxirgi {{v}} ta so'rov — faqat xotirada, diskka yozilmaydi", { v: data?.max_entries ?? 500 })}
         />
         <div className="flex items-center gap-2">
           <PanelButton
             variant="ghost"
             onClick={() => setPaused((v) => !v)}
-            title={paused ? "Jonli yangilanishni davom ettirish" : "Yangilanishni to'xtatib turish"}
+            title={paused ? tr("Jonli yangilanishni davom ettirish") : tr("Yangilanishni to'xtatib turish")}
           >
             {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-            {paused ? "Davom ettirish" : "Pauza"}
+            {paused ? tr("Davom ettirish") : tr("Pauza")}
           </PanelButton>
-          <PanelButton variant="ghost" onClick={() => refetch()} title="Hozir yangilash">
+          <PanelButton variant="ghost" onClick={() => refetch()} title={tr("Hozir yangilash")}>
             <RotateCcw className={cn("h-4 w-4", isFetching && "animate-spin")} />
           </PanelButton>
           <PanelButton
             variant="ghost"
             onClick={() => clearLogs.mutate()}
             disabled={clearLogs.isPending}
-            title="Jurnalni tozalash (faqat xotiradagi yozuvlar)"
+            title={tr("Jurnalni tozalash (faqat xotiradagi yozuvlar)")}
           >
             <Trash2 className="h-4 w-4" />
-            Tozalash
+            {trc("clear", "Tozalash")}
           </PanelButton>
         </div>
       </div>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-[8rem_8rem_1fr]">
         <PanelSelect value={method} onChange={(e) => setMethod(e.target.value)}>
-          <option value="">Barcha metodlar</option>
+          <option value="">{tr("Barcha metodlar")}</option>
           {["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => (
             <option key={m} value={m}>
               {m}
@@ -74,14 +75,14 @@ export function ApiLogsPage() {
           ))}
         </PanelSelect>
         <PanelSelect value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">Barcha holatlar</option>
-          <option value="2xx">2xx — muvaffaqiyat</option>
-          <option value="3xx">3xx — yo'naltirish</option>
-          <option value="4xx">4xx — mijoz xatosi</option>
-          <option value="5xx">5xx — server xatosi</option>
+          <option value="">{tr("Barcha holatlar")}</option>
+          <option value="2xx">{tr("2xx — muvaffaqiyat")}</option>
+          <option value="3xx">{tr("3xx — yo'naltirish")}</option>
+          <option value="4xx">{tr("4xx — mijoz xatosi")}</option>
+          <option value="5xx">{tr("5xx — server xatosi")}</option>
         </PanelSelect>
         <PanelInput
-          placeholder="URL bo'yicha qidirish: /reservations, /guests..."
+          placeholder={tr("URL bo'yicha qidirish: /reservations, /guests...")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -93,7 +94,7 @@ export function ApiLogsPage() {
         </div>
       ) : rows.length === 0 ? (
         <PanelEmpty>
-          Hozircha yozuv yo'q — so'rovlar kelishi bilan shu yerda ko'rinadi
+          {tr("Hozircha yozuv yo'q — so'rovlar kelishi bilan shu yerda ko'rinadi")}
         </PanelEmpty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-white/5">
@@ -101,11 +102,11 @@ export function ApiLogsPage() {
             <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
                 <tr>
-                  <th className="px-3 py-2.5 font-medium">Vaqt</th>
-                  <th className="px-3 py-2.5 font-medium">Metod</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Vaqt")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Metod")}</th>
                   <th className="px-3 py-2.5 font-medium">URL</th>
-                  <th className="px-3 py-2.5 font-medium">Holat</th>
-                  <th className="px-3 py-2.5 font-medium">Vaqt (ms)</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Holat")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Vaqt (ms)")}</th>
                   <th className="px-3 py-2.5 font-medium">IP</th>
                 </tr>
               </thead>
@@ -211,7 +212,7 @@ function LogRow({
             <div className="grid gap-3 lg:grid-cols-2">
               <div>
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  So'rov tanasi
+                  {tr("So'rov tanasi")}
                 </p>
                 <pre className="max-h-72 overflow-auto rounded-lg bg-black/30 p-3 font-mono text-[11px] leading-relaxed text-slate-300">
                   {pretty(row.request_body)}
@@ -219,7 +220,7 @@ function LogRow({
               </div>
               <div>
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  Javob
+                  {tr("Javob")}
                 </p>
                 <pre className="max-h-72 overflow-auto rounded-lg bg-black/30 p-3 font-mono text-[11px] leading-relaxed text-slate-300">
                   {pretty(row.response_body)}

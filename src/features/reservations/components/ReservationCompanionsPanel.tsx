@@ -25,6 +25,7 @@ import {
   type CompanionState,
 } from "../lib/companions"
 import { CompanionGuests, type Companion } from "./CompanionGuests"
+import { tr } from "@/i18n"
 
 /* Xonadagi mehmonlar — bron boshqarish oynasida.
 
@@ -146,7 +147,7 @@ export const ReservationCompanionsPanel = ({
       <header className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-2">
         <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
           <Users className="h-4 w-4 text-gray-400" />
-          Xonadagi mehmonlar
+          {tr("Xonadagi mehmonlar")}
         </div>
         {/* Mehmonlar soni kamaytirilgan bo'lsa ichkaridagilar ko'p chiqadi —
             sariq: bron tahrirlanishi kerak */}
@@ -156,7 +157,7 @@ export const ReservationCompanionsPanel = ({
             inside > capacity ? "font-medium text-amber-600" : "text-gray-500"
           )}
         >
-          Ichkarida: {inside}/{capacity}
+          {tr("Ichkarida: {{inside}}/{{capacity}}", { inside, capacity })}
         </span>
       </header>
 
@@ -166,7 +167,7 @@ export const ReservationCompanionsPanel = ({
             {mainGuestName}
           </span>
           <span className="flex-shrink-0 rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-700">
-            Asosiy mehmon
+            {tr("Asosiy mehmon")}
           </span>
         </li>
 
@@ -186,7 +187,7 @@ export const ReservationCompanionsPanel = ({
                     state === "left" ? "text-gray-500" : "text-gray-900"
                   )}
                 >
-                  {c.name || "Ismsiz mehmon"}
+                  {c.name || tr("Ismsiz mehmon")}
                 </span>
                 <span
                   className={cn(
@@ -206,14 +207,14 @@ export const ReservationCompanionsPanel = ({
                       setError(null)
                       setConfirm({ guestId: c.guest_id, kind: "leave" })
                     }}
-                    title="Hamroh xonadan ketdi — joy bo'shaydi, o'rniga boshqasi kelishi mumkin"
+                    title={tr("Hamroh xonadan ketdi — joy bo'shaydi, o'rniga boshqasi kelishi mumkin")}
                     className={cn(
                       ACTION_CLASS,
                       "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
                     )}
                   >
                     <LogOut className="h-3.5 w-3.5" />
-                    Ketdi
+                    {tr("Ketdi")}
                   </button>
                 )}
 
@@ -226,8 +227,8 @@ export const ReservationCompanionsPanel = ({
                     onClick={() => handleReturn(c.guest_id)}
                     title={
                       seats === 0
-                        ? "Xonada joy yo'q — o'rniga boshqa hamroh kirgan"
-                        : "\"Ketdi\" belgisini bekor qilish — hamroh xonada"
+                        ? tr("Xonada joy yo'q — o'rniga boshqa hamroh kirgan")
+                        : tr("\"Ketdi\" belgisini bekor qilish — hamroh xonada")
                     }
                     className={cn(
                       ACTION_CLASS,
@@ -235,7 +236,7 @@ export const ReservationCompanionsPanel = ({
                     )}
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
-                    Qaytdi
+                    {tr("Qaytdi")}
                   </button>
                 )}
 
@@ -248,7 +249,7 @@ export const ReservationCompanionsPanel = ({
                       setError(null)
                       setConfirm({ guestId: c.guest_id, kind: "remove" })
                     }}
-                    title="Ro'yxatdan olib tashlash"
+                    title={tr("Ro'yxatdan olib tashlash")}
                     className="flex-shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                   >
                     <X className="h-4 w-4" />
@@ -260,8 +261,8 @@ export const ReservationCompanionsPanel = ({
                 <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
                   <span className="min-w-0 flex-1">
                     {pending.kind === "leave"
-                      ? "Hamroh xonadan ketganini tasdiqlaysizmi? Yozuv saqlanadi, joy bo'shaydi."
-                      : "Hamroh ro'yxatdan olib tashlansinmi?"}
+                      ? tr("Hamroh xonadan ketganini tasdiqlaysizmi? Yozuv saqlanadi, joy bo'shaydi.")
+                      : tr("Hamroh ro'yxatdan olib tashlansinmi?")}
                   </span>
                   <button
                     type="button"
@@ -274,7 +275,7 @@ export const ReservationCompanionsPanel = ({
                     ) : (
                       <Check className="h-3 w-3" />
                     )}
-                    Ha
+                    {tr("Ha")}
                   </button>
                   <button
                     type="button"
@@ -282,7 +283,7 @@ export const ReservationCompanionsPanel = ({
                     onClick={() => setConfirm(null)}
                     className="rounded-md px-2 py-1 transition-colors hover:bg-amber-100"
                   >
-                    Yo'q
+                    {tr("Yo'q")}
                   </button>
                 </div>
               )}
@@ -307,13 +308,13 @@ export const ReservationCompanionsPanel = ({
                 hotelId={hotelId}
                 branchId={branchId}
                 hideHeader
-                slotLabel={() => "Yangi hamroh tanlanmagan"}
+                slotLabel={() => tr("Yangi hamroh tanlanmagan")}
                 onError={setError}
               />
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1 text-[11px] text-gray-400">
                   {addMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                  {addMutation.isPending ? "Saqlanmoqda..." : `Bo'sh joy: ${seats}`}
+                  {addMutation.isPending ? tr("Saqlanmoqda...") : tr("Bo'sh joy: {{seats}}", { seats })}
                 </span>
                 <button
                   type="button"
@@ -324,7 +325,7 @@ export const ReservationCompanionsPanel = ({
                   }}
                   className="rounded-md px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-gray-100"
                 >
-                  Bekor qilish
+                  {tr("Bekor qilish")}
                 </button>
               </div>
             </div>
@@ -340,8 +341,8 @@ export const ReservationCompanionsPanel = ({
               className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-primary-300 bg-primary-50/40 px-2.5 py-2 text-xs font-medium text-primary-700 transition-colors hover:border-primary-500 hover:bg-primary-50 disabled:opacity-60"
             >
               <UserPlus className="h-4 w-4 text-primary-500" />
-              Hamroh qo'shish
-              <span className="font-normal text-primary-500/80">· bo'sh joy: {seats}</span>
+              {tr("Hamroh qo'shish")}
+              <span className="font-normal text-primary-500/80">{tr("· bo'sh joy: {{seats}}", { seats })}</span>
             </button>
           ) : (
             <p className="text-[11px] leading-relaxed text-gray-400">{addCheck.reason}</p>

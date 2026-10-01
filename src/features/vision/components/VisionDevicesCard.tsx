@@ -20,6 +20,7 @@ import {
   useVisionDevices,
   type VisionDeviceCreated,
 } from "../api/vision"
+import { tr, trc } from "@/i18n"
 
 /**
  * Kamera agenti o'rnatilgan kompyuterlar va ularning tokenlari.
@@ -34,14 +35,14 @@ import {
  */
 
 function timeAgo(iso?: string | null): string {
-  if (!iso) return "hech qachon ulanmagan"
+  if (!iso) return tr("hech qachon ulanmagan")
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
-  if (seconds < 60) return "hozirgina"
+  if (seconds < 60) return tr("hozirgina")
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} daq. oldin`
+  if (minutes < 60) return tr("{{minutes}} daq. oldin", { minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} soat oldin`
-  return `${Math.floor(hours / 24)} kun oldin`
+  if (hours < 24) return tr("{{hours}} soat oldin", { hours })
+  return tr("{{Math}} kun oldin", { Math: Math.floor(hours / 24) })
 }
 
 /** Yangi yaratilgan token — bir marta ko'rsatiladigan panel. */
@@ -65,14 +66,15 @@ function NewTokenPanel({
     }
   }
 
+  /* Ko'rsatmadagi qalin so'zlar — GoHotels Vision agentidagi tugmalar nomi
+     (agent interfeysi inglizcha: Token, Test, Save). Shuning uchun ular
+     trc("agent", …): boshqa tilda agentdagi yozuv aynan ko'rinsin. */
   return (
     <div className="space-y-3 rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4">
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-700" />
         <p className="text-sm text-emerald-900">
-          <span className="font-semibold">«{device.name}» uchun token tayyor.</span>{" "}
-          U faqat hozir ko'rsatiladi — bazada ochiq saqlanmaydi. Nusxalab, agent
-          o'rnatilgan kompyuterga kiriting.
+          <span className="font-semibold">{tr("«{{name}}» uchun token tayyor.", { name: device.name })}</span>{" "}{tr("U faqat hozir ko'rsatiladi — bazada ochiq saqlanmaydi. Nusxalab, agent o'rnatilgan kompyuterga kiriting.")}
         </p>
       </div>
 
@@ -82,21 +84,21 @@ function NewTokenPanel({
         </code>
         <Button type="button" size="sm" onClick={copy} className="flex-shrink-0">
           {copied ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <Copy className="mr-1.5 h-3.5 w-3.5" />}
-          {copied ? "Nusxalandi" : "Nusxalash"}
+          {copied ? tr("Nusxalandi") : tr("Nusxalash")}
         </Button>
       </div>
 
       <div className="rounded-lg bg-white/70 p-3">
-        <p className="text-xs font-medium text-gray-700">Agentga kiritish:</p>
+        <p className="text-xs font-medium text-gray-700">{tr("Agentga kiritish:")}</p>
         <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-xs text-gray-600">
-          <li>Kompyuterda <b>GoHotels Vision</b> ilovasini oching</li>
-          <li>Pastdagi <b>Token</b> tugmasini bosing</li>
-          <li>Shu tokenni qo'yib, <b>Tekshirish</b> so'ng <b>Saqlash</b></li>
+          <li>{tr("Kompyuterda")}{" "}<b>{tr("GoHotels Vision")}</b>{" "}{tr("ilovasini oching")}</li>
+          <li>{tr("Pastdagi")}{" "}<b>{trc("agent", "Token")}</b>{" "}{tr("tugmasini bosing")}</li>
+          <li>{tr("Shu tokenni qo'yib,")}{" "}<b>{trc("agent", "Tekshirish")}</b>{" "}{tr("so'ng")}{" "}<b>{trc("agent", "Saqlash")}</b></li>
         </ol>
       </div>
 
       <Button type="button" size="sm" variant="outline" onClick={onDone}>
-        Nusxaladim, yopish
+        {tr("Nusxaladim, yopish")}
       </Button>
     </div>
   )
@@ -118,7 +120,7 @@ export function VisionDevicesCard() {
 
   const submit = async () => {
     if (!name.trim()) {
-      setError("Nom kiritilishi shart")
+      setError(tr("Nom kiritilishi shart"))
       return
     }
     setError(null)
@@ -132,14 +134,14 @@ export function VisionDevicesCard() {
       setName("")
       setBranchId("")
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "Token yaratib bo'lmadi.")
+      setError(e?.response?.data?.detail || tr("Token yaratib bo'lmadi."))
     }
   }
 
   const doRevoke = async (id: string, deviceName: string) => {
     if (
       !window.confirm(
-        `«${deviceName}» tokeni bekor qilinsinmi?\n\nO'sha kompyuterdagi agent darhol ulana olmay qoladi va yangi token kiritish kerak bo'ladi.`
+        tr("«{{deviceName}}» tokeni bekor qilinsinmi?\n\nO'sha kompyuterdagi agent darhol ulana olmay qoladi va yangi token kiritish kerak bo'ladi.", { deviceName })
       )
     )
       return
@@ -147,7 +149,7 @@ export function VisionDevicesCard() {
     try {
       await revoke.mutateAsync(id)
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "Bekor qilib bo'lmadi.")
+      setError(e?.response?.data?.detail || tr("Bekor qilib bo'lmadi."))
     }
   }
 
@@ -157,13 +159,12 @@ export function VisionDevicesCard() {
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-gray-500">
-          Har bir kamera kompyuteriga bitta token. Token muddatsiz va shu
-          mehmonxonaga bog'langan.
+          {tr("Har bir kamera kompyuteriga bitta token. Token muddatsiz va shu mehmonxonaga bog'langan.")}
         </p>
         {canManage && !adding && (
           <Button type="button" size="sm" onClick={() => setAdding(true)}>
             <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Yangi qurilma
+            {tr("Yangi qurilma")}
           </Button>
         )}
       </div>
@@ -173,11 +174,11 @@ export function VisionDevicesCard() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">
-                Qurilma nomi
+                {tr("Qurilma nomi")}
               </label>
               <Input
                 autoFocus
-                placeholder="Masalan: Qabulxona PC"
+                placeholder={tr("Masalan: Qabulxona PC")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -185,14 +186,14 @@ export function VisionDevicesCard() {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">
-                Filial (ixtiyoriy)
+                {tr("Filial (ixtiyoriy)")}
               </label>
               <select
                 className="h-10 w-full rounded-lg border border-gray-300 bg-white px-2 text-sm"
                 value={branchId}
                 onChange={(e) => setBranchId(e.target.value)}
               >
-                <option value="">— keyin kamera bo'yicha belgilanadi —</option>
+                <option value="">{tr("— keyin kamera bo'yicha belgilanadi —")}</option>
                 {(branches as Array<{ id: string; name: string }>).map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -207,7 +208,7 @@ export function VisionDevicesCard() {
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" onClick={submit} disabled={create.isPending}>
               {create.isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-              Token yaratish
+              {tr("Token yaratish")}
             </Button>
             <Button
               type="button"
@@ -218,7 +219,7 @@ export function VisionDevicesCard() {
                 setError(null)
               }}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
           </div>
         </div>
@@ -230,16 +231,14 @@ export function VisionDevicesCard() {
         </div>
       ) : isError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          Qurilmalar ro'yxatini olishda xatolik. Backend yangilanganmi —
-          tekshiring.
+          {tr("Qurilmalar ro'yxatini olishda xatolik. Backend yangilanganmi — tekshiring.")}
         </div>
       ) : devices.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-300 p-6 text-center">
           <Monitor className="h-7 w-7 text-gray-300" />
-          <p className="text-sm font-medium text-gray-600">Hali qurilma yo'q</p>
+          <p className="text-sm font-medium text-gray-600">{tr("Hali qurilma yo'q")}</p>
           <p className="max-w-md text-xs text-gray-400">
-            Kamera kompyuteriga GoHotels Vision ilovasini o'rnating, so'ng shu
-            yerda token yarating va uni ilovaga kiriting.
+            {tr("Kamera kompyuteriga GoHotels Vision ilovasini o'rnating, so'ng shu yerda token yarating va uni ilovaga kiriting.")}
           </p>
         </div>
       ) : (
@@ -265,14 +264,12 @@ export function VisionDevicesCard() {
                   {d.name}
                   {!d.is_active && (
                     <span className="ml-2 text-xs font-normal text-red-600">
-                      bekor qilingan
+                      {tr("bekor qilingan")}
                     </span>
                   )}
                 </p>
                 <p className="truncate text-[11px] text-gray-500">
-                  token …{d.token_hint} · {timeAgo(d.last_seen_at)} ·{" "}
-                  {d.events_received} hodisa
-                  {d.device_id ? ` · ${d.device_id}` : ""}
+                  {tr("token …{{token_hint}} · {{last_seen_at}} · {{events_received}} hodisa{{v}}", { token_hint: d.token_hint, last_seen_at: timeAgo(d.last_seen_at), events_received: d.events_received, v: d.device_id ? ` · ${d.device_id}` : "" })}
                 </p>
               </div>
               {canManage && d.is_active && (
@@ -284,7 +281,7 @@ export function VisionDevicesCard() {
                   onClick={() => doRevoke(d.id, d.name)}
                 >
                   <ShieldOff className="mr-1.5 h-3.5 w-3.5" />
-                  Bekor qilish
+                  {trc("revoke", "Bekor qilish")}
                 </Button>
               )}
             </div>

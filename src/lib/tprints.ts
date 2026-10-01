@@ -8,6 +8,7 @@ import {
   type ReceiptSettings,
   type ShopSale,
 } from "@/features/shop/api/shop"
+import { tr } from "@/i18n"
 
 const URL_KEY = "tprints_url"
 const AUTO_KEY = "tprints_auto_print"
@@ -40,14 +41,14 @@ const request = async (
     const res = await fetch(getPrinterUrl() + path, { ...init, signal: ctrl.signal })
     const data = await res.json().catch(() => null)
     if (!res.ok || (data && data.ok === false)) {
-      return { ok: false, data, error: data?.error || `Server xatosi (${res.status})` }
+      return { ok: false, data, error: data?.error || tr("Server xatosi ({{status}})", { status: res.status }) }
     }
     return { ok: true, data }
   } catch {
     return {
       ok: false,
       error:
-        "Print-serverga ulanib bo'lmadi — kassa kompyuterida TPrints ishlab turganini tekshiring",
+        tr("Print-serverga ulanib bo'lmadi — kassa kompyuterida TPrints ishlab turganini tekshiring"),
     }
   } finally {
     window.clearTimeout(t)
@@ -57,13 +58,22 @@ const request = async (
 /** Server holati — sozlash oynasidagi "Tekshirish" uchun */
 export const pingPrinter = async (): Promise<{ ok: boolean; msg: string }> => {
   const r = await request("/", { method: "GET" }, 4000)
-  if (!r.ok) return { ok: false, msg: r.error || "Ulanib bo'lmadi" }
+  if (!r.ok) return { ok: false, msg: r.error || tr("Ulanib bo'lmadi") }
   const p = await request("/printers", { method: "GET" }, 4000)
   const count = Array.isArray(p.data?.printers) ? p.data.printers.length : 0
-  const def = p.data?.app_default ? ` · standart: ${p.data.app_default}` : ""
+  // " · standart: …" kaliti sozlamalardagi TPrints ro'yxati bilan umumiy
+  const def = p.data?.app_default
+    ? tr(" · standart: {{defaultPrinter}}", { defaultPrinter: String(p.data.app_default) })
+    : ""
   return {
     ok: true,
-    msg: `${r.data?.app || "TPrints"} ${r.data?.version || ""} ishlamoqda — ${count} ta printer${def}`,
+    // count — son (satr emas): rus/ingliz ko'plik shakli shunga qarab tanlanadi
+    msg: tr("{{app}} {{version}} ishlamoqda — {{count}} ta printer{{def}}", {
+      app: String(r.data?.app || "TPrints"),
+      version: String(r.data?.version || ""),
+      count,
+      def,
+    }),
   }
 }
 
@@ -154,10 +164,10 @@ export const discoverTPrints = async (
 }
 
 const METHOD_LABELS: Record<string, string> = {
-  CASH: "Naqd",
-  CARD: "Karta",
-  TRANSFER: "O'tkazma",
-  MIXED: "Aralash",
+  CASH: tr("Naqd"),
+  CARD: tr("Karta"),
+  TRANSFER: tr("O'tkazma"),
+  MIXED: tr("Aralash"),
 }
 
 /** Chek elementlari — mehmonxonaning saqlangan dizayni bo'yicha quriladi */
@@ -179,28 +189,28 @@ const buildReceiptElements = (
   }
   elements.push(
     { type: "line" },
-    { type: "row", left: "Sana:", right: format(when, "dd.MM.yyyy HH:mm") }
+    { type: "row", left: tr("Sana:"), right: format(when, "dd.MM.yyyy HH:mm") }
   )
   if (design.show_check_no) {
-    elements.push({ type: "row", left: "Chek:", right: `#${sale.id.slice(0, 8).toUpperCase()}` })
+    elements.push({ type: "row", left: tr("Chek:"), right: `#${sale.id.slice(0, 8).toUpperCase()}` })
   }
   if (design.show_seller && sale.created_by_name) {
-    elements.push({ type: "row", left: "Sotuvchi:", right: sale.created_by_name })
+    elements.push({ type: "row", left: tr("Sotuvchi:"), right: sale.created_by_name })
   }
   if (design.show_guest) {
     if (sale.reservation_number) {
-      elements.push({ type: "row", left: "Bron:", right: sale.reservation_number })
+      elements.push({ type: "row", left: tr("Bron:"), right: sale.reservation_number })
     }
     const guest = guestName || sale.guest_name
     if (guest) {
-      elements.push({ type: "row", left: "Mehmon:", right: guest })
+      elements.push({ type: "row", left: tr("Mehmon:"), right: guest })
     }
   }
   elements.push(
     { type: "line", style: "dashed" },
     {
       type: "table",
-      headers: ["Mahsulot", "Soni", "Summa"],
+      headers: [tr("Mahsulot"), tr("Soni"), tr("Summa")],
       widths: [3, 1, 2],
       aligns: ["left", "center", "right"],
       rows: sale.items.map((i) => [
@@ -212,8 +222,8 @@ const buildReceiptElements = (
     { type: "line" },
     {
       type: "row",
-      left: "JAMI:",
-      right: `${Number(sale.total_amount).toLocaleString()} So'm`,
+      left: tr("JAMI:"),
+      right: tr("{{total_amount}} So'm", { total_amount: Number(sale.total_amount).toLocaleString() }),
       bold: true,
       size: 2,
     },
@@ -223,24 +233,24 @@ const buildReceiptElements = (
     sale.payments.forEach((p, i) => {
       elements.push({
         type: "row",
-        left: i === 0 ? "To'lov:" : "",
+        left: i === 0 ? tr("To'lov:") : "",
         right: `${METHOD_LABELS[p.payment_method] || p.payment_method}: ${Number(p.amount).toLocaleString()}`,
       })
     })
   } else {
     elements.push({
       type: "row",
-      left: "To'lov:",
+      left: tr("To'lov:"),
       right:
         sale.status === "PAID"
           ? METHOD_LABELS[sale.payment_method || ""] || sale.payment_method || "—"
-          : "Bron hisobiga",
+          : tr("Bron hisobiga"),
     })
   }
   if (sale.status === "PENDING") {
     elements.push({
       type: "text",
-      value: "To'lov mehmon chiqishida olinadi",
+      value: tr("To'lov mehmon chiqishida olinadi"),
       align: "center",
     })
   }
@@ -291,18 +301,18 @@ export const printSampleReceipt = async (
     id: "namuna01-0000-0000-0000-000000000000",
     reservation_id: null,
     reservation_number: "RES-NAMUNA",
-    guest_name: "Jasur Toshmatov",
+    guest_name: tr("Jasur Toshmatov"),
     total_amount: 57000,
     payment_method: "CASH",
     status: "PAID",
     paid_at: null,
     created_by: "",
-    created_by_name: "Aziza Karimova",
+    created_by_name: tr("Aziza Karimova"),
     created_at: new Date().toISOString(),
     items: [
-      { product_id: "1", product_name: "Coca-Cola 0.5", quantity: 2, unit_price: 12000, total_price: 24000 },
-      { product_id: "2", product_name: "Shokolad", quantity: 1, unit_price: 18000, total_price: 18000 },
-      { product_id: "3", product_name: "Suv 1L", quantity: 3, unit_price: 5000, total_price: 15000 },
+      { product_id: "1", product_name: tr("Coca-Cola 0.5"), quantity: 2, unit_price: 12000, total_price: 24000 },
+      { product_id: "2", product_name: tr("Shokolad"), quantity: 1, unit_price: 18000, total_price: 18000 },
+      { product_id: "3", product_name: tr("Suv 1L"), quantity: 3, unit_price: 5000, total_price: 15000 },
     ],
   }
   return printShopReceipt(sample, hotelName, null, design)
@@ -337,12 +347,12 @@ export interface ReservationReceiptData {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Kirilgan",
-  CHECKED_OUT: "Chiqilgan",
-  CANCELLED: "Bekor qilingan",
-  NO_SHOW: "Kelmagan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Kirilgan"),
+  CHECKED_OUT: tr("Chiqilgan"),
+  CANCELLED: tr("Bekor qilingan"),
+  NO_SHOW: tr("Kelmagan"),
 }
 
 const money = (n: number) => Number(n || 0).toLocaleString()
@@ -358,48 +368,48 @@ const buildReservationElements = (
   ]
   // Do'kon cheki uchun yozilgan quyi sarlavha bronda o'rinsiz — bu yerda
   // hujjatning o'z nomi turadi, qolgan dizayn esa umumiy
-  elements.push({ type: "text", value: "Yashash uchun chek", align: "center" })
+  elements.push({ type: "text", value: tr("Yashash uchun chek"), align: "center" })
   if (design.header_note.trim()) {
     elements.push({ type: "text", value: design.header_note.trim(), align: "center" })
   }
   elements.push(
     { type: "line" },
-    { type: "row", left: "Sana:", right: format(when, "dd.MM.yyyy HH:mm") },
-    { type: "row", left: "Bron:", right: data.reservation_number }
+    { type: "row", left: tr("Sana:"), right: format(when, "dd.MM.yyyy HH:mm") },
+    { type: "row", left: tr("Bron:"), right: data.reservation_number }
   )
   if (design.show_seller && data.created_by_name) {
-    elements.push({ type: "row", left: "Qabul qildi:", right: data.created_by_name })
+    elements.push({ type: "row", left: tr("Qabul qildi:"), right: data.created_by_name })
   }
   if (design.show_guest && data.guest_name) {
-    elements.push({ type: "row", left: "Mehmon:", right: data.guest_name })
+    elements.push({ type: "row", left: tr("Mehmon:"), right: data.guest_name })
   }
   if (data.room_number) {
     elements.push({
       type: "row",
-      left: "Xona:",
+      left: tr("Xona:"),
       right: data.room_type ? `${data.room_number} · ${data.room_type}` : data.room_number,
     })
   }
   const guests = [
-    data.adults ? `${data.adults} kattalar` : "",
-    data.children ? `${data.children} bolalar` : "",
+    data.adults ? tr("{{adults}} kattalar", { adults: data.adults }) : "",
+    data.children ? tr("{{children}} bolalar", { children: data.children }) : "",
   ]
     .filter(Boolean)
     .join(", ")
   if (guests) {
-    elements.push({ type: "row", left: "Mehmonlar:", right: guests })
+    elements.push({ type: "row", left: tr("Mehmonlar:"), right: guests })
   }
   elements.push({ type: "line", style: "dashed" })
 
   const hourly = (data.booking_type || "").toUpperCase() === "HOURLY"
   elements.push(
-    { type: "row", left: "Kirish:", right: data.check_in },
-    { type: "row", left: "Chiqish:", right: data.check_out }
+    { type: "row", left: tr("Kirish:"), right: data.check_in },
+    { type: "row", left: tr("Chiqish:"), right: data.check_out }
   )
   if (data.nights) {
     elements.push({
       type: "row",
-      left: hourly ? "Soat:" : "Sutka:",
+      left: hourly ? tr("Soat:") : tr("Sutka:"),
       right: String(data.nights),
     })
   }
@@ -409,7 +419,7 @@ const buildReservationElements = (
       { type: "line", style: "dashed" },
       {
         type: "table",
-        headers: ["Xizmat", "Soni", "Summa"],
+        headers: [tr("Xizmat"), tr("Soni"), tr("Summa")],
         widths: [3, 1, 2],
         aligns: ["left", "center", "right"],
         rows: data.services.map((s) => [
@@ -423,16 +433,16 @@ const buildReservationElements = (
 
   elements.push({ type: "line" })
   if (data.discount_amount && data.discount_amount > 0) {
-    elements.push({ type: "row", left: "Chegirma:", right: `−${money(data.discount_amount)}` })
+    elements.push({ type: "row", left: tr("Chegirma:"), right: `−${money(data.discount_amount)}` })
   }
   elements.push({
     type: "row",
-    left: "JAMI:",
-    right: `${money(data.total_amount)} So'm`,
+    left: tr("JAMI:"),
+    right: tr("{{total_amount}} So'm", { total_amount: money(data.total_amount) }),
     bold: true,
     size: 2,
   })
-  elements.push({ type: "row", left: "To'langan:", right: `${money(data.paid_amount)} So'm` })
+  elements.push({ type: "row", left: tr("To'langan:"), right: tr("{{paid_amount}} So'm", { paid_amount: money(data.paid_amount) }) })
 
   // Qoldiq har doim ko'rsatiladi: mehmon nima to'lagani va nima qolganini
   // chekdan ko'rishi kerak. Ortiqcha to'lov ham yashirilmaydi.
@@ -440,25 +450,25 @@ const buildReservationElements = (
   if (balance > 0) {
     elements.push({
       type: "row",
-      left: "Qoldiq:",
-      right: `${money(balance)} So'm`,
+      left: tr("Qoldiq:"),
+      right: tr("{{balance}} So'm", { balance: money(balance) }),
       bold: true,
     })
   } else if (balance < 0) {
     elements.push({
       type: "row",
-      left: "Ortiqcha:",
-      right: `${money(-balance)} So'm`,
+      left: tr("Ortiqcha:"),
+      right: tr("{{money}} So'm", { money: money(-balance) }),
       bold: true,
     })
   } else {
-    elements.push({ type: "text", value: "To'liq to'langan", align: "center" })
+    elements.push({ type: "text", value: tr("To'liq to'langan"), align: "center" })
   }
 
   if (data.status && data.status !== "CHECKED_OUT") {
     elements.push({
       type: "row",
-      left: "Holat:",
+      left: tr("Holat:"),
       right: STATUS_LABELS[data.status] || data.status,
     })
   }

@@ -16,6 +16,7 @@ import {
   useAppReleases,
   type AppRelease,
 } from "../api/apps"
+import { dateLocale, tr } from "@/i18n"
 
 /**
  * Dasturlar do'koni — mehmonxona administratori uchun.
@@ -28,13 +29,13 @@ import {
 const PLATFORM_META = {
   ANDROID: {
     label: "Android",
-    hint: "Telefonlarga o'rnatish uchun APK fayllar",
+    hint: tr("Telefonlarga o'rnatish uchun APK fayllar"),
     icon: Smartphone,
     tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   },
   WINDOWS: {
     label: "Windows",
-    hint: "Kompyuterga o'rnatish uchun dasturlar",
+    hint: tr("Kompyuterga o'rnatish uchun dasturlar"),
     icon: MonitorDown,
     tone: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",
   },
@@ -42,7 +43,7 @@ const PLATFORM_META = {
 
 function formatDate(iso: string | null): string {
   if (!iso) return ""
-  return new Date(iso).toLocaleDateString("uz-UZ", {
+  return new Date(iso).toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -51,8 +52,8 @@ function formatDate(iso: string | null): string {
 
 export const AppsPage = () => {
   useSeo({
-    title: "Ilovalar — GoHotel",
-    description: "Mehmonxona uchun Android va Windows dasturlari.",
+    title: tr("Ilovalar — GoHotel"),
+    description: tr("Mehmonxona uchun Android va Windows dasturlari."),
     canonicalPath: "/apps",
     noindex: true,
   })
@@ -68,7 +69,7 @@ export const AppsPage = () => {
       await downloadAppRelease(release)
     } catch {
       setError(
-        `"${release.name}" yuklab olinmadi. Internet aloqasini tekshirib, qayta urinib ko'ring.`
+        tr("\"{{name}}\" yuklab olinmadi. Internet aloqasini tekshirib, qayta urinib ko'ring.", { name: release.name })
       )
     } finally {
       setDownloading(null)
@@ -78,9 +79,9 @@ export const AppsPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Ilovalar</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{tr("Ilovalar")}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Mehmonxona uchun rasmiy dasturlar — yuklab olib o'rnating
+          {tr("Mehmonxona uchun rasmiy dasturlar — yuklab olib o'rnating")}
         </p>
       </div>
 
@@ -96,15 +97,14 @@ export const AppsPage = () => {
         </div>
       ) : isError ? (
         <p className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-          Ro'yxatni olishda xatolik. Sahifani yangilab ko'ring.
+          {tr("Ro'yxatni olishda xatolik. Sahifani yangilab ko'ring.")}
         </p>
       ) : releases.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-14 text-center">
           <AppWindow className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <p className="mt-3 text-sm font-medium">Hozircha dastur yo'q</p>
+          <p className="mt-3 text-sm font-medium">{tr("Hozircha dastur yo'q")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Dasturlar tizim egasi tomonidan joylanadi va shu yerda paydo
-            bo'ladi
+            {tr("Dasturlar tizim egasi tomonidan joylanadi va shu yerda paydo bo'ladi")}
           </p>
         </div>
       ) : (
@@ -173,8 +173,8 @@ export const AppsPage = () => {
                             <Download className="mr-1.5 h-4 w-4" />
                           )}
                           {downloading === release.id
-                            ? "Yuklanmoqda..."
-                            : "Yuklab olish"}
+                            ? tr("Yuklanmoqda...")
+                            : tr("Yuklab olish")}
                         </Button>
                       </div>
                     </div>

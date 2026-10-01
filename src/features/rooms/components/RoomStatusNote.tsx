@@ -2,6 +2,7 @@ import { Clock, Sparkles, TriangleAlert, User as UserIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import type { RoomStatusDetail } from "../lib/roomStatusInfo"
+import { tr } from "@/i18n"
 
 /**
  * Xona holati ostidagi tafsilot qatori.
@@ -38,7 +39,7 @@ export function RoomStatusNote({
       <span
         className={cn("inline-flex items-center gap-1 text-[11px]", tone, className)}
         title={
-          [headline, atLabel && `${atLabel} dan beri`, elapsedLabel, assignee]
+          [headline, atLabel && tr("{{atLabel}} dan beri", { atLabel }), elapsedLabel, assignee]
             .filter(Boolean)
             .join(" · ")
         }

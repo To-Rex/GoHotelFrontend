@@ -94,6 +94,7 @@ import {
   resizeTarget,
   type ResizeBounds,
 } from "../lib/extend"
+import { monthYear, tr } from "@/i18n"
 
 const DAY_WIDTH = 120
 const ROOM_COL_WIDTH = 200
@@ -109,24 +110,26 @@ const statusColors: Record<string, string> = {
 }
 
 const statusLabels: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Kirgan",
-  CHECKED_OUT: "Chiqgan",
-  NO_SHOW: "Kelmadi",
-  CANCELLED: "Bekor qilingan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Kirgan"),
+  CHECKED_OUT: tr("Chiqgan"),
+  NO_SHOW: tr("Kelmadi"),
+  CANCELLED: tr("Bekor qilingan"),
 }
 
-const weekDays = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"]
+// Dushanbadan boshlanadi: ustunda (getDay() + 6) % 7 bilan olinadi
+// (ilgari yakshanbadan boshlangani uchun har kun bir kunga siljib chiqardi)
+const weekDays = [tr("Du"), tr("Se"), tr("Ch"), tr("Pa"), tr("Ju"), tr("Sh"), tr("Ya")]
 
 // Xonaning MAXSUS holatlari — bronlardan ko'rinmaydigan, e'tibor talab
 // qiladigan holatlar rangli belgi bilan ko'rsatiladi (Bo'sh/Band esa
 // bronlarning o'zidan ma'lum bo'ladi).
 const ROOM_STATUS_LABELS: Record<string, string> = {
-  CLEANING: "Tozalanmoqda",
-  MAINTENANCE: "Ta'mirda",
-  INSPECTION: "Tekshiruvda",
-  OUT_OF_SERVICE: "Xizmatdan tashqari",
+  CLEANING: tr("Tozalanmoqda"),
+  MAINTENANCE: tr("Ta'mirda"),
+  INSPECTION: tr("Tekshiruvda"),
+  OUT_OF_SERVICE: tr("Xizmatdan tashqari"),
 }
 
 const roomStatusBadge: Record<string, string> = {
@@ -139,11 +142,11 @@ const roomStatusBadge: Record<string, string> = {
 // Xonaga biriktirilgan FAOL xo'jalik vazifasi ham belgi sifatida ko'rsatiladi
 // (vazifa yaratilishi xona holatini o'zgartirmaydi — bu alohida signal)
 export const TASK_TYPE_LABELS: Record<string, string> = {
-  CLEANING: "Tozalash",
-  DEEP_CLEANING: "Chuqur tozalash",
-  MAINTENANCE: "Ta'mirlash",
-  INSPECTION: "Tekshiruv",
-  TURN_DOWN: "Kechki tayyorlash",
+  CLEANING: tr("Tozalash"),
+  DEEP_CLEANING: tr("Chuqur tozalash"),
+  MAINTENANCE: tr("Ta'mirlash"),
+  INSPECTION: tr("Tekshiruv"),
+  TURN_DOWN: tr("Kechki tayyorlash"),
 }
 
 export const taskTypeBadge: Record<string, string> = {
@@ -257,7 +260,7 @@ export function BookingPage() {
     for (const f of floorsData) {
       floorMap[f.id] = {
         number: f.floor_number,
-        label: f.name || `${f.floor_number}-qavat`,
+        label: f.name || tr("{{floor_number}}-qavat", { floor_number: f.floor_number }),
       }
     }
 
@@ -271,7 +274,7 @@ export function BookingPage() {
     return Object.entries(grouped)
       .map(([key, groupRooms]) => ({
         key,
-        label: floorMap[key]?.label ?? "Boshqa xonalar",
+        label: floorMap[key]?.label ?? tr("Boshqa xonalar"),
         order: floorMap[key]?.number ?? Number.MAX_SAFE_INTEGER,
         rooms: groupRooms,
       }))
@@ -500,7 +503,7 @@ export function BookingPage() {
       return `${reservation.guest.first_name} ${reservation.guest.last_name || ''}`
     }
     const g = guests.find((x) => x.id === reservation.guest_id)
-    return g ? `${g.first_name} ${g.last_name || ''}` : reservation.reservation_number || 'Band'
+    return g ? `${g.first_name} ${g.last_name || ''}` : reservation.reservation_number || tr("Band")
   }
 
   /* Kalendar tanlovidan "Yangi bandlov" so'rovini qurish.
@@ -616,7 +619,7 @@ export function BookingPage() {
   const handleMoveRoom = async () => {
     if (!selectedReservation) return
     if (!moveRoomId) {
-      setMoveError("Yangi xonani tanlang")
+      setMoveError(tr("Yangi xonani tanlang"))
       return
     }
     setMoveError(null)
@@ -642,12 +645,12 @@ export function BookingPage() {
     if (!selectedReservation) return
     const amt = settleAmount.trim() === "" ? maxAmount : Number(settleAmount)
     if (!amt || isNaN(amt) || amt <= 0) {
-      setSettleError("Summani kiriting")
+      setSettleError(tr("Summani kiriting"))
       return
     }
     if (amt > maxAmount + 0.01) {
       setSettleError(
-        `Summa ${maxAmount.toLocaleString()} So'mdan oshmasligi kerak`
+        tr("Summa {{maxAmount}} So'mdan oshmasligi kerak", { maxAmount: maxAmount.toLocaleString() })
       )
       return
     }
@@ -698,7 +701,7 @@ export function BookingPage() {
         }
       } else {
         if (ev.check_out_date <= ev.check_in_date) {
-          setErrorDialog("Chiqish sanasi kirish sanasidan keyin bo'lishi kerak.")
+          setErrorDialog(tr("Chiqish sanasi kirish sanasidan keyin bo'lishi kerak."))
           return
         }
         payload = {
@@ -750,12 +753,12 @@ export function BookingPage() {
       const paid = Number(cancelQuote?.paid_amount || 0)
       const refund = paid > 0 ? Number(refundInput) : undefined
       if (refund !== undefined && (!Number.isFinite(refund) || refund < 0)) {
-        setErrorDialog("Qaytariladigan summani to'g'ri kiriting")
+        setErrorDialog(tr("Qaytariladigan summani to'g'ri kiriting"))
         return
       }
       if (refund !== undefined && refund > paid + 0.01) {
         setErrorDialog(
-          `Qaytariladigan summa to'langan puldan oshib ketdi (to'langan: ${paid.toLocaleString()} So'm)`
+          tr("Qaytariladigan summa to'langan puldan oshib ketdi (to'langan: {{paid}} So'm)", { paid: paid.toLocaleString() })
         )
         return
       }
@@ -857,7 +860,7 @@ export function BookingPage() {
       })
       const when = isHourly ? checkOut.slice(11, 16) : checkOut.slice(0, 10)
       setExtendNotice(
-        shorter ? `Bron ${when} gacha qisqartirildi` : `Bron ${when} gacha cho'zildi`
+        shorter ? tr("Bron {{when}} gacha qisqartirildi", { when }) : tr("Bron {{when}} gacha cho'zildi", { when })
       )
       window.setTimeout(() => setExtendNotice(null), 3500)
     } catch (error: any) {
@@ -1012,7 +1015,7 @@ export function BookingPage() {
       const toDate = addDaysStr(fromDate, offset)
       // O'tgan sanaga ko'chirishga yo'l qo'ymaymiz
       if (toDate < format(new Date(), "yyyy-MM-dd")) {
-        setErrorDialog("Bronni o'tgan sanaga ko'chirib bo'lmaydi.")
+        setErrorDialog(tr("Bronni o'tgan sanaga ko'chirib bo'lmaydi."))
         return
       }
       // Tasdiqlashni dialog orqali so'raymiz (window.confirm o'rniga)
@@ -1062,8 +1065,8 @@ export function BookingPage() {
       <div className="flex-shrink-0 flex items-center px-3 sm:px-6 py-2.5 bg-white border-b border-gray-200">
         <div className="flex rounded-lg bg-gray-100 p-1">
           {([
-            { key: "hourly", label: "Soatlik bron", icon: Clock },
-            { key: "calendar", label: "Kalendar", icon: CalendarDays },
+            { key: "hourly", label: tr("Soatlik bron"), icon: Clock },
+            { key: "calendar", label: tr("Kalendar"), icon: CalendarDays },
           ] as const).map((tab) => (
             <button
               key={tab.key}
@@ -1113,18 +1116,18 @@ export function BookingPage() {
             variant="ghost"
             size="icon-sm"
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            title="Oldingi oy"
+            title={tr("Oldingi oy")}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <h3 className="text-[15px] font-bold text-gray-900 min-w-[150px] text-center">
-            {format(currentMonth, "MMMM yyyy")}
+            {monthYear(currentMonth)}
           </h3>
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            title="Keyingi oy"
+            title={tr("Keyingi oy")}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -1134,7 +1137,7 @@ export function BookingPage() {
             className="ml-1 text-primary-700"
             onClick={() => setCurrentMonth(new Date())}
           >
-            Bugun
+            {tr("Bugun")}
           </Button>
         </div>
 
@@ -1145,12 +1148,12 @@ export function BookingPage() {
               <span className="text-primary-300">·</span>
               <span>{selectionStart} → {selectionCheckout}</span>
               <span className="text-primary-300">·</span>
-              <span>{nightCount} kecha</span>
+              <span>{tr("{{nightCount}} kecha", { nightCount })}</span>
               <span className="text-primary-300">·</span>
-              <span className="font-semibold text-primary-700">{totalPrice.toLocaleString()} So'm</span>
+              <span className="font-semibold text-primary-700">{tr("{{totalPrice}} So'm", { totalPrice: totalPrice.toLocaleString() })}</span>
               <button
                 onClick={clearSelection}
-                title="Tanlovni bekor qilish"
+                title={tr("Tanlovni bekor qilish")}
                 className="ml-1 p-0.5 rounded hover:bg-primary-100 text-primary-400 hover:text-primary-700"
               >
                 <X className="h-3.5 w-3.5" />
@@ -1160,11 +1163,11 @@ export function BookingPage() {
             <div className="hidden md:flex items-center gap-3.5 text-[11px] text-gray-500">
               {(
                 [
-                  ["bg-blue-600", "Tasdiqlangan"],
-                  ["bg-emerald-600", "Kirgan"],
-                  ["bg-amber-400", "Kutilmoqda"],
-                  ["bg-primary-200 border border-primary-300", "Tanlangan"],
-                  ["bg-gray-400", "Chiqgan"],
+                  ["bg-blue-600", tr("Tasdiqlangan")],
+                  ["bg-emerald-600", tr("Kirgan")],
+                  ["bg-amber-400", tr("Kutilmoqda")],
+                  ["bg-primary-200 border border-primary-300", tr("Tanlangan")],
+                  ["bg-gray-400", tr("Chiqgan")],
                 ] as const
               ).map(([color, label]) => (
                 <span key={label} className="flex items-center gap-1.5">
@@ -1192,7 +1195,7 @@ export function BookingPage() {
                 style={{ width: ROOM_COL_WIDTH }}
               >
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Xonalar
+                  {tr("Xonalar")}
                 </span>
               </div>
               <div className="flex" style={{ width: calendarWidth }}>
@@ -1241,7 +1244,7 @@ export function BookingPage() {
                   <div
                     className="flex bg-gray-100 border-y border-gray-200 cursor-pointer hover:bg-gray-200/70 transition-colors"
                     onClick={() => toggleFloor(group.key)}
-                    title={collapsed ? "Qavatni ochish" : "Qavatni yig'ish"}
+                    title={collapsed ? tr("Qavatni ochish") : tr("Qavatni yig'ish")}
                   >
                     <div
                       className="flex-shrink-0 flex items-center gap-2 px-4 h-9 bg-gray-100 border-r border-gray-200 sticky left-0 z-20"
@@ -1291,7 +1294,7 @@ export function BookingPage() {
                       {!ROOM_STATUS_LABELS[room.current_status] &&
                         activeTaskTypeByRoom[room.id] && (
                           <span
-                            title="Xonaga xo'jalik vazifasi biriktirilgan"
+                            title={tr("Xonaga xo'jalik vazifasi biriktirilgan")}
                             className={cn(
                               "text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap",
                               taskTypeBadge[activeTaskTypeByRoom[room.id]]
@@ -1310,11 +1313,11 @@ export function BookingPage() {
                       )}
                     </div>
                     <span className="text-xs text-gray-400 truncate">
-                      {room.room_type?.name || "Standard"}
+                      {room.room_type?.name || tr("Standard")}
                     </span>
                     {getRoomPrice(room) > 0 && (
                       <span className="text-[10px] text-primary-600 font-medium">
-                        {getRoomPrice(room).toLocaleString()} So'm
+                        {tr("{{price}} So'm", { price: getRoomPrice(room).toLocaleString() })}
                       </span>
                     )}
                   </div>
@@ -1419,11 +1422,11 @@ export function BookingPage() {
                                     date: resStartDate(res),
                                   })
                                 }}
-                                title="Bronlar ro'yxatini ko'rish"
+                                title={tr("Bronlar ro'yxatini ko'rish")}
                               >
                                 <Clock className="h-4 w-4 flex-shrink-0" />
                                 <span className="text-sm font-bold">
-                                  {sameDay.length} ta bron
+                                  {tr("{{count}} ta bron", { count: sameDay.length })}
                                 </span>
                               </div>
                             )
@@ -1462,8 +1465,8 @@ export function BookingPage() {
                             onMouseDown={(e) => handleBarMouseDown(e, res)}
                             title={
                               extendable
-                                ? "Bosish: boshqarish · Surish: boshqa kunga ko'chirish · O'ng chetidan tortish: cho'zish yoki qisqartirish"
-                                : "Bosish: boshqarish · Surish: boshqa kunga ko'chirish"
+                                ? tr("Bosish: boshqarish · Surish: boshqa kunga ko'chirish · O'ng chetidan tortish: cho'zish yoki qisqartirish")
+                                : tr("Bosish: boshqarish · Surish: boshqa kunga ko'chirish")
                             }
                           >
                             {res.status === "CONFIRMED" || res.status === "CHECKED_IN" ? (
@@ -1492,7 +1495,7 @@ export function BookingPage() {
                             {extendable && (
                               <span
                                 role="separator"
-                                aria-label="Bron muddatini o'zgartirish"
+                                aria-label={tr("Bron muddatini o'zgartirish")}
                                 onMouseDown={(e) => beginBarExtend(e, res)}
                                 className={cn(
                                   "absolute inset-y-0 right-0 w-3 rounded-r-xl cursor-col-resize",
@@ -1541,7 +1544,7 @@ export function BookingPage() {
                                       : DAY_WIDTH,
                             }}
                           >
-                            {start && end ? "Kirish - Chiqish" : start ? "Kirish" : end ? "Chiqish" : ""}
+                            {start && end ? tr("Kirish - Chiqish") : start ? tr("Kirish") : end ? tr("Chiqish") : ""}
                           </div>
                         )
                       })}
@@ -1559,25 +1562,25 @@ export function BookingPage() {
       {/* Footer */}
       <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="text-sm text-gray-500">
-          {rooms.length} xonalar · {format(currentMonth, "MMMM yyyy")}
+          {tr("{{count}} xonalar · {{currentMonth}}", { count: rooms.length, currentMonth: monthYear(currentMonth) })}
         </div>
         <div className="flex items-center gap-3">
           {canCreate ? (
             <>
               <Button variant="secondary" onClick={clearSelection} disabled={!selectedRoom}>
-                Bekor qilish
+                {tr("Bekor qilish")}
               </Button>
               <Button
                 onClick={openBookingModal}
                 disabled={!selectedRoom || !selectionStart || !selectionEnd}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Tasdiqlash
+                {tr("Tasdiqlash")}
               </Button>
             </>
           ) : (
             <span className="text-xs text-gray-400">
-              Yangi bron yaratish uchun ruxsatingiz yo'q
+              {tr("Yangi bron yaratish uchun ruxsatingiz yo'q")}
             </span>
           )}
         </div>
@@ -1620,7 +1623,7 @@ export function BookingPage() {
                       o'ng yuqorida turadi, shuning uchun o'ngdan joy. */}
                   <DialogTitle className="flex flex-wrap items-center gap-2 pr-6">
                     <span className="break-all">
-                      Bron · {res.reservation_number || ""}
+                      {tr("Bron · {{number}}", { number: res.reservation_number || "" })}
                     </span>
                     <span
                       className={cn(
@@ -1648,8 +1651,7 @@ export function BookingPage() {
                           : `${res.check_in_date} → ${res.check_out_date}`}
                       </p>
                       <p className="text-[11px] text-gray-400">
-                        Jami: {Number(res.total_amount || 0).toLocaleString()} So'm · To'langan:{" "}
-                        {Number(res.paid_amount || 0).toLocaleString()} So'm
+                        {tr("Jami: {{total}} So'm · To'langan: {{paid}} So'm", { total: Number(res.total_amount || 0).toLocaleString(), paid: Number(res.paid_amount || 0).toLocaleString() })}
                       </p>
                     </div>
                   </div>
@@ -1694,7 +1696,7 @@ export function BookingPage() {
                         ) : (
                           <LogIn className="h-4 w-4" />
                         )}
-                        Mehmon keldi — kirishni rasmiylashtirish
+                        {tr("Mehmon keldi — kirishni rasmiylashtirish")}
                       </button>
                     )}
 
@@ -1709,10 +1711,9 @@ export function BookingPage() {
                       <div className="flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
                         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                         <div className="text-sm text-amber-800">
-                          <p className="font-semibold">Chiqish jarayonida</p>
+                          <p className="font-semibold">{tr("Chiqish jarayonida")}</p>
                           <p className="text-xs">
-                            Farroshga tozalash vazifasi yuborilgan — vazifa
-                            yakunlangach bron avtomatik "Chiqilgan" holatiga o'tadi.
+                            {tr("Farroshga tozalash vazifasi yuborilgan — vazifa yakunlangach bron avtomatik \"Chiqilgan\" holatiga o'tadi.")}
                           </p>
                         </div>
                       </div>
@@ -1728,7 +1729,7 @@ export function BookingPage() {
                         ) : (
                           <LogOut className="h-4 w-4" />
                         )}
-                        Mehmon chiqmoqda — chiqishni boshlash
+                        {tr("Mehmon chiqmoqda — chiqishni boshlash")}
                       </button>
                     ) : (isCleaner || canUpdate) ? (
                       <button
@@ -1742,8 +1743,7 @@ export function BookingPage() {
                         ) : (
                           <Sparkles className="h-4 w-4" />
                         )}
-                        Xonani tozalash
-                        {isCleaner ? " — vazifa menga biriktiriladi" : ""}
+                        {tr("Xonani tozalash{{note}}", { note: isCleaner ? tr(" — vazifa menga biriktiriladi") : "" })}
                       </button>
                     ) : null
                   )}
@@ -1766,8 +1766,7 @@ export function BookingPage() {
                       if (!withinWindow) {
                         return (
                           <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-400">
-                            Xonani almashtirish muddati tugagan ({windowMin} daqiqa)
-                            — administratorga murojaat qiling.
+                            {tr("Xonani almashtirish muddati tugagan ({{windowMin}} daqiqa) — administratorga murojaat qiling.", { windowMin })}
                           </p>
                         )
                       }
@@ -1778,12 +1777,11 @@ export function BookingPage() {
                       )
                       const windowInfo = isAdmin ? (
                         <p className="text-center text-[11px] text-gray-400">
-                          Administrator uchun almashtirish muddati cheklanmagan
-                          (xodimlarga ruxsat: {windowMin} daqiqa)
+                          {tr("Administrator uchun almashtirish muddati cheklanmagan (xodimlarga ruxsat: {{windowMin}} daqiqa)", { windowMin })}
                         </p>
                       ) : windowMin === 0 ? (
                         <p className="text-center text-[11px] text-gray-400">
-                          Almashtirish muddati cheklanmagan
+                          {tr("Almashtirish muddati cheklanmagan")}
                         </p>
                       ) : (
                         <p
@@ -1792,8 +1790,7 @@ export function BookingPage() {
                             remainingMin <= 3 ? "text-amber-600" : "text-gray-400"
                           )}
                         >
-                          Almashtirishga ruxsat: {windowMin} daqiqa · qoldi:{" "}
-                          {remainingMin} daqiqa
+                          {tr("Almashtirishga ruxsat: {{windowMin}} daqiqa · qoldi: {{remainingMin}} daqiqa", { windowMin, remainingMin })}
                         </p>
                       )
                       if (!moveMode) {
@@ -1809,7 +1806,7 @@ export function BookingPage() {
                               className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-100"
                             >
                               <ArrowRightLeft className="h-4 w-4" />
-                              Xonani almashtirish
+                              {tr("Xonani almashtirish")}
                             </button>
                             {windowInfo}
                           </div>
@@ -1915,12 +1912,12 @@ export function BookingPage() {
                         <div className="space-y-2.5 rounded-lg border border-violet-200 bg-violet-50/50 p-3">
                           <p className="flex items-center gap-1.5 text-sm font-semibold text-violet-800">
                             <ArrowRightLeft className="h-4 w-4" />
-                            Xonani almashtirish
+                            {tr("Xonani almashtirish")}
                           </p>
                           {windowInfo}
                           {availableRooms.length === 0 ? (
                             <p className="text-sm text-gray-500">
-                              Bu davr uchun boshqa bo'sh xona yo'q
+                              {tr("Bu davr uchun boshqa bo'sh xona yo'q")}
                             </p>
                           ) : (
                             <select
@@ -1928,11 +1925,10 @@ export function BookingPage() {
                               value={moveRoomId}
                               onChange={(e) => setMoveRoomId(e.target.value)}
                             >
-                              <option value="">Yangi xonani tanlang</option>
+                              <option value="">{tr("Yangi xonani tanlang")}</option>
                               {availableRooms.map((r: any) => (
                                 <option key={r.id} value={r.id}>
-                                  {r.room_number} —{" "}
-                                  {Number(r.base_price || 0).toLocaleString()} So'm
+                                  {r.room_number}{" "}{tr("— {{price}} So'm", { price: Number(r.base_price || 0).toLocaleString() })}
                                 </option>
                               ))}
                             </select>
@@ -1940,12 +1936,12 @@ export function BookingPage() {
                           {chosen && newTotal !== null && (
                             <div className="rounded-md bg-white px-3 py-2 text-sm ring-1 ring-violet-200">
                               <p className="text-gray-600">
-                                Jami:{" "}
+                                {tr("Jami:")}{" "}
                                 <span className="text-gray-400 line-through">
                                   {Number(res.total_amount || 0).toLocaleString()}
                                 </span>{" "}
                                 <b className="tabular-nums">
-                                  {newTotal.toLocaleString()} So'm
+                                  {tr("{{newTotal}} So'm", { newTotal: newTotal.toLocaleString() })}
                                 </b>
                               </p>
                               {diff !== null && diff !== 0 && (
@@ -1956,8 +1952,8 @@ export function BookingPage() {
                                   )}
                                 >
                                   {diff > 0
-                                    ? `Qo'shimcha to'lov: +${diff.toLocaleString()} So'm`
-                                    : `Kamayadi: ${diff.toLocaleString()} So'm`}
+                                    ? tr("Qo'shimcha to'lov: +{{diff}} So'm", { diff: diff.toLocaleString() })
+                                    : tr("Kamayadi: {{diff}} So'm", { diff: diff.toLocaleString() })}
                                 </p>
                               )}
                             </div>
@@ -1978,7 +1974,7 @@ export function BookingPage() {
                                 setMoveError(null)
                               }}
                             >
-                              Bekor qilish
+                              {tr("Bekor qilish")}
                             </Button>
                             <Button
                               type="button"
@@ -1990,7 +1986,7 @@ export function BookingPage() {
                               {moveRoomMutation.isPending && (
                                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                               )}
-                              Ko'chirish
+                              {tr("Ko'chirish")}
                             </Button>
                           </div>
                         </div>
@@ -2005,7 +2001,7 @@ export function BookingPage() {
                       <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5">
                         <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-amber-800">
                           <ArrowRightLeft className="h-3.5 w-3.5" />
-                          Xona ko'chirilgan · {res.room_moves.length} marta
+                          {tr("Xona ko'chirilgan · {{count}} marta", { count: res.room_moves.length })}
                         </p>
                         <div className="space-y-1">
                           {res.room_moves.map((m: any, i: number) => (
@@ -2017,8 +2013,7 @@ export function BookingPage() {
                                 : ""}
                               {m.old_total !== m.new_total && (
                                 <span className="ml-1 font-semibold">
-                                  ({Number(m.old_total || 0).toLocaleString()} →{" "}
-                                  {Number(m.new_total || 0).toLocaleString()} So'm)
+                                  {tr("({{from}} → {{to}} So'm)", { from: Number(m.old_total || 0).toLocaleString(), to: Number(m.new_total || 0).toLocaleString() })}
                                 </span>
                               )}
                             </p>
@@ -2062,11 +2057,11 @@ export function BookingPage() {
                             <span className="flex items-center gap-1.5">
                               <Banknote className="h-4 w-4" />
                               {isRefund
-                                ? "Mehmonga qaytariladigan summa"
-                                : "Qo'shimcha to'lov (qarz)"}
+                                ? tr("Mehmonga qaytariladigan summa")
+                                : tr("Qo'shimcha to'lov (qarz)")}
                             </span>
                             <b className="tabular-nums">
-                              {maxAmount.toLocaleString()} So'm
+                              {tr("{{maxAmount}} So'm", { maxAmount: maxAmount.toLocaleString() })}
                             </b>
                           </p>
                           <div className="flex flex-wrap items-center gap-2">
@@ -2084,7 +2079,7 @@ export function BookingPage() {
                               onClick={() => setSettleAmount(String(maxAmount))}
                               className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
                             >
-                              To'liq
+                              {tr("To'liq")}
                             </button>
                             <select
                               className="flex h-9 items-center rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -2115,12 +2110,12 @@ export function BookingPage() {
                             {settleMutation.isPending && (
                               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                             )}
-                            {isRefund ? "Pulni qaytarish" : "To'lovni qabul qilish"}
+                            {isRefund ? tr("Pulni qaytarish") : tr("To'lovni qabul qilish")}
                           </Button>
                           <p className="text-[11px] leading-relaxed text-gray-500">
                             {isRefund
-                              ? "Qaytarim hisobotlarda minus bilan aks etadi (kassadan chiqim)."
-                              : "Qisman to'lash mumkin — to'lanmagan qismi bron qarzi sifatida saqlanadi."}
+                              ? tr("Qaytarim hisobotlarda minus bilan aks etadi (kassadan chiqim).")
+                              : tr("Qisman to'lash mumkin — to'lanmagan qismi bron qarzi sifatida saqlanadi.")}
                           </p>
                         </div>
                       )
@@ -2131,8 +2126,8 @@ export function BookingPage() {
                     <div className="space-y-4">
                       <div className="flex rounded-lg bg-gray-100 p-1">
                         {([
-                          { key: "DAILY", label: "Kunlik" },
-                          { key: "HOURLY", label: "Soatlik" },
+                          { key: "DAILY", label: tr("Kunlik") },
+                          { key: "HOURLY", label: tr("Soatlik") },
                         ] as const).map((opt) => (
                           <button
                             key={opt.key}
@@ -2153,7 +2148,7 @@ export function BookingPage() {
                       {isHourly ? (
                         <>
                           <div className="space-y-1">
-                            <label className="text-sm font-medium">Sana</label>
+                            <label className="text-sm font-medium">{tr("Sana")}</label>
                             <Input
                               type="date"
                               value={editValues.check_in_date || ""}
@@ -2164,7 +2159,7 @@ export function BookingPage() {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <label className="text-sm font-medium">Kirish vaqti</label>
+                              <label className="text-sm font-medium">{tr("Kirish vaqti")}</label>
                               <Input
                                 type="time"
                                 value={editValues.check_in_time || ""}
@@ -2174,7 +2169,7 @@ export function BookingPage() {
                               />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-sm font-medium">Chiqish vaqti</label>
+                              <label className="text-sm font-medium">{tr("Chiqish vaqti")}</label>
                               <Input
                                 type="time"
                                 value={editValues.check_out_time || ""}
@@ -2188,7 +2183,7 @@ export function BookingPage() {
                       ) : (
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <label className="text-sm font-medium">Kirish sanasi</label>
+                            <label className="text-sm font-medium">{tr("Kirish sanasi")}</label>
                             <Input
                               type="date"
                               value={editValues.check_in_date || ""}
@@ -2198,7 +2193,7 @@ export function BookingPage() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-sm font-medium">Chiqish sanasi</label>
+                            <label className="text-sm font-medium">{tr("Chiqish sanasi")}</label>
                             <Input
                               type="date"
                               value={editValues.check_out_date || ""}
@@ -2212,7 +2207,7 @@ export function BookingPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <label className="text-sm font-medium">Kattalar soni</label>
+                          <label className="text-sm font-medium">{tr("Kattalar soni")}</label>
                           <Input
                             type="number"
                             min="1"
@@ -2223,7 +2218,7 @@ export function BookingPage() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-sm font-medium">Bolalar soni</label>
+                          <label className="text-sm font-medium">{tr("Bolalar soni")}</label>
                           <Input
                             type="number"
                             min="0"
@@ -2236,9 +2231,9 @@ export function BookingPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-sm font-medium">Qo'shimcha izoh</label>
+                        <label className="text-sm font-medium">{tr("Qo'shimcha izoh")}</label>
                         <Input
-                          placeholder="Izoh..."
+                          placeholder={tr("Izoh...")}
                           value={editValues.notes || ""}
                           onChange={(e) =>
                             setEditValues((v: any) => ({ ...v, notes: e.target.value }))
@@ -2252,10 +2247,10 @@ export function BookingPage() {
                   {cancelMode && (
                     <div className="space-y-2 p-3 bg-red-50 border border-red-100 rounded-lg">
                       <p className="text-sm text-red-700 font-medium">
-                        Ushbu bronni bekor qilmoqchimisiz?
+                        {tr("Ushbu bronni bekor qilmoqchimisiz?")}
                       </p>
                       <Input
-                        placeholder="Bekor qilish sababi (ixtiyoriy)"
+                        placeholder={tr("Bekor qilish sababi (ixtiyoriy)")}
                         value={cancelReason}
                         onChange={(e) => setCancelReason(e.target.value)}
                       />
@@ -2269,17 +2264,16 @@ export function BookingPage() {
                         <div className="space-y-2 rounded-md border border-red-200 bg-white p-2.5">
                           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                             <span className="text-gray-500">
-                              To'langan:{" "}
+                              {tr("To'langan:")}{" "}
                               <b className="tabular-nums text-gray-900">
-                                {cancelQuote.paid_amount.toLocaleString()} So'm
+                                {tr("{{paid_amount}} So'm", { paid_amount: cancelQuote.paid_amount.toLocaleString() })}
                               </b>
                             </span>
                             {cancelQuote.fee_percent > 0 && (
                               <span className="text-gray-500">
-                                Sozlama bo'yicha ushlanadi:{" "}
+                                {tr("Sozlama bo'yicha ushlanadi:")}{" "}
                                 <b className="tabular-nums text-gray-900">
-                                  {cancelQuote.fee_percent}% ={" "}
-                                  {cancelQuote.fee_amount.toLocaleString()} So'm
+                                  {tr("{{fee_percent}}% = {{fee_amount}} So'm", { fee_percent: cancelQuote.fee_percent, fee_amount: cancelQuote.fee_amount.toLocaleString() })}
                                 </b>
                               </span>
                             )}
@@ -2288,7 +2282,7 @@ export function BookingPage() {
                           <div className="flex flex-wrap items-end gap-2">
                             <div className="space-y-1">
                               <label className="text-[11px] font-medium text-gray-500">
-                                Mehmonga qaytariladi
+                                {tr("Mehmonga qaytariladi")}
                               </label>
                               <Input
                                 type="number"
@@ -2306,30 +2300,28 @@ export function BookingPage() {
                               }
                               className="h-8 rounded-md border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
                             >
-                              To'liq qaytarish
+                              {tr("To'liq qaytarish")}
                             </button>
                             <button
                               type="button"
                               onClick={() => setRefundInput("0")}
                               className="h-8 rounded-md border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
                             >
-                              Qaytarilmasin
+                              {tr("Qaytarilmasin")}
                             </button>
                           </div>
 
                           {/* Ushlab qolinadigan qism — kiritilgan summadan
                               hisoblanib turadi, xodim natijani ko'radi */}
                           <p className="text-[11px] text-gray-500">
-                            Mehmonxonada qoladi:{" "}
+                            {tr("Mehmonxonada qoladi:")}{" "}
                             <b className="tabular-nums text-gray-900">
-                              {Math.max(
+                              {tr("{{amount}} So'm", { amount: Math.max(
                                 cancelQuote.paid_amount - (Number(refundInput) || 0),
                                 0
-                              ).toLocaleString()}{" "}
-                              So'm
+                              ).toLocaleString() })}
                             </b>
-                            . Qaytarim naqd to'lov sifatida yoziladi va moliya
-                            hisobotida ko'rinadi.
+                            {tr(". Qaytarim naqd to'lov sifatida yoziladi va moliya hisobotida ko'rinadi.")}
                           </p>
                         </div>
                       )}
@@ -2339,10 +2331,10 @@ export function BookingPage() {
                   {locked && cancelLocked && !cancelMode && (
                     <p className="text-xs text-gray-400">
                       {statusLocked
-                        ? "Bu holatdagi bronni tahrirlab bo'lmaydi."
+                        ? tr("Bu holatdagi bronni tahrirlab bo'lmaydi.")
                         : canUpdate
-                          ? "Bron tafsilotlarini tahrirlash faqat menejer yoki administrator uchun."
-                          : "Bu bronni o'zgartirish uchun ruxsatingiz yo'q."}
+                          ? tr("Bron tafsilotlarini tahrirlash faqat menejer yoki administrator uchun.")
+                          : tr("Bu bronni o'zgartirish uchun ruxsatingiz yo'q.")}
                     </p>
                   )}
                 </div>
@@ -2351,21 +2343,21 @@ export function BookingPage() {
                   {cancelMode ? (
                     <>
                       <Button variant="outline" onClick={() => setCancelMode(false)} disabled={cancelling}>
-                        Orqaga
+                        {tr("Orqaga")}
                       </Button>
                       <Button variant="destructive" onClick={handleCancelReservation} disabled={cancelling}>
                         {cancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Ha, bekor qilish
+                        {tr("Ha, bekor qilish")}
                       </Button>
                     </>
                   ) : editMode ? (
                     <>
                       <Button variant="outline" onClick={() => setEditMode(false)} disabled={saving}>
-                        Orqaga
+                        {tr("Orqaga")}
                       </Button>
                       <Button onClick={handleUpdateReservation} disabled={saving}>
                         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Saqlash
+                        {tr("Saqlash")}
                       </Button>
                     </>
                   ) : (
@@ -2377,7 +2369,7 @@ export function BookingPage() {
                           onClick={() => setCancelMode(true)}
                         >
                           <Ban className="h-4 w-4 mr-2" />
-                          Bronni bekor qilish
+                          {tr("Bronni bekor qilish")}
                         </Button>
                       ) : (
                         <span />
@@ -2393,12 +2385,12 @@ export function BookingPage() {
                           }
                         />
                         <Button variant="outline" onClick={closeManageModal}>
-                          Yopish
+                          {tr("Yopish")}
                         </Button>
                         {!locked && (
                           <Button onClick={() => setEditMode(true)}>
                             <Pencil className="h-4 w-4 mr-2" />
-                            Tahrirlash
+                            {tr("Tahrirlash")}
                           </Button>
                         )}
                       </div>
@@ -2415,13 +2407,12 @@ export function BookingPage() {
       <Dialog open={!!moveConfirm} onOpenChange={(o) => !o && setMoveConfirm(null)}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>Bronni ko'chirish</DialogTitle>
+            <DialogTitle>{tr("Bronni ko'chirish")}</DialogTitle>
           </DialogHeader>
           {moveConfirm && (
             <div className="py-2 space-y-2">
               <p className="text-sm text-gray-700">
-                <span className="font-semibold">{getGuestName(moveConfirm.res)}</span> bronini
-                boshqa kunga ko'chirmoqchimisiz?
+                <span className="font-semibold">{getGuestName(moveConfirm.res)}</span>{" "}{tr("bronini boshqa kunga ko'chirmoqchimisiz?")}
               </p>
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg text-sm">
                 <span className="text-gray-500">{moveConfirm.from}</span>
@@ -2441,13 +2432,13 @@ export function BookingPage() {
               onClick={() => setMoveConfirm(null)}
               disabled={updateReservationMutation.isPending}
             >
-              Bekor qilish
+              {tr("Bekor qilish")}
             </Button>
             <Button onClick={performMove} disabled={updateReservationMutation.isPending}>
               {updateReservationMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Ha, ko'chirish
+              {tr("Ha, ko'chirish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2458,7 +2449,7 @@ export function BookingPage() {
         <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
             <DialogTitle>
-              {dayList?.roomNumber} xona · {dayList?.date} — bronlar ({dayListItems.length})
+              {tr("{{room}} xona · {{date}} — bronlar ({{count}})", { room: dayList?.roomNumber, date: dayList?.date, count: dayListItems.length })}
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 max-h-80 overflow-y-auto divide-y divide-gray-100">
@@ -2494,12 +2485,12 @@ export function BookingPage() {
               </button>
             ))}
             {dayListItems.length === 0 && (
-              <p className="py-6 text-sm text-gray-400 text-center">Bronlar topilmadi</p>
+              <p className="py-6 text-sm text-gray-400 text-center">{tr("Bronlar topilmadi")}</p>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDayList(null)}>
-              Yopish
+              {tr("Yopish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2511,12 +2502,12 @@ export function BookingPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <Ban className="h-5 w-5" />
-              Xatolik
+              {tr("Xatolik")}
             </DialogTitle>
           </DialogHeader>
           <p className="py-2 text-sm text-gray-700 whitespace-pre-line">{errorDialog}</p>
           <DialogFooter>
-            <Button onClick={() => setErrorDialog(null)}>Tushunarli</Button>
+            <Button onClick={() => setErrorDialog(null)}>{tr("Tushunarli")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2532,7 +2523,7 @@ export function BookingPage() {
             {/* Pul ikkala yo'nalishda ham o'zgarmaydi — xodim buni
                 so'ramasdan turib bilishi kerak */}
             <span className="text-xs font-normal text-emerald-600">
-              summa o'zgarmadi
+              {tr("summa o'zgarmadi")}
             </span>
           </div>
         </div>

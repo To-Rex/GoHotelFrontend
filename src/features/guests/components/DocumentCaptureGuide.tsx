@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { useId } from "react"
 import type { DocumentSide, DocumentType } from "./documentScannerTypes"
+import { tr } from "@/i18n"
 
 /**
  * The small subset of camera-quality data this presentational component needs.
@@ -55,20 +56,20 @@ export function DocumentCaptureGuide({
   const isBack = isIdCard && side === "back"
   const isPassport = !isIdCard
   const title = isPassport
-    ? "Passportning ma’lumotlar sahifasi"
+    ? tr("Passportning ma’lumotlar sahifasi")
     : isBack
-      ? "2-qadam: ID kartaning orqa tomoni"
-      : "1-qadam: ID kartaning old tomoni"
+      ? tr("2-qadam: ID kartaning orqa tomoni")
+      : tr("1-qadam: ID kartaning old tomoni")
   const instruction = isPassport
-    ? "Rasmli sahifani to‘liq ramkaga joylang. Pastdagi ikki MRZ qatori ko‘rinib tursin."
+    ? tr("Rasmli sahifani to‘liq ramkaga joylang. Pastdagi ikki MRZ qatori ko‘rinib tursin.")
     : isBack
-      ? "Kartani ag‘daring. QR va pastdagi uch MRZ qatori to‘liq, yaltirashsiz ko‘rinsin."
-      : "Rasmli, yozuvli old tomonni ramkaga tekis joylang. Keyin orqa tomoni olinadi."
+      ? tr("Kartani ag‘daring. QR va pastdagi uch MRZ qatori to‘liq, yaltirashsiz ko‘rinsin.")
+      : tr("Rasmli, yozuvli old tomonni ramkaga tekis joylang. Keyin orqa tomoni olinadi.")
   const statusText = quality
     ? quality.usable
-      ? "Kadr aniq — o‘qishga tayyor"
-      : quality.hint || "Kadr yetarli aniq emas — kartani barqaror tuting"
-    : "Kartani ramkaga joylashtiring"
+      ? tr("Kadr aniq — o‘qishga tayyor")
+      : quality.hint || tr("Kadr yetarli aniq emas — kartani barqaror tuting")
+    : tr("Kartani ramkaga joylashtiring")
 
   return (
     <section
@@ -90,11 +91,11 @@ export function DocumentCaptureGuide({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-              {isPassport ? "1 / 1 sahifa" : isBack ? "2 / 2 tomon" : "1 / 2 tomon"}
+              {isPassport ? tr("1 / 1 sahifa") : isBack ? tr("2 / 2 tomon") : tr("1 / 2 tomon")}
             </p>
             {isIdCard && isBack && (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary">
-                <RotateCcw size={12} aria-hidden="true" /> Ag‘darildi
+                <RotateCcw size={12} aria-hidden="true" />{" "}{tr("Ag‘darildi")}
               </span>
             )}
           </div>
@@ -126,12 +127,12 @@ export function DocumentCaptureGuide({
 
         <span className="document-capture-guide__scan-beam" />
         <span className="document-capture-guide__scan-label">
-          <ScanLine size={13} /> {isBack || isPassport ? "MRZ zonasi" : "Old tomon"}
+          <ScanLine size={13} /> {isBack || isPassport ? tr("MRZ zonasi") : tr("Old tomon")}
         </span>
       </div>
 
       {isIdCard && (
-        <ol className="mt-3 grid grid-cols-2 gap-2" aria-label="ID karta suratga olish qadamlari">
+        <ol className="mt-3 grid grid-cols-2 gap-2" aria-label={tr("ID karta suratga olish qadamlari")}>
           <li
             className={join(
               "flex min-w-0 items-center gap-2 rounded-lg border px-2.5 py-2 text-xs transition-colors",
@@ -142,7 +143,7 @@ export function DocumentCaptureGuide({
             <span className={join("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold", isBack ? "bg-emerald-500 text-white" : "bg-primary text-primary-foreground")}>
               {isBack ? <Check size={12} aria-hidden="true" /> : "1"}
             </span>
-            <span className="truncate font-medium">Old tomoni</span>
+            <span className="truncate font-medium">{tr("Old tomoni")}</span>
           </li>
           <li
             className={join(
@@ -154,7 +155,7 @@ export function DocumentCaptureGuide({
             <span className={join("flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold", isBack ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
               2
             </span>
-            <span className="truncate font-medium">Orqa MRZ tomoni</span>
+            <span className="truncate font-medium">{tr("Orqa MRZ tomoni")}</span>
           </li>
         </ol>
       )}
@@ -211,7 +212,7 @@ function IdentityCardBack() {
       </div>
       <div className="document-capture-guide__mrz-lines">
         <span>‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹</span>
-        <span>UZB  123456789  123</span>
+        <span>{/* i18n:skip — MRZ namunasi */ "UZB  123456789  123"}</span>
         <span>‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹</span>
       </div>
     </>
@@ -234,7 +235,7 @@ function PassportDataPage() {
       </div>
       <div className="document-capture-guide__passport-mrz">
         <span>P&lt;UZB‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹</span>
-        <span>AA1234567UZB‹‹‹‹‹‹‹‹‹</span>
+        <span>{/* i18n:skip — MRZ namunasi */ "AA1234567UZB‹‹‹‹‹‹‹‹‹"}</span>
       </div>
     </>
   )

@@ -21,6 +21,7 @@ import {
   useSightings,
   type Sighting,
 } from "../api/vision"
+import { tr } from "@/i18n"
 
 /**
  * Kamera tanigan mehmonlar — navbardagi kichik panel.
@@ -45,10 +46,10 @@ const POLL_MS = 8000
 
 function timeAgo(iso: string): string {
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
-  if (seconds < 60) return "hozirgina"
+  if (seconds < 60) return tr("hozirgina")
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} daq. oldin`
-  return `${Math.floor(minutes / 60)} soat oldin`
+  if (minutes < 60) return tr("{{minutes}} daq. oldin", { minutes })
+  return tr("{{hours}} soat oldin", { hours: Math.floor(minutes / 60) })
 }
 
 function Avatar({
@@ -95,8 +96,8 @@ function Avatar({
     return (
       <img
         src={url}
-        alt={sighting.guest_name || "Mehmon"}
-        title={onZoom ? "Suratni katta ko'rish" : undefined}
+        alt={sighting.guest_name || tr("Mehmon")}
+        title={onZoom ? tr("Suratni katta ko'rish") : undefined}
         onClick={
           onZoom
             ? (e) => {
@@ -187,7 +188,7 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
   }
 
   const openZoom = (sighting: Sighting) => (url: string) =>
-    setZoom({ url, name: sighting.guest_name || "Mehmon" })
+    setZoom({ url, name: sighting.guest_name || tr("Mehmon") })
 
   const dismiss = (event: React.MouseEvent, sighting: Sighting) => {
     event.stopPropagation()
@@ -203,8 +204,8 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
           "relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
           open ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
         )}
-        title="Kamera tanigan mehmonlar"
-        aria-label="Kamera tanigan mehmonlar"
+        title={tr("Kamera tanigan mehmonlar")}
+        aria-label={tr("Kamera tanigan mehmonlar")}
       >
         <ScanFace size={18} />
         {items.length > 0 && (
@@ -218,9 +219,9 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
         <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-background shadow-lg">
           <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
             <Camera size={14} className="text-muted-foreground" />
-            <span className="text-sm font-semibold">Kamera tanidi</span>
+            <span className="text-sm font-semibold">{tr("Kamera tanidi")}</span>
             <span className="ml-auto text-[11px] text-muted-foreground">
-              oxirgi {WINDOW_MINUTES} daqiqa
+              {tr("oxirgi {{WINDOW_MINUTES}} daqiqa", { WINDOW_MINUTES })}
             </span>
             <button
               type="button"
@@ -229,8 +230,8 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                 setExpanded(true)
               }}
               className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              title="Kattaroq ko'rish"
-              aria-label="Kattaroq ko'rish"
+              title={tr("Kattaroq ko'rish")}
+              aria-label={tr("Kattaroq ko'rish")}
             >
               <Maximize2 size={14} />
             </button>
@@ -238,7 +239,7 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
 
           {items.length === 0 ? (
             <p className="px-4 py-6 text-center text-xs text-muted-foreground">
-              Hozircha tanilgan mehmon yo'q.
+              {tr("Hozircha tanilgan mehmon yo'q.")}
             </p>
           ) : (
             <div className="max-h-96 overflow-y-auto">
@@ -254,11 +255,11 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                   <Avatar sighting={sighting} onZoom={openZoom(sighting)} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">
-                      {sighting.guest_name || "Mehmon"}
+                      {sighting.guest_name || tr("Mehmon")}
                     </p>
                     <p className="truncate text-[11px] text-muted-foreground">
                       {timeAgo(sighting.seen_at)}
-                      {sighting.visits > 0 && ` · ${sighting.visits}-tashrif`}
+                      {sighting.visits > 0 && tr(" · {{visits}}-tashrif", { visits: sighting.visits })}
                       {sighting.camera_name ? ` · ${sighting.camera_name}` : ""}
                     </p>
                     <p
@@ -272,12 +273,12 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                       {sighting.has_active_reservation ? (
                         <>
                           <LogIn size={12} />
-                          Broni bor — kutib oling
+                          {tr("Broni bor — kutib oling")}
                         </>
                       ) : (
                         <>
                           <BedDouble size={12} />
-                          Yangi bandlov ochish
+                          {tr("Yangi bandlov ochish")}
                         </>
                       )}
                     </p>
@@ -286,8 +287,8 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                     type="button"
                     onClick={(e) => dismiss(e, sighting)}
                     className="flex-shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    title="Ro'yxatdan olib tashlash"
-                    aria-label="Ro'yxatdan olib tashlash"
+                    title={tr("Ro'yxatdan olib tashlash")}
+                    aria-label={tr("Ro'yxatdan olib tashlash")}
                   >
                     <X size={14} />
                   </button>
@@ -302,13 +303,13 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
         open={expanded}
         onClose={() => setExpanded(false)}
         icon={<Camera size={18} className="text-muted-foreground" />}
-        title="Kamera tanigan mehmonlar"
-        subtitle={`Oxirgi ${WINDOW_MINUTES} daqiqa · suratga bosib katta ko'ring`}
+        title={tr("Kamera tanigan mehmonlar")}
+        subtitle={tr("Oxirgi {{WINDOW_MINUTES}} daqiqa · suratga bosib katta ko'ring", { WINDOW_MINUTES })}
         maxWidth="max-w-3xl"
       >
         {items.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Hozircha tanilgan mehmon yo'q.
+            {tr("Hozircha tanilgan mehmon yo'q.")}
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -325,11 +326,11 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                 />
                 <div className="p-3">
                   <p className="truncate text-base font-semibold">
-                    {sighting.guest_name || "Mehmon"}
+                    {sighting.guest_name || tr("Mehmon")}
                   </p>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {timeAgo(sighting.seen_at)}
-                    {sighting.visits > 0 && ` · ${sighting.visits}-tashrif`}
+                    {sighting.visits > 0 && tr(" · {{visits}}-tashrif", { visits: sighting.visits })}
                     {sighting.camera_name ? ` · ${sighting.camera_name}` : ""}
                   </p>
                   <p
@@ -343,12 +344,12 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                     {sighting.has_active_reservation ? (
                       <>
                         <LogIn size={13} />
-                        Broni bor — kutib oling
+                        {tr("Broni bor — kutib oling")}
                       </>
                     ) : (
                       <>
                         <BedDouble size={13} />
-                        Yangi bandlov ochish
+                        {tr("Yangi bandlov ochish")}
                       </>
                     )}
                   </p>
@@ -359,15 +360,15 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                       className="flex-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-700"
                     >
                       {sighting.has_active_reservation
-                        ? "Bronini ochish"
-                        : "Bandlov ochish"}
+                        ? tr("Bronini ochish")
+                        : tr("Bandlov ochish")}
                     </button>
                     <button
                       type="button"
                       onClick={(e) => dismiss(e, sighting)}
                       className="rounded-lg border border-border px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      title="Ro'yxatdan olib tashlash"
-                      aria-label="Ro'yxatdan olib tashlash"
+                      title={tr("Ro'yxatdan olib tashlash")}
+                      aria-label={tr("Ro'yxatdan olib tashlash")}
                     >
                       <X size={14} />
                     </button>

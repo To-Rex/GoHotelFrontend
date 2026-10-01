@@ -34,6 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { tr, trc } from "@/i18n";
 
 const emptyForm = {
   first_name: "",
@@ -91,6 +92,8 @@ export const GuestsPage = () => {
   /* Qora ro'yxat oynasi — faqat administrator ochadi */
   const [blacklistGuest, setBlacklistGuest] = useState<Guest | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
+  // i18n:keys — qiymat NATIONALITIES bilan solishtiriladi va bazaga
+  // yoziladi, shuning uchun o'zbekcha qoladi (ekranda tr(qiymat)).
   const MRZ_COUNTRY: Record<string, string> = {
     UZB: "O'zbekiston",
     KAZ: "Qozog'iston",
@@ -184,11 +187,11 @@ export const GuestsPage = () => {
       return;
     }
     if (!GUEST_PHOTO_ACCEPT.split(",").includes(file.type)) {
-      setErrorMsg("Faqat JPG, PNG yoki WEBP rasm yuklash mumkin.");
+      setErrorMsg(tr("Faqat JPG, PNG yoki WEBP rasm yuklash mumkin."));
       return;
     }
     if (file.size > GUEST_PHOTO_MAX_BYTES) {
-      setErrorMsg("Rasm hajmi 5 MB dan oshmasligi kerak.");
+      setErrorMsg(tr("Rasm hajmi 5 MB dan oshmasligi kerak."));
       return;
     }
     setPhoto(file);
@@ -210,7 +213,7 @@ export const GuestsPage = () => {
     } catch {
       // Surat yuklanmasa ham biriktirish ishlaydi: vektor serverda saqlangan,
       // rasm faqat ko'rsatish uchun.
-      setErrorMsg("Surat yuklanmadi, lekin yuz baribir biriktiriladi.");
+      setErrorMsg(tr("Surat yuklanmadi, lekin yuz baribir biriktiriladi."));
     }
     // handlePhoto tanlovni tozalaydi, shuning uchun undan KEYIN.
     setPickedFace(group);
@@ -224,7 +227,7 @@ export const GuestsPage = () => {
       setErrorMsg(
         ok
           ? null
-          : "Yuzni biriktirib bo'lmadi. Qayta urinib ko'ring."
+          : tr("Yuzni biriktirib bo'lmadi. Qayta urinib ko'ring.")
       );
       if (ok) setPickedFace(null);
     }
@@ -261,7 +264,7 @@ export const GuestsPage = () => {
     const d = e?.response?.data?.detail;
     if (typeof d === "string") return d;
     if (Array.isArray(d)) return d.map((x: any) => x.msg).join(", ");
-    return "Xatolik yuz berdi. Qayta urinib ko'ring.";
+    return tr("Xatolik yuz berdi. Qayta urinib ko'ring.");
   };
 
   /* Yuzni mehmonga biriktiradi. Muvaffaqiyatni qaytaradi va HECH QACHON
@@ -293,7 +296,7 @@ export const GuestsPage = () => {
 
   const onSubmit = async () => {
     if (!form.first_name.trim()) {
-      setErrorMsg("Ism kiritilishi shart");
+      setErrorMsg(tr("Ism kiritilishi shart"));
       return;
     }
     setErrorMsg(null);
@@ -372,7 +375,7 @@ export const GuestsPage = () => {
         // Mehmon saqlandi — buni yo'qotmaymiz. Faqat yuz biriktirilmagani
         // aytiladi, chunki xodim keyingi tashrifda tanilishini kutadi.
         setErrorMsg(
-          "Mehmon saqlandi, lekin yuz biriktirilmadi — keyingi tashrifda avtomatik tanilmaydi."
+          tr("Mehmon saqlandi, lekin yuz biriktirilmadi — keyingi tashrifda avtomatik tanilmaydi.")
         );
       }
     } catch (e) {
@@ -396,7 +399,7 @@ export const GuestsPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Mehmonlar</h1>
+        <h1 className="text-2xl font-bold">{tr("Mehmonlar")}</h1>
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -407,22 +410,22 @@ export const GuestsPage = () => {
   }
 
   if (isError) {
-    return <div>Xatolik yuz berdi. Iltimos qayta urining.</div>;
+    return <div>{tr("Xatolik yuz berdi. Iltimos qayta urining.")}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mehmonlar</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tr("Mehmonlar")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Mehmonlar bazasi · jami {(guests || []).length} ta
+            {tr("Mehmonlar bazasi · jami {{count}} ta", { count: (guests || []).length })}
           </p>
         </div>
         {canCreate && (
           <Button onClick={openModal}>
             <Plus className="h-4 w-4 mr-2" />
-            Mehmon qo'shish
+            {tr("Mehmon qo'shish")}
           </Button>
         )}
       </div>
@@ -432,7 +435,7 @@ export const GuestsPage = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             className="pl-9"
-            placeholder="Ism, telefon yoki hujjat bo'yicha qidirish..."
+            placeholder={tr("Ism, telefon yoki hujjat bo'yicha qidirish...")}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -448,10 +451,10 @@ export const GuestsPage = () => {
             setSearchScanOpen(true);
           }}
           className="gap-2"
-          title="Passport yoki ID kartani skanerlab mijozni topish"
+          title={tr("Passport yoki ID kartani skanerlab mijozni topish")}
         >
           <ScanLine className="h-4 w-4" />
-          Skaner bilan qidirish
+          {tr("Skaner bilan qidirish")}
         </Button>
       </div>
 
@@ -459,8 +462,7 @@ export const GuestsPage = () => {
       {scanBanner?.type === "found" && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5">
           <p className="text-sm font-medium text-emerald-800">
-            Mijoz topildi: {scanBanner.guest.first_name} {scanBanner.guest.last_name}
-            {scanBanner.guest.phone ? ` · ${scanBanner.guest.phone}` : ""}
+            {tr("Mijoz topildi: {{first_name}} {{last_name}}{{v}}", { first_name: scanBanner.guest.first_name, last_name: scanBanner.guest.last_name, v: scanBanner.guest.phone ? ` · ${scanBanner.guest.phone}` : "" })}
           </p>
           <div className="flex shrink-0 gap-2">
             {canEdit && (
@@ -472,7 +474,7 @@ export const GuestsPage = () => {
                 }}
                 className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
               >
-                Ochish
+                {tr("Ochish")}
               </button>
             )}
             <button
@@ -480,7 +482,7 @@ export const GuestsPage = () => {
               onClick={() => setScanBanner(null)}
               className="rounded-md px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100"
             >
-              Yopish
+              {tr("Yopish")}
             </button>
           </div>
         </div>
@@ -488,11 +490,9 @@ export const GuestsPage = () => {
       {scanBanner?.type === "notfound" && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5">
           <p className="text-sm font-medium text-amber-800">
-            Bu hujjat bo'yicha mijoz topilmadi
-            {scanBanner.doc.firstName
+            {tr("Bu hujjat bo'yicha mijoz topilmadi{{v}} — yangi mehmon sifatida qo'shilsinmi?", { v: scanBanner.doc.firstName
               ? ` (${scanBanner.doc.firstName} ${scanBanner.doc.lastName || ""})`
-              : ""}{" "}
-            — yangi mehmon sifatida qo'shilsinmi?
+              : "" })}
           </p>
           <div className="flex shrink-0 gap-2">
             {canCreate && (
@@ -501,7 +501,7 @@ export const GuestsPage = () => {
                 onClick={() => openModalFromScan(scanBanner.doc)}
                 className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
               >
-                + Yangi mehmon qo'shish
+                {tr("+ Yangi mehmon qo'shish")}
               </button>
             )}
             <button
@@ -509,7 +509,7 @@ export const GuestsPage = () => {
               onClick={() => setScanBanner(null)}
               className="rounded-md px-2 py-1.5 text-xs text-amber-700 hover:bg-amber-100"
             >
-              Yopish
+              {tr("Yopish")}
             </button>
           </div>
         </div>
@@ -522,7 +522,7 @@ export const GuestsPage = () => {
           qarzlar ko'rinishi kerak. */}
       <DebtorsPanel
         mode="guests"
-        title="Qarzdor mehmonlar"
+        title={tr("Qarzdor mehmonlar")}
         initialLimit={5}
         onGuestClick={(id) => {
           const found = (guests || []).find((g) => g.id === id)
@@ -545,8 +545,8 @@ export const GuestsPage = () => {
               <Users className="h-8 w-8" />
               <p className="text-sm">
                 {search.trim()
-                  ? "Qidiruv bo'yicha mehmon topilmadi"
-                  : "Hozircha mehmonlar yo'q"}
+                  ? tr("Qidiruv bo'yicha mehmon topilmadi")
+                  : tr("Hozircha mehmonlar yo'q")}
               </p>
             </div>
           </div>
@@ -556,7 +556,7 @@ export const GuestsPage = () => {
               key={guest.id}
               role="button"
               tabIndex={0}
-              title="Turish tarixi"
+              title={tr("Turish tarixi")}
               onClick={() => setHistoryGuest(guest)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -580,17 +580,17 @@ export const GuestsPage = () => {
                           OLDIN ko'rishi kerak */}
                       {guest.blacklisted_at && (
                         <span
-                          title={guest.blacklist_reason || "Qora ro'yxatda"}
+                          title={guest.blacklist_reason || tr("Qora ro'yxatda")}
                           className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700"
                         >
                           <Ban className="h-3 w-3" />
-                          Qora ro'yxat
+                          {trc("status", "Qora ro'yxat")}
                         </span>
                       )}
                     </p>
                     {guest.nationality && (
                       <p className="text-xs text-gray-400 leading-tight truncate">
-                        {guest.nationality}
+                        {tr(guest.nationality)}
                       </p>
                     )}
                   </div>
@@ -652,7 +652,7 @@ export const GuestsPage = () => {
                     }}
                   >
                     <Pencil className="h-3.5 w-3.5 mr-1" />
-                    Tahrirlash
+                    {tr("Tahrirlash")}
                   </Button>
                   {/* Qora ro'yxatni FAQAT administrator boshqaradi */}
                   {isAdmin && (
@@ -666,7 +666,7 @@ export const GuestsPage = () => {
                       }}
                     >
                       <Ban className="h-3.5 w-3.5 mr-1" />
-                      {guest.blacklisted_at ? "Chiqarish" : "Qora ro'yxat"}
+                      {guest.blacklisted_at ? tr("Chiqarish") : tr("Qora ro'yxat")}
                     </Button>
                   )}
                 </div>
@@ -681,11 +681,11 @@ export const GuestsPage = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80">
-              <TableHead>Mehmon</TableHead>
-              <TableHead>Telefon</TableHead>
-              <TableHead>Hujjat</TableHead>
-              <TableHead>Tug'ilgan sana</TableHead>
-              {canEdit && <TableHead className="text-right">Amallar</TableHead>}
+              <TableHead>{tr("Mehmon")}</TableHead>
+              <TableHead>{tr("Telefon")}</TableHead>
+              <TableHead>{tr("Hujjat")}</TableHead>
+              <TableHead>{tr("Tug'ilgan sana")}</TableHead>
+              {canEdit && <TableHead className="text-right">{tr("Amallar")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -696,8 +696,8 @@ export const GuestsPage = () => {
                     <Users className="h-8 w-8" />
                     <p className="text-sm">
                       {search.trim()
-                        ? "Qidiruv bo'yicha mehmon topilmadi"
-                        : "Hozircha mehmonlar yo'q"}
+                        ? tr("Qidiruv bo'yicha mehmon topilmadi")
+                        : tr("Hozircha mehmonlar yo'q")}
                     </p>
                   </div>
                 </TableCell>
@@ -706,7 +706,7 @@ export const GuestsPage = () => {
               filtered.map((guest) => (
                 <TableRow
                   key={guest.id}
-                  title="Turish tarixi"
+                  title={tr("Turish tarixi")}
                   onClick={() => setHistoryGuest(guest)}
                   className="cursor-pointer"
                 >
@@ -722,17 +722,17 @@ export const GuestsPage = () => {
                           </span>
                           {guest.blacklisted_at && (
                             <span
-                              title={guest.blacklist_reason || "Qora ro'yxatda"}
+                              title={guest.blacklist_reason || tr("Qora ro'yxatda")}
                               className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700"
                             >
                               <Ban className="h-3 w-3" />
-                              Qora ro'yxat
+                              {trc("status", "Qora ro'yxat")}
                             </span>
                           )}
                         </p>
                         {guest.nationality && (
                           <p className="text-xs text-gray-400 leading-tight truncate">
-                            {guest.nationality}
+                            {tr(guest.nationality)}
                           </p>
                         )}
                       </div>
@@ -783,7 +783,7 @@ export const GuestsPage = () => {
                     }}
                   >
                         <Pencil className="h-3.5 w-3.5 mr-1" />
-                        Tahrirlash
+                        {tr("Tahrirlash")}
                       </Button>
                   {/* Qora ro'yxatni FAQAT administrator boshqaradi */}
                   {isAdmin && (
@@ -797,7 +797,7 @@ export const GuestsPage = () => {
                       }}
                     >
                       <Ban className="h-3.5 w-3.5 mr-1" />
-                      {guest.blacklisted_at ? "Chiqarish" : "Qora ro'yxat"}
+                      {guest.blacklisted_at ? tr("Chiqarish") : tr("Qora ro'yxat")}
                     </Button>
                   )}
                     </TableCell>
@@ -826,15 +826,15 @@ export const GuestsPage = () => {
         <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between gap-2 pr-6">
-              {editing ? "Mehmonni tahrirlash" : "Yangi mehmon"}
+              {editing ? tr("Mehmonni tahrirlash") : tr("Yangi mehmon")}
               <button
                 type="button"
                 onClick={() => setScanOpen(true)}
                 className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
-                title="Passport yoki ID kartani kamera bilan skanerlash"
+                title={tr("Passport yoki ID kartani kamera bilan skanerlash")}
               >
                 <ScanLine className="h-3.5 w-3.5" />
-                Skanerlash
+                {tr("Skanerlash")}
               </button>
             </DialogTitle>
           </DialogHeader>
@@ -845,31 +845,31 @@ export const GuestsPage = () => {
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Ism *</label>
-                <Input value={form.first_name} onChange={(e) => set("first_name", e.target.value)} placeholder="Ism" />
+                <label className="text-sm font-medium">{tr("Ism *")}</label>
+                <Input value={form.first_name} onChange={(e) => set("first_name", e.target.value)} placeholder={tr("Ism")} />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Familiya</label>
-                <Input value={form.last_name} onChange={(e) => set("last_name", e.target.value)} placeholder="Familiya" />
+                <label className="text-sm font-medium">{tr("Familiya")}</label>
+                <Input value={form.last_name} onChange={(e) => set("last_name", e.target.value)} placeholder={tr("Familiya")} />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Telefon</label>
+              <label className="text-sm font-medium">{tr("Telefon")}</label>
               <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998..." />
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Tug'ilgan sana</label>
+              <label className="text-sm font-medium">{tr("Tug'ilgan sana")}</label>
               <BirthDateSelect value={form.birth_date} onChange={(v) => set("birth_date", v)} />
             </div>
 
             {/* Hujjat ma'lumotlari */}
             <div className="pt-2 border-t border-gray-200 space-y-3">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Hujjat ma'lumotlari</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr("Hujjat ma'lumotlari")}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">Passport raqami</label>
+                  <label className="text-xs font-medium">{tr("Passport raqami")}</label>
                   <Input
                     value={form.passport_number}
                     onChange={(e) => set("passport_number", sanitizePassport(e.target.value))}
@@ -877,7 +877,7 @@ export const GuestsPage = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">Fuqaroligi</label>
+                  <label className="text-xs font-medium">{tr("Fuqaroligi")}</label>
                   <select
                     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     value={form.nationality}
@@ -886,17 +886,17 @@ export const GuestsPage = () => {
                     {/* Tahrirlashda ro'yxatda bo'lmagan fuqarolik qiymati ham
                         yo'qolmasligi uchun uni ro'yxat boshiga qo'shamiz */}
                     {form.nationality && !NATIONALITIES.includes(form.nationality) && (
-                      <option value={form.nationality}>{form.nationality}</option>
+                      <option value={form.nationality}>{tr(form.nationality)}</option>
                     )}
                     {NATIONALITIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>{tr(c)}</option>
                     ))}
                   </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">Hujjat turi</label>
+                  <label className="text-xs font-medium">{tr("Hujjat turi")}</label>
                   <select
                     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     value={form.id_document_type}
@@ -908,13 +908,13 @@ export const GuestsPage = () => {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">Hujjat raqami</label>
-                  <Input value={form.id_document_number} onChange={(e) => set("id_document_number", e.target.value)} placeholder="Hujjat raqami" />
+                  <label className="text-xs font-medium">{tr("Hujjat raqami")}</label>
+                  <Input value={form.id_document_number} onChange={(e) => set("id_document_number", e.target.value)} placeholder={tr("Hujjat raqami")} />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium">Manzil</label>
-                <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Yashash manzili" />
+                <label className="text-xs font-medium">{tr("Manzil")}</label>
+                <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder={tr("Yashash manzili")} />
               </div>
             </div>
 
@@ -925,7 +925,7 @@ export const GuestsPage = () => {
             {editing && (
               <div className="pt-2 border-t border-gray-200 space-y-2">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Yuz (Face ID)
+                  {tr("Yuz (Face ID)")}
                 </p>
                 {/* branchId berilmasa (masalan administratorda filial yo'q)
                     oyna filialni o'zi so'raydi — imkoniyat yopilib qolmaydi. */}
@@ -942,14 +942,14 @@ export const GuestsPage = () => {
 
             {/* Surat */}
             <div className="pt-2 border-t border-gray-200 space-y-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Surat (ixtiyoriy)</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{tr("Surat (ixtiyoriy)")}</p>
               {photoPreview ? (
                 <div className="flex items-center gap-3">
                   <img src={photoPreview} alt="" className="h-20 w-20 rounded-lg object-cover border border-gray-200" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-gray-600 truncate">{photo?.name}</p>
                     <button type="button" className="mt-1 text-xs text-red-600 hover:text-red-700 font-medium inline-flex items-center gap-1" onClick={() => handlePhoto(null)}>
-                      <X className="h-3 w-3" /> O'chirish
+                      <X className="h-3 w-3" />{" "}{tr("O'chirish")}
                     </button>
                   </div>
                 </div>
@@ -957,8 +957,8 @@ export const GuestsPage = () => {
                 <div className="space-y-2">
                   <label className="flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary-400 hover:bg-white transition-colors">
                     <Upload className="h-5 w-5 text-gray-400" />
-                    <span className="text-xs text-gray-600 font-medium">Passport surati / mehmon fotosi</span>
-                    <span className="text-[11px] text-gray-400">JPG, PNG, WEBP · 5 MB</span>
+                    <span className="text-xs text-gray-600 font-medium">{tr("Passport surati / mehmon fotosi")}</span>
+                    <span className="text-[11px] text-gray-400">{tr("JPG, PNG, WEBP · 5 MB")}</span>
                     <input type="file" accept={GUEST_PHOTO_ACCEPT} className="hidden" onChange={(e) => handlePhoto(e.target.files?.[0] || null)} />
                   </label>
                   {/* Filial IP kamerasidan tanlash — mehmon qabulxonaga
@@ -972,11 +972,11 @@ export const GuestsPage = () => {
                     className="w-full flex flex-col items-center justify-center gap-1 h-20 rounded-lg border-2 border-dashed border-primary-300 bg-primary-50/40 hover:border-primary-500 hover:bg-primary-50 transition-colors"
                   >
                     <Video className="h-5 w-5 text-primary-500" />
-                    <span className="text-xs text-primary-700 font-medium">Filial kamerasidan tanlash (Face ID)</span>
+                    <span className="text-xs text-primary-700 font-medium">{tr("Filial kamerasidan tanlash (Face ID)")}</span>
                     <span className="text-[11px] text-primary-500/80">
                       {editing
-                        ? "Tanlangan zahoti biriktiriladi"
-                        : "Keyingi tashrifda avtomatik tanaladi"}
+                        ? tr("Tanlangan zahoti biriktiriladi")
+                        : tr("Keyingi tashrifda avtomatik tanaladi")}
                     </span>
                   </button>
                 </div>
@@ -984,8 +984,8 @@ export const GuestsPage = () => {
               {pickedFace && (
                 <p className="flex items-center gap-1.5 text-[11px] text-primary-700">
                   <Video className="h-3.5 w-3.5" />
-                  {pickedFace.camera_name || pickedFace.camera_id} kamerasidan
-                  {pickedFace.count > 1 && ` · ${pickedFace.count} ta surat`} — saqlangach yuzi biriktiriladi
+                  {tr("{{v}} kamerasidan", { v: pickedFace.camera_name || pickedFace.camera_id })}
+                  {pickedFace.count > 1 && tr(" · {{count}} ta surat", { count: pickedFace.count })}{" "}{tr("— saqlangach yuzi biriktiriladi")}
                 </p>
               )}
             </div>
@@ -994,10 +994,10 @@ export const GuestsPage = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>Bekor qilish</Button>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>{tr("Bekor qilish")}</Button>
             <Button onClick={onSubmit} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Saqlash
+              {tr("Saqlash")}
             </Button>
           </DialogFooter>
         </DialogContent>

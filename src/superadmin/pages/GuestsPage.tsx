@@ -3,6 +3,7 @@ import { Loader2, Search, ShieldAlert } from "lucide-react"
 
 import { usePanelGuests } from "../api/panel"
 import { PanelEmpty, PanelHeading } from "../components/ui"
+import { tr, trc } from "@/i18n"
 
 /** Mehmonlar bazasi — u barcha mehmonxonalar uchun umumiy. */
 export function GuestsPage() {
@@ -13,8 +14,8 @@ export function GuestsPage() {
   return (
     <div>
       <PanelHeading
-        title="Mehmonlar"
-        subtitle="Baza barcha mehmonxonalar uchun umumiy"
+        title={tr("Mehmonlar")}
+        subtitle={tr("Baza barcha mehmonxonalar uchun umumiy")}
       />
 
       <form
@@ -28,7 +29,7 @@ export function GuestsPage() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ism, telefon yoki pasport..."
+          placeholder={tr("Ism, telefon yoki pasport...")}
           className="h-9 w-full rounded-lg border border-white/10 bg-slate-950/60 pl-8 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none"
         />
       </form>
@@ -38,18 +39,18 @@ export function GuestsPage() {
           <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
         </div>
       ) : rows.length === 0 ? (
-        <PanelEmpty>Mehmon topilmadi</PanelEmpty>
+        <PanelEmpty>{tr("Mehmon topilmadi")}</PanelEmpty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-white/5">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
                 <tr>
-                  <th className="px-3 py-2.5 font-medium">Ism</th>
-                  <th className="px-3 py-2.5 font-medium">Telefon</th>
-                  <th className="px-3 py-2.5 font-medium">Pasport</th>
-                  <th className="px-3 py-2.5 font-medium">Qo'shilgan</th>
-                  <th className="px-3 py-2.5 font-medium">Holat</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Ism")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Telefon")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Pasport")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Qo'shilgan")}</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Holat")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -76,7 +77,7 @@ export function GuestsPage() {
                           title={row.blacklist_reason || undefined}
                         >
                           <ShieldAlert className="h-3 w-3" />
-                          Qora ro'yxat
+                          {trc("status", "Qora ro'yxat")}
                         </span>
                       ) : (
                         <span className="text-xs text-slate-600">—</span>

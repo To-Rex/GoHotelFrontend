@@ -25,16 +25,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { tr } from "@/i18n"
 
 const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  CONFIRMED: "Tasdiqlangan",
-  CHECKED_IN: "Kirilgan",
-  CHECKED_OUT: "Chiqilgan",
-  CANCELLED: "Bekor qilingan",
-  NO_SHOW: "Kelmagan",
+  PENDING: tr("Kutilmoqda"),
+  CONFIRMED: tr("Tasdiqlangan"),
+  CHECKED_IN: tr("Kirilgan"),
+  CHECKED_OUT: tr("Chiqilgan"),
+  CANCELLED: tr("Bekor qilingan"),
+  NO_SHOW: tr("Kelmagan"),
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -74,7 +75,7 @@ function CollapsibleList({
         )}
       >
         <span>
-          {title} ({count} ta)
+          {tr("{{title}} ({{count}} ta)", { title, count })}
         </span>
         <ChevronDown
           className={cn(
@@ -178,32 +179,32 @@ export const AcceptedShiftReport = () => {
     {
       icon: CalendarCheck,
       accent: "bg-blue-50 text-blue-600",
-      label: "Bronlar",
+      label: tr("Bronlar"),
       // Ro'yxatda bekor qilinganlar ham ko'rinadi, shuning uchun kartochka
       // ham umumiy sonni ko'rsatadi — aks holda bitta so'z ikki xil raqamni
       // bildirardi
-      value: `${prevReservations.length} ta`,
+      value: tr("{{count}} ta", { count: prevReservations.length }),
       sub:
         prevReservations.length === activeRes.length
-          ? `${fmt(resTotal)} so'm`
-          : `${fmt(resTotal)} so'm · ${prevReservations.length - activeRes.length} ta bekor`,
+          ? tr("{{resTotal}} so'm", { resTotal: fmt(resTotal) })
+          : tr("{{resTotal}} so'm · {{v}} ta bekor", { resTotal: fmt(resTotal), v: prevReservations.length - activeRes.length }),
     },
     {
       icon: TrendingDown,
       accent: "bg-red-50 text-red-500",
-      label: "Xarajatlar",
-      value: `${prevExpenses.length} ta`,
-      sub: `${fmt(expTotal)} so'm`,
+      label: tr("Xarajatlar"),
+      value: tr("{{count}} ta", { count: prevExpenses.length }),
+      sub: tr("{{expTotal}} so'm", { expTotal: fmt(expTotal) }),
     },
     {
       icon: Store,
       accent: "bg-violet-50 text-violet-600",
-      label: "Do'kon savdolari",
-      value: `${paidShop.length} ta`,
+      label: tr("Do'kon savdolari"),
+      value: tr("{{count}} ta", { count: paidShop.length }),
       sub:
         shopPending > 0
-          ? `${fmt(shopTotal)} so'm · bronda ${shopPending} ta`
-          : `${fmt(shopTotal)} so'm`,
+          ? tr("{{shopTotal}} so'm · bronda {{shopPending}} ta", { shopTotal: fmt(shopTotal), shopPending })
+          : tr("{{shopTotal}} so'm", { shopTotal: fmt(shopTotal) }),
     },
     {
       icon: Wallet,
@@ -211,12 +212,12 @@ export const AcceptedShiftReport = () => {
         acc.cash_diff && acc.cash_diff !== 0
           ? "bg-red-50 text-red-500"
           : "bg-emerald-50 text-emerald-600",
-      label: "Kassa (topshirilgan)",
-      value: `${fmt(acc.counted_cash)} so'm`,
+      label: tr("Kassa (topshirilgan)"),
+      value: tr("{{counted_cash}} so'm", { counted_cash: fmt(acc.counted_cash) }),
       sub:
         acc.cash_diff && acc.cash_diff !== 0
-          ? `farq: ${fmt(acc.cash_diff)} so'm`
-          : "farqsiz topshirilgan",
+          ? tr("farq: {{cash_diff}} so'm", { cash_diff: fmt(acc.cash_diff) })
+          : tr("farqsiz topshirilgan"),
     },
   ]
 
@@ -230,19 +231,19 @@ export const AcceptedShiftReport = () => {
           </span>
           <div>
             <h2 className="font-bold text-emerald-900 leading-tight">
-              Qabul qilingan smena hisoboti — {acc.user_name}
+              {tr("Qabul qilingan smena hisoboti —")}{" "}{acc.user_name}
             </h2>
             <p className="text-xs text-emerald-700/80">
               {acc.started_at && format(new Date(acc.started_at), "dd.MM HH:mm")}
               {" – "}
               {acc.ended_at && format(new Date(acc.ended_at), "dd.MM HH:mm")}
               {acc.accepted_at &&
-                ` · qabul qilingan: ${format(new Date(acc.accepted_at), "HH:mm")}`}
+                tr(" · qabul qilingan: {{format}}", { format: format(new Date(acc.accepted_at), "HH:mm") })}
             </p>
           </div>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
-          Avvalgi xodim hisobida — sizga qo'shilmaydi
+          {tr("Avvalgi xodim hisobida — sizga qo'shilmaydi")}
         </span>
       </div>
 
@@ -275,13 +276,13 @@ export const AcceptedShiftReport = () => {
         {/* Kassa tafsiloti */}
         <div className="flex flex-wrap gap-2 text-xs">
           <span className="rounded-full bg-gray-50 px-2.5 py-1 font-medium text-gray-600 ring-1 ring-gray-200">
-            Boshlang'ich: <b className="tabular-nums">{fmt(acc.opening_cash)}</b> so'm
+            {tr("Boshlang'ich:")}{" "}<b className="tabular-nums">{fmt(acc.opening_cash)}</b>{" "}{tr("so'm")}
           </span>
           <span className="rounded-full bg-gray-50 px-2.5 py-1 font-medium text-gray-600 ring-1 ring-gray-200">
-            Kutilgan: <b className="tabular-nums">{fmt(acc.expected_cash)}</b> so'm
+            {tr("Kutilgan:")}{" "}<b className="tabular-nums">{fmt(acc.expected_cash)}</b>{" "}{tr("so'm")}
           </span>
           <span className="rounded-full bg-gray-50 px-2.5 py-1 font-medium text-gray-600 ring-1 ring-gray-200">
-            Sanalgan: <b className="tabular-nums">{fmt(acc.counted_cash)}</b> so'm
+            {tr("Sanalgan:")}{" "}<b className="tabular-nums">{fmt(acc.counted_cash)}</b>{" "}{tr("so'm")}
           </span>
           <span
             className={cn(
@@ -291,14 +292,14 @@ export const AcceptedShiftReport = () => {
                 : "bg-emerald-100 text-emerald-700"
             )}
           >
-            Farq: <span className="tabular-nums">{fmt(acc.cash_diff)}</span> so'm
+            {tr("Farq:")}{" "}<span className="tabular-nums">{fmt(acc.cash_diff)}</span>{" "}{tr("so'm")}
           </span>
         </div>
 
         {/* Avvalgi xodim bronlari */}
         {prevReservations.length > 0 && (
           <CollapsibleList
-            title="Smena davomidagi bronlar"
+            title={tr("Smena davomidagi bronlar")}
             count={prevReservations.length}
           >
             {/* MOBIL: bronlar ixcham karta ko'rinishida (jadval planshet/desktopda) */}
@@ -327,7 +328,7 @@ export const AcceptedShiftReport = () => {
                     </span>
                   </div>
                   <p className="mt-1 text-xs font-medium tabular-nums">
-                    {fmt(Number(r.total_amount))} so'm
+                    {tr("{{fmt}} so'm", { fmt: fmt(Number(r.total_amount)) })}
                   </p>
                 </div>
               ))}
@@ -337,11 +338,11 @@ export const AcceptedShiftReport = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vaqt</TableHead>
-                    <TableHead>Xona</TableHead>
-                    <TableHead>Mehmon</TableHead>
-                    <TableHead>Summa</TableHead>
-                    <TableHead>Holat</TableHead>
+                    <TableHead>{tr("Vaqt")}</TableHead>
+                    <TableHead>{tr("Xona")}</TableHead>
+                    <TableHead>{tr("Mehmon")}</TableHead>
+                    <TableHead>{tr("Summa")}</TableHead>
+                    <TableHead>{tr("Holat")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -359,7 +360,7 @@ export const AcceptedShiftReport = () => {
                         {guestName(r.guest_id)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap font-medium tabular-nums">
-                        {fmt(Number(r.total_amount))} so'm
+                        {tr("{{fmt}} so'm", { fmt: fmt(Number(r.total_amount)) })}
                       </TableCell>
                       <TableCell>
                         <span
@@ -382,7 +383,7 @@ export const AcceptedShiftReport = () => {
         {/* Avvalgi xodim xarajatlari */}
         {prevExpenses.length > 0 && (
           <CollapsibleList
-            title="Smena davomidagi xarajatlar"
+            title={tr("Smena davomidagi xarajatlar")}
             count={prevExpenses.length}
           >
             {/* MOBIL: xarajatlar ixcham karta ko'rinishida (jadval planshet/desktopda) */}
@@ -397,7 +398,7 @@ export const AcceptedShiftReport = () => {
                       <span className="truncate text-gray-700">{e.title}</span>
                     </span>
                     <span className="flex-shrink-0 font-medium tabular-nums">
-                      {fmt(Number(e.amount))} so'm
+                      {tr("{{fmt}} so'm", { fmt: fmt(Number(e.amount)) })}
                     </span>
                   </div>
                 </div>
@@ -408,9 +409,9 @@ export const AcceptedShiftReport = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vaqt</TableHead>
-                    <TableHead>Nomi</TableHead>
-                    <TableHead>Summa</TableHead>
+                    <TableHead>{tr("Vaqt")}</TableHead>
+                    <TableHead>{tr("Nomi")}</TableHead>
+                    <TableHead>{tr("Summa")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -421,7 +422,7 @@ export const AcceptedShiftReport = () => {
                       </TableCell>
                       <TableCell className="text-gray-700">{e.title}</TableCell>
                       <TableCell className="whitespace-nowrap font-medium tabular-nums">
-                        {fmt(Number(e.amount))} so'm
+                        {tr("{{fmt}} so'm", { fmt: fmt(Number(e.amount)) })}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -435,7 +436,7 @@ export const AcceptedShiftReport = () => {
           prevExpenses.length === 0 &&
           prevShopSales.length === 0 && (
             <p className="rounded-xl border border-dashed px-3 py-4 text-center text-sm text-gray-400">
-              Avvalgi smena davomida bron, xarajat yoki savdo qayd etilmagan.
+              {tr("Avvalgi smena davomida bron, xarajat yoki savdo qayd etilmagan.")}
             </p>
           )}
       </div>

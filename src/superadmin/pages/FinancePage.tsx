@@ -9,6 +9,7 @@ import {
   PanelInput,
   PanelSelect,
 } from "../components/ui"
+import { tr } from "@/i18n"
 
 const iso = (d: Date) => d.toISOString().slice(0, 10)
 
@@ -32,19 +33,19 @@ export function FinancePage() {
 
   const cards = [
     {
-      label: "Kirim",
+      label: tr("Kirim"),
       value: data?.income ?? 0,
       icon: TrendingUp,
       tone: "text-emerald-400",
     },
     {
-      label: "Chiqim",
+      label: tr("Chiqim"),
       value: data?.expense ?? 0,
       icon: TrendingDown,
       tone: "text-red-400",
     },
     {
-      label: "Sof foyda",
+      label: tr("Sof foyda"),
       value: data?.net ?? 0,
       icon: Wallet,
       // Sof foyda manfiy bo'lishi mumkin — rang shundan kelib chiqadi
@@ -54,27 +55,27 @@ export function FinancePage() {
 
   return (
     <div>
-      <PanelHeading title="Moliya" subtitle="Davr bo'yicha kirim va chiqim" />
+      <PanelHeading title={tr("Moliya")} subtitle={tr("Davr bo'yicha kirim va chiqim")} />
 
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
         <PanelInput
           type="date"
-          label="Boshlanish"
+          label={tr("Boshlanish")}
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
         />
         <PanelInput
           type="date"
-          label="Tugash"
+          label={tr("Tugash")}
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
         />
         <PanelSelect
-          label="Mehmonxona"
+          label={tr("Mehmonxona")}
           value={hotelId}
           onChange={(e) => setHotelId(e.target.value)}
         >
-          <option value="">Barchasi</option>
+          <option value="">{tr("Barchasi")}</option>
           {hotels.map((hotel) => (
             <option key={hotel.id} value={hotel.id}>
               {hotel.name}
@@ -102,20 +103,20 @@ export function FinancePage() {
           <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
         </div>
       ) : rows.length === 0 ? (
-        <PanelEmpty>Bu davrda to'lov yo'q</PanelEmpty>
+        <PanelEmpty>{tr("Bu davrda to'lov yo'q")}</PanelEmpty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-white/5">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px] text-sm">
               <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
                 <tr>
-                  <th className="px-3 py-2.5 font-medium">Mehmonxona</th>
+                  <th className="px-3 py-2.5 font-medium">{tr("Mehmonxona")}</th>
                   <th className="px-3 py-2.5 text-right font-medium">
-                    To'lovlar
+                    {tr("To'lovlar")}
                   </th>
-                  <th className="px-3 py-2.5 text-right font-medium">Kirim</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Chiqim</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Sof</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{tr("Kirim")}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{tr("Chiqim")}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{tr("Sof")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">

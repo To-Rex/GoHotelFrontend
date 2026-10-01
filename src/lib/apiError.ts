@@ -1,3 +1,4 @@
+import { tr } from "@/i18n"
 // Backend xatosidan o'qiladigan matn tuzish (FastAPI 422 -> detail massiv
 // bo'lishi mumkin). Boshqaruv sahifalarida umumiy ishlatiladi.
 export function apiErrorMessage(error: any): string {
@@ -11,5 +12,5 @@ export function apiErrorMessage(error: any): string {
       })
       .join("\n");
   }
-  return "Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.";
+  return tr("Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");
 }

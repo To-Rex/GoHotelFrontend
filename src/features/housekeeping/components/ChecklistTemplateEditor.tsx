@@ -20,6 +20,7 @@ import {
   useChecklistTemplates,
   useReplaceChecklistTemplates,
 } from "../api/checklistTemplates"
+import { tr } from "@/i18n"
 
 /**
  * Vazifa bandlarini tahrirlash — administrator uchun.
@@ -92,8 +93,8 @@ export function ChecklistTemplateEditor() {
       await replace.mutateAsync({ taskType, titles })
       setNotice(
         titles.length === 0
-          ? "Ro'yxat bo'shatildi — bu turdagi vazifalarda band ko'rsatilmaydi"
-          : `${titles.length} ta band saqlandi`
+          ? tr("Ro'yxat bo'shatildi — bu turdagi vazifalarda band ko'rsatilmaydi")
+          : tr("{{count}} ta band saqlandi", { count: titles.length })
       )
       window.setTimeout(() => setNotice(null), 3500)
     } catch (e) {
@@ -136,9 +137,8 @@ export function ChecklistTemplateEditor() {
         <>
           {usingDefaults && (
             <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
-              Bu tur uchun o'z ro'yxatingiz kiritilmagan — vazifalarga{" "}
-              <b>standart {defaultTitles.length} ta band</b> tushmoqda. Ularni
-              namuna sifatida yuklab, ustiga o'zgartirish mumkin.
+              {tr("Bu tur uchun o'z ro'yxatingiz kiritilmagan — vazifalarga")}{" "}
+              <b>{tr("standart {{count}} ta band", { count: defaultTitles.length })}</b>{" "}{tr("tushmoqda. Ularni namuna sifatida yuklab, ustiga o'zgartirish mumkin.")}
             </p>
           )}
 
@@ -151,26 +151,26 @@ export function ChecklistTemplateEditor() {
                 <Input
                   className="h-9 flex-1"
                   value={item.title}
-                  placeholder="Masalan: Shampun va sovunni almashtirish"
+                  placeholder={tr("Masalan: Shampun va sovunni almashtirish")}
                   onChange={(e) => setTitle(item.key, e.target.value)}
                 />
                 <div className="flex flex-shrink-0 items-center gap-0.5">
                   <IconButton
-                    label="Yuqoriga"
+                    label={tr("Yuqoriga")}
                     disabled={index === 0}
                     onClick={() => move(index, -1)}
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
                   </IconButton>
                   <IconButton
-                    label="Pastga"
+                    label={tr("Pastga")}
                     disabled={index === items.length - 1}
                     onClick={() => move(index, 1)}
                   >
                     <ArrowDown className="h-3.5 w-3.5" />
                   </IconButton>
                   <IconButton
-                    label="O'chirish"
+                    label={tr("O'chirish")}
                     danger
                     onClick={() =>
                       setItems((list) => list.filter((i) => i.key !== item.key))
@@ -185,8 +185,7 @@ export function ChecklistTemplateEditor() {
 
           {items.length === 0 && (
             <p className="rounded-lg border border-dashed py-6 text-center text-sm text-gray-400">
-              Band yo'q. Saqlansa, bu turdagi vazifalarda ro'yxat
-              ko'rsatilmaydi.
+              {tr("Band yo'q. Saqlansa, bu turdagi vazifalarda ro'yxat ko'rsatilmaydi.")}
             </p>
           )}
 
@@ -197,7 +196,7 @@ export function ChecklistTemplateEditor() {
               onClick={() => setItems((list) => [...list, draft("")])}
             >
               <Plus className="mr-1.5 h-4 w-4" />
-              Band qo'shish
+              {tr("Band qo'shish")}
             </Button>
 
             {defaultTitles.length > 0 && (
@@ -205,17 +204,17 @@ export function ChecklistTemplateEditor() {
                 variant="outline"
                 size="sm"
                 onClick={() => setItems(defaultTitles.map(draft))}
-                title="Standart ro'yxatni yuklab, ustiga tahrirlash"
+                title={tr("Standart ro'yxatni yuklab, ustiga tahrirlash")}
               >
                 <RotateCcw className="mr-1.5 h-4 w-4" />
-                Standartdan boshlash
+                {tr("Standartdan boshlash")}
               </Button>
             )}
 
             <span className="flex-1" />
 
             {changed && (
-              <span className="text-xs text-amber-600">Saqlanmagan o'zgarish</span>
+              <span className="text-xs text-amber-600">{tr("Saqlanmagan o'zgarish")}</span>
             )}
             <Button
               size="sm"
@@ -227,7 +226,7 @@ export function ChecklistTemplateEditor() {
               ) : (
                 <Save className="mr-1.5 h-4 w-4" />
               )}
-              Saqlash
+              {tr("Saqlash")}
             </Button>
           </div>
 
@@ -243,10 +242,7 @@ export function ChecklistTemplateEditor() {
           )}
 
           <p className="text-[11px] leading-relaxed text-gray-400">
-            O'zgarish faqat YANGI vazifalarga ta'sir qiladi: ochilgan
-            vazifalar o'z nusxasi bilan qoladi, shuning uchun farrosh
-            belgilagan ishlar tarixi buzilmaydi. "{label}" turidagi har
-            vazifa shu ro'yxat bilan ochiladi.
+            {tr("O'zgarish faqat YANGI vazifalarga ta'sir qiladi: ochilgan vazifalar o'z nusxasi bilan qoladi, shuning uchun farrosh belgilagan ishlar tarixi buzilmaydi. \"{{label}}\" turidagi har vazifa shu ro'yxat bilan ochiladi.", { label })}
           </p>
         </>
       )}
