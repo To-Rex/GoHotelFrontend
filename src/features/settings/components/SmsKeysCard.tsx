@@ -45,7 +45,8 @@ export function SmsKeysCard() {
           <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
             Har filialga Xabarchi API kaliti biriktiriladi. Kalit kiritilgan
             filialda mijozga bron yaratilganda va to'lov qabul qilinganda SMS
-            yuboriladi. Kalit serverda shifrlangan holda saqlanadi.
+            yuboriladi. SMS'ni Xabarchi'ga ulangan telefon yuboradi — u onlayn
+            bo'lishi kerak. Kalit serverda shifrlangan holda saqlanadi.
           </p>
         </div>
       </div>
@@ -104,7 +105,15 @@ function BranchSmsRow({ branch }: { branch: any }) {
     }
     try {
       const res = await test.mutateAsync({ branchId: branch.id, phone: phone.trim() })
-      setNote({ ok: true, text: "Sinov SMS yuborildi: " + res.phone })
+      // Xabarchi SMS'ni navbatga oladi — uni hisobga ulangan telefon yuboradi.
+      // "Yuborildi" deyish chalg'itardi: telefon oflayn bo'lsa SMS kutib turadi.
+      setNote({
+        ok: true,
+        text:
+          `Sinov SMS Xabarchi navbatiga qo'yildi: ${res.phone}. ` +
+          "Ulangan telefon onlayn bo'lsa bir necha soniyada yetib boradi" +
+          (res.message_id ? ` (xabar #${res.message_id}).` : "."),
+      })
     } catch (e) {
       setNote({ ok: false, text: apiErrorMessage(e) })
     }

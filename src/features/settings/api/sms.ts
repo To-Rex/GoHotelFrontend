@@ -55,10 +55,13 @@ export const useDeleteBranchSms = () => {
 export const useTestBranchSms = () =>
   useMutation({
     mutationFn: async ({ branchId, phone }: { branchId: string; phone: string }) => {
-      const { data } = await api.post<{ ok: boolean; phone: string }>(
-        `/branches/${branchId}/sms/test`,
-        { phone }
-      )
+      // status: Xabarchi navbatidagi holat ("queued"); message_id — u yerdagi raqam
+      const { data } = await api.post<{
+        ok: boolean
+        phone: string
+        status?: string | null
+        message_id?: number | null
+      }>(`/branches/${branchId}/sms/test`, { phone })
       return data
     },
   })
