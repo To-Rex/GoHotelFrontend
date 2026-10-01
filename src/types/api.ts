@@ -245,6 +245,9 @@ export interface Employee {
   work_hours_per_day?: number;
   work_start?: string;
   work_end?: string;
+  // Ish vaqti nazorati yoqilgan bo'lsa ham istalgan vaqtda ishlay oladi
+  // (faqat administrator belgilaydi). Eski serverda kelmaydi — `false`.
+  allow_outside_work_hours?: boolean;
   termination_date?: string | null;
   is_deleted: boolean;
   last_login_at?: string | null;

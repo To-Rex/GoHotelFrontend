@@ -21,6 +21,14 @@ export interface User {
   work_hours_per_day?: number;
   work_start?: string;
   work_end?: string;
+  // Ish vaqti nazorati (/auth/me dan). Eski serverda kelmaydi — `undefined`
+  // "to'silmagan" deb qabul qilinadi.
+  // Xodim ish vaqtidan tashqari ham ishlay oladimi (faqat admin belgilaydi)
+  allow_outside_work_hours?: boolean;
+  // Mehmonxonada "Ish vaqti nazorati" yoqilganmi
+  work_hours_enforced?: boolean;
+  // Server HOZIR bu xodimning so'rovlarini ish vaqti sababli to'sadimi
+  work_hours_blocked?: boolean;
   // Profil sahifasi uchun qo'shimcha maydonlar (/auth/me dan keladi)
   phone?: string | null;
   status?: string;

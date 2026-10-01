@@ -38,6 +38,7 @@ import {
   findMatchingTemplate,
 } from "../permissionTemplates"
 import { useBranches } from "@/features/rooms/api/rooms"
+import { useWorkHoursSettings } from "@/features/settings/api/workHours"
 import type { Employee } from "@/types/api"
 import { usePermissions } from "@/lib/permissions"
 import { FaceUsersCard } from "@/features/auth/components/FaceUsersCard"
@@ -45,6 +46,7 @@ import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Table,
   TableBody,
@@ -113,6 +115,9 @@ export const EmployeesPage = () => {
   const { data: allPermissions = [] } = usePermissionsList()
   // Xodim suratlari (user id -> URL) — jadval avatarlari uchun
   const { data: photosMap = {} } = useEmployeePhotos()
+  // Ish vaqti nazorati yoqilganmi — faqat admin uchun izoh (belgi qachon
+  // ahamiyatga ega bo'lishini ko'rsatish)
+  const { data: workHoursSettings } = useWorkHoursSettings(isAdmin)
   const queryClient = useQueryClient()
 
   const createMutation = useCreateEmployee()
@@ -182,6 +187,11 @@ export const EmployeesPage = () => {
   const [workStart, setWorkStart] = useState("09:00")
   const [workEnd, setWorkEnd] = useState("18:00")
   const [workHours, setWorkHours] = useState("8")
+  // Ish vaqti nazorati yoqilgan bo'lsa ham istalgan vaqtda ishlay oladi.
+  // Faqat administrator ko'radi va o'zgartiradi (server ham tekshiradi).
+  const [allowOutside, setAllowOutside] = useState(false)
+  // Administrator hisoblari hech qachon cheklanmaydi — ularga belgi kerak emas
+  const canSetOutside = isAdmin && (!editing || editing.user_type === "EMPLOYEE")
 
   // Boshlanish vaqti va kunlik soat kiritiladi — tugash vaqti avtomatik
   // hisoblanadi (tungi smenada yarim tundan oshib ketishi ham mumkin).
@@ -275,6 +285,7 @@ export const EmployeesPage = () => {
     setWorkStart("09:00")
     setWorkEnd("17:00")
     setWorkHours("8")
+    setAllowOutside(false)
     // Menejer uchun yagona variant — Farrosh; admin xohlasa keyin tanlaydi
     setRoleTemplateId(isAdmin ? "" : "housekeeper")
     handlePhoto(null)
@@ -296,6 +307,7 @@ export const EmployeesPage = () => {
     setWorkStart(e.work_start || "09:00")
     setWorkEnd(e.work_end || "18:00")
     setWorkHours(String(e.work_hours_per_day ?? 8))
+    setAllowOutside(e.allow_outside_work_hours === true)
     // Tahrirlashda rol standart "o'zgartirilmaydi" — tanlansagina almashadi
     setRoleTemplateId("")
     handlePhoto(null)
@@ -342,6 +354,8 @@ export const EmployeesPage = () => {
           work_end: workEnd,
           username: newUsername,
           password: newPassword,
+          // Faqat admin yuboradi — menejer bu belgini o'zgartira olmaydi
+          allow_outside_work_hours: canSetOutside ? allowOutside : undefined,
         })
         // Yangi surat tanlangan bo'lsa — yuklaymiz (xato saqlashni buzmaydi)
         const photoErr = await uploadPhotoFor(editing.id)
@@ -407,6 +421,8 @@ export const EmployeesPage = () => {
           work_hours_per_day: hoursNum,
           work_start: workStart,
           work_end: workEnd,
+          // Faqat admin yuboradi — menejer bu belgini qo'ya olmaydi
+          allow_outside_work_hours: canSetOutside ? allowOutside : undefined,
         })
 
         // Surat tanlangan bo'lsa — yuklaymiz. Xodim allaqachon yaratilgan,
@@ -546,6 +562,16 @@ export const EmployeesPage = () => {
                   {tr("{{count}} soat", { count: e.work_hours_per_day ?? 8 })}
                 </span>
               </p>
+              {e.user_type === "EMPLOYEE" && e.allow_outside_work_hours === true && (
+                <p className="pl-[22px]">
+                  <span
+                    title={tr("Ish vaqti nazorati yoqilgan bo'lsa ham bu xodim istalgan vaqtda tizimda ishlay oladi.")}
+                    className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700"
+                  >
+                    {tr("Ish vaqtidan tashqari ham")}
+                  </span>
+                </p>
+              )}
             </div>
 
             {(canEdit || canDelete) && (
@@ -750,6 +776,14 @@ export const EmployeesPage = () => {
                       {" "}
                       · {tr("{{count}} soat", { count: e.work_hours_per_day ?? 8 })}
                     </span>
+                    {e.user_type === "EMPLOYEE" && e.allow_outside_work_hours === true && (
+                      <span
+                        title={tr("Ish vaqti nazorati yoqilgan bo'lsa ham bu xodim istalgan vaqtda tizimda ishlay oladi.")}
+                        className="ml-1.5 inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700"
+                      >
+                        {tr("Ish vaqtidan tashqari ham")}
+                      </span>
+                    )}
                   </TableCell>
                   {(canEdit || canDelete) && (
                     <TableCell className="text-right">
@@ -1018,6 +1052,30 @@ export const EmployeesPage = () => {
                   {tr("Boshlanish vaqti va kunlik soatni kiriting — tugash vaqti avtomatik hisoblanadi.")}
                 </p>
               </div>
+              {/* Ish vaqti nazoratidan ozod qilish — faqat administrator */}
+              {canSetOutside && (
+                <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-gray-200 p-3">
+                  <Checkbox
+                    checked={allowOutside}
+                    onCheckedChange={(v) => setAllowOutside(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm">
+                    <b className="font-medium text-gray-900">
+                      {tr("Ish vaqtidan tashqari ham ishlay oladi")}
+                    </b>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                      {tr("Ish vaqti nazorati yoqilgan bo'lsa ham bu xodim istalgan vaqtda tizimda ishlay oladi.")}
+                      {workHoursSettings && !workHoursSettings.enforce && (
+                        <>
+                          {" "}
+                          {tr("Hozir nazorat o'chirilgan (Sozlamalar → Xodimlar) — belgi u yoqilgandagina ahamiyatga ega.")}
+                        </>
+                      )}
+                    </span>
+                  </span>
+                </label>
+              )}
             </FormSection>
             {/* Rol — yaratishda biriktiriladi, tahrirlashda almashtiriladi.
                 Menejer faqat Farrosh va Texnik xizmatni tanlay oladi,

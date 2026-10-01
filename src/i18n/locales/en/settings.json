@@ -209,5 +209,19 @@
   "soat": "hour",
   "yuklanmoqda...": "loading...",
   "clear::Tozalashni boshlash": "Start clearing",
-  "https://instagram.com/mehmonxona": "https://instagram.com/hotel"
+  "https://instagram.com/mehmonxona": "https://instagram.com/hotel",
+  "Ish vaqti nazorati — xodimlar o'z ish vaqtidan tashqarida tizimda ishlay oladimi": "Working hours control — whether employees can use the system outside their working hours",
+  "Ish vaqti nazorati": "Working hours control",
+  "Xodim o'z ish vaqtidan tashqarida tizimda ishlay oladimi. Har bir xodimning ish vaqti «Xodimlar» sahifasida, xodimni qo'shish yoki tahrirlash oynasida belgilanadi.": "Whether an employee can use the system outside their working hours. Each employee's working hours are set on the \"Employees\" page, in the add or edit employee window.",
+  "Ish vaqtidan tashqarida ishlash taqiqlansin": "Prohibit work outside working hours",
+  "Ish vaqti tugagan yoki hali boshlanmagan xodim tizimga kirsa ham ishlay olmaydi — ish vaqti boshlanishini kutish sahifasini ko'radi. Ish vaqti boshlangach sahifa o'zi ochiladi.": "An employee whose working hours have ended or not yet started can sign in but cannot work — they see a page waiting for their working hours to begin. Once working hours start, the page opens by itself.",
+  "Cheklov yo'q — xodimlar avvalgidek istalgan vaqtda ishlaydi.": "No restriction — employees work at any time, as before.",
+  "Kimlar cheklanmaydi": "Who is not restricted",
+  "Administratorlar — hech qachon cheklanmaydi.": "Administrators — never restricted.",
+  "«Ish vaqtidan tashqari ham ishlay oladi» belgisi qo'yilgan xodimlar. Belgini faqat administrator xodimni qo'shish yoki tahrirlash oynasida qo'yadi.": "Employees marked \"May also work outside working hours\". Only an administrator can set this mark, in the add or edit employee window.",
+  "Kassasi ochiq xodim (resepshn): ish vaqti tugaganda avvalgidek «Davom etish» tugmasi bilan ishlashda davom etadi, kassani yopishi va smenani topshirishi mumkin.": "An employee with an open cash desk (reception): when working hours end, they keep working with the \"Continue\" button as before, and can close the cash desk and hand over the shift.",
+  "Ish vaqti 24 soat qilib belgilangan xodimlar.": "Employees whose working hours are set to 24 hours.",
+  "Ish vaqti belgilanmagan xodimga 09:00–18:00 amal qiladi — yoqishdan oldin xodimlar jadvalini tekshiring.": "Employees without set working hours get 09:00–18:00 — check employee schedules before turning this on.",
+  "Smena oddiy rejimda: kassa ochilmaydi, shuning uchun resepshn xodimi ham ish vaqtidan keyin boshqalar kabi cheklanadi. Kerak bo'lsa, unga «Ish vaqtidan tashqari ham ishlay oladi» belgisini qo'ying.": "Shifts are in simple mode: no cash desk is opened, so reception staff are restricted after working hours like everyone else. If needed, mark them \"May also work outside working hours\".",
+  "Xodimlar sahifasiga o'tish": "Go to Employees"
 }

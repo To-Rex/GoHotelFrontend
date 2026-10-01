@@ -14,6 +14,7 @@ import {
   SHIFT_REDIRECT_ROUTE,
 } from "@/features/shifts/api/shifts";
 import { api } from "@/lib/api";
+import { OFF_HOURS_ROUTE, isWorkHoursBlocked } from "@/lib/workHoursBlock";
 import { cn } from "@/lib/utils";
 import { useSeo } from "@/lib/seo";
 import { tr } from "@/i18n";
@@ -52,6 +53,12 @@ export const MainLayout = () => {
     document.title = user?.hotel_name || "GoHotel";
   }, [user?.hotel_name]);
 
+  // Ish vaqti nazorati: server shu xodimni HOZIR to'syaptimi. Faqat shu
+  // qobiq ochilganda YANGI olingan /auth/me javobiga qaraladi (saqlangan
+  // eski qiymatga emas) — kecha kechqurun saqlangan belgi ertalab xodimni
+  // bekorga chiqarib yubormasligi uchun.
+  const [offHours, setOffHours] = useState(false);
+
   // Sahifa yangilanganda profilni (ruxsatlarni ham) qayta o'qiymiz — localStorage'dagi
   // eski sessiyada `permissions` bo'lmasligi yoki admin ruxsatlarni o'zgartirgan
   // bo'lishi mumkin. Xatolik bo'lsa e'tiborsiz qoldiramiz: 401 ni api interceptor hal qiladi.
@@ -61,7 +68,9 @@ export const MainLayout = () => {
     api
       .get("/auth/me")
       .then(({ data }) => {
-        if (!cancelled) setUser(data);
+        if (cancelled) return;
+        setUser(data);
+        if (isWorkHoursBlocked(data)) setOffHours(true);
       })
       .catch(() => {});
     return () => {
@@ -71,6 +80,14 @@ export const MainLayout = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Ish vaqtidan tashqarida — alohida ochiq sahifaga. U MainLayout'dan
+  // tashqarida turadi (aylanma yo'naltirish yo'q) va ish vaqti boshlangach
+  // xodimni o'zi qaytaradi. Kassasi ochiq resepshn xodimini server
+  // to'smaydi — uning "Davom etish" oqimi avvalgidek ishlaydi.
+  if (offHours) {
+    return <Navigate to={OFF_HOURS_ROUTE} replace />;
   }
 
   // Ruxsati yo'q sahifaga to'g'ridan-to'g'ri URL orqali kirilsa (yoki xodim

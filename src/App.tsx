@@ -4,6 +4,7 @@ import { LandingRedirect } from "./components/layout/LandingRedirect";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { DevicePendingPage } from "./features/auth/pages/DevicePendingPage";
 import { ServiceStoppedPage } from "./features/auth/pages/ServiceStoppedPage";
+import { OffHoursPage } from "./features/auth/pages/OffHoursPage";
 import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
 import { BookingPage } from "./features/reservations/pages/BookingPage";
 import { RoomsPage } from "./features/rooms/pages/RoomsPage";
@@ -60,6 +61,10 @@ function App() {
         {/* Mehmonxona xizmati to'xtatilganda ko'rinadigan sahifa —
             himoyalangan yo'llardan tashqarida turadi */}
         <Route path="/service-stopped" element={<ServiceStoppedPage />} />
+        {/* Ish vaqtidan tashqarida (nazorat yoqilgan bo'lsa) — xuddi
+            shunday himoyalangan yo'llardan tashqarida: MainLayout bu
+            yerga yo'naltiradi, aylanma yo'naltirish bo'lmasligi uchun */}
+        <Route path="/off-hours" element={<OffHoursPage />} />
 
         {/* Boshqaruv paneli — alohida tizim (src/superadmin). O'z kirishi
             va o'z tokeni bor, mehmonxona sessiyasiga bog'liq emas. */}

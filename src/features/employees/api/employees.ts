@@ -72,6 +72,8 @@ interface EmployeeCreatePayload {
   work_hours_per_day?: number;
   work_start?: string;
   work_end?: string;
+  // Faqat admin: ish vaqtidan tashqari ham ishlay oladi
+  allow_outside_work_hours?: boolean;
 }
 
 export const useCreateEmployee = () => {
@@ -99,6 +101,8 @@ interface EmployeeUpdatePayload {
   // Faqat admin: login/parol almashtirish
   username?: string;
   password?: string;
+  // Faqat admin: ish vaqtidan tashqari ham ishlay oladi
+  allow_outside_work_hours?: boolean;
 }
 
 export const useUpdateEmployee = () => {

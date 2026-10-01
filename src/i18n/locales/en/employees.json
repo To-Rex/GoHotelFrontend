@@ -163,5 +163,9 @@
   "perm::Mehmon qo'shish": "Add guest",
   "perm::Xona qo'shish": "Add room",
   "perm::Qavat qo'shish": "Add floor",
-  "perm::Xodim qo'shish": "Add employee"
+  "perm::Xodim qo'shish": "Add employee",
+  "Ish vaqtidan tashqari ham ishlay oladi": "May also work outside working hours",
+  "Ish vaqti nazorati yoqilgan bo'lsa ham bu xodim istalgan vaqtda tizimda ishlay oladi.": "Even when working hours control is on, this employee can use the system at any time.",
+  "Hozir nazorat o'chirilgan (Sozlamalar → Xodimlar) — belgi u yoqilgandagina ahamiyatga ega.": "The control is currently off (Settings → Employees) — the mark only matters once it is turned on.",
+  "Ish vaqtidan tashqari ham": "Off-hours allowed"
 }

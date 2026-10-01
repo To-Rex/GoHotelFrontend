@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/lib/api";
 import { isHotelBlockCode } from "@/lib/hotelBlock";
+import { OFF_HOURS_ROUTE, isWorkHoursBlocked } from "@/lib/workHoursBlock";
 import { panelLogin } from "@/superadmin/api/panel";
 import { apiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
@@ -153,7 +154,10 @@ export const LoginPage = () => {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
     setAuth(profileRes.data, tokens.access_token, tokens.refresh_token);
-    navigate("/start");
+    /* Ish vaqtidan tashqarida kirish ruxsat etilgan, lekin ishlab bo'lmaydi
+       (nazorat yoqilgan bo'lsa) — xodim to'g'ridan-to'g'ri sabab sahifasiga
+       o'tadi. U ish vaqti boshlangach o'zi ichkariga qaytaradi. */
+    navigate(isWorkHoursBlocked(profileRes.data) ? OFF_HOURS_ROUTE : "/start");
   };
 
   const handleFaceCapture = async (photo: Blob): Promise<string | null> => {

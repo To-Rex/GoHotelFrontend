@@ -15,6 +15,11 @@ export const api = axios.create({
 });
 import { getDeviceId } from "./deviceId";
 import { HOTEL_BLOCK_MESSAGE_KEY, isHotelBlockCode } from "./hotelBlock";
+import {
+  isOutsideWorkHoursResponse,
+  redirectToOffHours,
+  rememberWorkHoursBlockMessage,
+} from "./workHoursBlock";
 
 api.interceptors.request.use(
   (config) => {
@@ -105,6 +110,30 @@ api.interceptors.response.use(
       if (!window.location.pathname.startsWith("/service-stopped")) {
         window.location.replace(`/service-stopped?code=${hotelCode}`);
       }
+      return Promise.reject(error);
+    }
+
+    /* ISH VAQTIDAN TASHQARIDA.
+
+       Mehmonxonada "Ish vaqti nazorati" yoqilgan bo'lsa, server ish vaqti
+       tugagan xodimning so'rovlariga 403 va `OUTSIDE_WORK_HOURS` qaytaradi.
+       Kassasi ochiq resepshn xodimini server to'smaydi — u avvalgidek
+       "Davom etish" bilan ishlaydi, shuning uchun bu shoxga tushmaydi.
+
+       Sessiya TOZALANMAYDI — ish vaqti boshlangach xodim o'sha yerdan
+       davom ettiradi. Serverning matni sahifada ko'rsatish uchun
+       saqlanadi: to'liq qayta yuklashda router state yo'qoladi. Ekranda
+       oyna ochiq bo'lsa (masalan, smena topshirilgach kassa hisoboti) —
+       o'tish u yopilguncha kutadi (workHoursBlock.ts). */
+    if (
+      isOutsideWorkHoursResponse(
+        error.response?.status,
+        error.response?.data?.error_code
+      ) &&
+      !isAuthPath
+    ) {
+      rememberWorkHoursBlockMessage(error.response?.data?.detail);
+      redirectToOffHours();
       return Promise.reject(error);
     }
 

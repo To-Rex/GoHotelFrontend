@@ -174,5 +174,9 @@
   "perm::Mehmon qo'shish": "Добавление гостя",
   "perm::Xona qo'shish": "Добавление номера",
   "perm::Qavat qo'shish": "Добавление этажа",
-  "perm::Xodim qo'shish": "Добавление сотрудника"
+  "perm::Xodim qo'shish": "Добавление сотрудника",
+  "Ish vaqtidan tashqari ham ishlay oladi": "Может работать и вне рабочего времени",
+  "Ish vaqti nazorati yoqilgan bo'lsa ham bu xodim istalgan vaqtda tizimda ishlay oladi.": "Даже при включённом контроле рабочего времени этот сотрудник может работать в системе в любое время.",
+  "Hozir nazorat o'chirilgan (Sozlamalar → Xodimlar) — belgi u yoqilgandagina ahamiyatga ega.": "Сейчас контроль выключен (Настройки → Сотрудники) — отметка действует, только когда он включён.",
+  "Ish vaqtidan tashqari ham": "Можно вне графика"
 }

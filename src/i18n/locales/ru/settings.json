@@ -211,5 +211,19 @@
   "soat": "ч",
   "yuklanmoqda...": "загрузка...",
   "clear::Tozalashni boshlash": "Начать очистку",
-  "https://instagram.com/mehmonxona": "https://instagram.com/hotel"
+  "https://instagram.com/mehmonxona": "https://instagram.com/hotel",
+  "Ish vaqti nazorati — xodimlar o'z ish vaqtidan tashqarida tizimda ishlay oladimi": "Контроль рабочего времени — могут ли сотрудники работать в системе вне своего рабочего времени",
+  "Ish vaqti nazorati": "Контроль рабочего времени",
+  "Xodim o'z ish vaqtidan tashqarida tizimda ishlay oladimi. Har bir xodimning ish vaqti «Xodimlar» sahifasida, xodimni qo'shish yoki tahrirlash oynasida belgilanadi.": "Может ли сотрудник работать в системе вне своего рабочего времени. Рабочее время каждого сотрудника задаётся на странице «Сотрудники» — в окне добавления или редактирования сотрудника.",
+  "Ish vaqtidan tashqarida ishlash taqiqlansin": "Запретить работу вне рабочего времени",
+  "Ish vaqti tugagan yoki hali boshlanmagan xodim tizimga kirsa ham ishlay olmaydi — ish vaqti boshlanishini kutish sahifasini ko'radi. Ish vaqti boshlangach sahifa o'zi ochiladi.": "Сотрудник, у которого рабочее время закончилось или ещё не началось, может войти в систему, но работать не сможет — он увидит страницу ожидания начала рабочего времени. Когда рабочее время начнётся, страница откроется сама.",
+  "Cheklov yo'q — xodimlar avvalgidek istalgan vaqtda ishlaydi.": "Ограничений нет — сотрудники, как и раньше, работают в любое время.",
+  "Kimlar cheklanmaydi": "Кого ограничение не касается",
+  "Administratorlar — hech qachon cheklanmaydi.": "Администраторы — никогда не ограничиваются.",
+  "«Ish vaqtidan tashqari ham ishlay oladi» belgisi qo'yilgan xodimlar. Belgini faqat administrator xodimni qo'shish yoki tahrirlash oynasida qo'yadi.": "Сотрудники с отметкой «Может работать и вне рабочего времени». Отметку ставит только администратор — в окне добавления или редактирования сотрудника.",
+  "Kassasi ochiq xodim (resepshn): ish vaqti tugaganda avvalgidek «Davom etish» tugmasi bilan ishlashda davom etadi, kassani yopishi va smenani topshirishi mumkin.": "Сотрудник с открытой кассой (ресепшн): когда рабочее время заканчивается, он, как и раньше, продолжает работу кнопкой «Продолжить», может закрыть кассу и сдать смену.",
+  "Ish vaqti 24 soat qilib belgilangan xodimlar.": "Сотрудники, у которых рабочее время — 24 часа.",
+  "Ish vaqti belgilanmagan xodimga 09:00–18:00 amal qiladi — yoqishdan oldin xodimlar jadvalini tekshiring.": "Для сотрудника без заданного рабочего времени действует 09:00–18:00 — перед включением проверьте графики сотрудников.",
+  "Smena oddiy rejimda: kassa ochilmaydi, shuning uchun resepshn xodimi ham ish vaqtidan keyin boshqalar kabi cheklanadi. Kerak bo'lsa, unga «Ish vaqtidan tashqari ham ishlay oladi» belgisini qo'ying.": "Смены в простом режиме: касса не открывается, поэтому сотрудник ресепшна после рабочего времени ограничивается так же, как остальные. При необходимости поставьте ему отметку «Может работать и вне рабочего времени».",
+  "Xodimlar sahifasiga o'tish": "Перейти к сотрудникам"
 }

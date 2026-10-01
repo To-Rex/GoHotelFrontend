@@ -32,6 +32,8 @@ import {
   type LucideIcon,
   Undo2,
   Ban,
+  Clock,
+  UserCog,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -54,6 +56,10 @@ import {
 } from "@/features/housekeeping/api/housekeeping"
 import { ChecklistTemplateEditor } from "@/features/housekeeping/components/ChecklistTemplateEditor"
 import { useShiftSettings, useSaveShiftSettings } from "@/features/shifts/api/shifts"
+import {
+  useWorkHoursSettings,
+  useSaveWorkHoursSettings,
+} from "../api/workHours"
 import {
   useEditWindowSettings,
   useSaveEditWindowSettings,
@@ -160,6 +166,14 @@ const SETTING_GROUPS = [
     icon: Wallet,
     iconClass: "bg-violet-50 text-violet-600",
     cards: ["shift"],
+  },
+  {
+    key: "staff",
+    label: tr("Xodimlar"),
+    desc: tr("Ish vaqti nazorati — xodimlar o'z ish vaqtidan tashqarida tizimda ishlay oladimi"),
+    icon: UserCog,
+    iconClass: "bg-orange-50 text-orange-600",
+    cards: ["work-hours"],
   },
   {
     key: "receipt",
@@ -488,6 +502,30 @@ export const SettingsPage = () => {
       window.setTimeout(() => setShiftSaved(false), 3000)
     } catch (e) {
       setShiftError(apiErrorMessage(e))
+    }
+  }
+
+  // --- Ish vaqti nazorati: xodim ish vaqtidan tashqarida ishlay oladimi ---
+  // Standart — o'chiq. Qaror serverda; mustasnolar kartada sanab o'tilgan.
+  const { data: workHoursSettings } = useWorkHoursSettings()
+  const saveWorkHoursMutation = useSaveWorkHoursSettings()
+  const [workHoursEnforce, setWorkHoursEnforce] = useState(false)
+  const [workHoursSaved, setWorkHoursSaved] = useState(false)
+  const [workHoursError, setWorkHoursError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (workHoursSettings) setWorkHoursEnforce(workHoursSettings.enforce)
+  }, [workHoursSettings])
+
+  const onSaveWorkHours = async () => {
+    setWorkHoursError(null)
+    setWorkHoursSaved(false)
+    try {
+      await saveWorkHoursMutation.mutateAsync({ enforce: workHoursEnforce })
+      setWorkHoursSaved(true)
+      window.setTimeout(() => setWorkHoursSaved(false), 3000)
+    } catch (e) {
+      setWorkHoursError(apiErrorMessage(e))
     }
   }
 
@@ -1168,6 +1206,79 @@ export const SettingsPage = () => {
                 />
               </SettingCard>
 
+            </>
+          )}
+
+          {group === "staff" && (
+            <>
+              {/* Ish vaqti nazorati — xodim ish vaqtidan tashqarida ishlay
+                  oladimi. Qaror serverda; bu yerda faqat sozlama. */}
+              <SettingCard
+                id="work-hours"
+                icon={Clock}
+                iconClass="bg-orange-50 text-orange-600"
+                title={tr("Ish vaqti nazorati")}
+                desc={tr("Xodim o'z ish vaqtidan tashqarida tizimda ishlay oladimi. Har bir xodimning ish vaqti «Xodimlar» sahifasida, xodimni qo'shish yoki tahrirlash oynasida belgilanadi.")}
+              >
+                <label className="flex cursor-pointer items-start gap-2.5">
+                  <Checkbox
+                    checked={workHoursEnforce}
+                    onCheckedChange={(v) => setWorkHoursEnforce(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm">
+                    <b className="font-medium text-gray-900">
+                      {tr("Ish vaqtidan tashqarida ishlash taqiqlansin")}
+                    </b>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                      {workHoursEnforce
+                        ? tr("Ish vaqti tugagan yoki hali boshlanmagan xodim tizimga kirsa ham ishlay olmaydi — ish vaqti boshlanishini kutish sahifasini ko'radi. Ish vaqti boshlangach sahifa o'zi ochiladi.")
+                        : tr("Cheklov yo'q — xodimlar avvalgidek istalgan vaqtda ishlaydi.")}
+                    </span>
+                  </span>
+                </label>
+
+                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50/60 p-3.5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    {tr("Kimlar cheklanmaydi")}
+                  </p>
+                  <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-gray-600">
+                    <li>{tr("Administratorlar — hech qachon cheklanmaydi.")}</li>
+                    <li>
+                      {tr("«Ish vaqtidan tashqari ham ishlay oladi» belgisi qo'yilgan xodimlar. Belgini faqat administrator xodimni qo'shish yoki tahrirlash oynasida qo'yadi.")}
+                    </li>
+                    <li>
+                      {tr("Kassasi ochiq xodim (resepshn): ish vaqti tugaganda avvalgidek «Davom etish» tugmasi bilan ishlashda davom etadi, kassani yopishi va smenani topshirishi mumkin.")}
+                    </li>
+                    <li>{tr("Ish vaqti 24 soat qilib belgilangan xodimlar.")}</li>
+                  </ul>
+                  <p className="mt-2.5 text-xs leading-relaxed text-gray-400">
+                    {tr("Ish vaqti belgilanmagan xodimga 09:00–18:00 amal qiladi — yoqishdan oldin xodimlar jadvalini tekshiring.")}
+                  </p>
+                </div>
+
+                {/* Oddiy rejimda kassa sessiyasi yo'q — «Davom etish» ham yo'q */}
+                {shiftSettings?.mode === "simple" && (
+                  <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+                    {tr("Smena oddiy rejimda: kassa ochilmaydi, shuning uchun resepshn xodimi ham ish vaqtidan keyin boshqalar kabi cheklanadi. Kerak bo'lsa, unga «Ish vaqtidan tashqari ham ishlay oladi» belgisini qo'ying.")}
+                  </p>
+                )}
+
+                <Link
+                  to="/employees"
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline"
+                >
+                  {tr("Xodimlar sahifasiga o'tish")}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+
+                <SaveRow
+                  onSave={onSaveWorkHours}
+                  pending={saveWorkHoursMutation.isPending}
+                  saved={workHoursSaved}
+                  error={workHoursError}
+                />
+              </SettingCard>
             </>
           )}
 
