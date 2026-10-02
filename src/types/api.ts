@@ -98,6 +98,9 @@ export interface Reservation {
   /** Faol jarimalar (kech chiqish, shikast) yig'indisi — jamiga kirgan.
       Eski server javobida bo'lmasligi mumkin */
   penalty_amount?: number;
+  /** Kunlik hisob: "12h" — 1 kecha = narx, "24h" — 1 kun = narx × 2.
+      Bron yaratilganda yoziladi; eski server javobida bo'lmasligi mumkin */
+  daily_unit?: string;
   notes?: string;
   cancelled_reason?: string;
   cancelled_at?: string;

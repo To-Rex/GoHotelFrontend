@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { lastOccupiedDay, resolveDailyUnit, selectionCheckoutFor } from "./dailyUnit"
+import {
+  dailyPriceMultiplier,
+  lastOccupiedDay,
+  reservationDailyUnit,
+  resolveDailyUnit,
+  selectionCheckoutFor,
+} from "./dailyUnit"
 import { dayDiff } from "./booking"
 
 /* Kunlik bron hisobi: 12 soatlik (avvalgidek) va 24 soatlik. */
@@ -56,5 +62,27 @@ describe("lastOccupiedDay", () => {
     expect(lastOccupiedDay("2026-10-02", "2026-10-03", "24h")).toBe("2026-10-02")
     // Buzuq yozuv (chiqish = kirish) — kirish kunidan oldinga ketmaydi
     expect(lastOccupiedDay("2026-10-02", "2026-10-02", "24h")).toBe("2026-10-02")
+  })
+})
+
+describe("dailyPriceMultiplier", () => {
+  it("24 soatlik kun = 2 × 12 soatlik narx (server bilan bir xil)", () => {
+    expect(dailyPriceMultiplier("24h")).toBe(2)
+    expect(dailyPriceMultiplier("24h", "DAILY")).toBe(2)
+    expect(dailyPriceMultiplier("12h")).toBe(1)
+    expect(dailyPriceMultiplier(undefined)).toBe(1)
+    // Soatlik bronga tegishli emas
+    expect(dailyPriceMultiplier("24h", "HOURLY")).toBe(1)
+    // 250 000 so'mlik xona, 1 kun — 500 000
+    expect(nights("2026-10-02", "2026-10-02", "24h") * 250_000 * dailyPriceMultiplier("24h")).toBe(500_000)
+    // Bugun + ertaga: 12 soatlikda 1 kecha (250 000), 24 soatlikda 2 kun (1 000 000)
+    expect(nights("2026-10-02", "2026-10-03", "12h") * 250_000 * dailyPriceMultiplier("12h")).toBe(250_000)
+    expect(nights("2026-10-02", "2026-10-03", "24h") * 250_000 * dailyPriceMultiplier("24h")).toBe(1_000_000)
+  })
+
+  it("bronning o'z rejimi; eski javob — 12 soatlik", () => {
+    expect(reservationDailyUnit({ daily_unit: "24h" })).toBe("24h")
+    expect(reservationDailyUnit({})).toBe("12h")
+    expect(reservationDailyUnit(null)).toBe("12h")
   })
 })

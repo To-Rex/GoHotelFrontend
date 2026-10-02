@@ -304,5 +304,6 @@
   "Jarimani yozish": "Issue penalty",
   "Summa bron jamiga qo'shiladi va qarz sifatida ko'rinadi — to'lovni pastdagi \"Qo'shimcha to'lov\" orqali qabul qiling.": "The amount is added to the booking total and shows as a debt — take the payment via \"Additional payment\" below.",
   "Jarima qo'shish": "Add penalty",
-  "Kech chiqish yoki buzilgan narsa uchun jarima shu yerda yoziladi.": "Penalties for late check-out or damaged property are issued here."
+  "Kech chiqish yoki buzilgan narsa uchun jarima shu yerda yoziladi.": "Penalties for late check-out or damaged property are issued here.",
+  "{{price}} × {{times}} = {{dayPrice}} so'm / kun": "{{price}} × {{times}} = {{dayPrice}} UZS / day"
 }

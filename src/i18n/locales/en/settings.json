@@ -242,11 +242,9 @@
   "Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.": "Whether reception can give a discount off the price difference when a guest dislikes the room and moves to a more expensive one, and how much at most.",
   "Bu sahifa faqat sozlovchi uchun.": "This page is for the configurator only.",
   "Kunlik bron hisobi": "Daily booking calculation",
-  "Kalendarda tanlangan kunlar qanday hisoblanishi. Narx = xona narxi × kunlar (kechalar) soni.": "How the days selected in the calendar are counted. Price = room price × number of days (nights).",
   "12 soatlik": "12-hour",
   "Tanlangan oxirgi kun — chiqish kuni. Bugun va ertaga tanlansa — 1 kecha, narx 1 barobar (kirish bugun, chiqish ertaga). Hozirgi tartib.": "The last selected day is the check-out day. Today and tomorrow selected — 1 night, price ×1 (check-in today, check-out tomorrow). Current behaviour.",
   "24 soatlik": "24-hour",
-  "Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga).": "Every selected day counts in full. Today and tomorrow selected — 2 days, price ×2 (check-out the day after tomorrow).",
   "Kech chiqish — har bir soat uchun": "Late check-out — per hour",
   "0 — taklif o'chiq: xodim summani o'zi kiritadi": "0 — suggestion off: staff enter the amount themselves",
   "Imtiyozli vaqt (kechiriladi)": "Grace period (not charged)",
@@ -257,5 +255,7 @@
   "Taklif o'chiq — jarima summasi har safar qo'lda kiritiladi.": "Suggestion is off — the penalty amount is entered manually each time.",
   "Jarimani bekor qilish — faqat administrator yoki menejer; bekor qilingan jarima sababi bilan tarixda qoladi.": "Only an administrator or manager can void a penalty; a voided penalty stays in the history with its reason.",
   "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash, jarimalar va hujjat skaneri": "How the booking window opens, discount rules, booking edits, penalties and the document scanner",
-  "Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.": "If a guest checks out late or breaks something, a penalty is issued. Set the hourly late check-out amount and grace period here — the booking window then suggests the amount automatically."
+  "Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.": "If a guest checks out late or breaks something, a penalty is issued. Set the hourly late check-out amount and grace period here — the booking window then suggests the amount automatically.",
+  "Kalendarda tanlangan kunlar qanday hisoblanishi va bir kun narxi. O'zgartirish faqat yangi bronlarga ta'sir qiladi — mavjud bronlar narxi o'zgarmaydi.": "How the days selected in the calendar are counted and the price of one day. The change applies only to new bookings — existing bookings keep their price.",
+  "Har tanlangan kun to'liq 24 soat: bir kun = 2 × 12 soatlik narx (250 000 so'mlik xona — kuniga 500 000 so'm). Bugun va ertaga tanlansa — 2 kun (chiqish — indinga).": "Each selected day is a full 24 hours: one day = 2 × the 12-hour price (a 250,000 UZS room costs 500,000 UZS per day). Today and tomorrow — 2 days (check-out the day after tomorrow)."
 }

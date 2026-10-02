@@ -848,7 +848,7 @@ export const SettingsPage = () => {
                 <div className="mt-4 border-t border-gray-100 pt-4">
                   <p className="text-sm font-medium text-gray-900">{tr("Kunlik bron hisobi")}</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
-                    {tr("Kalendarda tanlangan kunlar qanday hisoblanishi. Narx = xona narxi × kunlar (kechalar) soni.")}
+                    {tr("Kalendarda tanlangan kunlar qanday hisoblanishi va bir kun narxi. O'zgartirish faqat yangi bronlarga ta'sir qiladi — mavjud bronlar narxi o'zgarmaydi.")}
                   </p>
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
                     {[
@@ -860,7 +860,7 @@ export const SettingsPage = () => {
                       {
                         key: "24h" as const,
                         title: tr("24 soatlik"),
-                        text: tr("Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga)."),
+                        text: tr("Har tanlangan kun to'liq 24 soat: bir kun = 2 × 12 soatlik narx (250 000 so'mlik xona — kuniga 500 000 so'm). Bugun va ertaga tanlansa — 2 kun (chiqish — indinga)."),
                       },
                     ].map((m) => (
                       <button

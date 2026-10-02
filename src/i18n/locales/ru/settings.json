@@ -244,11 +244,9 @@
   "Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.": "Может ли ресепшн дать скидку с разницы в цене, когда гостю не понравился номер и он переселяется в более дорогой, и какую максимум.",
   "Bu sahifa faqat sozlovchi uchun.": "Эта страница только для настройщика.",
   "Kunlik bron hisobi": "Расчёт посуточной брони",
-  "Kalendarda tanlangan kunlar qanday hisoblanishi. Narx = xona narxi × kunlar (kechalar) soni.": "Как считаются дни, выбранные в календаре. Цена = цена номера × число дней (ночей).",
   "12 soatlik": "12-часовой",
   "Tanlangan oxirgi kun — chiqish kuni. Bugun va ertaga tanlansa — 1 kecha, narx 1 barobar (kirish bugun, chiqish ertaga). Hozirgi tartib.": "Последний выбранный день — день выезда. Выбраны сегодня и завтра — 1 ночь, цена ×1 (заезд сегодня, выезд завтра). Текущий порядок.",
   "24 soatlik": "24-часовой",
-  "Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga).": "Каждый выбранный день считается полностью. Выбраны сегодня и завтра — 2 дня, цена ×2 (выезд — послезавтра).",
   "Kech chiqish — har bir soat uchun": "Поздний выезд — за каждый час",
   "0 — taklif o'chiq: xodim summani o'zi kiritadi": "0 — расчёт выключен: сотрудник вводит сумму сам",
   "Imtiyozli vaqt (kechiriladi)": "Льготное время (не штрафуется)",
@@ -259,5 +257,7 @@
   "Taklif o'chiq — jarima summasi har safar qo'lda kiritiladi.": "Расчёт выключен — сумма штрафа каждый раз вводится вручную.",
   "Jarimani bekor qilish — faqat administrator yoki menejer; bekor qilingan jarima sababi bilan tarixda qoladi.": "Аннулировать штраф может только администратор или менеджер; аннулированный штраф остаётся в истории с причиной.",
   "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash, jarimalar va hujjat skaneri": "Как открывается окно бронирования, правила скидок, редактирование брони, штрафы и сканер документов",
-  "Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.": "Если гость выехал поздно или что-то сломал, выписывается штраф. Здесь задаются почасовая сумма за поздний выезд и льготное время — в окне брони сумма рассчитывается автоматически."
+  "Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.": "Если гость выехал поздно или что-то сломал, выписывается штраф. Здесь задаются почасовая сумма за поздний выезд и льготное время — в окне брони сумма рассчитывается автоматически.",
+  "Kalendarda tanlangan kunlar qanday hisoblanishi va bir kun narxi. O'zgartirish faqat yangi bronlarga ta'sir qiladi — mavjud bronlar narxi o'zgarmaydi.": "Как считаются выбранные в календаре дни и цена одних суток. Изменение влияет только на новые брони — цена существующих не меняется.",
+  "Har tanlangan kun to'liq 24 soat: bir kun = 2 × 12 soatlik narx (250 000 so'mlik xona — kuniga 500 000 so'm). Bugun va ertaga tanlansa — 2 kun (chiqish — indinga).": "Каждый выбранный день — полные 24 часа: сутки = 2 × цена за 12 часов (номер за 250 000 сум — 500 000 сум в сутки). Сегодня и завтра — 2 суток (выезд послезавтра)."
 }

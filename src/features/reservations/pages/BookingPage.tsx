@@ -70,7 +70,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { cn } from "@/lib/utils"
 import { useBookingDefaults } from "@/features/settings/api/bookingDefaults"
 import {
+  dailyPriceMultiplier,
   lastOccupiedDay,
+  reservationDailyUnit,
   resolveDailyUnit,
   selectionCheckoutFor,
 } from "@/features/reservations/lib/dailyUnit"
@@ -1068,7 +1070,8 @@ export function BookingPage() {
     selectionStart && selectionCheckout ? dayDiff(selectionStart, selectionCheckout) : 0
 
   const roomPrice = selectedRoom ? getRoomPrice(selectedRoom) : 0
-  const totalPrice = nightCount * roomPrice
+  // 24 soatlik kunda bir kun = xona narxi × 2 (server bilan bir xil)
+  const totalPrice = nightCount * roomPrice * dailyPriceMultiplier(dailyUnit)
 
 
   const calendarWidth = days.length * DAY_WIDTH
@@ -1888,9 +1891,16 @@ export function BookingPage() {
                       // eski xonada qolsa qancha bo'lardi. `given` — xodim
                       // kiritgan chegirma; oldingi ko'chirishlardagi chegirma
                       // arzonroq xonaga qaytilsa avval kamayadi (server bilan bir xil)
+                      // Bir kecha/kun narxi — bronning O'Z kunlik hisobi
+                      // bilan (24 soatlik kunda × 2), sozlamadan emas: sozlama
+                      // keyin o'zgargan bo'lishi mumkin (server ham shunday)
+                      const moveUnit = dailyPriceMultiplier(
+                        reservationDailyUnit(res),
+                        res.booking_type
+                      )
                       const previewMove = (r: any, given: number) => {
-                        const newBase = Number(r.base_price || 0)
-                        const oldBase = Number(roomObj?.base_price || 0)
+                        const newBase = Number(r.base_price || 0) * moveUnit
+                        const oldBase = Number(roomObj?.base_price || 0) * moveUnit
                         let charge: number
                         let oldCharge: number
                         if (res.booking_type === "HOURLY") {
@@ -2034,7 +2044,7 @@ export function BookingPage() {
                               <option value="">{tr("Yangi xonani tanlang")}</option>
                               {availableRooms.map((r: any) => (
                                 <option key={r.id} value={r.id}>
-                                  {r.room_number}{" "}{tr("— {{price}} So'm", { price: Number(r.base_price || 0).toLocaleString() })}
+                                  {r.room_number}{" "}{tr("— {{price}} So'm", { price: (Number(r.base_price || 0) * moveUnit).toLocaleString() })}
                                 </option>
                               ))}
                             </select>

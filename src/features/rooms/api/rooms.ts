@@ -320,6 +320,8 @@ export interface RoomReservation {
   move_discount_amount?: number;
   /** Faol jarimalar yig'indisi (so'm) */
   penalty_amount?: number;
+  /** Kunlik hisob rejimi ("12h" / "24h") */
+  daily_unit?: string;
   /** Xonada turgan qolgan mehmonlar. Yozuv o'chirilmaydi: turish davomida
       ketgani `left_at` bilan belgilanadi, keyin qo'shilgani — `added_at` */
   companions?: Array<{

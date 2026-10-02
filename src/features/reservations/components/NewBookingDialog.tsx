@@ -49,7 +49,7 @@ import {
   useBookingDefaults,
   resolveBookingType,
 } from "@/features/settings/api/bookingDefaults"
-import { resolveDailyUnit } from "../lib/dailyUnit"
+import { dailyPriceMultiplier, resolveDailyUnit } from "../lib/dailyUnit"
 import {
   useDiscountRules,
   ruleFor,
@@ -299,8 +299,10 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [companionScan, setCompanionScan] = useState<CompanionScan | null>(null)
   const { data: bookingDefaults } = useBookingDefaults()
   const guestsRequired = bookingDefaults?.require_all_guests === true
-  // 24 soatlik kunlik hisobda birlik "kun" deb yoziladi (narx hisobi bir xil)
+  // 24 soatlik kunlik hisobda birlik "kun" va bir kun = xona narxi × 2
+  // (server bilan bir xil: daily_unit.py). Soatlik bronga tegishli emas
   const fullDays = resolveDailyUnit(bookingDefaults) === "24h"
+  const dayMultiplier = dailyPriceMultiplier(resolveDailyUnit(bookingDefaults))
   const { data: discountRules } = useDiscountRules()
 
   /* So'rovda tur ko'rsatilmagan bo'lsa u sozlamadan olinadi. Sozlama hali
@@ -615,7 +617,11 @@ function SectionMark({
     // avvalgidek bo'sh, xodim ro'yxatdan qidiradi.
     setValue("guest_id", request.guestId || "")
     setValue("new_guest_nationality", DEFAULT_NATIONALITY)
-    setPaymentTotal(wanted === "HOURLY" ? price : nights * price)
+    setPaymentTotal(
+      wanted === "HOURLY"
+        ? price
+        : nights * price * dailyPriceMultiplier(resolveDailyUnit(bookingDefaults))
+    )
     setValue("payment_method", "CASH")
     setExtraPayments([])
     setDiscountType("AMOUNT")
@@ -851,7 +857,9 @@ function SectionMark({
   const roomPrice = dialogRoomPrice
   const dialogNightCount =
     watchFormDate && watchFormOutDate ? Math.max(dayDiff(watchFormDate, watchFormOutDate), 0) : 0
-  const dialogDailyTotal = dialogNightCount * dialogRoomPrice
+  // Bir kecha/kun narxi: 24 soatlik kunda × 2
+  const dialogDayPrice = dialogRoomPrice * dayMultiplier
+  const dialogDailyTotal = dialogNightCount * dialogDayPrice
   const totalPrice = dialogDailyTotal
   // Soatlik bron narxi davomiylikka BOG'LIQ EMAS — kunlik narx to'liq olinadi
   const hourlyTotal = dialogRoomPrice
@@ -1384,7 +1392,13 @@ function SectionMark({
               <span className="flex-shrink-0 font-semibold tabular-nums text-primary-700">
                 {/* Soatlik bron narxi davomiylikka bog'liq emas — shuning
                     uchun "/soat" deb yozilmaydi */}
-                {tr("{{price}} so'm{{perNight}}", { price: getRoomPrice(activeRoom).toLocaleString(), perNight: bookingType === "HOURLY" ? "" : fullDays ? tr(" / kun") : tr(" / kecha") })}
+                {bookingType !== "HOURLY" && dayMultiplier > 1
+                  ? tr("{{price}} × {{times}} = {{dayPrice}} so'm / kun", {
+                      price: getRoomPrice(activeRoom).toLocaleString(),
+                      times: dayMultiplier,
+                      dayPrice: (getRoomPrice(activeRoom) * dayMultiplier).toLocaleString(),
+                    })
+                  : tr("{{price}} so'm{{perNight}}", { price: getRoomPrice(activeRoom).toLocaleString(), perNight: bookingType === "HOURLY" ? "" : fullDays ? tr(" / kun") : tr(" / kecha") })}
               </span>
             </div>
           )}
