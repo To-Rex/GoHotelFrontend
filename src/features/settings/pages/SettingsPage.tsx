@@ -50,6 +50,10 @@ import {
   type BookingType,
 } from "../api/bookingDefaults"
 import {
+  resolveDailyUnit,
+  type DailyUnit,
+} from "@/features/reservations/lib/dailyUnit"
+import {
   useHkAutoSettings,
   useHkAssignMode,
   useSaveHkAssignMode,
@@ -452,6 +456,8 @@ export const SettingsPage = () => {
   const saveBookingDefaultsMutation = useSaveBookingDefaults()
   const [bookingType, setBookingType] = useState<BookingType>("DAILY")
   const [requireAllGuests, setRequireAllGuests] = useState(false)
+  // Kunlik bron hisobi: 12 soatlik (avvalgidek) yoki 24 soatlik
+  const [dailyUnit, setDailyUnit] = useState<DailyUnit>("12h")
   const [bookingSaved, setBookingSaved] = useState(false)
   const [bookingError, setBookingError] = useState<string | null>(null)
 
@@ -459,6 +465,7 @@ export const SettingsPage = () => {
     if (bookingDefaults) {
       setBookingType(resolveBookingType(bookingDefaults))
       setRequireAllGuests(bookingDefaults.require_all_guests === true)
+      setDailyUnit(resolveDailyUnit(bookingDefaults))
     }
   }, [bookingDefaults])
 
@@ -469,6 +476,7 @@ export const SettingsPage = () => {
       await saveBookingDefaultsMutation.mutateAsync({
         default_type: bookingType,
         require_all_guests: requireAllGuests,
+        daily_unit: dailyUnit,
       })
       setBookingSaved(true)
       window.setTimeout(() => setBookingSaved(false), 3000)
@@ -832,6 +840,47 @@ export const SettingsPage = () => {
                 <p className="mt-3 text-xs leading-relaxed text-gray-400">
                   {tr("Xona bugun allaqachon soatlik bronlar bilan ishlayotgan bo'lsa, oyna standart turdan qat'i nazar soatlik ochiladi — xodim yana soat qo'shmoqchi bo'lishi ehtimoli yuqori.")}
                 </p>
+
+                {/* Kunlik bron hisobi — kalendarda tanlangan kunlar qanday
+                    hisoblanadi (reservations/lib/dailyUnit) */}
+                <div className="mt-4 border-t border-gray-100 pt-4">
+                  <p className="text-sm font-medium text-gray-900">{tr("Kunlik bron hisobi")}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+                    {tr("Kalendarda tanlangan kunlar qanday hisoblanishi. Narx = xona narxi × kunlar (kechalar) soni.")}
+                  </p>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {[
+                      {
+                        key: "12h" as const,
+                        title: tr("12 soatlik"),
+                        text: tr("Tanlangan oxirgi kun — chiqish kuni. Bugun va ertaga tanlansa — 1 kecha, narx 1 barobar (kirish bugun, chiqish ertaga). Hozirgi tartib."),
+                      },
+                      {
+                        key: "24h" as const,
+                        title: tr("24 soatlik"),
+                        text: tr("Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga)."),
+                      },
+                    ].map((m) => (
+                      <button
+                        key={m.key}
+                        type="button"
+                        onClick={() => setDailyUnit(m.key)}
+                        className={cn(
+                          "relative rounded-xl border p-4 text-left transition-all",
+                          dailyUnit === m.key
+                            ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                            : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                        )}
+                      >
+                        {dailyUnit === m.key && (
+                          <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary-600" />
+                        )}
+                        <p className="pr-6 text-sm font-semibold text-gray-900">{m.title}</p>
+                        <p className="mt-1 text-xs leading-snug text-gray-600">{m.text}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Xonadagi har bir kishini ro'yxatga olish */}
                 <label className="mt-4 flex cursor-pointer items-start gap-2.5 border-t border-gray-100 pt-4">

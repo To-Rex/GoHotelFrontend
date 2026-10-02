@@ -274,5 +274,18 @@
   "Eng ko'p": "Maximum",
   "Chegirmasiz": "No discount",
   "Xona almashtirishda chegirma berish o'chirilgan": "Discounts on room changes are turned off",
-  "· chegirma {{amount}} So'm": "· discount {{amount}} UZS"
+  "· chegirma {{amount}} So'm": "· discount {{amount}} UZS",
+  "{{watchFormDate}} → {{watchFormOutDate}} · {{count}} kun": {
+    "one": "{{watchFormDate}} → {{watchFormOutDate}} · {{count}} day",
+    "other": "{{watchFormDate}} → {{watchFormOutDate}} · {{count}} days"
+  },
+  " / kun": " / day",
+  "Xona narxi ({{count}} kun)": {
+    "one": "Room price ({{count}} day)",
+    "other": "Room price ({{count}} days)"
+  },
+  "{{count}} kun": {
+    "one": "{{count}} day",
+    "other": "{{count}} days"
+  }
 }

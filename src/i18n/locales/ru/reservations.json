@@ -283,5 +283,24 @@
   "Eng ko'p": "Максимум",
   "Chegirmasiz": "Без скидки",
   "Xona almashtirishda chegirma berish o'chirilgan": "Скидка при смене номера отключена",
-  "· chegirma {{amount}} So'm": "· скидка {{amount}} сум"
+  "· chegirma {{amount}} So'm": "· скидка {{amount}} сум",
+  "{{watchFormDate}} → {{watchFormOutDate}} · {{count}} kun": {
+    "one": "{{watchFormDate}} → {{watchFormOutDate}} · {{count}} день",
+    "few": "{{watchFormDate}} → {{watchFormOutDate}} · {{count}} дня",
+    "many": "{{watchFormDate}} → {{watchFormOutDate}} · {{count}} дней",
+    "other": "{{watchFormDate}} → {{watchFormOutDate}} · {{count}} дня"
+  },
+  " / kun": " / сутки",
+  "Xona narxi ({{count}} kun)": {
+    "one": "Стоимость номера ({{count}} день)",
+    "few": "Стоимость номера ({{count}} дня)",
+    "many": "Стоимость номера ({{count}} дней)",
+    "other": "Стоимость номера ({{count}} дня)"
+  },
+  "{{count}} kun": {
+    "one": "{{count}} день",
+    "few": "{{count}} дня",
+    "many": "{{count}} дней",
+    "other": "{{count}} дня"
+  }
 }

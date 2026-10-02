@@ -243,5 +243,11 @@
   "Chegirma bron tarixida kim bergani bilan yoziladi va hisob-fakturada umumiy chegirmaga qo'shiladi.": "Скидка записывается в историю брони с указанием, кто её дал, и добавляется к общей скидке в счёте.",
   "Xona almashtirishda chegirma": "Скидка при смене номера",
   "Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.": "Может ли ресепшн дать скидку с разницы в цене, когда гостю не понравился номер и он переселяется в более дорогой, и какую максимум.",
-  "Bu sahifa faqat sozlovchi uchun.": "Эта страница только для настройщика."
+  "Bu sahifa faqat sozlovchi uchun.": "Эта страница только для настройщика.",
+  "Kunlik bron hisobi": "Расчёт посуточной брони",
+  "Kalendarda tanlangan kunlar qanday hisoblanishi. Narx = xona narxi × kunlar (kechalar) soni.": "Как считаются дни, выбранные в календаре. Цена = цена номера × число дней (ночей).",
+  "12 soatlik": "12-часовой",
+  "Tanlangan oxirgi kun — chiqish kuni. Bugun va ertaga tanlansa — 1 kecha, narx 1 barobar (kirish bugun, chiqish ertaga). Hozirgi tartib.": "Последний выбранный день — день выезда. Выбраны сегодня и завтра — 1 ночь, цена ×1 (заезд сегодня, выезд завтра). Текущий порядок.",
+  "24 soatlik": "24-часовой",
+  "Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga).": "Каждый выбранный день считается полностью. Выбраны сегодня и завтра — 2 дня, цена ×2 (выезд — послезавтра)."
 }

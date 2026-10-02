@@ -49,6 +49,7 @@ import {
   useBookingDefaults,
   resolveBookingType,
 } from "@/features/settings/api/bookingDefaults"
+import { resolveDailyUnit } from "../lib/dailyUnit"
 import {
   useDiscountRules,
   ruleFor,
@@ -298,6 +299,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [companionScan, setCompanionScan] = useState<CompanionScan | null>(null)
   const { data: bookingDefaults } = useBookingDefaults()
   const guestsRequired = bookingDefaults?.require_all_guests === true
+  // 24 soatlik kunlik hisobda birlik "kun" deb yoziladi (narx hisobi bir xil)
+  const fullDays = resolveDailyUnit(bookingDefaults) === "24h"
   const { data: discountRules } = useDiscountRules()
 
   /* So'rovda tur ko'rsatilmagan bo'lsa u sozlamadan olinadi. Sozlama hali
@@ -1333,7 +1336,9 @@ function SectionMark({
                 {bookingType === "HOURLY"
                   ? tr("Soatlik{{hours}}", { hours: hourCount > 0 ? tr(" · {{hourCount}} soat", { hourCount }) : "" })
                   : watchFormDate && watchFormOutDate
-                    ? tr("{{watchFormDate}} → {{watchFormOutDate}} · {{dialogNightCount}} kecha", { watchFormDate, watchFormOutDate, dialogNightCount })
+                    ? fullDays
+                      ? tr("{{watchFormDate}} → {{watchFormOutDate}} · {{count}} kun", { watchFormDate, watchFormOutDate, count: dialogNightCount })
+                      : tr("{{watchFormDate}} → {{watchFormOutDate}} · {{dialogNightCount}} kecha", { watchFormDate, watchFormOutDate, dialogNightCount })
                     : activeRoom.room_number}
               </span>
             )}
@@ -1379,7 +1384,7 @@ function SectionMark({
               <span className="flex-shrink-0 font-semibold tabular-nums text-primary-700">
                 {/* Soatlik bron narxi davomiylikka bog'liq emas — shuning
                     uchun "/soat" deb yozilmaydi */}
-                {tr("{{price}} so'm{{perNight}}", { price: getRoomPrice(activeRoom).toLocaleString(), perNight: bookingType === "HOURLY" ? "" : tr(" / kecha") })}
+                {tr("{{price}} so'm{{perNight}}", { price: getRoomPrice(activeRoom).toLocaleString(), perNight: bookingType === "HOURLY" ? "" : fullDays ? tr(" / kun") : tr(" / kecha") })}
               </span>
             </div>
           )}
@@ -2034,7 +2039,9 @@ function SectionMark({
             <span className="text-sm text-gray-600">
               {bookingType === "HOURLY"
                 ? tr("Xona narxi ({{hourCount}} soat)", { hourCount })
-                : tr("Xona narxi ({{dialogNightCount}} kecha)", { dialogNightCount })}
+                : fullDays
+                  ? tr("Xona narxi ({{count}} kun)", { count: dialogNightCount })
+                  : tr("Xona narxi ({{dialogNightCount}} kecha)", { dialogNightCount })}
             </span>
             <span className="text-sm font-semibold tabular-nums text-gray-900">{tr("{{effectiveTotal}} So'm", { effectiveTotal: effectiveTotal.toLocaleString() })}</span>
           </div>

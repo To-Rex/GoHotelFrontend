@@ -12,6 +12,9 @@ export interface BookingDefaults {
   default_type: BookingType
   /** Xonadagi HAR BIR kishi mehmon sifatida ro'yxatga olinishi shartmi */
   require_all_guests: boolean
+  /** Kunlik bron hisobi: "12h" (standart) yoki "24h" — reservations/lib/dailyUnit.
+   *  Eski serverda kelmaydi — "12h" deb qaraladi. */
+  daily_unit?: "12h" | "24h"
 }
 
 export const useBookingDefaults = () =>
@@ -31,6 +34,7 @@ export const useSaveBookingDefaults = () => {
     mutationFn: async (next: {
       default_type: BookingType
       require_all_guests: boolean
+      daily_unit?: "12h" | "24h"
     }) => {
       const { data } = await api.put<BookingDefaults>("/hotels/booking-settings", next)
       return data

@@ -67,6 +67,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { useBookingDefaults } from "@/features/settings/api/bookingDefaults"
+import {
+  lastOccupiedDay,
+  resolveDailyUnit,
+  selectionCheckoutFor,
+} from "@/features/reservations/lib/dailyUnit"
 import {
   useMoveDiscountSettings,
   maxMoveDiscount,
@@ -190,6 +196,10 @@ export function BookingPage() {
   // "Yangi bandlov" dialogi so'rovi (null — yopiq). Dialogning o'zi alohida
   // komponent: xonalar sahifasi ham xuddi shu komponentni ochadi
   const [bookingRequest, setBookingRequest] = useState<NewBookingRequest | null>(null)
+  // Kunlik bron hisobi: 12 soatlik (avvalgidek) yoki 24 soatlik — kalendar
+  // tanlovi sanalarga va bron chizig'i kunlarga shunga qarab aylanadi
+  const { data: bookingDefaults } = useBookingDefaults()
+  const dailyUnit = resolveDailyUnit(bookingDefaults)
 
 
   // Xato xabarini brauzer alert() o'rniga dialog sifatida ko'rsatish
@@ -426,7 +436,9 @@ export function BookingPage() {
         if (!r.check_in_date || !r.check_out_date) continue
         if (r.booking_type === "HOURLY") continue
         const checkIn = parseISO(resStartDate(r))
-        const checkOut = parseISO(resEndDate(r))
+        const checkOut = parseISO(
+          lastOccupiedDay(resStartDate(r), resEndDate(r), dailyUnit)
+        )
         if (
           isWithinInterval(date, { start: checkIn, end: checkOut }) ||
           isSameDay(date, checkIn) ||
@@ -437,7 +449,7 @@ export function BookingPage() {
       }
       return false
     },
-    [roomReservations]
+    [roomReservations, dailyUnit]
   )
 
   // O'tgan sanaga bron qilib bo'lmaydi (bugun mumkin)
@@ -1043,16 +1055,13 @@ export function BookingPage() {
     setSelectionEnd(null)
   }
 
-  // Tanlov bo'yicha chiqish sanasi: OXIRGI tanlangan kun = chiqish kuni
-  // (29→30 tanlansa — 1 kecha: 29 kirish, 30 chiqish). Bitta kun tanlanganda
-  // ertasi kuni chiqiladi (1 kecha). Backend ham xuddi shunday hisoblaydi:
-  // nights = check_out - check_in.
-  const selectionCheckout =
-    selectionStart && selectionEnd
-      ? selectionEnd > selectionStart
-        ? selectionEnd
-        : addDaysStr(selectionEnd, 1)
-      : null
+  // Tanlov bo'yicha chiqish sanasi (lib/dailyUnit):
+  //  * 12 soatlik (standart): OXIRGI tanlangan kun = chiqish kuni (29→30
+  //    tanlansa — 1 kecha: 29 kirish, 30 chiqish). Bitta kun tanlanganda
+  //    ertasi kuni chiqiladi (1 kecha).
+  //  * 24 soatlik: har tanlangan kun to'liq kun (29→30 — 2 kun, chiqish 31).
+  // Backend ikkala holatda ham nights = check_out - check_in bilan hisoblaydi.
+  const selectionCheckout = selectionCheckoutFor(selectionStart, selectionEnd, dailyUnit)
 
   const nightCount =
     selectionStart && selectionCheckout ? dayDiff(selectionStart, selectionCheckout) : 0
@@ -1154,7 +1163,11 @@ export function BookingPage() {
               <span className="text-primary-300">·</span>
               <span>{selectionStart} → {selectionCheckout}</span>
               <span className="text-primary-300">·</span>
-              <span>{tr("{{nightCount}} kecha", { nightCount })}</span>
+              <span>
+                {dailyUnit === "24h"
+                  ? tr("{{count}} kun", { count: nightCount })
+                  : tr("{{nightCount}} kecha", { nightCount })}
+              </span>
               <span className="text-primary-300">·</span>
               <span className="font-semibold text-primary-700">{tr("{{totalPrice}} So'm", { totalPrice: totalPrice.toLocaleString() })}</span>
               <button
@@ -1366,7 +1379,13 @@ export function BookingPage() {
                       )
                       .map((res) => {
                         const checkIn = parseISO(resStartDate(res))
-                        const checkOut = parseISO(resEndDate(res))
+                        // 24 soatlik rejimda kunlik bron chizig'i to'lanadigan
+                        // kunlar bilan tugaydi (chiqish kuni bo'sh)
+                        const checkOut = parseISO(
+                          res.booking_type === "HOURLY"
+                            ? resEndDate(res)
+                            : lastOccupiedDay(resStartDate(res), resEndDate(res), dailyUnit)
+                        )
                         const startDayIdx = days.findIndex((d) =>
                           isSameDay(d, checkIn)
                         )
