@@ -68,10 +68,6 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import {
-  useBookingDefaults,
-  resolveBookingType,
-} from "@/features/settings/api/bookingDefaults"
-import {
   useMoveDiscountSettings,
   maxMoveDiscount,
   carryOverMoveDiscount,
@@ -88,9 +84,7 @@ import {
   debtHint,
   debtLevelOf,
   bookingErrorMessage as apiErrorMessage,
-  busyIntervalsFor,
   dayDiff,
-  findFreeSlot,
   minToTime,
   normalizeTime,
   resEndDate,
@@ -196,8 +190,6 @@ export function BookingPage() {
   // "Yangi bandlov" dialogi so'rovi (null — yopiq). Dialogning o'zi alohida
   // komponent: xonalar sahifasi ham xuddi shu komponentni ochadi
   const [bookingRequest, setBookingRequest] = useState<NewBookingRequest | null>(null)
-  // Dialog qaysi tur bilan ochilishi — mehmonxona sozlamasidan
-  const { data: bookingDefaults } = useBookingDefaults()
 
 
   // Xato xabarini brauzer alert() o'rniga dialog sifatida ko'rsatish
@@ -521,44 +513,21 @@ export function BookingPage() {
     return g ? `${g.first_name} ${g.last_name || ''}` : reservation.reservation_number || tr("Band")
   }
 
-  /* Kalendar tanlovidan "Yangi bandlov" so'rovini qurish.
+  /* Kalendar (oylik) tabidan "Yangi bandlov" so'rovini qurish.
 
-     Tur mehmonxona sozlamasidan olinadi. Undan qat'i nazar, tanlangan
-     kunda soatlik bronlar bo'lsa — foydalanuvchi katta ehtimol yana soat
-     qo'shmoqchi, shuning uchun "Soatlik" ochiladi va band soatlarni chetlab
-     birinchi bo'sh vaqt tanlanadi. Dialogda turni almashtirish avvalgidek. */
+     Bu tab KUNLIK bron uchun: xodim kirish va chiqish kunlarini tanlaydi,
+     shuning uchun oyna doim "Kunlik" turda ochiladi — mehmonxonaning
+     standart turi soatlik bo'lsa ham. Soatlik bron "Soatlik bron" tabidan
+     (taxtadagi bo'sh oraliq bosilganda) ochiladi; dialogda turni
+     almashtirish avvalgidek ishlaydi. */
   const openBookingModal = () => {
-    const hasHourlyOnDay =
-      !!selectedRoom &&
-      !!selectionStart &&
-      selectionStart === selectionEnd &&
-      reservations.some(
-        (r) =>
-          r.room_id === selectedRoom.id &&
-          r.status !== "CANCELLED" &&
-          r.booking_type === "HOURLY" &&
-          resStartDate(r) === selectionStart
-      )
-    const initialType: "DAILY" | "HOURLY" =
-      hasHourlyOnDay || resolveBookingType(bookingDefaults) === "HOURLY"
-        ? "HOURLY"
-        : "DAILY"
-    let inT = "14:00"
-    let outT = "16:00"
-    if (initialType === "HOURLY" && selectedRoom && selectionStart) {
-      const slot = findFreeSlot(busyIntervalsFor(reservations, selectedRoom.id, selectionStart))
-      if (slot) {
-        inT = minToTime(slot[0])
-        outT = minToTime(slot[1])
-      }
-    }
     setBookingRequest({
       room: selectedRoom,
-      bookingType: initialType,
+      bookingType: "DAILY",
       checkInDate: selectionStart || "",
       checkOutDate: selectionCheckout || "",
-      checkInTime: inT,
-      checkOutTime: outT,
+      checkInTime: "14:00",
+      checkOutTime: "16:00",
     })
   }
 

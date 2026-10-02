@@ -795,7 +795,7 @@ export const SettingsPage = () => {
                 icon={CalendarClock}
                 iconClass="bg-indigo-50 text-indigo-600"
                 title={tr("Standart bron turi")}
-                desc={tr("Bron qilish va Xonalar sahifasida «Yangi bandlov» oynasi qaysi tur bilan ochilishi. Xodim oynada turni istagancha almashtira oladi.")}
+                desc={tr("Xonalar sahifasida va boshqa joylardan ochiladigan «Yangi bandlov» oynasi qaysi tur bilan ochilishi. Bron qilish sahifasida tur tanlangan tabga qarab: Kalendar — kunlik, Soatlik bron — soatlik. Xodim oynada turni istagancha almashtira oladi.")}
               >
                 <div className="grid gap-3 md:grid-cols-2">
                   {[
