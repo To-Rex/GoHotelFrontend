@@ -12,6 +12,7 @@ import {
   BedDouble,
   Banknote,
   Undo2,
+  Gavel,
 } from "lucide-react"
 import { useFinanceSummary } from "../api/finance"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,7 @@ import { DebtorsPanel } from "../components/DebtorsPanel"
 import { InvoicesSection } from "../components/InvoicesSection"
 import { PaymentsSection } from "../components/PaymentsSection"
 import { ShopSection } from "../components/ShopSection"
+import { PenaltiesSection } from "../components/PenaltiesSection"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 import { tr } from "@/i18n"
 
@@ -81,6 +83,13 @@ const SECTIONS = [
     desc: tr("Hujjatlar, to'langan summa va qolgan qarz"),
     icon: ReceiptText,
     iconClass: "bg-blue-50 text-blue-600",
+  },
+  {
+    key: "penalties",
+    label: tr("Jarimalar"),
+    desc: tr("Kech chiqish va buzilgan narsalar uchun yozilgan jarimalar"),
+    icon: Gavel,
+    iconClass: "bg-rose-50 text-rose-600",
   },
 ] as const
 
@@ -339,6 +348,19 @@ export const FinancePage = () => {
           },
         ]
       : []),
+    // Jarimalar — davrda yozilganlari (bekor qilinganlarsiz). Pul bron
+    // qarziga qo'shiladi, to'langanda "Tushum" ga kiradi
+    ...(Number(summary.penalty_count || 0) > 0
+      ? [
+          {
+            label: tr("Jarimalar"),
+            value: tr("{{penalty_total}} So'm", { penalty_total: fmt(Number(summary.penalty_total || 0)) }),
+            sub: tr("{{count}} ta jarima", { count: Number(summary.penalty_count || 0) }),
+            icon: Gavel,
+            accent: "bg-rose-50 text-rose-600",
+          },
+        ]
+      : []),
     // Xarajatlar va sof natija — expense ruxsati bo'lganlarga ko'rsatiladi
     ...(canExpenses
       ? [
@@ -420,6 +442,9 @@ export const FinancePage = () => {
             payments: summary.payment_count,
             invoices: summary.invoice_count,
             shop: summary.shop_paid_count + summary.shop_debt_count,
+            ...(summary.penalty_count !== undefined
+              ? { penalties: Number(summary.penalty_count || 0) }
+              : {}),
           }}
         />
 
@@ -703,6 +728,10 @@ export const FinancePage = () => {
 
           {section === "shop" && (
             <ShopSection dateFrom={dateFrom} dateTo={dateTo} />
+          )}
+
+          {section === "penalties" && (
+            <PenaltiesSection dateFrom={dateFrom} dateTo={dateTo} />
           )}
 
           {section === "invoices" && (

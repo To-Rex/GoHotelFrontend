@@ -287,5 +287,22 @@
   "{{count}} kun": {
     "one": "{{count}} day",
     "other": "{{count}} days"
-  }
+  },
+  "Kech chiqish": "Late check-out",
+  "Shikast / buzilgan narsa": "Damage / breakage",
+  "{{h}} soat {{m}} daqiqa": "{{h}} h {{m}} min",
+  "{{m}} daqiqa": "{{m}} min",
+  "Jarima summasini kiriting": "Enter the penalty amount",
+  "Bekor qildi: {{name}}": "Voided by: {{name}}",
+  "Sabab (ixtiyoriy)": "Reason (optional)",
+  "Jarimani bekor qilish": "Void penalty",
+  "Mehmon {{late}} kechikdi: {{hours}} soat × {{hourly}} = {{amount}} so'm": "The guest is {{late}} late: {{hours}} h × {{hourly}} = {{amount}} UZS",
+  "Jarima yozish": "Issue penalty",
+  "Taklif: {{amount}}": "Suggested: {{amount}}",
+  "Nima buzildi (masalan: stakan, televizor pulti)": "What was damaged (e.g. a glass, the TV remote)",
+  "Bekor": "Cancel",
+  "Jarimani yozish": "Issue penalty",
+  "Summa bron jamiga qo'shiladi va qarz sifatida ko'rinadi — to'lovni pastdagi \"Qo'shimcha to'lov\" orqali qabul qiling.": "The amount is added to the booking total and shows as a debt — take the payment via \"Additional payment\" below.",
+  "Jarima qo'shish": "Add penalty",
+  "Kech chiqish yoki buzilgan narsa uchun jarima shu yerda yoziladi.": "Penalties for late check-out or damaged property are issued here."
 }

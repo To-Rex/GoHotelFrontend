@@ -88,5 +88,17 @@
   "{{shop_debt}} So'm": "{{shop_debt}} UZS",
   "{{cashOnHand}} So'm": "{{cashOnHand}} UZS",
   "{{refunds}} So'm": "{{refunds}} UZS",
-  "{{expensesTotal}} So'm": "{{expensesTotal}} UZS"
+  "{{expensesTotal}} So'm": "{{expensesTotal}} UZS",
+  "Jami jarimalar": "Total penalties",
+  "{{count}} ta jarima": {
+    "one": "{{count}} penalty",
+    "other": "{{count}} penalties"
+  },
+  "Yozilgan jarimalar": "Issued penalties",
+  "to'langanda bron to'lovi bo'lib tushumga kiradi": "once paid, they count as booking payments in revenue",
+  "Kim yozdi": "Issued by",
+  "Tanlangan davrda jarima yozilmagan": "No penalties in the selected period",
+  "Xona {{room}}": "Room {{room}}",
+  "Kech chiqish va buzilgan narsalar uchun yozilgan jarimalar": "Penalties for late check-out and damaged property",
+  "{{penalty_total}} So'm": "{{penalty_total}} UZS"
 }

@@ -35,6 +35,7 @@ import {
   Clock,
   UserCog,
   ArrowRightLeft,
+  Gavel,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -42,6 +43,7 @@ import { VisionCamerasCard } from "@/features/vision/components/VisionCamerasCar
 import { VisionDevicesCard } from "@/features/vision/components/VisionDevicesCard"
 import { DiscountRulesCard } from "../components/DiscountRulesCard"
 import { MoveDiscountCard } from "../components/MoveDiscountCard"
+import { PenaltySettingsCard } from "../components/PenaltySettingsCard"
 import { SmsKeysCard } from "../components/SmsKeysCard"
 import {
   useBookingDefaults,
@@ -160,10 +162,10 @@ const SETTING_GROUPS = [
   {
     key: "booking",
     label: tr("Bron va mehmonlar"),
-    desc: tr("Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash va hujjat skaneri"),
+    desc: tr("Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash, jarimalar va hujjat skaneri"),
     icon: CalendarClock,
     iconClass: "bg-indigo-50 text-indigo-600",
-    cards: ["booking-default", "discount-rules", "booking-edit", "move-discount", "scanner"],
+    cards: ["booking-default", "discount-rules", "booking-edit", "move-discount", "penalty", "scanner"],
   },
   {
     key: "cash",
@@ -975,6 +977,18 @@ export const SettingsPage = () => {
                 desc={tr("Mehmon xonani yoqtirmay qimmatroq xonaga o'tganda resepshn narx farqidan chegirma qila oladimi va eng ko'p qancha.")}
               >
                 <MoveDiscountCard />
+              </SettingCard>
+
+              {/* Jarimalar — kech chiqish summasini taklif qilish qoidasi.
+                  Jarimaning o'zini resepshn bron oynasida yozadi */}
+              <SettingCard
+                id="penalty"
+                icon={Gavel}
+                iconClass="bg-rose-50 text-rose-600"
+                title={tr("Jarimalar")}
+                desc={tr("Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.")}
+              >
+                <PenaltySettingsCard />
               </SettingCard>
 
               {/* Qora ro'yxat qoidasi */}

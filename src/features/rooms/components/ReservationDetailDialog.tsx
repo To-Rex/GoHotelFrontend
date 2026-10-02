@@ -415,6 +415,16 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
                 }
                 accent="text-emerald-600"
               />
+              {/* Jarimalar (kech chiqish, shikast) — jamiga kirgan */}
+              <Row
+                label={tr("Jarimalar")}
+                value={
+                  Number(res.penalty_amount || 0) > 0
+                    ? tr("{{amount}} so'm", { amount: fmt(Number(res.penalty_amount)) })
+                    : null
+                }
+                accent="text-rose-600"
+              />
               <Row
                 label={tr("To'langan")}
                 value={tr("{{paid_amount}} so'm", { paid_amount: fmt(res.paid_amount) })}

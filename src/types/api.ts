@@ -95,6 +95,9 @@ export interface Reservation {
   /** Qimmatroq xonaga ko'chirishda berilgan chegirma (so'm), bron
       chegirmasidan alohida. Eski server javobida bo'lmasligi mumkin */
   move_discount_amount?: number;
+  /** Faol jarimalar (kech chiqish, shikast) yig'indisi — jamiga kirgan.
+      Eski server javobida bo'lmasligi mumkin */
+  penalty_amount?: number;
   notes?: string;
   cancelled_reason?: string;
   cancelled_at?: string;
@@ -327,6 +330,10 @@ export interface FinanceSummary {
   shop_debt: number;
   shop_debt_count: number;
   methods: FinanceMethodRow[];
+  /** Davrda yozilgan faol jarimalar (kech chiqish, shikast). Eski server
+      javobida bo'lmasligi mumkin */
+  penalty_total?: number;
+  penalty_count?: number;
 }
 
 // To'lov yozuvi (GET /finance/payments)

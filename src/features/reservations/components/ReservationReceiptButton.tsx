@@ -28,6 +28,8 @@ export interface ReceiptReservation {
   /** Qimmatroq xonaga ko'chirishda berilgan chegirma — chekda umumiy
    *  chegirmaga qo'shiladi (eski server javobida bo'lmasligi mumkin) */
   move_discount_amount?: number | null
+  /** Faol jarimalar yig'indisi — chekda alohida qator */
+  penalty_amount?: number | null
   created_at: string
   status: string
 }
@@ -112,6 +114,7 @@ export const ReservationReceiptButton = ({
       discount_amount:
         Number(reservation.discount_amount || 0) +
         Number(reservation.move_discount_amount || 0),
+      penalty_amount: Number(reservation.penalty_amount || 0),
       services,
       created_at: reservation.created_at,
       created_by_name: createdByName,

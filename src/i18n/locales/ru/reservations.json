@@ -302,5 +302,22 @@
     "few": "{{count}} дня",
     "many": "{{count}} дней",
     "other": "{{count}} дня"
-  }
+  },
+  "Kech chiqish": "Поздний выезд",
+  "Shikast / buzilgan narsa": "Повреждение / поломка",
+  "{{h}} soat {{m}} daqiqa": "{{h}} ч {{m}} мин",
+  "{{m}} daqiqa": "{{m}} мин",
+  "Jarima summasini kiriting": "Введите сумму штрафа",
+  "Bekor qildi: {{name}}": "Аннулировал(а): {{name}}",
+  "Sabab (ixtiyoriy)": "Причина (необязательно)",
+  "Jarimani bekor qilish": "Аннулировать штраф",
+  "Mehmon {{late}} kechikdi: {{hours}} soat × {{hourly}} = {{amount}} so'm": "Гость задержался на {{late}}: {{hours}} ч × {{hourly}} = {{amount}} сум",
+  "Jarima yozish": "Выписать штраф",
+  "Taklif: {{amount}}": "Расчёт: {{amount}}",
+  "Nima buzildi (masalan: stakan, televizor pulti)": "Что повреждено (например: стакан, пульт от телевизора)",
+  "Bekor": "Отмена",
+  "Jarimani yozish": "Выписать штраф",
+  "Summa bron jamiga qo'shiladi va qarz sifatida ko'rinadi — to'lovni pastdagi \"Qo'shimcha to'lov\" orqali qabul qiling.": "Сумма добавится к итогу брони и будет видна как долг — примите оплату через «Доплата» ниже.",
+  "Jarima qo'shish": "Добавить штраф",
+  "Kech chiqish yoki buzilgan narsa uchun jarima shu yerda yoziladi.": "Здесь выписывается штраф за поздний выезд или повреждённое имущество."
 }

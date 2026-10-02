@@ -102,5 +102,19 @@
   "{{shop_debt}} So'm": "{{shop_debt}} сум",
   "{{cashOnHand}} So'm": "{{cashOnHand}} сум",
   "{{refunds}} So'm": "{{refunds}} сум",
-  "{{expensesTotal}} So'm": "{{expensesTotal}} сум"
+  "{{expensesTotal}} So'm": "{{expensesTotal}} сум",
+  "Jami jarimalar": "Всего штрафов",
+  "{{count}} ta jarima": {
+    "one": "{{count}} штраф",
+    "few": "{{count}} штрафа",
+    "many": "{{count}} штрафов",
+    "other": "{{count}} штрафа"
+  },
+  "Yozilgan jarimalar": "Выписанные штрафы",
+  "to'langanda bron to'lovi bo'lib tushumga kiradi": "после оплаты попадают в выручку как оплата брони",
+  "Kim yozdi": "Кто выписал",
+  "Tanlangan davrda jarima yozilmagan": "За выбранный период штрафов нет",
+  "Xona {{room}}": "Номер {{room}}",
+  "Kech chiqish va buzilgan narsalar uchun yozilgan jarimalar": "Штрафы за поздний выезд и повреждённое имущество",
+  "{{penalty_total}} So'm": "{{penalty_total}} сум"
 }

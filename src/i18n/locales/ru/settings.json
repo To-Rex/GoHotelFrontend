@@ -91,7 +91,6 @@
   "Ruxsat biriktiruvlari": "Назначения прав доступа",
   "Xodim sessiyalari": "Сессии сотрудников",
   "Bron va mehmonlar": "Брони и гости",
-  "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash va hujjat skaneri": "Как открывается окно бронирования, правила скидок, изменение брони и сканер документов",
   "Kassa va smena": "Касса и смена",
   "Smenali rejim, kunlik kassa kesimi va uning majburiyligi": "Сменный режим, ежедневное закрытие кассы и его обязательность",
   "Chek va printer": "Чек и принтер",
@@ -249,5 +248,16 @@
   "12 soatlik": "12-часовой",
   "Tanlangan oxirgi kun — chiqish kuni. Bugun va ertaga tanlansa — 1 kecha, narx 1 barobar (kirish bugun, chiqish ertaga). Hozirgi tartib.": "Последний выбранный день — день выезда. Выбраны сегодня и завтра — 1 ночь, цена ×1 (заезд сегодня, выезд завтра). Текущий порядок.",
   "24 soatlik": "24-часовой",
-  "Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga).": "Каждый выбранный день считается полностью. Выбраны сегодня и завтра — 2 дня, цена ×2 (выезд — послезавтра)."
+  "Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga).": "Каждый выбранный день считается полностью. Выбраны сегодня и завтра — 2 дня, цена ×2 (выезд — послезавтра).",
+  "Kech chiqish — har bir soat uchun": "Поздний выезд — за каждый час",
+  "0 — taklif o'chiq: xodim summani o'zi kiritadi": "0 — расчёт выключен: сотрудник вводит сумму сам",
+  "Imtiyozli vaqt (kechiriladi)": "Льготное время (не штрафуется)",
+  "daqiqa": "мин",
+  "Resepshn bron oynasidagi \"Jarimalar\" bo'limida kech chiqish, buzilgan narsa yoki boshqa sabab uchun jarima yozadi — summa bron jamiga qo'shiladi.": "Ресепшн выписывает штраф за поздний выезд, поломку или по другой причине в разделе «Штрафы» окна брони — сумма добавляется к итогу брони.",
+  "Kunlik bronda chiqish vaqti — soat {{hour}}:00, soatlik bronda — bron tugash vaqti.": "Время выезда для посуточной брони — {{hour}}:00, для почасовой — время окончания брони.",
+  "Misol: mehmon 2 soat 10 daqiqa kechiksa, taklif {{hours}} soat × {{hourly}} = {{amount}} so'm (xodim o'zgartira oladi).": "Пример: если гость задержится на 2 ч 10 мин, расчёт — {{hours}} ч × {{hourly}} = {{amount}} сум (сотрудник может изменить).",
+  "Taklif o'chiq — jarima summasi har safar qo'lda kiritiladi.": "Расчёт выключен — сумма штрафа каждый раз вводится вручную.",
+  "Jarimani bekor qilish — faqat administrator yoki menejer; bekor qilingan jarima sababi bilan tarixda qoladi.": "Аннулировать штраф может только администратор или менеджер; аннулированный штраф остаётся в истории с причиной.",
+  "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash, jarimalar va hujjat skaneri": "Как открывается окно бронирования, правила скидок, редактирование брони, штрафы и сканер документов",
+  "Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.": "Если гость выехал поздно или что-то сломал, выписывается штраф. Здесь задаются почасовая сумма за поздний выезд и льготное время — в окне брони сумма рассчитывается автоматически."
 }

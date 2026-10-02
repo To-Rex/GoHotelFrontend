@@ -339,6 +339,8 @@ export interface ReservationReceiptData {
   total_amount: number
   paid_amount: number
   discount_amount?: number | null
+  /** Jarimalar (kech chiqish, shikast) — JAMI ichida, alohida qatorda */
+  penalty_amount?: number | null
   /** Bronga yozilgan xizmatlar/qo'shimchalar */
   services?: Array<{ name: string; quantity?: number | null; amount: number }>
   created_at?: string | null
@@ -434,6 +436,9 @@ const buildReservationElements = (
   elements.push({ type: "line" })
   if (data.discount_amount && data.discount_amount > 0) {
     elements.push({ type: "row", left: tr("Chegirma:"), right: `−${money(data.discount_amount)}` })
+  }
+  if (data.penalty_amount && data.penalty_amount > 0) {
+    elements.push({ type: "row", left: tr("Jarima:"), right: `+${money(data.penalty_amount)}` })
   }
   elements.push({
     type: "row",

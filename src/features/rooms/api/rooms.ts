@@ -318,6 +318,8 @@ export interface RoomReservation {
   discount_percent?: number;
   /** Qimmatroq xonaga ko'chirishda berilgan chegirma (so'm) */
   move_discount_amount?: number;
+  /** Faol jarimalar yig'indisi (so'm) */
+  penalty_amount?: number;
   /** Xonada turgan qolgan mehmonlar. Yozuv o'chirilmaydi: turish davomida
       ketgani `left_at` bilan belgilanadi, keyin qo'shilgani — `added_at` */
   companions?: Array<{

@@ -91,7 +91,6 @@
   "Ruxsat biriktiruvlari": "Permission assignments",
   "Xodim sessiyalari": "Employee sessions",
   "Bron va mehmonlar": "Bookings and guests",
-  "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash va hujjat skaneri": "How the booking window opens, discount rules, booking edits and the document scanner",
   "Kassa va smena": "Cash desk and shifts",
   "Smenali rejim, kunlik kassa kesimi va uning majburiyligi": "Shift mode, the daily cash close and whether it is mandatory",
   "Chek va printer": "Receipts and printer",
@@ -247,5 +246,16 @@
   "12 soatlik": "12-hour",
   "Tanlangan oxirgi kun — chiqish kuni. Bugun va ertaga tanlansa — 1 kecha, narx 1 barobar (kirish bugun, chiqish ertaga). Hozirgi tartib.": "The last selected day is the check-out day. Today and tomorrow selected — 1 night, price ×1 (check-in today, check-out tomorrow). Current behaviour.",
   "24 soatlik": "24-hour",
-  "Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga).": "Every selected day counts in full. Today and tomorrow selected — 2 days, price ×2 (check-out the day after tomorrow)."
+  "Har tanlangan kun to'liq hisoblanadi. Bugun va ertaga tanlansa — 2 kun, narx 2 barobar (chiqish — indinga).": "Every selected day counts in full. Today and tomorrow selected — 2 days, price ×2 (check-out the day after tomorrow).",
+  "Kech chiqish — har bir soat uchun": "Late check-out — per hour",
+  "0 — taklif o'chiq: xodim summani o'zi kiritadi": "0 — suggestion off: staff enter the amount themselves",
+  "Imtiyozli vaqt (kechiriladi)": "Grace period (not charged)",
+  "daqiqa": "min",
+  "Resepshn bron oynasidagi \"Jarimalar\" bo'limida kech chiqish, buzilgan narsa yoki boshqa sabab uchun jarima yozadi — summa bron jamiga qo'shiladi.": "Reception issues a penalty for late check-out, damage or another reason in the \"Penalties\" section of the booking window — the amount is added to the booking total.",
+  "Kunlik bronda chiqish vaqti — soat {{hour}}:00, soatlik bronda — bron tugash vaqti.": "Check-out time for daily bookings is {{hour}}:00; for hourly bookings it is the booking end time.",
+  "Misol: mehmon 2 soat 10 daqiqa kechiksa, taklif {{hours}} soat × {{hourly}} = {{amount}} so'm (xodim o'zgartira oladi).": "Example: if the guest is 2 h 10 min late, the suggestion is {{hours}} h × {{hourly}} = {{amount}} UZS (staff can change it).",
+  "Taklif o'chiq — jarima summasi har safar qo'lda kiritiladi.": "Suggestion is off — the penalty amount is entered manually each time.",
+  "Jarimani bekor qilish — faqat administrator yoki menejer; bekor qilingan jarima sababi bilan tarixda qoladi.": "Only an administrator or manager can void a penalty; a voided penalty stays in the history with its reason.",
+  "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash, jarimalar va hujjat skaneri": "How the booking window opens, discount rules, booking edits, penalties and the document scanner",
+  "Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.": "If a guest checks out late or breaks something, a penalty is issued. Set the hourly late check-out amount and grace period here — the booking window then suggests the amount automatically."
 }

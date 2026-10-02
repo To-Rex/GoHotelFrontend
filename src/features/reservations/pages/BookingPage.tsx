@@ -56,6 +56,7 @@ import { blockingTaskMap, roomBookingBlock } from "@/features/rooms/lib/roomBook
 import { useGuests } from "@/features/guests/api/guests"
 import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
 import { ReservationCompanionsPanel } from "../components/ReservationCompanionsPanel"
+import { ReservationPenaltiesPanel } from "../components/ReservationPenaltiesPanel"
 import {
   NewBookingDialog,
   type NewBookingRequest,
@@ -2209,6 +2210,30 @@ export function BookingPage() {
                         </div>
                       </div>
                     )}
+
+                  {/* JARIMALAR — kech chiqish, shikast. Kirgan va chiqib
+                      ketgan bronda (holat qulflangan bo'lsa ham) ko'rinadi;
+                      yozilgan summa jamiga qo'shiladi va pastdagi qarz
+                      panelida darhol to'lovga chiqadi */}
+                  {!editMode && !cancelMode && !moveMode && (
+                    <ReservationPenaltiesPanel
+                      reservation={res}
+                      canAdd={canUpdate && !isCleaner}
+                      canVoid={isAdmin || permissions.includes("shift.force_close")}
+                      onUpdated={(change) =>
+                        setSelectedReservation((prev: any) =>
+                          prev && prev.id === res.id
+                            ? {
+                                ...prev,
+                                total_amount: change.reservation_total,
+                                penalty_amount: change.penalty_total,
+                                payment_status: change.payment_status,
+                              }
+                            : prev
+                        )
+                      }
+                    />
+                  )}
 
                   {/* BALANS HISOB-KITOBI — xona almashtirilgach narx farqi:
                       qimmatroq xonada qo'shimcha to'lov (qisman ham mumkin,
