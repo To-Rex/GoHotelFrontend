@@ -24,6 +24,7 @@ import { InvoicesSection } from "../components/InvoicesSection"
 import { PaymentsSection } from "../components/PaymentsSection"
 import { ShopSection } from "../components/ShopSection"
 import { PenaltiesSection } from "../components/PenaltiesSection"
+import { CashNowCard } from "@/features/shifts/components/CashNowCard"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 import { tr } from "@/i18n"
 
@@ -459,6 +460,11 @@ export const FinancePage = () => {
 
           {section === "overview" && (
             <div className="space-y-6">
+              {/* KASSADA HOZIR — davrga bog'liq emas, jonli ko'rsatkich
+                  (ochiq smenalar kassasi). Faqat administrator va menejer
+                  ko'radi; ruxsat bo'lmasa karta chiqmaydi */}
+              <CashNowCard />
+
               {/* Hisobot kartalari.
 
                   Yon menyu 240px joy oladi, shuning uchun to'rt ustun

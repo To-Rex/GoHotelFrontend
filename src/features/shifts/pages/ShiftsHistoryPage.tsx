@@ -26,6 +26,8 @@ import {
   type ShiftSession,
 } from "../api/shifts"
 import { usePermissions } from "@/lib/permissions"
+import { CashNowCard } from "../components/CashNowCard"
+import { HandoversSection } from "../components/HandoversSection"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -485,6 +487,9 @@ export const ShiftsHistoryPage = () => {
         </div>
       </div>
 
+      {/* KASSADA HOZIR — ochiq smenalardagi naqd pul (jonli, admin/menejer) */}
+      {canEdit && <CashNowCard />}
+
       {/* Tanlangan xodim banneri — faqat shu xodim kassasi ko'rinmoqda */}
       {selectedEmployee && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-primary-200 bg-primary-50/60 px-4 py-2.5">
@@ -701,6 +706,16 @@ export const ShiftsHistoryPage = () => {
         </div>
         </div>
       </div>
+
+      {/* SMENADAN SMENAGA o'tgan pullar — sahifadagi sana va xodim
+          filtri bilan (admin/menejer) */}
+      {canEdit && (
+        <HandoversSection
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          userId={employeeFilter !== "ALL" ? employeeFilter : null}
+        />
+      )}
 
       {/* Xodimlar kesimi — qatorni bosib bitta xodimga fokus qilinadi */}
       {(byEmployee.length > 1 || employeeFilter !== "ALL") && (

@@ -168,5 +168,42 @@
   "{{shortageTotal}} so'm": "{{shortageTotal}} сум",
   "+{{surplusTotal}} so'm": "+{{surplusTotal}} сум",
   "{{forcedCount}} ta": "{{forcedCount}}",
-  "shift::Tugagan": "Окончена"
+  "shift::Tugagan": "Окончена",
+  "Ishlamoqda": "Работает",
+  "boshlangan: {{time}}": "начата: {{time}}",
+  "Boshlang'ich {{opening}} + to'lovlar {{payments}} + do'kon {{shop}} − xarajat {{expenses}}": "Начальная {{opening}} + оплаты {{payments}} + магазин {{shop}} − расходы {{expenses}}",
+  "Sanab topshirildi: {{counted}} so'm": "Пересчитано при сдаче: {{counted}} сум",
+  "Kassada hozir": "Сейчас в кассе",
+  "Ochiq smenalarda kassada bo'lishi kerak bo'lgan naqd pul": "Наличные, которые сейчас должны быть в кассах открытых смен",
+  "Smenalar oddiy rejimda — kassa sessiyalari yuritilmaydi, shuning uchun tizim kassada hozir qancha pul borligini bilmaydi. Buni ko'rish uchun sozlovchi Sozlamalar → «Kassa va smena» bo'limida kassali rejimni yoqadi.": "Смены работают в простом режиме — кассовые сессии не ведутся, поэтому система не знает, сколько денег сейчас в кассе. Чтобы видеть это, настройщик включает кассовый режим в Настройки → «Касса и смена».",
+  "Ochiq: {{active}} · topshirilmoqda: {{pending}}": "Открыто: {{active}} · сдаётся: {{pending}}",
+  "Hozir ochiq kassa yo'q — pul topshirilgan yoki kassadan olingan.": "Сейчас нет открытых касс — деньги сданы или изъяты из кассы.",
+  "Keyingi smenaga o'tdi": "Передано следующей смене",
+  "Qabul kutilmoqda": "Ожидает приёма",
+  "Kassadan olindi (kesim)": "Изъято из кассы (выемка)",
+  "Majburiy yopildi — pulni rahbar oldi": "Закрыта принудительно — деньги забрал руководитель",
+  "qabul: {{time}}": "принято: {{time}}",
+  "Rahbar oldi": "Забрал руководитель",
+  "Kassadan olindi": "Изъято из кассы",
+  "Smenadan smenaga o'tgan pullar": "Деньги, переданные от смены к смене",
+  "Har topshirilgan kassa: kimdan kimga, qancha sanab berildi, kutilgan summa va farq": "Каждая сданная касса: от кого кому, сколько пересчитано, ожидаемая сумма и разница",
+  "{{count}} marta": {
+    "one": "{{count}} раз",
+    "few": "{{count}} раза",
+    "many": "{{count}} раз",
+    "other": "{{count}} раза"
+  },
+  "kesim va majburiy yopish · {{count}} marta": {
+    "one": "выемка и принудительное закрытие · {{count}} раз",
+    "few": "выемка и принудительное закрытие · {{count}} раза",
+    "many": "выемка и принудительное закрытие · {{count}} раз",
+    "other": "выемка и принудительное закрытие · {{count}} раза"
+  },
+  "Oddiy rejimda kassa smenadan smenaga topshirilmaydi": "В простом режиме касса не передаётся от смены к смене",
+  "Tanlangan davrda smena topshirilmagan": "За выбранный период смены не сдавались",
+  "Tuzatilgan": "Исправлено",
+  "Qabul qiluvchining boshlang'ich kassasi: {{amount}} so'm": "Начальная касса принявшего: {{amount}} сум",
+  "kutilgan {{expected}}": "ожидалось {{expected}}",
+  "farq": "разница",
+  "Yana ko'rsatish ({{count}})": "Показать ещё ({{count}})"
 }

@@ -98,7 +98,12 @@ const useShiftMutation = <T = ShiftSession>(fn: (payload: any) => Promise<T>) =>
   const qc = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["shiftState"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["shiftState"] });
+      // Kassa harakati o'zgardi — nazorat ko'rsatkichlari ham yangilansin
+      qc.invalidateQueries({ queryKey: ["cashOverview"] });
+      qc.invalidateQueries({ queryKey: ["shiftHandovers"] });
+    },
   });
 };
 
@@ -164,6 +169,7 @@ export const useCorrectShift = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shiftHistory"] });
       qc.invalidateQueries({ queryKey: ["shiftState"] });
+      qc.invalidateQueries({ queryKey: ["shiftHandovers"] });
     },
   });
 };
@@ -189,6 +195,122 @@ export const useExpectedCash = (enabled: boolean) =>
     // Dialog har ochilganda yangi hisob olinadi
     staleTime: 0,
   });
+
+// --- Kassalar hozir (admin/menejer) ---
+
+/** Ochiq kassa sessiyasi tarkibi bilan (`/shifts/cash-overview`). */
+export interface CashDrawer extends ShiftSession {
+  branch_name?: string | null;
+  payments_cash: number;
+  shop_cash: number;
+  expenses_cash: number;
+  expected_cash: number;
+}
+
+export interface CashOverview {
+  mode: "simple" | "cash";
+  sessions: CashDrawer[];
+  /** Hozir ochiq kassalarda bo'lishi kerak bo'lgan jami naqd pul */
+  total_expected: number;
+  active_count: number;
+  pending_count: number;
+}
+
+const statusOf = (error: unknown): number | undefined =>
+  (error as { response?: { status?: number } } | null)?.response?.status;
+
+/** Ruxsat yo'q (403) — xato emas: kassalar nazorati faqat administrator va
+ *  `shift.force_close` egasiga ochiq ("ko'r sanash" — kassir o'z kassasidagi
+ *  kutilgan summani ko'rmaydi). */
+export const isForbiddenError = (error: unknown): boolean => statusOf(error) === 403;
+
+export const CASH_OVERVIEW_KEY = ["cashOverview"] as const;
+
+export const useCashOverview = (enabled = true) =>
+  useQuery({
+    queryKey: CASH_OVERVIEW_KEY,
+    queryFn: async () => {
+      const { data } = await api.get<CashOverview>("/shifts/cash-overview");
+      return data;
+    },
+    enabled,
+    // Jonli ko'rsatkich — har daqiqada yangilanadi
+    refetchInterval: 60_000,
+    staleTime: 15_000,
+    retry: (count, error) => !isForbiddenError(error) && count < 2,
+  });
+
+// --- Smenadan smenaga o'tgan pullar (admin/menejer) ---
+
+/** Smena yakunida kassadagi pul qayerga ketgani (backend: handover_kind):
+ *  HANDOVER — keyingi xodim qabul qildi; PENDING — qabul kutilmoqda;
+ *  CASH_OUT — kassa topshirildi (kunlik kesim), pul kassadan chiqdi;
+ *  FORCE_TAKEN — majburiy yopildi, pulni rahbar oldi. */
+export type HandoverKind = "HANDOVER" | "PENDING" | "CASH_OUT" | "FORCE_TAKEN";
+
+export interface ShiftHandover {
+  id: string;
+  kind: HandoverKind;
+  from_user_id: string;
+  from_user_name?: string | null;
+  to_user_id?: string | null;
+  to_user_name?: string | null;
+  closed_by_name?: string | null;
+  branch_name?: string | null;
+  started_at?: string | null;
+  ended_at?: string | null;
+  accepted_at?: string | null;
+  opening_cash: number;
+  expected_cash?: number | null;
+  counted_cash?: number | null;
+  cash_diff?: number | null;
+  force_closed: boolean;
+  corrected: boolean;
+  notes?: string | null;
+  /** Qabul qiluvchining yangi sessiyasi boshlang'ich kassasi */
+  received_opening_cash?: number | null;
+}
+
+export interface HandoverReport {
+  mode: "simple" | "cash";
+  summary: {
+    handed_over_total: number;
+    handed_over_count: number;
+    taken_out_total: number;
+    taken_out_count: number;
+    pending_total: number;
+    pending_count: number;
+    shortage_total: number;
+    surplus_total: number;
+  };
+  items: ShiftHandover[];
+}
+
+export const useShiftHandovers = (dateFrom?: string, dateTo?: string, enabled = true) =>
+  useQuery({
+    queryKey: ["shiftHandovers", dateFrom || null, dateTo || null],
+    queryFn: async () => {
+      const { data } = await api.get<HandoverReport>("/shifts/handovers", {
+        params: {
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+          limit: 500,
+        },
+      });
+      return data;
+    },
+    enabled,
+    retry: (count, error) => !isForbiddenError(error) && count < 2,
+  });
+
+/** Qabul qiluvchining boshlang'ich kassasi topshirilgan summadan farq
+ *  qiladimi (masalan, sanalgan summa keyin tuzatilgan bo'lsa). */
+export const handoverMismatch = (h: ShiftHandover): number | null => {
+  if (h.kind !== "HANDOVER") return null;
+  if (h.received_opening_cash == null || h.counted_cash == null) return null;
+  const diff = Number(h.received_opening_cash) - Number(h.counted_cash);
+  return Math.abs(diff) >= 1 ? diff : null;
+};
 
 // --- Smenalar tarixi (admin/menejer sahifasi) ---
 

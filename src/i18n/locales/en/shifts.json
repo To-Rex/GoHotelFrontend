@@ -162,5 +162,38 @@
   "{{shortageTotal}} so'm": "{{shortageTotal}} UZS",
   "+{{surplusTotal}} so'm": "+{{surplusTotal}} UZS",
   "{{forcedCount}} ta": "{{forcedCount}}",
-  "shift::Tugagan": "Ended"
+  "shift::Tugagan": "Ended",
+  "Ishlamoqda": "On shift",
+  "boshlangan: {{time}}": "started: {{time}}",
+  "Boshlang'ich {{opening}} + to'lovlar {{payments}} + do'kon {{shop}} − xarajat {{expenses}}": "Opening {{opening}} + payments {{payments}} + shop {{shop}} − expenses {{expenses}}",
+  "Sanab topshirildi: {{counted}} so'm": "Counted at handover: {{counted}} UZS",
+  "Kassada hozir": "Cash on hand now",
+  "Ochiq smenalarda kassada bo'lishi kerak bo'lgan naqd pul": "Cash that should be in the drawers of open shifts right now",
+  "Smenalar oddiy rejimda — kassa sessiyalari yuritilmaydi, shuning uchun tizim kassada hozir qancha pul borligini bilmaydi. Buni ko'rish uchun sozlovchi Sozlamalar → «Kassa va smena» bo'limida kassali rejimni yoqadi.": "Shifts run in simple mode — cash sessions are not tracked, so the system doesn't know how much cash is in the drawer right now. To see it, the configurator turns on cash mode in Settings → \"Cash and shifts\".",
+  "Ochiq: {{active}} · topshirilmoqda: {{pending}}": "Open: {{active}} · handing over: {{pending}}",
+  "Hozir ochiq kassa yo'q — pul topshirilgan yoki kassadan olingan.": "No open drawers right now — the cash was handed over or taken out.",
+  "Keyingi smenaga o'tdi": "Passed to the next shift",
+  "Qabul kutilmoqda": "Awaiting acceptance",
+  "Kassadan olindi (kesim)": "Taken out of the drawer (day close)",
+  "Majburiy yopildi — pulni rahbar oldi": "Force-closed — a manager took the cash",
+  "qabul: {{time}}": "accepted: {{time}}",
+  "Rahbar oldi": "Taken by manager",
+  "Kassadan olindi": "Taken out of the drawer",
+  "Smenadan smenaga o'tgan pullar": "Cash passed from shift to shift",
+  "Har topshirilgan kassa: kimdan kimga, qancha sanab berildi, kutilgan summa va farq": "Every handed-over drawer: from whom to whom, how much was counted, the expected amount and the difference",
+  "{{count}} marta": {
+    "one": "{{count}} time",
+    "other": "{{count}} times"
+  },
+  "kesim va majburiy yopish · {{count}} marta": {
+    "one": "day close and force-close · {{count}} time",
+    "other": "day close and force-close · {{count}} times"
+  },
+  "Oddiy rejimda kassa smenadan smenaga topshirilmaydi": "In simple mode the drawer isn't handed over between shifts",
+  "Tanlangan davrda smena topshirilmagan": "No shifts were handed over in the selected period",
+  "Tuzatilgan": "Corrected",
+  "Qabul qiluvchining boshlang'ich kassasi: {{amount}} so'm": "Receiver's opening cash: {{amount}} UZS",
+  "kutilgan {{expected}}": "expected {{expected}}",
+  "farq": "difference",
+  "Yana ko'rsatish ({{count}})": "Show more ({{count}})"
 }
