@@ -34,6 +34,10 @@ export interface Sighting {
   /** Vektori saqlangan va hali hech kimga biriktirilmagan. */
   can_enroll: boolean;
   acknowledged: boolean;
+  /** `distinctGuests` rejimida: bitta qatorga yig'ilgan ko'rinishlar soni */
+  sighting_count?: number;
+  /** Ko'rsatiladigan surat — guruhdagi eng aniq kadr (bo'lmasa `id`) */
+  image_sighting_id?: string | null;
 }
 
 export interface SightingList {
@@ -53,6 +57,8 @@ export interface SightingsQuery {
   /** Faqat tanilganlar — navbar paneli shu rejimda ishlaydi. */
   onlyMatched?: boolean;
   includeAcknowledged?: boolean;
+  /** Bir mehmon — bir qator (server ko'rinishlarini yig'ib beradi) */
+  distinctGuests?: boolean;
   /** Polling oralig'i (ms). 0 yoki undefined — o'chirilgan. */
   refetchMs?: number;
   enabled?: boolean;
@@ -66,6 +72,7 @@ export const useSightings = (params: SightingsQuery = {}) => {
     onlyUnmatched = false,
     onlyMatched = false,
     includeAcknowledged = true,
+    distinctGuests = false,
     refetchMs,
     enabled = true,
   } = params;
@@ -79,6 +86,7 @@ export const useSightings = (params: SightingsQuery = {}) => {
       onlyUnmatched,
       onlyMatched,
       includeAcknowledged,
+      distinctGuests,
     ],
     // Filialsiz so'ramaymiz: filtrsiz ro'yxat butun mehmonxonani qaytaradi
     // va tanlash oynasida boshqa filialning odami paydo bo'lardi.
@@ -93,6 +101,8 @@ export const useSightings = (params: SightingsQuery = {}) => {
           only_unmatched: onlyUnmatched,
           only_matched: onlyMatched,
           include_acknowledged: includeAcknowledged,
+          // Faqat yoqilganda yuboriladi — eski so'rov shakli o'zgarmaydi
+          ...(distinctGuests ? { distinct_guests: true } : {}),
         },
       });
       return data;
@@ -218,11 +228,26 @@ export const useEnrollSighting = () => {
   });
 };
 
+/** Olib tashlash: bitta ko'rinish yoki mehmonning hammasi
+ *  (`allForGuest` — server shu filialdagi barchasini yopadi; `ids` — panel
+ *  bilgan qolgan ko'rinishlar, eski server uchun zaxira). */
+export type AcknowledgeArgs = string | { id: string; allForGuest?: boolean; ids?: string[] };
+
 export const useAcknowledgeSighting = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (sightingId: string) => {
-      const { data } = await api.post(`/vision/sightings/${sightingId}/ack`);
+    mutationFn: async (args: AcknowledgeArgs) => {
+      const { id, allForGuest = false, ids = [] } =
+        typeof args === 'string' ? { id: args } : args;
+      const { data } = await api.post(
+        `/vision/sightings/${id}/ack`,
+        undefined,
+        allForGuest ? { params: { all_for_guest: true } } : undefined
+      );
+      const rest = ids.filter((other) => other !== id);
+      if (rest.length) {
+        await Promise.allSettled(rest.map((other) => api.post(`/vision/sightings/${other}/ack`)));
+      }
       return data;
     },
     onSuccess: () => {
