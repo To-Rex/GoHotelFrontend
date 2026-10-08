@@ -77,12 +77,15 @@ export function AppStorePage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [downloading, setDownloading] = useState<string | null>(null)
+  // Bo'laklab yuklash jarayoni (0–100); null — yuklash ketmayapti
+  const [progress, setProgress] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!draft?.file) return
     setError(null)
+    setProgress(0)
     try {
       await upload.mutateAsync({
         platform: draft.platform,
@@ -90,12 +93,15 @@ export function AppStorePage() {
         version: draft.version,
         notes: draft.notes,
         file: draft.file,
+        onProgress: setProgress,
       })
       setNotice(tr("\"{{name}}\" do'konga qo'shildi", { name: draft.name }))
       setDraft(null)
       window.setTimeout(() => setNotice(null), 4000)
     } catch (e) {
       setError(panelError(e))
+    } finally {
+      setProgress(null)
     }
   }
 
@@ -343,6 +349,25 @@ export function AppStorePage() {
 
           {error && <PanelNotice>{error}</PanelNotice>}
 
+          {upload.isPending && progress !== null && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>
+                  {progress < 100
+                    ? tr("Bo'laklab yuklanmoqda — oynani yopmang")
+                    : tr("Fayl yig'ilmoqda...")}
+                </span>
+                <span className="tabular-nums">{progress}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-[width] duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-1">
             <PanelButton
               type="button"
@@ -359,7 +384,11 @@ export function AppStorePage() {
               {upload.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
-              {upload.isPending ? tr("Yuklanmoqda...") : tr("Yuklash")}
+              {upload.isPending
+                ? progress !== null && progress < 100
+                  ? tr("{{percent}}% yuklandi", { percent: progress })
+                  : tr("Yuklanmoqda...")
+                : tr("Yuklash")}
             </PanelButton>
           </div>
         </form>

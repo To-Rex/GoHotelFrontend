@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 
+import { uploadAppInChunks } from "./appUpload"
 import { PANEL_TOKEN_KEY, panelApi } from "./client"
 
 /** Panel API qatlami — barcha so'rovlar `/superadmin` ostida. */
@@ -731,6 +732,9 @@ export const usePanelApps = () =>
     },
   })
 
+/** Fayl BO'LAKLAB yuboriladi (appUpload.ts): har bo'lak alohida qisqa
+    so'rov — proksi vaqt chegarasi (60 s) katta faylni uzmaydi, xato bergan
+    bo'lak qayta ketadi, `onProgress` foizni beradi. */
 export const useUploadPanelApp = () => {
   const qc = useQueryClient()
   return useMutation({
@@ -740,21 +744,11 @@ export const useUploadPanelApp = () => {
       version: string
       notes: string
       file: File
-    }) => {
-      const form = new FormData()
-      form.append("platform", payload.platform)
-      form.append("name", payload.name)
-      if (payload.version.trim()) form.append("version", payload.version.trim())
-      if (payload.notes.trim()) form.append("notes", payload.notes.trim())
-      form.append("file", payload.file, payload.file.name)
-      const { data } = await panelApi.post<PanelAppRelease>("/apps", form, {
-        // Content-Type ni axios FormData chegarasi bilan o'zi qo'ysin
-        headers: { "Content-Type": undefined as unknown as string },
-        // Katta o'rnatuvchi sekin tarmoqda ham ulgurishi kerak
-        timeout: 15 * 60 * 1000,
-      })
-      return data
-    },
+      onProgress?: (percent: number) => void
+    }) =>
+      uploadAppInChunks<PanelAppRelease>(panelApi, payload, {
+        onProgress: payload.onProgress,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["panelApps"] }),
   })
 }

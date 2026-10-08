@@ -202,5 +202,8 @@
   "Panel parolingiz": "Your panel password",
   "O'chirilmoqda...": "Deleting...",
   "Butunlay o'chirish": "Delete permanently",
-  "Tizim akkauntlari o'chirilmaydi — faqat mehmonxonadan ajratiladi:": "System accounts are not deleted — they are only detached from the hotel:"
+  "Tizim akkauntlari o'chirilmaydi — faqat mehmonxonadan ajratiladi:": "System accounts are not deleted — they are only detached from the hotel:",
+  "Bo'laklab yuklanmoqda — oynani yopmang": "Uploading in chunks — keep this window open",
+  "Fayl yig'ilmoqda...": "Assembling the file...",
+  "{{percent}}% yuklandi": "{{percent}}% uploaded"
 }

@@ -217,5 +217,8 @@
   "Panel parolingiz": "Ваш пароль от панели",
   "O'chirilmoqda...": "Удаление...",
   "Butunlay o'chirish": "Удалить полностью",
-  "Tizim akkauntlari o'chirilmaydi — faqat mehmonxonadan ajratiladi:": "Системные учётные записи не удаляются — только отвязываются от гостиницы:"
+  "Tizim akkauntlari o'chirilmaydi — faqat mehmonxonadan ajratiladi:": "Системные учётные записи не удаляются — только отвязываются от гостиницы:",
+  "Bo'laklab yuklanmoqda — oynani yopmang": "Загружается по частям — не закрывайте окно",
+  "Fayl yig'ilmoqda...": "Файл собирается...",
+  "{{percent}}% yuklandi": "{{percent}}% загружено"
 }
