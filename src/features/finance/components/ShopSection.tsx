@@ -12,7 +12,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { SortableHead, TablePager, TableSearch } from "@/components/ui/table-tools"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
-import { useShopSalesPage, type ShopSale } from "@/features/shop/api/shop"
+import {
+  isPartiallyPaid,
+  salePaid,
+  saleRemaining,
+  useShopSalesPage,
+  type ShopSale,
+} from "@/features/shop/api/shop"
 import {
   PAGE_SIZE,
   clampPage,
@@ -171,8 +177,14 @@ export function ShopSection({
                       {stamp(s.created_at)}
                     </p>
                   </div>
-                  <span className="flex-shrink-0 font-semibold text-amber-600">
-                    {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
+                  <span className="flex-shrink-0 text-right font-semibold text-amber-600">
+                    {/* Qarz — to'lanmagan qoldiq (qisman to'langan bo'lsa) */}
+                    {tr("{{total_amount}} So'm", { total_amount: fmt(saleRemaining(s)) })}
+                    {isPartiallyPaid(s) && (
+                      <span className="block text-[11px] font-normal text-gray-400">
+                        {tr("jami {{total}} · to'langan {{paid}}", { total: fmt(s.total_amount), paid: fmt(salePaid(s)) })}
+                      </span>
+                    )}
                   </span>
                 </div>
                 <p className="mt-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs text-gray-500">
@@ -226,7 +238,13 @@ export function ShopSection({
                         {itemsText(s)}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-amber-600">
-                        {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
+                        {/* Qarz — to'lanmagan qoldiq (qisman to'langan bo'lsa) */}
+                        {tr("{{total_amount}} So'm", { total_amount: fmt(saleRemaining(s)) })}
+                        {isPartiallyPaid(s) && (
+                          <span className="block text-[11px] font-normal text-gray-400">
+                            {tr("jami {{total}} · to'langan {{paid}}", { total: fmt(s.total_amount), paid: fmt(salePaid(s)) })}
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

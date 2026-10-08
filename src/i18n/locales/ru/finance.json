@@ -116,5 +116,6 @@
   "Tanlangan davrda jarima yozilmagan": "За выбранный период штрафов нет",
   "Xona {{room}}": "Номер {{room}}",
   "Kech chiqish va buzilgan narsalar uchun yozilgan jarimalar": "Штрафы за поздний выезд и повреждённое имущество",
-  "{{penalty_total}} So'm": "{{penalty_total}} сум"
+  "{{penalty_total}} So'm": "{{penalty_total}} сум",
+  "jami {{total}} · to'langan {{paid}}": "всего {{total}} · оплачено {{paid}}"
 }

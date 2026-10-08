@@ -5,6 +5,8 @@
 import { format } from "date-fns"
 import {
   DEFAULT_RECEIPT_SETTINGS,
+  salePaid,
+  saleRemaining,
   type ReceiptSettings,
   type ShopSale,
 } from "@/features/shop/api/shop"
@@ -237,6 +239,19 @@ const buildReceiptElements = (
         right: `${METHOD_LABELS[p.payment_method] || p.payment_method}: ${Number(p.amount).toLocaleString()}`,
       })
     })
+  } else if (sale.status === "PENDING" && salePaid(sale) > 0) {
+    // Qisman to'langan (bron hisobida qoldiq bor): to'lovlar, to'langan va qoldiq
+    ;(sale.payments || []).forEach((p, i) => {
+      elements.push({
+        type: "row",
+        left: i === 0 ? tr("To'lov:") : "",
+        right: `${METHOD_LABELS[p.payment_method] || p.payment_method}: ${Number(p.amount).toLocaleString()}`,
+      })
+    })
+    elements.push(
+      { type: "row", left: tr("To'langan:"), right: tr("{{amount}} So'm", { amount: salePaid(sale).toLocaleString() }) },
+      { type: "row", left: tr("Qoldiq:"), right: tr("{{amount}} So'm", { amount: saleRemaining(sale).toLocaleString() }), bold: true },
+    )
   } else {
     elements.push({
       type: "row",
@@ -250,7 +265,10 @@ const buildReceiptElements = (
   if (sale.status === "PENDING") {
     elements.push({
       type: "text",
-      value: tr("To'lov mehmon chiqishida olinadi"),
+      value:
+        salePaid(sale) > 0
+          ? tr("Qoldiq mehmon chiqishida olinadi")
+          : tr("To'lov mehmon chiqishida olinadi"),
       align: "center",
     })
   }

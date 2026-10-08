@@ -33,12 +33,22 @@ import {
   useDeleteShopProduct,
   useAddShopBatch,
   useCreateShopSale,
-  usePayShopSale,
   useCancelShopSale,
   useReceiptSettings,
+  isPartiallyPaid,
+  partsProblem,
+  salePaid,
+  saleRemaining,
   type ShopProduct,
   type ShopSale,
 } from "../api/shop"
+import { ShopPayDialog } from "../components/ShopPayDialog"
+import {
+  PaymentPartsEditor,
+  emptyPartRows,
+  partsOf,
+  type PartRow,
+} from "../components/PaymentPartsEditor"
 import { useReservations } from "@/features/reservations/api/reservations"
 import { useGuests } from "@/features/guests/api/guests"
 import { useRooms } from "@/features/rooms/api/rooms"
@@ -147,7 +157,6 @@ export const ShopPage = () => {
   const deleteProduct = useDeleteShopProduct()
   const addBatch = useAddShopBatch()
   const createSale = useCreateShopSale()
-  const paySale = usePayShopSale()
   const cancelSale = useCancelShopSale()
 
   const [search, setSearch] = useState("")
@@ -163,6 +172,9 @@ export const ShopPage = () => {
     { amount: "", method: "CARD" },
   ])
   const [reservationId, setReservationId] = useState("")
+  // Bronga yozishda hozir QISMAN to'lash (ixtiyoriy): qolgani bron hisobida
+  const [resPayOn, setResPayOn] = useState(false)
+  const [resPayRows, setResPayRows] = useState<PartRow[]>(emptyPartRows)
   const [sellError, setSellError] = useState<string | null>(null)
   const [soldBanner, setSoldBanner] = useState<string | null>(null)
 
@@ -259,6 +271,22 @@ export const ShopPage = () => {
         return
       }
     }
+    // Bronga yozishda hozir to'lanadigan qism (savat summasidan oshmaydi)
+    let resParts: Array<{ amount: number; payment_method: string }> | null = null
+    if (saleMode === "RESERVATION" && resPayOn) {
+      const parts = partsOf(resPayRows)
+      const problem = partsProblem(parts, cartTotal)
+      if (problem === "exceeds") {
+        setSellError(
+          tr("Hozir to'lanadigan summa ({{sum}}) savat summasidan ({{cartTotal}}) oshmasligi kerak", {
+            sum: fmt(parts.reduce((s, p) => s + p.amount, 0)),
+            cartTotal: fmt(cartTotal),
+          })
+        )
+        return
+      }
+      resParts = problem === "empty" ? null : parts
+    }
     try {
       const sale = await createSale.mutateAsync({
         items: cart.map((i) => ({ product_id: i.productId, quantity: i.qty })),
@@ -268,16 +296,23 @@ export const ShopPage = () => {
               ? splitParts[0].payment_method
               : method
             : null,
-        payments: saleMode === "DIRECT" ? splitParts : null,
+        payments: saleMode === "DIRECT" ? splitParts : resParts,
         reservation_id: saleMode === "RESERVATION" ? reservationId || null : null,
       })
       setCart([])
       // Keyingi savdo uchun bo'lak summalari tozalanadi (rejim saqlanadi)
       setSplitRows((rows) => rows.map((r) => ({ ...r, amount: "" })))
+      setResPayRows((rows) => rows.map((r) => ({ ...r, amount: "" })))
       setSoldBanner(
         sale.status === "PAID"
           ? tr("{{total_amount}} So'm — sotuv qayd etildi", { total_amount: fmt(sale.total_amount) })
-          : tr("{{total_amount}} So'm — bron hisobiga yozildi", { total_amount: fmt(sale.total_amount) })
+          : salePaid(sale) > 0
+            ? tr("{{total_amount}} So'm — bron hisobiga yozildi, {{paid}} so'm to'landi (qoldiq {{left}})", {
+                total_amount: fmt(sale.total_amount),
+                paid: fmt(salePaid(sale)),
+                left: fmt(saleRemaining(sale)),
+              })
+            : tr("{{total_amount}} So'm — bron hisobiga yozildi", { total_amount: fmt(sale.total_amount) })
       )
       window.setTimeout(() => setSoldBanner(null), 3500)
       // Chek yoqilgan bo'lsa avtomatik chiqariladi (kutmasdan, fonda)
@@ -294,10 +329,10 @@ export const ShopPage = () => {
     (saleMode === "DIRECT" && splitMode && !splitMatches)
 
   // ---- Statistika (tanlangan davr) ----
-  const paidSales = (sales as ShopSale[]).filter((s) => s.status === "PAID")
+  // To'langan — qisman to'lovlar ham; kutilmoqda — to'lanmagan qoldiq
   const pendingSales = (sales as ShopSale[]).filter((s) => s.status === "PENDING")
-  const paidRevenue = paidSales.reduce((s, x) => s + Number(x.total_amount), 0)
-  const pendingRevenue = pendingSales.reduce((s, x) => s + Number(x.total_amount), 0)
+  const paidRevenue = (sales as ShopSale[]).reduce((s, x) => s + salePaid(x), 0)
+  const pendingRevenue = pendingSales.reduce((s, x) => s + saleRemaining(x), 0)
   const itemsSold = (sales as ShopSale[]).reduce(
     (s, x) => s + x.items.reduce((a, i) => a + i.quantity, 0),
     0
@@ -441,85 +476,22 @@ export const ShopPage = () => {
     return g ? `${g.first_name ?? ""} ${g.last_name ?? ""}`.trim() || null : null
   }, [detailSale, reservations, guests])
 
-  // ---- PENDING sotuvni to'lash ----
+  // ---- PENDING sotuvni to'lash (to'liq yoki qisman, aralash ham) ----
   const [payModal, setPayModal] = useState(false)
   const [payTarget, setPayTarget] = useState<ShopSale | null>(null)
-  const [payError, setPayError] = useState<string | null>(null)
-  // To'lash dialogida bo'lib to'lash (bir qismi naqd, qismi karta...)
-  const [paySplitOn, setPaySplitOn] = useState(false)
-  const [paySplitRows, setPaySplitRows] = useState<
-    Array<{ amount: string; method: string }>
-  >([
-    { amount: "", method: "CASH" },
-    { amount: "", method: "CARD" },
-  ])
 
   const openPay = (s: ShopSale) => {
     setPayTarget(s)
-    setPayError(null)
-    setPaySplitOn(false)
-    setPaySplitRows([
-      { amount: "", method: "CASH" },
-      { amount: "", method: "CARD" },
-    ])
     setPayModal(true)
   }
 
-  const doPay = async (m: string) => {
-    if (!payTarget) return
-    try {
-      const updated = await paySale.mutateAsync({ id: payTarget.id, payment_method: m })
-      setPayModal(false)
-      // To'lov cheki — chek rejimi yoqiq bo'lsa
-      if (receiptOn && updated) void doPrintReceipt(updated)
-    } catch (e) {
-      setPayError(apiErrorMessage(e))
-    }
-  }
-
-  const updatePaySplitRow = (
-    i: number,
-    patch: Partial<{ amount: string; method: string }>
-  ) =>
-    setPaySplitRows((rows) =>
-      rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r))
-    )
-
-  const fillPaySplitRemaining = (i: number) => {
-    const total = Number(payTarget?.total_amount || 0)
-    const others = paySplitRows.reduce(
-      (s, r, idx) => (idx === i ? s : s + (Number(r.amount) || 0)),
-      0
-    )
-    updatePaySplitRow(i, { amount: String(Math.max(Math.round(total - others), 0)) })
-  }
-
-  // Bo'lib to'lash bilan qabul qilish — bo'laklar jami summaga teng bo'lishi shart
-  const doPaySplit = async () => {
-    if (!payTarget) return
-    const parts = paySplitRows
-      .map((r) => ({ amount: Number(r.amount) || 0, payment_method: r.method }))
-      .filter((p) => p.amount > 0)
-    const sum = parts.reduce((s, p) => s + p.amount, 0)
-    const total = Number(payTarget.total_amount || 0)
-    if (!parts.length || Math.abs(sum - total) > 0.01) {
-      setPayError(
-        tr("Bo'laklar jami ({{sum}}) summaga ({{total}}) teng bo'lishi kerak", { sum: fmt(sum), total: fmt(total) })
-      )
-      return
-    }
-    setPayError(null)
-    try {
-      const updated = await paySale.mutateAsync({
-        id: payTarget.id,
-        payment_method: parts[0].payment_method,
-        payments: parts,
-      })
-      setPayModal(false)
-      if (receiptOn && updated) void doPrintReceipt(updated)
-    } catch (e) {
-      setPayError(apiErrorMessage(e))
-    }
+  // To'lov qabul qilindi: to'liq bo'lsa oyna yopiladi, qisman bo'lsa
+  // yangi qoldiq bilan ochiq qoladi (yana davom etish mumkin)
+  const onPaid = (updated: ShopSale, full: boolean) => {
+    if (full) setPayModal(false)
+    else setPayTarget(updated)
+    // To'lov cheki — chek rejimi yoqiq bo'lsa
+    if (receiptOn && updated) void doPrintReceipt(updated)
   }
 
   const onCancelSale = async (s: ShopSale) => {
@@ -933,7 +905,14 @@ export const ShopPage = () => {
                         )
                       })()}
                       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2.5">
-                        <span className="text-sm font-semibold">{tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}</span>
+                        <span className="text-sm font-semibold">
+                          {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
+                          {isPartiallyPaid(s) && (
+                            <span className="block text-[11px] font-medium text-amber-600">
+                              {tr("to'langan {{paid}} · qoldiq {{left}}", { paid: fmt(salePaid(s)), left: fmt(saleRemaining(s)) })}
+                            </span>
+                          )}
+                        </span>
                         <div className="flex items-center gap-1">
                           {s.status === "PENDING" && (
                             <Button
@@ -1027,6 +1006,12 @@ export const ShopPage = () => {
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right text-sm font-semibold">
                           {tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}
+                          {/* Qisman to'langan — qoldiq */}
+                          {isPartiallyPaid(s) && (
+                            <span className="block text-[11px] font-medium text-amber-600">
+                              {tr("qoldiq {{left}}", { left: fmt(saleRemaining(s)) })}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1">
@@ -1319,6 +1304,24 @@ export const ShopPage = () => {
                   <p className="text-[11px] text-muted-foreground">
                     {tr("To'lov keyin olinadi — mehmon chiqishida \"To'lash\" tugmasi bilan yopiladi")}
                   </p>
+                  {/* Hozir QISMAN to'lash (ixtiyoriy) — qolgani bron hisobida */}
+                  {resPayOn && (
+                    <PaymentPartsEditor
+                      rows={resPayRows}
+                      onChange={setResPayRows}
+                      limit={cartTotal}
+                      methods={PAYMENT_METHODS}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setResPayOn((v) => !v)}
+                    className="text-[11px] font-medium text-primary hover:underline"
+                  >
+                    {resPayOn
+                      ? tr("← Hozir to'lamasdan bronga yozish")
+                      : tr("Hozir qisman to'lash (naqd / karta / aralash)")}
+                  </button>
                 </div>
               )}
 
@@ -1548,7 +1551,7 @@ export const ShopPage = () => {
                     </Badge>
                   ) : (
                     <Badge className="mt-0.5 bg-amber-100 text-amber-700 hover:bg-amber-100">
-                      {tr("Bronda (kutilmoqda)")}
+                      {isPartiallyPaid(detailSale) ? tr("Qisman to'langan") : tr("Bronda (kutilmoqda)")}
                     </Badge>
                   )}
                 </div>
@@ -1654,7 +1657,41 @@ export const ShopPage = () => {
                   <span className="text-sm text-muted-foreground">{tr("Jami:")}</span>
                   <span className="text-lg font-bold">{tr("{{total_amount}} So'm", { total_amount: fmt(detailSale.total_amount) })}</span>
                 </div>
+                {/* Qisman to'langan yoki qarzdagi savdo — to'langan va qoldiq */}
+                {detailSale.status === "PENDING" && (
+                  <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-2 text-sm">
+                    <span className="text-emerald-700">
+                      {tr("To'langan:")}{" "}<b className="tabular-nums">{fmt(salePaid(detailSale))}</b>
+                    </span>
+                    <span className="text-amber-700">
+                      {tr("Qoldiq:")}{" "}<b className="tabular-nums">{fmt(saleRemaining(detailSale))}</b>
+                    </span>
+                  </div>
+                )}
               </div>
+
+              {/* To'lovlar tarixi — qisman to'lovlar qachon, qaysi usulda, kim */}
+              {(detailSale.payments || []).some((p) => p.paid_at) && (
+                <div className="rounded-lg border border-border px-3 py-2">
+                  <p className="text-xs font-medium text-muted-foreground">{tr("To'lovlar tarixi")}</p>
+                  <ul className="mt-1 space-y-0.5">
+                    {(detailSale.payments || []).map((p, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="min-w-0 truncate text-muted-foreground">
+                          {[
+                            p.paid_at ? format(new Date(p.paid_at), "dd.MM.yyyy HH:mm") : null,
+                            METHOD_LABELS[p.payment_method] || p.payment_method,
+                            p.created_by_name,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                        <span className="flex-shrink-0 font-semibold tabular-nums">{fmt(p.amount)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="flex flex-col gap-2 sm:flex-row">
                 {/* Chekni qayta chiqarish — istalgan sotuv uchun */}
@@ -1761,126 +1798,14 @@ export const ShopPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* ---------- To'lash dialogi ---------- */}
-      <Dialog open={payModal} onOpenChange={setPayModal}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{tr("To'lovni qabul qilish")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {payTarget?.reservation_number && (
-                <>
-                  {tr("Bron:")}{" "}<b>{payTarget.reservation_number}</b> ·{" "}
-                </>
-              )}
-              {tr("Summa:")}{" "}
-              <b className="text-foreground">{tr("{{fmt}} So'm", { fmt: fmt(payTarget?.total_amount || 0) })}</b>
-            </p>
-            {!paySplitOn ? (
-              <div className="grid grid-cols-3 gap-1.5">
-                {PAYMENT_METHODS.map((m) => (
-                  <button
-                    key={m.key}
-                    onClick={() => doPay(m.key)}
-                    disabled={paySale.isPending}
-                    className="flex flex-col items-center gap-1 rounded-lg border border-border px-2 py-3 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary disabled:opacity-50"
-                  >
-                    <m.icon size={16} />
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-1.5 rounded-lg border border-border bg-muted/40 p-2">
-                {paySplitRows.map((row, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <Input
-                      type="number"
-                      min={0}
-                      placeholder={tr("Summa")}
-                      value={row.amount}
-                      onChange={(e) =>
-                        updatePaySplitRow(i, { amount: e.target.value })
-                      }
-                      className="h-9 flex-1 bg-background"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fillPaySplitRemaining(i)}
-                      title={tr("Qolgan summani shu qatorga yozish")}
-                      className="flex-shrink-0 rounded-md border border-border bg-background px-1.5 py-1.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
-                    >
-                      {tr("Qoldiq")}
-                    </button>
-                    <select
-                      value={row.method}
-                      onChange={(e) =>
-                        updatePaySplitRow(i, { method: e.target.value })
-                      }
-                      className="flex h-9 flex-shrink-0 items-center rounded-md border border-input bg-background px-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      {PAYMENT_METHODS.map((m) => (
-                        <option key={m.key} value={m.key}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                    {paySplitRows.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPaySplitRows((rows) =>
-                            rows.filter((_, idx) => idx !== i)
-                          )
-                        }
-                        className="flex-shrink-0 text-muted-foreground hover:text-red-600"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {paySplitRows.length < 3 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPaySplitRows((rows) => [
-                        ...rows,
-                        { amount: "", method: "TRANSFER" },
-                      ])
-                    }
-                    className="text-[11px] font-medium text-primary hover:underline"
-                  >
-                    {tr("+ Yana usul qo'shish")}
-                  </button>
-                )}
-                <Button
-                  size="sm"
-                  className="w-full gap-1.5"
-                  disabled={paySale.isPending}
-                  onClick={doPaySplit}
-                >
-                  {paySale.isPending && (
-                    <Loader2 size={14} className="animate-spin" />
-                  )}
-                  {tr("To'lovni qabul qilish")}
-                </Button>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setPaySplitOn((v) => !v)}
-              className="text-[11px] font-medium text-primary hover:underline"
-            >
-              {paySplitOn
-                ? tr("← Bitta usul bilan to'lash")
-                : tr("Bo'lib to'lash (naqd + karta + o'tkazma)")}
-            </button>
-            {payError && <p className="text-sm font-medium text-destructive">{payError}</p>}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* ---------- To'lash dialogi (to'liq / qisman / aralash) ---------- */}
+      <ShopPayDialog
+        open={payModal}
+        onOpenChange={setPayModal}
+        sale={payTarget}
+        methods={PAYMENT_METHODS}
+        onPaid={onPaid}
+      />
     </div>
   )
 }

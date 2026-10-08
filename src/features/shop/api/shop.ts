@@ -43,10 +43,14 @@ export interface ShopSaleItem {
   total_price: number;
 }
 
-/** Bo'lib to'lashning bitta bo'lagi (summa + usul) */
+/** Bo'lib to'lashning bitta bo'lagi (summa + usul). Qisman to'lovlarda
+ *  qachon va kim qabul qilgani ham yoziladi (eski yozuvlarda bo'lmaydi). */
 export interface SalePaymentPart {
   amount: number;
   payment_method: string;
+  paid_at?: string | null;
+  created_by?: string | null;
+  created_by_name?: string | null;
 }
 
 export interface ShopSale {
@@ -58,6 +62,9 @@ export interface ShopSale {
    *  javobida bo'lmasligi mumkin) */
   room_number?: string | null;
   total_amount: number;
+  /** To'langan qism va qoldiq — qisman to'lov (eski server javobida yo'q) */
+  paid_amount?: number;
+  remaining_amount?: number;
   payment_method: string | null;
   /** Bo'lib to'lash bo'laklari (oddiy to'lovda null) */
   payments?: SalePaymentPart[] | null;
@@ -165,6 +172,33 @@ export const useShopSalesPage = ({
     enabled,
     placeholderData: keepPreviousData,
   });
+};
+
+/** To'langan qism. Eski server javobida — holatdan. */
+export const salePaid = (s: Pick<ShopSale, 'status' | 'total_amount' | 'paid_amount'>): number =>
+  s.paid_amount ?? (s.status === 'PAID' ? Number(s.total_amount || 0) : 0);
+
+/** To'lanmagan qoldiq (manfiy bo'lmaydi). */
+export const saleRemaining = (
+  s: Pick<ShopSale, 'status' | 'total_amount' | 'paid_amount' | 'remaining_amount'>
+): number =>
+  Math.max(s.remaining_amount ?? Number(s.total_amount || 0) - salePaid(s), 0);
+
+/** Qisman to'langan (qarzi bor, lekin bir qismi to'langan). */
+export const isPartiallyPaid = (
+  s: Pick<ShopSale, 'status' | 'total_amount' | 'paid_amount' | 'remaining_amount'>
+): boolean => s.status === 'PENDING' && salePaid(s) > 0.01 && saleRemaining(s) > 0.01;
+
+/** Qisman / bo'lib to'lash bo'laklarini tekshiradi: musbat va jami
+ *  `limit` dan oshmaydi. Muammo bo'lsa — kalit, aks holda null. */
+export const partsProblem = (
+  parts: { amount: number }[],
+  limit: number
+): 'empty' | 'exceeds' | null => {
+  const valid = parts.filter((p) => p.amount > 0);
+  if (!valid.length) return 'empty';
+  const sum = valid.reduce((s, p) => s + p.amount, 0);
+  return sum > limit + 0.01 ? 'exceeds' : null;
 };
 
 const invalidateShop = (qc: ReturnType<typeof useQueryClient>) => {
@@ -369,7 +403,8 @@ export const useCreateShopSale = () => {
     mutationFn: async (payload: {
       items: { product_id: string; quantity: number }[];
       payment_method?: string | null;
-      /** Bo'lib to'lash: bo'laklar jami sotuv summasiga teng bo'lishi shart */
+      /** Oddiy sotuvda bo'lib to'lash (jami summaga teng). Bronga yozishda —
+       *  hozir to'lanadigan qism (jami summadan oshmaydi), qolgani bronda */
       payments?: SalePaymentPart[] | null;
       reservation_id?: string | null;
     }) => {
@@ -387,14 +422,18 @@ export const usePayShopSale = () => {
       id,
       payment_method,
       payments,
+      amount,
     }: {
       id: string;
       payment_method?: string;
       payments?: SalePaymentPart[] | null;
+      /** Qisman to'lash (bitta usulda). Berilmasa — butun qoldiq */
+      amount?: number | null;
     }) => {
       const { data } = await api.post<ShopSale>(`/shop/sales/${id}/pay`, {
         payment_method: payment_method || null,
         payments: payments || null,
+        ...(amount != null ? { amount } : {}),
       });
       return data;
     },

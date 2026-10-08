@@ -100,5 +100,6 @@
   "Tanlangan davrda jarima yozilmagan": "No penalties in the selected period",
   "Xona {{room}}": "Room {{room}}",
   "Kech chiqish va buzilgan narsalar uchun yozilgan jarimalar": "Penalties for late check-out and damaged property",
-  "{{penalty_total}} So'm": "{{penalty_total}} UZS"
+  "{{penalty_total}} So'm": "{{penalty_total}} UZS",
+  "jami {{total}} · to'langan {{paid}}": "total {{total}} · paid {{paid}}"
 }
