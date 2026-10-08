@@ -320,5 +320,7 @@
   "Summa bron jamiga qo'shiladi va qarz sifatida ko'rinadi — to'lovni pastdagi \"Qo'shimcha to'lov\" orqali qabul qiling.": "Сумма добавится к итогу брони и будет видна как долг — примите оплату через «Доплата» ниже.",
   "Jarima qo'shish": "Добавить штраф",
   "Kech chiqish yoki buzilgan narsa uchun jarima shu yerda yoziladi.": "Здесь выписывается штраф за поздний выезд или повреждённое имущество.",
-  "{{price}} × {{times}} = {{dayPrice}} so'm / kun": "{{price}} × {{times}} = {{dayPrice}} сум / сутки"
+  "{{price}} × {{times}} = {{dayPrice}} so'm / kun": "{{price}} × {{times}} = {{dayPrice}} сум / сутки",
+  "Hamroh saqlandi, lekin hujjat surati saqlanmadi.": "Сопровождающий сохранён, но фото документа не сохранилось.",
+  "Bron va mehmon saqlandi, lekin hujjat surati saqlanmadi.": "Бронь и гость сохранены, но фото документа не сохранилось."
 }

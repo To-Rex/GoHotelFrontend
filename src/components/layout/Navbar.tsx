@@ -76,6 +76,8 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
       checkOutDate: addDaysStr(today, 1),
       guestId: scan.guest_id || undefined,
       scannedDoc: scan.guest_id ? undefined : scan.document,
+      // Yangi mehmon yaratilsa skan surati unga bog'lanadi
+      scanId: scan.guest_id ? undefined : scan.id,
     });
   };
 

@@ -27,6 +27,7 @@ import { apiErrorMessage } from "@/lib/apiError"
 import { cn } from "@/lib/utils"
 import type { Guest } from "@/types/api"
 import { useGuestHistory, type GuestStay } from "../api/guestHistory"
+import { GuestDocumentImages } from "./GuestDocumentImages"
 import {
   EMPTY_STAY_FILTER,
   filterStays,
@@ -272,6 +273,9 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
             )}
           </DialogTitle>
         </DialogHeader>
+
+        {/* Saqlangan hujjat suratlari — bo'lmasa joy egallamaydi */}
+        <GuestDocumentImages guestId={guest?.id} />
 
         {isLoading && (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">

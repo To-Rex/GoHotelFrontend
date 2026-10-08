@@ -54,7 +54,6 @@
   "Rollar va aniq ruxsatnomalar": "Роли и точные права доступа",
   "Parollar faqat hash ko'rinishida": "Пароли хранятся только в виде хеша",
   "Har bir amal audit izida": "Каждое действие — в журнале аудита",
-  "Skaner ma'lumoti qurilmadan chiqmaydi": "Данные сканера не покидают устройство",
   "Kunlik majburiy kassa kesimi": "Обязательное ежедневное закрытие кассы",
   "HTTPS orqali xavfsiz ulanish": "Защищённое соединение по HTTPS",
   "Tizimni ishlatish uchun nimadir o'rnatish kerakmi?": "Нужно ли что-то устанавливать, чтобы пользоваться системой?",
@@ -185,5 +184,6 @@
   "farq: {{diff}}": "разница: {{diff}}",
   " son.": " сек.",
   "nav::Boshlash": "Начало работы",
-  "© {{year}} GoHotel — mehmonxona boshqaruv tizimi": "© {{year}} GoHotel — система управления гостиницей"
+  "© {{year}} GoHotel — mehmonxona boshqaruv tizimi": "© {{year}} GoHotel — система управления гостиницей",
+  "Hujjat suratlari himoyalangan omborda": "Фото документов — в защищённом хранилище"
 }

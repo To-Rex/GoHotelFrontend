@@ -147,9 +147,7 @@
   "Hujjat yuzasidagi yozuvlar o'qiladi. MRZ zonasi yo'q yoki shikastlangan hujjatlar uchun; aniqligi yorug'likka bog'liq.": "The printed text on the document is read. For documents with no MRZ or a damaged one; accuracy depends on lighting.",
   "O'qish qayerda bajariladi": "Where reading takes place",
   "Serverda (tavsiya etiladi)": "On the server (recommended)",
-  "Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Rasm serverda saqlanmaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi.": "The phone only takes the photo and recognition runs on the server — several times faster and more accurate, and it works the same on low-end devices. The image is not stored on the server. If the connection drops, the scanner automatically falls back to on-device reading.",
   "Qurilmada": "On the device",
-  "Hujjat rasmi qurilmadan umuman chiqmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi.": "The document image never leaves the device. Slower and keeps the phone busy; works without internet too.",
   "Bu serverda o'qish moduli o'rnatilmagan — hozircha faqat qurilmada ishlaydi.": "The reading module is not installed on this server — for now reading works on the device only.",
   "Qaysi usul tanlangan bo'lsa ham, hujjat rasmi hech qaerda saqlanmaydi: serverda faqat xotirada o'qiladi va javob qaytgach yo'qoladi.": "Whichever method is selected, the document image is not stored anywhere: on the server it is read in memory only and is discarded once the response is returned.",
   "Smena va kassa": "Shifts and cash desk",
@@ -257,5 +255,13 @@
   "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash, jarimalar va hujjat skaneri": "How the booking window opens, discount rules, booking edits, penalties and the document scanner",
   "Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.": "If a guest checks out late or breaks something, a penalty is issued. Set the hourly late check-out amount and grace period here — the booking window then suggests the amount automatically.",
   "Kalendarda tanlangan kunlar qanday hisoblanishi va bir kun narxi. O'zgartirish faqat yangi bronlarga ta'sir qiladi — mavjud bronlar narxi o'zgarmaydi.": "How the days selected in the calendar are counted and the price of one day. The change applies only to new bookings — existing bookings keep their price.",
-  "Har tanlangan kun to'liq 24 soat: bir kun = 2 × 12 soatlik narx (250 000 so'mlik xona — kuniga 500 000 so'm). Bugun va ertaga tanlansa — 2 kun (chiqish — indinga).": "Each selected day is a full 24 hours: one day = 2 × the 12-hour price (a 250,000 UZS room costs 500,000 UZS per day). Today and tomorrow — 2 days (check-out the day after tomorrow)."
+  "Har tanlangan kun to'liq 24 soat: bir kun = 2 × 12 soatlik narx (250 000 so'mlik xona — kuniga 500 000 so'm). Bugun va ertaga tanlansa — 2 kun (chiqish — indinga).": "Each selected day is a full 24 hours: one day = 2 × the 12-hour price (a 250,000 UZS room costs 500,000 UZS per day). Today and tomorrow — 2 days (check-out the day after tomorrow).",
+  "Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi.": "The phone only takes the photo; recognition runs on the server — several times faster and more accurate, and works the same on weak devices. If the connection drops it automatically falls back to on-device recognition.",
+  "O'qish uchun rasm serverga yuborilmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi.": "The image is not sent to the server for recognition. Slower and keeps the phone busy; works offline too.",
+  "Hujjat suratini saqlash": "Saving the document image",
+  "Saqlansin (tavsiya etiladi)": "Save (recommended)",
+  "Pasport yoki ID karta qayerda skanerlansa ham (telefon yoki veb) surati mehmon kartasiga yoziladi va keyin ko'rish mumkin.": "Wherever a passport or ID card is scanned (phone or web), its image is saved to the guest card and can be viewed later.",
+  "Saqlanmasin": "Don't save",
+  "Faqat o'qilgan ma'lumotlar yoziladi, hujjat surati saqlanmaydi.": "Only the recognized data is saved; the document image is not.",
+  "Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu mehmonxonaning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.": "The document image is kept in file storage (MinIO) and is visible only to this hotel's staff who work with guests."
 }

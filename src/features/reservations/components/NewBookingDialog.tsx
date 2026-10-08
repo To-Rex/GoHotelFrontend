@@ -42,6 +42,14 @@ import {
 import { NATIONALITIES, DEFAULT_NATIONALITY, MRZ_COUNTRY } from "@/features/guests/constants"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
+import {
+  hasScanImages,
+  linkScanToGuest,
+  saveScanImages,
+  type ScanImages,
+} from "@/features/guests/api/documentImages"
+import { PendingScanImages } from "@/features/guests/components/GuestDocumentImages"
+import { useScanSettings } from "@/features/guests/api/scanSettings"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
 import { useAuthStore } from "@/store/auth"
 import { usePermissions } from "@/lib/permissions"
@@ -133,6 +141,9 @@ export interface NewBookingRequest {
   /** Telefonda skanerlangan hujjat. Mehmon bazada topilmagan bo'lsa,
    *  dialog "yangi mijoz" qismini ochib maydonlarni to'ldiradi. */
   scannedDoc?: ScannedDoc
+  /** O'sha skan yozuvi — uning surati serverda saqlangan va yangi mehmon
+   *  yaratilgach unga bog'lanadi */
+  scanId?: string
 }
 
 interface Props {
@@ -255,6 +266,13 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [scanOpen, setScanOpen] = useState(false)
   const [guestScanOpen, setGuestScanOpen] = useState(false)
   const [guestScanNotFound, setGuestScanNotFound] = useState<ScannedDoc | null>(null)
+  const [guestScanNotFoundImages, setGuestScanNotFoundImages] = useState<ScanImages | null>(null)
+  /* Yangi mijoz formasi to'ldirilgan skan: vebdagi skaner suratlari yoki
+     telefon skanining yozuvi. Mehmon yaratilgach surat uning kartasiga
+     yoziladi / bog'lanadi (sozlamada o'chirilmagan bo'lsa). */
+  const [pendingScan, setPendingScan] = useState<{ images?: ScanImages; scanId?: string } | null>(null)
+  const { data: scanSettings } = useScanSettings()
+  const storeScanImages = scanSettings?.store_images !== false
   const [guestPhoto, setGuestPhoto] = useState<File | null>(null)
   const [guestPhotoPreview, setGuestPhotoPreview] = useState<string | null>(null)
   const [photoUploading, setPhotoUploading] = useState(false)
@@ -443,7 +461,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     )
   }
 
-  const applyScannedDoc = (doc: ScannedDoc) => {
+  const applyScannedDoc = (doc: ScannedDoc, images?: ScanImages) => {
+    if (hasScanImages(images)) setPendingScan({ images })
     if (doc.firstName) setValue("new_guest_first_name", doc.firstName, { shouldDirty: true })
     if (doc.lastName) setValue("new_guest_last_name", doc.lastName, { shouldDirty: true })
     if (doc.birthDate) setValue("new_guest_birth_date", doc.birthDate, { shouldDirty: true })
@@ -465,7 +484,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     }
   }
 
-  const handleGuestSearchScan = (doc: ScannedDoc) => {
+  const handleGuestSearchScan = (doc: ScannedDoc, images?: ScanImages) => {
     const norm = (s?: string | null) => (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
     const pass = norm(doc.documentNumber)
     const personal = doc.pinflVerified ? norm(doc.personalNumber) : ""
@@ -479,16 +498,29 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
       setSelectedGuestId(found.id)
       setGuestSearch("")
       setGuestScanNotFound(null)
+      setGuestScanNotFoundImages(null)
+      // Mehmon topildi — skanerlangan hujjat surati uning kartasiga
+      if (storeScanImages) void saveScanImages(found.id, images)
     } else {
       setGuestScanNotFound(doc)
+      setGuestScanNotFoundImages(images ?? null)
     }
   }
 
-  const startNewGuestFromScan = (doc: ScannedDoc) => {
+  const startNewGuestFromScan = (
+    doc: ScannedDoc,
+    source?: { images?: ScanImages | null; scanId?: string }
+  ) => {
     setValue("new_guest_nationality", DEFAULT_NATIONALITY)
     setShowNewGuest(true)
     applyScannedDoc(doc)
+    setPendingScan(
+      source && (hasScanImages(source.images) || source.scanId)
+        ? { images: source.images ?? undefined, scanId: source.scanId }
+        : null
+    )
     setGuestScanNotFound(null)
+    setGuestScanNotFoundImages(null)
   }
 
   const backToGuestList = () => {
@@ -503,6 +535,7 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     setValue("new_guest_nationality", DEFAULT_NATIONALITY)
     setValue("new_guest_address", "")
     setNationalityOther("")
+    setPendingScan(null)
     clearGuestPhoto()
   }
 
@@ -631,6 +664,8 @@ function SectionMark({
     setShowNewGuest(false)
     setNationalityOther("")
     setGuestScanNotFound(null)
+    setGuestScanNotFoundImages(null)
+    setPendingScan(null)
     setLocalError(null)
     setCompanions([])
     setCompanionScan(null)
@@ -638,10 +673,12 @@ function SectionMark({
     /* Telefonda skanerlangan hujjat: mehmon bazada topilmagan bo'lsa
        yangi mijoz maydonlari o'qilgan qiymatlar bilan to'ldiriladi —
        xodim ularni qaytadan terib o'tirmaydi. Topilgan bo'lsa yuqorida
-       allaqachon tanlangan va bu yerga kirilmaydi. */
+       allaqachon tanlangan va bu yerga kirilmaydi (surati serverda
+       mehmonga allaqachon biriktirilgan). */
     if (request.scannedDoc && !request.guestId) {
       setShowNewGuest(true)
       applyScannedDoc(request.scannedDoc)
+      if (request.scanId) setPendingScan({ scanId: request.scanId })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request])
@@ -748,7 +785,7 @@ function SectionMark({
           setSelectedGuestId(scan.guest_id)
           setGuestSearch("")
         } else {
-          startNewGuestFromScan(scan.document)
+          startNewGuestFromScan(scan.document, { scanId: scan.id })
         }
         return true
       }
@@ -758,7 +795,7 @@ function SectionMark({
       if ((Number(getValues("adults")) || 1) < needed) {
         setValue("adults", needed, { shouldDirty: true })
       }
-      setCompanionScan({ doc: scan.document, guestId: scan.guest_id })
+      setCompanionScan({ doc: scan.document, guestId: scan.guest_id, scanId: scan.id })
       return true
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -968,6 +1005,7 @@ function SectionMark({
     // Surat yuklanmay qolsa — bron yaratilgandan keyin ogohlantiramiz
     let photoUploadFailed = false
     let faceEnrollFailed = false
+    let scanImagesFailed = false
 
     const paymentRows = [
       {
@@ -1057,6 +1095,17 @@ function SectionMark({
           hotelId,
         })
         guestId = guest.id
+
+        /* Skanerlangan hujjat surati — endi mehmon id'si bor. Bron
+           BUZILMAYDI: saqlanmasa faqat ogohlantiriladi. */
+        if (guestId && pendingScan) {
+          if (storeScanImages && hasScanImages(pendingScan.images)) {
+            setPhotoUploading(true)
+            scanImagesFailed = (await saveScanImages(guestId, pendingScan.images)) === "failed"
+            setPhotoUploading(false)
+          }
+          if (pendingScan.scanId) await linkScanToGuest(pendingScan.scanId, guestId)
+        }
 
         // Surat tanlangan bo'lsa — mehmon yaratilgandan keyin yuklaymiz.
         // Yuklash muvaffaqiyatsiz bo'lsa bron yaratish to'xtatilmaydi
@@ -1223,6 +1272,7 @@ function SectionMark({
       setShowNewGuest(false)
       setSelectedGuestId("")
       setBookingType("DAILY")
+      setPendingScan(null)
       clearGuestPhoto()
       setNationalityOther("")
       setExtraPayments([])
@@ -1247,6 +1297,8 @@ function SectionMark({
           tr("Bron saqlandi, lekin kirish avtomatik rasmiylashmadi. ") +
             tr("Bron oynasidagi \"Mehmon keldi — kirishni rasmiylashtirish\" tugmasi bilan qo'lda rasmiylashtiring.")
         )
+      } else if (scanImagesFailed) {
+        showError(tr("Bron va mehmon saqlandi, lekin hujjat surati saqlanmadi."))
       }
     } catch (error: any) {
       console.error(error)
@@ -1677,7 +1729,9 @@ function SectionMark({
                     {canCreateGuest && (
                       <button
                         type="button"
-                        onClick={() => startNewGuestFromScan(guestScanNotFound)}
+                        onClick={() =>
+                          startNewGuestFromScan(guestScanNotFound, { images: guestScanNotFoundImages })
+                        }
                         className="rounded-md bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
                       >
                         {tr("+ Qo'shish")}
@@ -1772,6 +1826,7 @@ function SectionMark({
                 onOpenChange={setScanOpen}
                 onResult={applyScannedDoc}
               />
+              {storeScanImages && <PendingScanImages scan={pendingScan?.images ?? null} />}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-medium">{tr("Ism *")}</label>

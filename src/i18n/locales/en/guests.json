@@ -195,5 +195,14 @@
   "oxirgisi:": "last:",
   "MRZ OCR belgilarini tuzatdi — tekshirib tasdiqlang": "MRZ characters were auto-corrected — review and confirm",
   "MRZ nazorat raqamlari to‘liq tasdiqlanmadi": "MRZ check digits were not fully verified",
-  "MRZ ixtiyoriy raqami JSHSHIR sifatida qo‘llanmadi": "The number from the MRZ optional field wasn't applied as PINFL"
+  "MRZ ixtiyoriy raqami JSHSHIR sifatida qo‘llanmadi": "The number from the MRZ optional field wasn't applied as PINFL",
+  "Pasport sahifasi": "Passport page",
+  "Orqa tomoni": "Back side",
+  "Yuklangan surat": "Uploaded photo",
+  "Kattalashtirish": "Enlarge",
+  "Hujjat suratlari": "Document images",
+  "Hujjat surati saqlanmagan": "No document image saved",
+  "Hujjat surati saqlangach mehmon kartasiga yoziladi": "The document image will be saved to the guest card on save",
+  "Mehmon saqlandi, lekin hujjat surati saqlanmadi.": "The guest was saved, but the document image was not.",
+  "· hujjat surati kartasiga saqlandi": "· document image saved to the card"
 }

@@ -631,19 +631,25 @@ export const SettingsPage = () => {
   const saveScanMutation = useSaveScanSettings()
   const [scanMode, setScanMode] = useState<ScanMode>("auto")
   const [scanEngine, setScanEngine] = useState<ScanEngine>("server")
+  const [scanStoreImages, setScanStoreImages] = useState(true)
   const [scanSaved, setScanSaved] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
 
   useEffect(() => {
     if (scanSettings?.mode) setScanMode(scanSettings.mode)
     if (scanSettings?.engine) setScanEngine(scanSettings.engine)
+    if (typeof scanSettings?.store_images === "boolean") setScanStoreImages(scanSettings.store_images)
   }, [scanSettings])
 
   const onSaveScan = async () => {
     setScanError(null)
     setScanSaved(false)
     try {
-      await saveScanMutation.mutateAsync({ mode: scanMode, engine: scanEngine })
+      await saveScanMutation.mutateAsync({
+        mode: scanMode,
+        engine: scanEngine,
+        store_images: scanStoreImages,
+      })
       setScanSaved(true)
       window.setTimeout(() => setScanSaved(false), 3000)
     } catch (e) {
@@ -1129,12 +1135,12 @@ export const SettingsPage = () => {
                       {
                         key: "server" as const,
                         title: tr("Serverda (tavsiya etiladi)"),
-                        text: tr("Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Rasm serverda saqlanmaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi."),
+                        text: tr("Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi."),
                       },
                       {
                         key: "device" as const,
                         title: tr("Qurilmada"),
-                        text: tr("Hujjat rasmi qurilmadan umuman chiqmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi."),
+                        text: tr("O'qish uchun rasm serverga yuborilmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi."),
                       },
                     ]
                   ).map((m) => {
@@ -1167,8 +1173,49 @@ export const SettingsPage = () => {
                     )
                   })}
                 </div>
+
+                {/* Hujjat surati mehmon kartasiga saqlanadimi (MinIO) */}
+                <p className="mt-5 mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {tr("Hujjat suratini saqlash")}
+                </p>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {(
+                    [
+                      {
+                        key: true,
+                        title: tr("Saqlansin (tavsiya etiladi)"),
+                        text: tr("Pasport yoki ID karta qayerda skanerlansa ham (telefon yoki veb) surati mehmon kartasiga yoziladi va keyin ko'rish mumkin."),
+                      },
+                      {
+                        key: false,
+                        title: tr("Saqlanmasin"),
+                        text: tr("Faqat o'qilgan ma'lumotlar yoziladi, hujjat surati saqlanmaydi."),
+                      },
+                    ]
+                  ).map((m) => (
+                    <button
+                      key={String(m.key)}
+                      type="button"
+                      onClick={() => setScanStoreImages(m.key)}
+                      className={cn(
+                        "relative rounded-xl border p-3.5 text-left transition-all",
+                        scanStoreImages === m.key
+                          ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                          : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                      )}
+                    >
+                      {scanStoreImages === m.key && (
+                        <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary-600" />
+                      )}
+                      <p className="pr-6 text-sm font-semibold text-gray-900">{m.title}</p>
+                      <p className="mt-1 text-xs leading-snug text-gray-600">{m.text}</p>
+                    </button>
+                  ))}
+                </div>
                 <p className="mt-3 text-xs leading-relaxed text-gray-400">
-                  {tr("Qaysi usul tanlangan bo'lsa ham, hujjat rasmi hech qaerda saqlanmaydi: serverda faqat xotirada o'qiladi va javob qaytgach yo'qoladi.")}
+                  {scanStoreImages
+                    ? tr("Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu mehmonxonaning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.")
+                    : tr("Qaysi usul tanlangan bo'lsa ham, hujjat rasmi hech qaerda saqlanmaydi: serverda faqat xotirada o'qiladi va javob qaytgach yo'qoladi.")}
                 </p>
                 <SaveRow
                   onSave={onSaveScan}

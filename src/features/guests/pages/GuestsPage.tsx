@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ban, Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone, ScanLine, Video } from "lucide-react";
 import {
   useGuests,
@@ -16,6 +17,14 @@ import {
 } from "../constants";
 import { BirthDateSelect } from "../components/BirthDateSelect";
 import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
+import {
+  guestDocumentImagesKey,
+  hasScanImages,
+  saveScanImages,
+  type ScanImages,
+} from "../api/documentImages";
+import { GuestDocumentImages, PendingScanImages } from "../components/GuestDocumentImages";
+import { useScanSettings } from "../api/scanSettings";
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog";
 import { GuestHistoryDialog } from "../components/GuestHistoryDialog";
 import { BlacklistDialog } from "../components/BlacklistDialog";
@@ -67,6 +76,12 @@ export const GuestsPage = () => {
   const createGuest = useCreateGuest();
   const enrollFace = useEnrollSighting();
   const updateGuest = useUpdateGuest();
+  const queryClient = useQueryClient();
+  /* Skanerlangan hujjat surati — mehmon saqlangach uning kartasiga
+     yoziladi (sozlamada o'chirilmagan bo'lsa) */
+  const { data: scanSettings } = useScanSettings();
+  const storeScanImages = scanSettings?.store_images !== false;
+  const [scanImages, setScanImages] = useState<ScanImages | null>(null);
 
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -119,7 +134,8 @@ export const GuestsPage = () => {
     FRA: "Fransiya",
     UKR: "Ukraina",
   };
-  const applyScannedDoc = (doc: ScannedDoc) => {
+  const applyScannedDoc = (doc: ScannedDoc, images?: ScanImages) => {
+    if (hasScanImages(images)) setScanImages(images);
     setForm((f) => {
       const next = { ...f };
       if (doc.firstName) next.first_name = doc.firstName;
@@ -140,10 +156,20 @@ export const GuestsPage = () => {
   // JSHSHIR bo'yicha izlanadi; topilmasa yangi qo'shish taklif qilinadi ---
   const [searchScanOpen, setSearchScanOpen] = useState(false);
   const [scanBanner, setScanBanner] = useState<
-    | { type: "found"; guest: Guest }
-    | { type: "notfound"; doc: ScannedDoc }
+    | { type: "found"; guest: Guest; imagesSaved?: boolean }
+    | { type: "notfound"; doc: ScannedDoc; images?: ScanImages }
     | null
   >(null);
+
+  /* Surat saqlangach mehmonning suratlar ro'yxati yangilanadi */
+  const storeImagesFor = async (guestId: string, images?: ScanImages | null) => {
+    if (!storeScanImages || !hasScanImages(images)) return "empty" as const;
+    const outcome = await saveScanImages(guestId, images);
+    if (outcome === "saved") {
+      queryClient.invalidateQueries({ queryKey: guestDocumentImagesKey(guestId) });
+    }
+    return outcome;
+  };
 
   const findGuestByDoc = (doc: ScannedDoc): Guest | null => {
     const norm = (s?: string | null) =>
@@ -157,21 +183,28 @@ export const GuestsPage = () => {
     return null;
   };
 
-  const handleSearchScan = (doc: ScannedDoc) => {
+  const handleSearchScan = (doc: ScannedDoc, images?: ScanImages) => {
     const found = findGuestByDoc(doc);
     if (found) {
       // Jadval filtri shu mehmonni ko'rsatadigan qiymatga qo'yiladi
       setSearch(found.passport_number || `${found.first_name} ${found.last_name}`.trim());
       setScanBanner({ type: "found", guest: found });
+      // Mehmon topildi — skanerlangan hujjat surati uning kartasiga
+      void storeImagesFor(found.id, images).then((outcome) => {
+        if (outcome !== "saved") return;
+        setScanBanner((b) =>
+          b?.type === "found" && b.guest.id === found.id ? { ...b, imagesSaved: true } : b
+        );
+      });
     } else {
-      setScanBanner({ type: "notfound", doc });
+      setScanBanner({ type: "notfound", doc, images });
     }
   };
 
   // Topilmagan hujjat ma'lumotlari bilan "Yangi mehmon" dialogini ochish
-  const openModalFromScan = (doc: ScannedDoc) => {
+  const openModalFromScan = (doc: ScannedDoc, images?: ScanImages) => {
     openModal();
-    applyScannedDoc(doc);
+    applyScannedDoc(doc, images);
     setScanBanner(null);
   };
 
@@ -237,6 +270,7 @@ export const GuestsPage = () => {
     setEditing(null);
     setForm({ ...emptyForm });
     handlePhoto(null);
+    setScanImages(null);
     setErrorMsg(null);
     setModalOpen(true);
   };
@@ -256,6 +290,7 @@ export const GuestsPage = () => {
       address: g.address || "",
     });
     handlePhoto(null);
+    setScanImages(null);
     setErrorMsg(null);
     setModalOpen(true);
   };
@@ -301,6 +336,7 @@ export const GuestsPage = () => {
     }
     setErrorMsg(null);
     let faceFailed = false;
+    let imagesFailed = false;
     try {
       if (editing) {
         // Tahrirlash: bo'shatilgan ixtiyoriy maydonlar "" bilan tozalanadi.
@@ -341,6 +377,12 @@ export const GuestsPage = () => {
             setUploading(false);
           }
         }
+        // Tahrirlashda skanerlangan hujjat surati — mavjud mehmonga
+        if (hasScanImages(scanImages)) {
+          setUploading(true);
+          imagesFailed = (await storeImagesFor(editing.id, scanImages)) === "failed";
+          setUploading(false);
+        }
       } else {
         const guest = await createGuest.mutateAsync({
           first_name: form.first_name.trim(),
@@ -368,9 +410,19 @@ export const GuestsPage = () => {
         if (pickedFace && guest?.id) {
           faceFailed = !(await attachFace(guest.id));
         }
+        if (guest?.id && hasScanImages(scanImages)) {
+          setUploading(true);
+          imagesFailed = (await storeImagesFor(guest.id, scanImages)) === "failed";
+          setUploading(false);
+        }
       }
       handlePhoto(null);
+      setScanImages(null);
       setModalOpen(false);
+      if (imagesFailed) {
+        // Mehmon saqlandi — faqat hujjat surati yozilmagani aytiladi
+        setErrorMsg(tr("Mehmon saqlandi, lekin hujjat surati saqlanmadi."));
+      }
       if (faceFailed) {
         // Mehmon saqlandi — buni yo'qotmaymiz. Faqat yuz biriktirilmagani
         // aytiladi, chunki xodim keyingi tashrifda tanilishini kutadi.
@@ -463,6 +515,11 @@ export const GuestsPage = () => {
         <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5">
           <p className="text-sm font-medium text-emerald-800">
             {tr("Mijoz topildi: {{first_name}} {{last_name}}{{v}}", { first_name: scanBanner.guest.first_name, last_name: scanBanner.guest.last_name, v: scanBanner.guest.phone ? ` · ${scanBanner.guest.phone}` : "" })}
+            {scanBanner.imagesSaved && (
+              <span className="ml-2 text-xs font-normal text-emerald-700">
+                {tr("· hujjat surati kartasiga saqlandi")}
+              </span>
+            )}
           </p>
           <div className="flex shrink-0 gap-2">
             {canEdit && (
@@ -498,7 +555,7 @@ export const GuestsPage = () => {
             {canCreate && (
               <button
                 type="button"
-                onClick={() => openModalFromScan(scanBanner.doc)}
+                onClick={() => openModalFromScan(scanBanner.doc, scanBanner.images)}
                 className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
               >
                 {tr("+ Yangi mehmon qo'shish")}
@@ -843,6 +900,7 @@ export const GuestsPage = () => {
           <DocumentScanner open={scanOpen} onOpenChange={setScanOpen} onResult={applyScannedDoc} />
 
           <div className="space-y-4 py-2">
+            {storeScanImages && <PendingScanImages scan={scanImages} />}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-sm font-medium">{tr("Ism *")}</label>
@@ -917,6 +975,14 @@ export const GuestsPage = () => {
                 <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder={tr("Yashash manzili")} />
               </div>
             </div>
+
+            {/* Saqlangan hujjat suratlari (skaner va qo'lda yuklangan) */}
+            {editing && (
+              <GuestDocumentImages
+                guestId={editing.id}
+                className="pt-2 border-t border-gray-200"
+              />
+            )}
 
             {/* Mavjud mehmon: yuz holati, biriktirish va o'chirish.
                 Yangi mehmonda id hali yo'q — u yerda quyidagi surat

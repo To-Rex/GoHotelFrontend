@@ -12,7 +12,7 @@ export type ScanMode = 'mrz' | 'visual' | 'auto';
    server — serverdagi PP-OCR: telefonni band qilmaydi, sezilarli tez va aniq;
             aloqa uzilsa yoki server dvigateli yo'q bo'lsa qurilmadagi OCR'ga
             avtomatik qaytadi
-   device — faqat brauzerda: hujjat rasmi qurilmadan umuman chiqmaydi */
+   device — faqat brauzerda: o'qish uchun rasm serverga yuborilmaydi */
 export type ScanEngine = 'server' | 'device';
 
 export interface ScanSettings {
@@ -20,12 +20,16 @@ export interface ScanSettings {
   engine: ScanEngine;
   /** Serverda OCR dvigateli o'rnatilganmi (faqat o'qish uchun) */
   serverAvailable: boolean;
+  /** Skanerlangan hujjat surati mehmon kartasiga (MinIO) saqlanadimi.
+   *  Eski server bu maydonni qaytarmaydi — standart: ha. */
+  store_images: boolean;
 }
 
 export const DEFAULT_SCAN_SETTINGS: ScanSettings = {
   mode: 'auto',
   engine: 'server',
   serverAvailable: false,
+  store_images: true,
 };
 
 export const useScanSettings = () =>
@@ -43,7 +47,7 @@ export const useScanSettings = () =>
 export const useSaveScanSettings = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { mode: ScanMode; engine: ScanEngine }) => {
+    mutationFn: async (payload: { mode: ScanMode; engine: ScanEngine; store_images?: boolean }) => {
       const { data } = await api.put<ScanSettings>('/guests/scan-settings', payload);
       return data;
     },

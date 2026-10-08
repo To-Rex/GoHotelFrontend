@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import { apiErrorMessage } from "@/lib/apiError"
 import { useScanSettings, type ScanMode } from "../api/scanSettings"
 import { JPEG_QUALITY, ServerScanUnavailable, scanDocumentOnServer } from "../api/documentScan"
+import type { ScanImages } from "../api/documentImages"
 import {
   extractDocNumber,
   extractPinfl,
@@ -55,11 +56,14 @@ import { DocumentCaptureGuide } from "./DocumentCaptureGuide"
 import { tr } from "@/i18n"
 
 export type { ScannedDoc } from "./documentScannerTypes"
+export type { ScanImages } from "../api/documentImages"
 
 interface DocumentScannerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onResult: (doc: ScannedDoc) => void
+  /** `images` — olingan kadrlar (JPEG). Chaqiruvchi ularni mehmon
+   *  yaratilgach/tanlangach saqlaydi (`saveScanImages`). */
+  onResult: (doc: ScannedDoc, images?: ScanImages) => void
 }
 
 type OcrProfile =
@@ -1266,7 +1270,15 @@ export function DocumentScanner({ open, onOpenChange, onResult }: DocumentScanne
   }
 
   const apply = () => {
-    if (result) onResult(result)
+    if (result) {
+      // Natija bilan birga — shu natija o'qilgan kadrlar (hujjat surati)
+      const images: ScanImages["images"] = {}
+      for (const side of activeSides(docTypeRef.current, scanModeRef.current)) {
+        const shot = shotsRef.current[side]
+        if (shot) images[side] = shot.blob
+      }
+      onResult(result, { documentType: docTypeRef.current, images })
+    }
     onOpenChange(false)
   }
 

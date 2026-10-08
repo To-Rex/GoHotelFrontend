@@ -204,5 +204,14 @@
   "oxirgisi:": "последний:",
   "MRZ OCR belgilarini tuzatdi — tekshirib tasdiqlang": "Символы MRZ исправлены автоматически — проверьте и подтвердите",
   "MRZ nazorat raqamlari to‘liq tasdiqlanmadi": "Контрольные цифры MRZ подтверждены не полностью",
-  "MRZ ixtiyoriy raqami JSHSHIR sifatida qo‘llanmadi": "Номер из дополнительного поля MRZ не применён как ПИНФЛ"
+  "MRZ ixtiyoriy raqami JSHSHIR sifatida qo‘llanmadi": "Номер из дополнительного поля MRZ не применён как ПИНФЛ",
+  "Pasport sahifasi": "Страница паспорта",
+  "Orqa tomoni": "Оборотная сторона",
+  "Yuklangan surat": "Загруженное фото",
+  "Kattalashtirish": "Увеличить",
+  "Hujjat suratlari": "Фото документа",
+  "Hujjat surati saqlanmagan": "Фото документа не сохранено",
+  "Hujjat surati saqlangach mehmon kartasiga yoziladi": "Фото документа сохранится в карточке гостя после сохранения",
+  "Mehmon saqlandi, lekin hujjat surati saqlanmadi.": "Гость сохранён, но фото документа не сохранилось.",
+  "· hujjat surati kartasiga saqlandi": "· фото документа сохранено в карточке"
 }

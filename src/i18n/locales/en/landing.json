@@ -54,7 +54,6 @@
   "Rollar va aniq ruxsatnomalar": "Roles and precise permissions",
   "Parollar faqat hash ko'rinishida": "Passwords stored only as hashes",
   "Har bir amal audit izida": "Every action leaves an audit trail",
-  "Skaner ma'lumoti qurilmadan chiqmaydi": "Scanner data never leaves the device",
   "Kunlik majburiy kassa kesimi": "Mandatory daily cash close",
   "HTTPS orqali xavfsiz ulanish": "Secure connection over HTTPS",
   "Tizimni ishlatish uchun nimadir o'rnatish kerakmi?": "Do I need to install anything to use the system?",
@@ -185,5 +184,6 @@
   "farq: {{diff}}": "difference: {{diff}}",
   " son.": " sec",
   "nav::Boshlash": "Get started",
-  "© {{year}} GoHotel — mehmonxona boshqaruv tizimi": "© {{year}} GoHotel — hotel management system"
+  "© {{year}} GoHotel — mehmonxona boshqaruv tizimi": "© {{year}} GoHotel — hotel management system",
+  "Hujjat suratlari himoyalangan omborda": "Document images kept in protected storage"
 }

@@ -312,7 +312,7 @@ const SECURITY = [
   { icon: ShieldCheck, label: tr("Rollar va aniq ruxsatnomalar") },
   { icon: Lock, label: tr("Parollar faqat hash ko'rinishida") },
   { icon: History, label: tr("Har bir amal audit izida") },
-  { icon: ScanLine, label: tr("Skaner ma'lumoti qurilmadan chiqmaydi") },
+  { icon: ScanLine, label: tr("Hujjat suratlari himoyalangan omborda") },
   { icon: Wallet, label: tr("Kunlik majburiy kassa kesimi") },
   { icon: Smartphone, label: tr("HTTPS orqali xavfsiz ulanish") },
 ]

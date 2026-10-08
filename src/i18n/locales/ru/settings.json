@@ -149,9 +149,7 @@
   "Hujjat yuzasidagi yozuvlar o'qiladi. MRZ zonasi yo'q yoki shikastlangan hujjatlar uchun; aniqligi yorug'likka bog'liq.": "Читается текст на самом документе. Для документов без зоны MRZ или с повреждённой зоной; точность зависит от освещения.",
   "O'qish qayerda bajariladi": "Где выполняется распознавание",
   "Serverda (tavsiya etiladi)": "На сервере (рекомендуется)",
-  "Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Rasm serverda saqlanmaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi.": "Телефон только делает снимок, распознавание выполняется на сервере — в несколько раз быстрее и точнее, одинаково работает и на слабых устройствах. Снимок на сервере не сохраняется. При обрыве связи сканер автоматически переключается на распознавание на устройстве.",
   "Qurilmada": "На устройстве",
-  "Hujjat rasmi qurilmadan umuman chiqmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi.": "Снимок документа вообще не покидает устройство. Медленнее и нагружает телефон; работает и без интернета.",
   "Bu serverda o'qish moduli o'rnatilmagan — hozircha faqat qurilmada ishlaydi.": "На этом сервере модуль распознавания не установлен — пока работает только на устройстве.",
   "Qaysi usul tanlangan bo'lsa ham, hujjat rasmi hech qaerda saqlanmaydi: serverda faqat xotirada o'qiladi va javob qaytgach yo'qoladi.": "Какой бы способ ни был выбран, снимок документа нигде не сохраняется: на сервере он читается только в памяти и исчезает после отправки ответа.",
   "Smena va kassa": "Смена и касса",
@@ -259,5 +257,13 @@
   "Bandlov oynasi qanday ochilishi, chegirma qoidalari, bronni tahrirlash, jarimalar va hujjat skaneri": "Как открывается окно бронирования, правила скидок, редактирование брони, штрафы и сканер документов",
   "Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.": "Если гость выехал поздно или что-то сломал, выписывается штраф. Здесь задаются почасовая сумма за поздний выезд и льготное время — в окне брони сумма рассчитывается автоматически.",
   "Kalendarda tanlangan kunlar qanday hisoblanishi va bir kun narxi. O'zgartirish faqat yangi bronlarga ta'sir qiladi — mavjud bronlar narxi o'zgarmaydi.": "Как считаются выбранные в календаре дни и цена одних суток. Изменение влияет только на новые брони — цена существующих не меняется.",
-  "Har tanlangan kun to'liq 24 soat: bir kun = 2 × 12 soatlik narx (250 000 so'mlik xona — kuniga 500 000 so'm). Bugun va ertaga tanlansa — 2 kun (chiqish — indinga).": "Каждый выбранный день — полные 24 часа: сутки = 2 × цена за 12 часов (номер за 250 000 сум — 500 000 сум в сутки). Сегодня и завтра — 2 суток (выезд послезавтра)."
+  "Har tanlangan kun to'liq 24 soat: bir kun = 2 × 12 soatlik narx (250 000 so'mlik xona — kuniga 500 000 so'm). Bugun va ertaga tanlansa — 2 kun (chiqish — indinga).": "Каждый выбранный день — полные 24 часа: сутки = 2 × цена за 12 часов (номер за 250 000 сум — 500 000 сум в сутки). Сегодня и завтра — 2 суток (выезд послезавтра).",
+  "Telefon faqat suratga oladi, tanish serverda bajariladi — bir necha barobar tez va aniqroq, zaif qurilmalarda ham bir xil ishlaydi. Aloqa uzilsa qurilmadagi o'qishga avtomatik qaytadi.": "Телефон только фотографирует, распознавание выполняется на сервере — в разы быстрее и точнее, одинаково работает даже на слабых устройствах. При потере связи автоматически переключается на распознавание на устройстве.",
+  "O'qish uchun rasm serverga yuborilmaydi. Sekinroq va telefonni band qiladi; internetsiz ham ishlaydi.": "Для распознавания фото не отправляется на сервер. Медленнее и нагружает телефон; работает и без интернета.",
+  "Hujjat suratini saqlash": "Сохранение фото документа",
+  "Saqlansin (tavsiya etiladi)": "Сохранять (рекомендуется)",
+  "Pasport yoki ID karta qayerda skanerlansa ham (telefon yoki veb) surati mehmon kartasiga yoziladi va keyin ko'rish mumkin.": "Где бы ни сканировался паспорт или ID-карта (телефон или веб), фото сохраняется в карточке гостя и его можно посмотреть позже.",
+  "Saqlanmasin": "Не сохранять",
+  "Faqat o'qilgan ma'lumotlar yoziladi, hujjat surati saqlanmaydi.": "Сохраняются только распознанные данные, фото документа не сохраняется.",
+  "Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu mehmonxonaning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.": "Фото документа хранится в файловом хранилище (MinIO) и видно только сотрудникам этой гостиницы, работающим с гостями."
 }

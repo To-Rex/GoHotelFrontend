@@ -8,6 +8,14 @@ import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
 import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
 import {
+  hasScanImages,
+  linkScanToGuest,
+  saveScanImages,
+  type ScanImages,
+} from "@/features/guests/api/documentImages"
+import { PendingScanImages } from "@/features/guests/components/GuestDocumentImages"
+import { useScanSettings } from "@/features/guests/api/scanSettings"
+import {
   fetchSightingFile,
   useEnrollSighting,
   type SightingGroup,
@@ -43,7 +51,13 @@ export interface Companion {
 export interface CompanionScan {
   doc: ScannedDoc
   guestId?: string | null
+  /** Telefon skani yozuvi — surati yangi hamrohga bog'lanadi */
+  scanId?: string | null
 }
+
+/** Hamroh formasini to'ldirgan skan: vebdagi skaner suratlari yoki
+    telefon skanining yozuvi */
+type ScanSource = { images?: ScanImages | null; scanId?: string | null }
 
 interface Props {
   /** Xonadagi jami mehmonlar soni (asosiy mehmon bilan birga) */
@@ -122,6 +136,23 @@ export const CompanionGuests = ({
   const [facePickerOpen, setFacePickerOpen] = useState(false)
   const [pickedFace, setPickedFace] = useState<SightingGroup | null>(null)
   const [faceFile, setFaceFile] = useState<File | null>(null)
+  /* Yangi hamroh formasi skandan to'ldirilgan bo'lsa — hujjat surati
+     hamroh saqlangach uning kartasiga yoziladi */
+  const [scanSource, setScanSource] = useState<ScanSource | null>(null)
+  const { data: scanSettings } = useScanSettings()
+  const storeScanImages = scanSettings?.store_images !== false
+
+  /* Skan suratini mehmonga yozadi/bog'laydi. Xato tashlamaydi: muvaffaqiyat
+     (yoki saqlanadigan narsa yo'qligi) — true. */
+  const storeScanFor = async (guestId: string, source?: ScanSource | null) => {
+    if (!source) return true
+    let ok = true
+    if (storeScanImages && hasScanImages(source.images)) {
+      ok = (await saveScanImages(guestId, source.images)) !== "failed"
+    }
+    if (source.scanId) await linkScanToGuest(source.scanId, guestId)
+    return ok
+  }
 
   const clearFace = () => {
     setPickedFace(null)
@@ -220,7 +251,7 @@ export const CompanionGuests = ({
       return
     }
     if (guestId) return // allaqachon asosiy mehmon yoki hamroh
-    handleScan(index, doc)
+    handleScan(index, doc, { scanId: incomingScan.scanId })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingScan])
 
@@ -236,6 +267,7 @@ export const CompanionGuests = ({
     setExpandedSlot(null)
     setSearch("")
     setNewGuest(null)
+    setScanSource(null)
     // Tanlangan yuz keyingi hamrohga meros bo'lib o'tmasligi kerak
     clearFace()
   }
@@ -245,7 +277,7 @@ export const CompanionGuests = ({
 
   // Skanerlangan hujjat bo'yicha bazadan qidirish; topilmasa yangi mehmon
   // formasi shu ma'lumot bilan to'ldiriladi
-  const handleScan = (index: number, doc: ScannedDoc) => {
+  const handleScan = (index: number, doc: ScannedDoc, source?: ScanSource) => {
     const norm = (s?: string | null) => (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
     const pass = norm(doc.documentNumber)
     const personal = doc.pinflVerified ? norm(doc.personalNumber) : ""
@@ -257,10 +289,13 @@ export const CompanionGuests = ({
     )
     if (match) {
       pickExisting(index, match)
+      // Bazadan topildi — skanerlangan hujjat surati uning kartasiga
+      void storeScanFor(match.id, source)
       return
     }
     setActiveSlot(index)
     clearFace()
+    setScanSource(source && (hasScanImages(source.images) || source.scanId) ? source : null)
     const mapped = doc.nationality ? MRZ_COUNTRY[doc.nationality] : undefined
     setNewGuest({
       ...emptyNewGuest(),
@@ -333,6 +368,10 @@ export const CompanionGuests = ({
             tr("Hamroh saqlandi, lekin yuz biriktirilmadi — uni qabulxona panelidan qayta biriktirishingiz mumkin.")
           )
         }
+      }
+
+      if (!(await storeScanFor(created.id, scanSource))) {
+        onError(tr("Hamroh saqlandi, lekin hujjat surati saqlanmadi."))
       }
 
       setAt(index, { id: created.id, name: guestName(created) })
@@ -594,6 +633,7 @@ export const CompanionGuests = ({
                     setNewGuest({ ...newGuest, address: e.target.value })
                   }
                 />
+                {storeScanImages && <PendingScanImages scan={scanSource?.images ?? null} />}
                 {/* Filial IP kamerasidan yuz — asosiy mehmon formasidagi
                     bilan bir xil imkoniyat: mehmon qabulxonaga kelganda
                     kamera uni allaqachon suratga olgan bo'ladi */}
@@ -641,6 +681,7 @@ export const CompanionGuests = ({
                     type="button"
                     onClick={() => {
                       setNewGuest(null)
+                      setScanSource(null)
                       clearFace()
                     }}
                     className="rounded-md px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100"
@@ -690,9 +731,10 @@ export const CompanionGuests = ({
                   {canCreateGuest && (
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
                         setNewGuest(emptyNewGuest())
-                      }
+                        setScanSource(null)
+                      }}
                       className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                     >
                       <UserPlus className="h-3.5 w-3.5" />
@@ -726,8 +768,8 @@ export const CompanionGuests = ({
       <DocumentScanner
         open={scanSlot !== null}
         onOpenChange={(open) => !open && setScanSlot(null)}
-        onResult={(doc) => {
-          if (scanSlot !== null) handleScan(scanSlot, doc)
+        onResult={(doc, images) => {
+          if (scanSlot !== null) handleScan(scanSlot, doc, { images })
           setScanSlot(null)
         }}
       />
