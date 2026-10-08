@@ -28,6 +28,9 @@ import {
 } from "lucide-react";
 import {
   hasCamera,
+  getFaceAvailability,
+  faceStepDecision,
+  FACE_REQUIRED_MESSAGE,
   verifyFaceLogin,
   loginWithoutCamera,
   faceErrorMessage,
@@ -209,15 +212,26 @@ export const LoginPage = () => {
       const { data } = await api.post("/auth/login", values);
 
       if (data?.face_required && data?.face_token) {
-        /* Yuz biriktirgan xodim. Kamera bo'lsa — ikkinchi bosqich; bo'lmasa
-           parol bilan kiritiladi, chunki tekshirishning imkoni yo'q. */
-        if (await hasCamera()) {
+        /* Yuz biriktirgan xodim — hisobga faqat o'sha yuz bilan kiriladi.
+           Parol bilan o'tkazib yuborish faqat server yuzni tekshira
+           olmaganda (dvigatel yo'q); kamerasiz qurilmada esa kirish
+           to'xtatiladi (faceStepDecision). */
+        const [engineAvailable, cameraPresent] = await Promise.all([
+          getFaceAvailability(),
+          hasCamera(),
+        ]);
+        const decision = faceStepDecision(engineAvailable, cameraPresent);
+        if (decision === 'verify') {
           setFaceToken(data.face_token);
           setFaceOpen(true);
           return;
         }
+        if (decision === 'blocked') {
+          setError(FACE_REQUIRED_MESSAGE());
+          return;
+        }
         await finishLogin(
-          await loginWithoutCamera(data.face_token, /* i18n:skip — serverga yoziladigan sabab */ "qurilmada kamera topilmadi")
+          await loginWithoutCamera(data.face_token, /* i18n:skip — serverga yoziladigan sabab */ "serverda yuz tekshiruvi yo'q")
         );
         return;
       }

@@ -53,13 +53,33 @@ export const verifyFaceLogin = async (faceToken: string, photo: Blob) => {
   return data as IssuedTokens;
 };
 
+/** Ikkinchi bosqichda nima qilinadi.
+
+    - `verify`  — kamera bor, server yuzni tekshira oladi: yuz so'raladi;
+    - `skip`    — server yuzni tekshira OLMAYDI (dvigatel yo'q): parol yetarli;
+    - `blocked` — server tekshira oladi, lekin qurilmada kamera yo'q: yuz
+      biriktirilgan hisobga yuzsiz kirib bo'lmaydi — menejer yuzni o'chirsa,
+      parol bilan kiriladi.
+
+    Ilgari kamera topilmasa parol bilan kiritib yuborilardi — parolni bilgan
+    har kim yuz tekshiruvini chetlab o'tardi. */
+export type FaceStepDecision = 'verify' | 'skip' | 'blocked';
+
+export const faceStepDecision = (engineAvailable: boolean, cameraPresent: boolean): FaceStepDecision => {
+  if (!engineAvailable) return 'skip';
+  return cameraPresent ? 'verify' : 'blocked';
+};
+
+export const FACE_REQUIRED_MESSAGE = () =>
+  tr(
+    "Bu hisobga kirish uchun yuz tasdiqlash shart, qurilmada esa kamera topilmadi. Kamerali qurilmadan kiring yoki administrator/menejer yuzingizni o'chirib, parol bilan kirishga ruxsat bersin."
+  );
+
 /**
- * Kamerasiz qurilmada ikkinchi bosqichni o'tkazib yuborish.
- *
- * Kamera bor-yo'qligini faqat qurilmaning o'zi biladi, shuning uchun bu
- * qaror shu yerdan keladi. Lekin parolsiz ochilmaydi: `faceToken` faqat
- * login va parol to'g'ri kelganda beriladi va besh daqiqada kuchini
- * yo'qotadi.
+ * Ikkinchi bosqichni o'tkazib yuborish — faqat server yuzni tekshira
+ * olmaganda (`faceStepDecision` → 'skip'); boshqa holatda server 403
+ * `FACE_REQUIRED` qaytaradi. Parolsiz ochilmaydi: `faceToken` faqat login va
+ * parol to'g'ri kelganda beriladi va besh daqiqada kuchini yo'qotadi.
  */
 export const loginWithoutCamera = async (faceToken: string, reason: string) => {
   const { data } = await axios.post(`${API_URL}/auth/login/no-camera`, {
