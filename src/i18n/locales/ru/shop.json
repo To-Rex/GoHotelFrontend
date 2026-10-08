@@ -135,5 +135,10 @@
   "{{totalUnits}} dona": "{{totalUnits}} шт.",
   "{{totalValue}} So'm": "{{totalValue}} сум",
   "{{lowCount}} ta": "{{lowCount}}",
-  "stock::Qoldiq": "Остаток"
+  "stock::Qoldiq": "Остаток",
+  "Kimga:": "Кому:",
+  "· {{room}}-xona": "· номер {{room}}",
+  "Kimga": "Кому",
+  "{{room}}-xona": "Номер {{room}}",
+  "Vaqt / sotuvchi": "Время / продавец"
 }

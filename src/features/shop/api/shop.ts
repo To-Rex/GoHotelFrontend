@@ -54,6 +54,9 @@ export interface ShopSale {
   reservation_id: string | null;
   reservation_number: string | null;
   guest_name?: string | null;
+  /** Bronning xonasi — bronga yozilgan savdo kimga sotilgani (eski server
+   *  javobida bo'lmasligi mumkin) */
+  room_number?: string | null;
   total_amount: number;
   payment_method: string | null;
   /** Bo'lib to'lash bo'laklari (oddiy to'lovda null) */

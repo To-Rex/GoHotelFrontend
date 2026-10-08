@@ -147,5 +147,10 @@
   "{{totalUnits}} dona": "{{totalUnits}} pcs",
   "{{totalValue}} So'm": "{{totalValue}} UZS",
   "{{lowCount}} ta": "{{lowCount}}",
-  "stock::Qoldiq": "In stock"
+  "stock::Qoldiq": "In stock",
+  "Kimga:": "To:",
+  "· {{room}}-xona": "· room {{room}}",
+  "Kimga": "Sold to",
+  "{{room}}-xona": "Room {{room}}",
+  "Vaqt / sotuvchi": "Time / seller"
 }

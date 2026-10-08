@@ -23,6 +23,7 @@ import {
   Settings2,
   RefreshCw,
   X,
+  UserRound,
 } from "lucide-react"
 import {
   useShopProducts,
@@ -559,6 +560,22 @@ export const ShopPage = () => {
     return g ? `${g.first_name ?? ""} ${g.last_name ?? ""}`.trim() || null : null
   }
 
+  /* Bronga yozilgan savdo KIMGA sotilgani: mehmon, xona va bron raqami.
+     Server beradi (guest_name, room_number); eski javobda bo'lmasa bron va
+     xonalar ro'yxatidan topiladi. Bronsiz (naqd) sotuvda — null. */
+  const customerFor = (sale: ShopSale) => {
+    if (!sale.reservation_id) return null
+    const res = (reservations as Reservation[]).find((r) => r.id === sale.reservation_id)
+    const room =
+      sale.room_number ??
+      (res ? (rooms as any[]).find((r) => r.id === res.room_id)?.room_number ?? null : null)
+    return {
+      name: guestNameFor(sale),
+      room: room ? String(room) : null,
+      number: sale.reservation_number || res?.reservation_number || null,
+    }
+  }
+
   // Chek chiqarish — xatoda sotuv jarayonini TO'XTATMAYDI (sotuv allaqachon
   // saqlangan), faqat ogohlantirish va qayta urinish imkonini ko'rsatadi
   const doPrintReceipt = async (sale: ShopSale) => {
@@ -690,8 +707,10 @@ export const ShopPage = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_370px]">
-        {/* ---------- Katalog ---------- */}
-        <div className="space-y-4">
+        {/* ---------- Katalog ----------
+            min-w-0: keng jadval (sotuvlar) ustunni kengaytirib Savat panelini
+            ekrandan chiqarib yubormasin — jadval o'zi gorizontal aylanadi */}
+        <div className="min-w-0 space-y-4">
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="relative min-w-[220px] flex-1">
               <Search
@@ -894,6 +913,25 @@ export const ShopPage = () => {
                       <p className="mt-2 rounded-lg bg-muted/60 px-2.5 py-1.5 text-sm">
                         {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
                       </p>
+                      {/* Kimga sotilgan — bronga yozilgan savdoda */}
+                      {(() => {
+                        const c = customerFor(s)
+                        if (!c) return null
+                        return (
+                          <p className="mt-2 flex items-start gap-1.5 text-xs">
+                            <UserRound size={13} className="mt-0.5 flex-shrink-0 text-muted-foreground" />
+                            <span className="min-w-0">
+                              <span className="text-muted-foreground">{tr("Kimga:")}</span>{" "}
+                              <span className="font-medium">{c.name || "—"}</span>
+                              {c.room && (
+                                <span className="text-muted-foreground">
+                                  {" "}{tr("· {{room}}-xona", { room: c.room })}
+                                </span>
+                              )}
+                            </span>
+                          </p>
+                        )
+                      })()}
                       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2.5">
                         <span className="text-sm font-semibold">{tr("{{total_amount}} So'm", { total_amount: fmt(s.total_amount) })}</span>
                         <div className="flex items-center gap-1">
@@ -932,9 +970,11 @@ export const ShopPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{tr("Vaqt")}</TableHead>
+                      {/* Sotuvchi vaqt ostida — "Kimga" ustuni qo'shilgach jadval
+                          Savat paneli yonida aylantirmasdan sig'ishi uchun */}
+                      <TableHead>{tr("Vaqt / sotuvchi")}</TableHead>
                       <TableHead>{tr("Mahsulotlar")}</TableHead>
-                      <TableHead>{tr("Sotuvchi")}</TableHead>
+                      <TableHead>{tr("Kimga")}</TableHead>
                       <TableHead>{tr("To'lov")}</TableHead>
                       <TableHead className="text-right">{tr("Summa")}</TableHead>
                       <TableHead className="w-[1%]"></TableHead>
@@ -950,12 +990,29 @@ export const ShopPage = () => {
                       >
                         <TableCell className="whitespace-nowrap text-sm">
                           {s.created_at ? format(new Date(s.created_at), "dd.MM HH:mm") : "—"}
+                          <span className="block text-xs text-muted-foreground">
+                            {s.created_by_name || "—"}
+                          </span>
                         </TableCell>
                         <TableCell className="max-w-[300px] text-sm">
                           {s.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          {s.created_by_name || "—"}
+                        {/* Kimga sotilgan — bronga yozilgan savdoda mehmon va xona */}
+                        <TableCell className="max-w-[220px] text-sm">
+                          {(() => {
+                            const c = customerFor(s)
+                            if (!c) return <span className="text-xs text-muted-foreground">—</span>
+                            return (
+                              <span className="block min-w-0">
+                                <span className="block truncate font-medium">{c.name || "—"}</span>
+                                <span className="block truncate text-[11px] text-muted-foreground">
+                                  {[c.room ? tr("{{room}}-xona", { room: c.room }) : null, c.number]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </span>
+                              </span>
+                            )
+                          })()}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           {s.status === "PAID" ? (
@@ -1538,7 +1595,14 @@ export const ShopPage = () => {
                 {detailSale.reservation_id && (
                   <div className="col-span-2">
                     <p className="text-xs text-muted-foreground">{tr("Mijoz")}</p>
-                    <p className="mt-0.5 font-medium">{detailGuestName || "—"}</p>
+                    <p className="mt-0.5 font-medium">
+                      {detailGuestName || "—"}
+                      {customerFor(detailSale)?.room && (
+                        <span className="font-normal text-muted-foreground">
+                          {" "}{tr("· {{room}}-xona", { room: customerFor(detailSale)?.room })}
+                        </span>
+                      )}
+                    </p>
                   </div>
                 )}
               </div>
