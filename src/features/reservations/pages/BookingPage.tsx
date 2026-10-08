@@ -57,6 +57,12 @@ import { useGuests } from "@/features/guests/api/guests"
 import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
 import { ReservationCompanionsPanel } from "../components/ReservationCompanionsPanel"
 import { ReservationPenaltiesPanel } from "../components/ReservationPenaltiesPanel"
+import { DebtCheckoutDialog, ReservationDebtPanel } from "../components/ReservationDebtPanel"
+import { hasDebt } from "@/features/finance/lib/debtReasons"
+import { reservationDebtKey, useReservationDebt, type ReservationDebt } from "@/features/finance/api/debtors"
+import { useQueryClient } from "@tanstack/react-query"
+import { useSearchParams } from "react-router-dom"
+import { api } from "@/lib/api"
 import {
   NewBookingDialog,
   type NewBookingRequest,
@@ -376,6 +382,27 @@ export function BookingPage() {
     if (cancelQuote) setRefundInput(String(cancelQuote.refund_amount))
   }, [cancelQuote])
   const requestCheckoutMutation = useRequestCheckout()
+  const queryClient = useQueryClient()
+  /* QARZ — oyna ochilishi bilan sababi bilan ko'rinadi; mehmonni chiqarishdan
+     oldin to'lov olinadi yoki sababi yozilib qarz bilan chiqariladi */
+  const debtTracked =
+    manageOpen &&
+    !!selectedReservation &&
+    ["CONFIRMED", "CHECKED_IN", "CHECKED_OUT"].includes(selectedReservation.status)
+  const { data: debtInfo } = useReservationDebt(
+    debtTracked ? selectedReservation?.id : null,
+    debtTracked
+  )
+  const [debtDialogOpen, setDebtDialogOpen] = useState(false)
+  const [debtDialogError, setDebtDialogError] = useState<string | null>(null)
+  const scrollToSettle = () => {
+    setDebtDialogOpen(false)
+    window.setTimeout(() => {
+      const panel = document.getElementById("reservation-settle-panel")
+      panel?.scrollIntoView({ behavior: "smooth", block: "center" })
+      panel?.querySelector("input")?.focus()
+    }, 120)
+  }
   const moveRoomMutation = useMoveRoom()
   const settleMutation = useSettleReservation()
   const checkInMutation = useCheckInReservation()
@@ -588,6 +615,26 @@ export function BookingPage() {
     setManageOpen(true)
   }
 
+  /* Qarzlar menyusidan (navbar) kelgan havola: /booking?reservation=<id>
+     — o'sha bron oynasi ochiladi */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const linkedReservation = searchParams.get("reservation")
+  useEffect(() => {
+    if (!linkedReservation || !reservations.length) return
+    const found = (reservations as any[]).find((r) => r.id === linkedReservation)
+    if (found) {
+      openManageModal(found)
+    } else {
+      setErrorDialog(
+        tr("Bu bron kalendarda topilmadi. Qarzni Moliya sahifasidagi qarzdorlar ro'yxatida ko'ring.")
+      )
+    }
+    const next = new URLSearchParams(searchParams)
+    next.delete("reservation")
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedReservation, reservations])
+
   const closeManageModal = () => {
     setManageOpen(false)
     setSelectedReservation(null)
@@ -743,14 +790,40 @@ export function BookingPage() {
   // "Mehmon chiqmoqda": farroshga vazifa yuboriladi, tozalash yakunlangach
   // bron avtomatik CHECKED_OUT bo'ladi. Dialog ochiq qoladi va jarayon
   // boshlangani ko'rsatiladi.
-  const handleRequestCheckout = async (selfAssign = false) => {
+  const handleRequestCheckout = async (
+    selfAssign = false,
+    ack?: { note: string }
+  ) => {
     if (!selectedReservation) return
+    /* Resepsiya qarzdor mehmonni jimgina chiqara olmaydi: avval qarz
+       sababi bilan ko'rsatiladi. Farrosh tugmasi to'xtatilmaydi — server
+       kassirlarga xabar beradi */
+    if (!selfAssign && !ack) {
+      try {
+        const fresh = await queryClient.fetchQuery({
+          queryKey: reservationDebtKey(selectedReservation.id),
+          queryFn: async () =>
+            (await api.get<ReservationDebt>(`/reservations/${selectedReservation.id}/debt`)).data,
+          staleTime: 0,
+        })
+        if (hasDebt(fresh)) {
+          setDebtDialogError(null)
+          setDebtDialogOpen(true)
+          return
+        }
+      } catch {
+        // Hisob olinmasa ham server baribir tekshiradi (409)
+      }
+    }
     try {
       const updated = await requestCheckoutMutation.mutateAsync({
         id: selectedReservation.id,
         hotelId: selectedReservation.hotel_id || undefined,
         selfAssign,
+        acknowledgeDebt: !!ack,
+        debtNote: ack?.note,
       })
+      setDebtDialogOpen(false)
       setSelectedReservation((prev: any) =>
         prev
           ? {
@@ -762,6 +835,17 @@ export function BookingPage() {
       )
     } catch (error: any) {
       console.error(error)
+      if (error?.response?.data?.error_code === "CHECKOUT_DEBT") {
+        // Oyna ochilgandan beri qarz paydo bo'lgan — sababi bilan ko'rsatamiz
+        queryClient.invalidateQueries({ queryKey: reservationDebtKey(selectedReservation.id) })
+        setDebtDialogError(null)
+        setDebtDialogOpen(true)
+        return
+      }
+      if (ack) {
+        setDebtDialogError(apiErrorMessage(error))
+        return
+      }
       setErrorDialog(apiErrorMessage(error))
     }
   }
@@ -1685,6 +1769,16 @@ export function BookingPage() {
                     </div>
                   </div>
 
+                  {/* QARZ — qancha va NIMA UCHUN (xona, uzaytirish, jarima,
+                      do'kon). Oyna ochilishi bilan ko'zga tashlanadi */}
+                  {!editMode && !cancelMode && !isCleaner && (
+                    <ReservationDebtPanel
+                      debt={debtInfo}
+                      canPay={can("finance.payment.create")}
+                      onPay={scrollToSettle}
+                    />
+                  )}
+
                   {/* XONADAGI MEHMONLAR — asosiy mehmon va hamrohlar. Kirgan
                       bronda hamroh ketganini belgilash va bo'shagan joyga
                       yangisini joylashtirish shu yerda: bron shartnomasi
@@ -2257,13 +2351,18 @@ export function BookingPage() {
                     (() => {
                       const total = Number(res.total_amount || 0)
                       const paid = Number(res.paid_amount || 0)
-                      const due = total - paid
+                      let due = total - paid
+                      // Uzaytirilgan muddat — chiqishdagi hisob bo'yicha qarz
+                      // hozir ham olinadi (server to'lovda jamini ko'taradi)
+                      const projectedDebt = Number(debtInfo?.reservation_debt || 0)
+                      if (debtInfo?.projected && projectedDebt > due + 0.5) due = projectedDebt
                       // 1 so'mgacha farq — hisob teng deb qabul qilinadi
                       if (Math.abs(due) < 1) return null
                       const isRefund = due < 0
                       const maxAmount = Math.abs(due)
                       return (
                         <div
+                          id="reservation-settle-panel"
                           className={cn(
                             "space-y-2.5 rounded-lg border p-3",
                             isRefund
@@ -2718,6 +2817,18 @@ export function BookingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Qarzdor mehmonni chiqarish: to'lov yoki sababi bilan */}
+      <DebtCheckoutDialog
+        open={debtDialogOpen}
+        debt={debtInfo}
+        pending={requestCheckoutMutation.isPending}
+        error={debtDialogError}
+        canPay={can("finance.payment.create")}
+        onPay={scrollToSettle}
+        onConfirm={(note) => handleRequestCheckout(false, { note })}
+        onClose={() => setDebtDialogOpen(false)}
+      />
 
       {/* Xato dialogi (brauzer alert o'rniga) */}
       <Dialog open={!!errorDialog} onOpenChange={(o) => !o && setErrorDialog(null)}>

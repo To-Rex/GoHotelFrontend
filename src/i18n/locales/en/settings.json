@@ -263,5 +263,16 @@
   "Pasport yoki ID karta qayerda skanerlansa ham (telefon yoki veb) surati mehmon kartasiga yoziladi va keyin ko'rish mumkin.": "Wherever a passport or ID card is scanned (phone or web), its image is saved to the guest card and can be viewed later.",
   "Saqlanmasin": "Don't save",
   "Faqat o'qilgan ma'lumotlar yoziladi, hujjat surati saqlanmaydi.": "Only the recognized data is saved; the document image is not.",
-  "Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu mehmonxonaning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.": "The document image is kept in file storage (MinIO) and is visible only to this hotel's staff who work with guests."
+  "Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu mehmonxonaning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.": "The document image is kept in file storage (MinIO) and is visible only to this hotel's staff who work with guests.",
+  "Yoqiq (tavsiya etiladi)": "On (recommended)",
+  "Administrator va to'lov qabul qiluvchi xodimlarga qarzdorlar ro'yxati telefon va saytda eslatib turiladi.": "Administrators and staff who take payments are reminded of the debtors list on their phone and on the website.",
+  "O'chiq": "Off",
+  "Davriy eslatma yuborilmaydi. Qarz baribir hamma joyda ko'rinadi, chiqishda tekshiriladi.": "No periodic reminders are sent. Debts are still shown everywhere and checked at check-out.",
+  "Qanchalik tez-tez": "How often",
+  "har {{v}}": "every {{v}}",
+  "Qarzdor mehmonni chiqarishda tizim to'xtatadi: avval to'lov olinadi yoki sababi yozilib, qarz bilan chiqariladi (kim, qachon — saqlanadi).": "Checking out a guest with a debt is stopped: first the payment is taken, or the guest is checked out with the debt and a reason (who and when is saved).",
+  "Mehmon qarz bilan chiqib ketsa, chiqish kuni qarzi bo'lsa va qarz bilan chiqarilganda — darhol xabar keladi.": "When a guest leaves with a debt, has a debt on the departure day, or is checked out with a debt — a notification arrives immediately.",
+  "Davriy ro'yxat faqat 08:00 dan 22:00 gacha yuboriladi; har qarzning sababi (xona, jarima, do'kon...) ko'rsatiladi.": "The periodic list is sent only between 08:00 and 22:00; each debt shows its reason (room, penalty, shop...).",
+  "Qarz eslatmalari": "Debt reminders",
+  "Mehmon qarzlari ko'rinib tursin va unutilmasin: qanchalik tez-tez eslatilishini tanlang. Har qarzning sababi ko'rsatiladi.": "Keep guest debts visible and never forgotten: choose how often to remind. Each debt shows its reason."
 }

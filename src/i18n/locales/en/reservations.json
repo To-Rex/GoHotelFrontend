@@ -307,5 +307,21 @@
   "Kech chiqish yoki buzilgan narsa uchun jarima shu yerda yoziladi.": "Penalties for late check-out or damaged property are issued here.",
   "{{price}} × {{times}} = {{dayPrice}} so'm / kun": "{{price}} × {{times}} = {{dayPrice}} UZS / day",
   "Hamroh saqlandi, lekin hujjat surati saqlanmadi.": "The companion was saved, but the document image was not.",
-  "Bron va mehmon saqlandi, lekin hujjat surati saqlanmadi.": "The booking and guest were saved, but the document image was not."
+  "Bron va mehmon saqlandi, lekin hujjat surati saqlanmadi.": "The booking and guest were saved, but the document image was not.",
+  "Mehmon qarz bilan chiqib ketgan": "The guest left with a debt",
+  "Mehmonning qarzi bor": "The guest has a debt",
+  "{{days}} kundan beri to'lanmagan": "Unpaid for {{days}} days",
+  "Mehmon bilan bog'lanib, qarzni undiring": "Contact the guest and collect the debt",
+  "Mehmon ketmasidan oldin to'lovni oling": "Take the payment before the guest leaves",
+  "Nima uchun": "Why",
+  "Muddat uzaytirilgani uchun summa mehmon chiqqanda qayta hisoblanadi — hozir olinsa, chiqishda qarz qolmaydi.": "Because the stay was extended, the amount is recalculated at check-out — take it now and no debt remains.",
+  "Do'kon qarzi: {{v}} so'm — do'konda to'lash": "Shop debt: {{v}} UZS — pay in the shop",
+  "Chiqishdan oldin to'lanmagan summa:": "Unpaid amount before check-out:",
+  "{{v}} So'm": "{{v}} UZS",
+  "Qarz bilan chiqarish sababi (majburiy)": "Reason for checking out with debt (required)",
+  "Masalan: ertaga keltiradi, telefon raqami ...": "E.g.: will bring it tomorrow, phone number ...",
+  "Sababni yozing (kamida 3 ta belgi)": "Enter a reason (at least 3 characters)",
+  "Kim, qachon va nima uchun chiqargani saqlanadi, rahbariyatga xabar boradi. Qarz ro'yxatda qolaveradi.": "Who checked the guest out, when and why is saved and management is notified. The debt stays on the list.",
+  "Qarz bilan chiqarish": "Check out with debt",
+  "Bu bron kalendarda topilmadi. Qarzni Moliya sahifasidagi qarzdorlar ro'yxatida ko'ring.": "This booking isn't on the calendar. See the debt in the debtors list on the Finance page."
 }

@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 import type { Guest } from "@/types/api"
 import { useGuestHistory, type GuestStay } from "../api/guestHistory"
 import { GuestDocumentImages } from "./GuestDocumentImages"
+import { DebtorsPanel } from "@/features/finance/components/DebtorsPanel"
 import {
   EMPTY_STAY_FILTER,
   filterStays,
@@ -276,6 +277,15 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
 
         {/* Saqlangan hujjat suratlari — bo'lmasa joy egallamaydi */}
         <GuestDocumentImages guestId={guest?.id} />
+
+        {/* Shu mehmonning ochiq qarzlari — sababi bilan (bo'lmasa ko'rinmaydi) */}
+        {guest?.id && (
+          <DebtorsPanel
+            guestId={guest.id}
+            title={tr("Bu mehmonning qarzlari")}
+            initialLimit={3}
+          />
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">

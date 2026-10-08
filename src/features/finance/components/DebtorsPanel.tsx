@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronDown, HandCoins, Loader2, Phone, User as UserIcon } from "lucide-react"
+import { ChevronDown, HandCoins, Loader2, MessageSquareWarning, Phone, User as UserIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -10,6 +10,7 @@ import {
   type DebtorReservation,
   type DebtorsParams,
 } from "../api/debtors"
+import { DebtReasons } from "./DebtReasons"
 import { tr } from "@/i18n"
 
 /**
@@ -21,6 +22,10 @@ import { tr } from "@/i18n"
  * esa odamlar bo'yicha (bitta mehmonning bir nechta qarzi bitta qatorga
  * yig'iladi). Uch joyda uchta nusxa yozilsa, ta'rif vaqt o'tib ajralib
  * ketardi.
+ *
+ * Har bron qatorida qarzning SABABI ham turadi (xona, chiqishda qayta
+ * hisob, jarima, do'kon) va qarz bilan chiqarilgan bo'lsa — nima uchun.
+ * Ro'yxat har daqiqada o'zi yangilanadi: qarz ko'z oldida tursin.
  */
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
@@ -43,9 +48,13 @@ const daysSince = (value?: string | null): number | null => {
 }
 
 const STATUS_LABELS: Record<string, string> = {
+  CONFIRMED: tr("Tasdiqlangan"),
   CHECKED_IN: tr("Kirgan"),
   CHECKED_OUT: tr("Chiqgan"),
 }
+
+/** Qarzdorlar ro'yxati shuncha vaqtda o'zi yangilanadi */
+const DEBTORS_REFRESH_MS = 60_000
 
 interface Props extends DebtorsParams {
   /** "reservations" — bronlar bo'yicha, "guests" — odamlar bo'yicha */
@@ -56,6 +65,8 @@ interface Props extends DebtorsParams {
   className?: string
   /** Qatorga bosilganda — masalan mehmon tarixini ochish uchun */
   onGuestClick?: (guestId: string) => void
+  /** Sabablarni ko'rsatish (standart — ha) */
+  showReasons?: boolean
 }
 
 export function DebtorsPanel({
@@ -64,9 +75,10 @@ export function DebtorsPanel({
   initialLimit = 5,
   className,
   onGuestClick,
+  showReasons = true,
   ...params
 }: Props) {
-  const { data, isLoading, error } = useDebtors(params)
+  const { data, isLoading, error } = useDebtors({ refetchMs: DEBTORS_REFRESH_MS, ...params })
   const [expanded, setExpanded] = useState(false)
 
   const summary = data?.summary
@@ -135,9 +147,9 @@ export function DebtorsPanel({
               const key = isGuestRow
                 ? guest.guest_id || guest.guest_name || Math.random().toString()
                 : res.id
-              const overdue = daysSince(
-                isGuestRow ? guest.oldest_check_out : res.check_out_date
-              )
+              const overdue = isGuestRow
+                ? daysSince(guest.oldest_check_out)
+                : res.overdue_days ?? daysSince(res.check_out_date)
               const clickable = !!onGuestClick && !!(isGuestRow ? guest.guest_id : res.guest_id)
 
               return (
@@ -222,6 +234,19 @@ export function DebtorsPanel({
                         </span>
                       )}
                     </p>
+                    {/* NIMA UCHUN qarz — to'lanmagan haqlar */}
+                    {!isGuestRow && showReasons && (
+                      <DebtReasons reasons={res.reasons} compact className="mt-1.5" />
+                    )}
+                    {!isGuestRow && res.acknowledged && (
+                      <p className="mt-1 flex items-start gap-1 text-[11px] leading-snug text-red-700">
+                        <MessageSquareWarning className="mt-px h-3 w-3 shrink-0" />
+                        <span>
+                          {tr("Qarz bilan chiqarilgan")}
+                          {res.acknowledged.note ? `: ${res.acknowledged.note}` : ""}
+                        </span>
+                      </p>
+                    )}
                   </div>
 
                   <div className="text-right">
@@ -231,7 +256,12 @@ export function DebtorsPanel({
                     </p>
                     {!isGuestRow && (
                       <p className="text-[11px] tabular-nums text-gray-400">
-                        {fmt(res.paid_amount)} / {fmt(res.total_amount)}
+                        {fmt(res.paid_amount)} / {fmt(res.expected_total ?? res.total_amount)}
+                      </p>
+                    )}
+                    {!isGuestRow && !!res.shop_debt && res.shop_debt > 0 && (
+                      <p className="text-[11px] tabular-nums text-emerald-700">
+                        {tr("do'kon: {{v}}", { v: fmt(res.shop_debt) })}
                       </p>
                     )}
                   </div>

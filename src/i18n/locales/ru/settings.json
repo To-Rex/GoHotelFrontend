@@ -265,5 +265,16 @@
   "Pasport yoki ID karta qayerda skanerlansa ham (telefon yoki veb) surati mehmon kartasiga yoziladi va keyin ko'rish mumkin.": "Где бы ни сканировался паспорт или ID-карта (телефон или веб), фото сохраняется в карточке гостя и его можно посмотреть позже.",
   "Saqlanmasin": "Не сохранять",
   "Faqat o'qilgan ma'lumotlar yoziladi, hujjat surati saqlanmaydi.": "Сохраняются только распознанные данные, фото документа не сохраняется.",
-  "Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu mehmonxonaning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.": "Фото документа хранится в файловом хранилище (MinIO) и видно только сотрудникам этой гостиницы, работающим с гостями."
+  "Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu mehmonxonaning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.": "Фото документа хранится в файловом хранилище (MinIO) и видно только сотрудникам этой гостиницы, работающим с гостями.",
+  "Yoqiq (tavsiya etiladi)": "Включено (рекомендуется)",
+  "Administrator va to'lov qabul qiluvchi xodimlarga qarzdorlar ro'yxati telefon va saytda eslatib turiladi.": "Администраторам и сотрудникам, принимающим оплату, список должников напоминается в телефоне и на сайте.",
+  "O'chiq": "Выключено",
+  "Davriy eslatma yuborilmaydi. Qarz baribir hamma joyda ko'rinadi, chiqishda tekshiriladi.": "Периодические напоминания не отправляются. Долг всё равно виден везде и проверяется при выезде.",
+  "Qanchalik tez-tez": "Как часто",
+  "har {{v}}": "каждые {{v}}",
+  "Qarzdor mehmonni chiqarishda tizim to'xtatadi: avval to'lov olinadi yoki sababi yozilib, qarz bilan chiqariladi (kim, qachon — saqlanadi).": "При выезде должника система останавливает: сначала принимается оплата или с указанием причины гость выписывается с долгом (кто и когда — сохраняется).",
+  "Mehmon qarz bilan chiqib ketsa, chiqish kuni qarzi bo'lsa va qarz bilan chiqarilganda — darhol xabar keladi.": "Если гость выехал с долгом, если в день выезда есть долг и при выписке с долгом — уведомление приходит сразу.",
+  "Davriy ro'yxat faqat 08:00 dan 22:00 gacha yuboriladi; har qarzning sababi (xona, jarima, do'kon...) ko'rsatiladi.": "Периодический список отправляется только с 08:00 до 22:00; для каждого долга указана причина (номер, штраф, магазин...).",
+  "Qarz eslatmalari": "Напоминания о долгах",
+  "Mehmon qarzlari ko'rinib tursin va unutilmasin: qanchalik tez-tez eslatilishini tanlang. Har qarzning sababi ko'rsatiladi.": "Чтобы долги гостей были на виду и не забывались: выберите, как часто напоминать. Для каждого долга указывается причина."
 }

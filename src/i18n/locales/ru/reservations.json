@@ -322,5 +322,21 @@
   "Kech chiqish yoki buzilgan narsa uchun jarima shu yerda yoziladi.": "Здесь выписывается штраф за поздний выезд или повреждённое имущество.",
   "{{price}} × {{times}} = {{dayPrice}} so'm / kun": "{{price}} × {{times}} = {{dayPrice}} сум / сутки",
   "Hamroh saqlandi, lekin hujjat surati saqlanmadi.": "Сопровождающий сохранён, но фото документа не сохранилось.",
-  "Bron va mehmon saqlandi, lekin hujjat surati saqlanmadi.": "Бронь и гость сохранены, но фото документа не сохранилось."
+  "Bron va mehmon saqlandi, lekin hujjat surati saqlanmadi.": "Бронь и гость сохранены, но фото документа не сохранилось.",
+  "Mehmon qarz bilan chiqib ketgan": "Гость выехал с долгом",
+  "Mehmonning qarzi bor": "У гостя есть долг",
+  "{{days}} kundan beri to'lanmagan": "Не оплачено уже {{days}} дн.",
+  "Mehmon bilan bog'lanib, qarzni undiring": "Свяжитесь с гостем и взыщите долг",
+  "Mehmon ketmasidan oldin to'lovni oling": "Примите оплату до отъезда гостя",
+  "Nima uchun": "Почему",
+  "Muddat uzaytirilgani uchun summa mehmon chiqqanda qayta hisoblanadi — hozir olinsa, chiqishda qarz qolmaydi.": "Из-за продления сумма пересчитается при выезде — если оплатить сейчас, долга при выезде не останется.",
+  "Do'kon qarzi: {{v}} so'm — do'konda to'lash": "Долг магазина: {{v}} сум — оплатить в магазине",
+  "Chiqishdan oldin to'lanmagan summa:": "Неоплаченная сумма до выезда:",
+  "{{v}} So'm": "{{v}} сум",
+  "Qarz bilan chiqarish sababi (majburiy)": "Причина выезда с долгом (обязательно)",
+  "Masalan: ertaga keltiradi, telefon raqami ...": "Например: принесёт завтра, номер телефона ...",
+  "Sababni yozing (kamida 3 ta belgi)": "Укажите причину (минимум 3 символа)",
+  "Kim, qachon va nima uchun chiqargani saqlanadi, rahbariyatga xabar boradi. Qarz ro'yxatda qolaveradi.": "Сохранится, кто, когда и почему выписал; руководство получит уведомление. Долг останется в списке.",
+  "Qarz bilan chiqarish": "Выписать с долгом",
+  "Bu bron kalendarda topilmadi. Qarzni Moliya sahifasidagi qarzdorlar ro'yxatida ko'ring.": "Эта бронь не найдена в календаре. Посмотрите долг в списке должников на странице «Финансы»."
 }

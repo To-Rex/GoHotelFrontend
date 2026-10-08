@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Reservation } from '@/types/api';
+import { invalidateDebts } from '@/features/finance/api/debtors';
 
 export const useReservations = (status?: string) => {
   return useQuery({
@@ -35,6 +36,9 @@ export const useCreateReservation = () => {
       // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
       // hisobi qayta olinsin
       queryClient.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
+      // Qarz kamaydi — ro'yxatlar, eslatma va bron hisob varag'i yangilansin
+      invalidateDebts(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
     },
   });
 };
@@ -101,14 +105,19 @@ export const useRequestCheckout = () => {
       id,
       hotelId,
       selfAssign,
+      acknowledgeDebt,
+      debtNote,
     }: {
       id: string;
       hotelId?: string;
       selfAssign?: boolean;
+      /** Qarz bilan chiqarish — sababi majburiy (server kim/qachon bilan yozadi) */
+      acknowledgeDebt?: boolean;
+      debtNote?: string;
     }) => {
       const { data } = await api.post<Reservation>(
         `/reservations/${id}/request-checkout`,
-        null,
+        acknowledgeDebt ? { acknowledge_debt: true, debt_note: debtNote || '' } : null,
         {
           params: {
             ...(hotelId ? { hotel_id: hotelId } : {}),
@@ -123,6 +132,7 @@ export const useRequestCheckout = () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       queryClient.invalidateQueries({ queryKey: ['housekeepingTasks'] });
+      invalidateDebts(queryClient);
       // Bron/hisob-faktura pul harakatiga olib keladi — smenani
       // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
       // hisobi qayta olinsin

@@ -36,6 +36,7 @@ import {
   UserCog,
   ArrowRightLeft,
   Gavel,
+  BellRing,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -44,6 +45,7 @@ import { VisionDevicesCard } from "@/features/vision/components/VisionDevicesCar
 import { DiscountRulesCard } from "../components/DiscountRulesCard"
 import { MoveDiscountCard } from "../components/MoveDiscountCard"
 import { PenaltySettingsCard } from "../components/PenaltySettingsCard"
+import { DebtReminderCard } from "../components/DebtReminderCard"
 import { SmsKeysCard } from "../components/SmsKeysCard"
 import {
   useBookingDefaults,
@@ -995,6 +997,17 @@ export const SettingsPage = () => {
                 desc={tr("Mehmon kech chiqsa yoki biror narsani buzsa jarima yoziladi. Bu yerda kech chiqish uchun soatiga summa va imtiyozli vaqt belgilanadi — bron oynasida summa avtomatik taklif qilinadi.")}
               >
                 <PenaltySettingsCard />
+              </SettingCard>
+
+              {/* Qarz eslatmalari — qarz unutilmasin */}
+              <SettingCard
+                id="debts"
+                icon={BellRing}
+                iconClass="bg-red-50 text-red-600"
+                title={tr("Qarz eslatmalari")}
+                desc={tr("Mehmon qarzlari ko'rinib tursin va unutilmasin: qanchalik tez-tez eslatilishini tanlang. Har qarzning sababi ko'rsatiladi.")}
+              >
+                <DebtReminderCard />
               </SettingCard>
 
               {/* Qora ro'yxat qoidasi */}

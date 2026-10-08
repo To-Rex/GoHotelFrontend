@@ -204,5 +204,6 @@
   "Hujjat surati saqlanmagan": "No document image saved",
   "Hujjat surati saqlangach mehmon kartasiga yoziladi": "The document image will be saved to the guest card on save",
   "Mehmon saqlandi, lekin hujjat surati saqlanmadi.": "The guest was saved, but the document image was not.",
-  "· hujjat surati kartasiga saqlandi": "· document image saved to the card"
+  "· hujjat surati kartasiga saqlandi": "· document image saved to the card",
+  "Bu mehmonning qarzlari": "This guest's debts"
 }

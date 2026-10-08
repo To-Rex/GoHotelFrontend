@@ -92,6 +92,7 @@ const invalidateAfterChange = (
   queryClient.invalidateQueries({ queryKey: ['invoices'] });
   queryClient.invalidateQueries({ queryKey: ['invoicesPage'] });
   queryClient.invalidateQueries({ queryKey: ['debtors'] });
+  queryClient.invalidateQueries({ queryKey: ['reservationDebt'] });
   queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
   queryClient.invalidateQueries({ queryKey: ['financePenalties'] });
   queryClient.invalidateQueries({ queryKey: ['roomReservations'] });

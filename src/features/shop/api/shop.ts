@@ -207,6 +207,9 @@ const invalidateShop = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ['shopSalesPage'] });
   // Do'kon savdosi kassaga tushadi — kutilgan summa qayta hisoblansin
   qc.invalidateQueries({ queryKey: ['shiftExpectedCash'] });
+  // Bronga yozilgan savdo — mehmon qarzining bir qismi
+  qc.invalidateQueries({ queryKey: ['debtors'] });
+  qc.invalidateQueries({ queryKey: ['reservationDebt'] });
 };
 
 export const useCreateShopProduct = () => {

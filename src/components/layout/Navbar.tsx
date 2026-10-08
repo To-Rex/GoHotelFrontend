@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { FaceEnrollDialog } from "@/features/auth/components/FaceEnrollDialog";
 import { LiveClock } from "./LiveClock";
 import { RecognizedGuestsMenu } from "@/features/vision/components/RecognizedGuestsMenu";
+import { DebtsMenu } from "@/features/finance/components/DebtsMenu";
 import { IncomingCallsMenu } from "@/features/reception/components/IncomingCallsMenu";
 import { ScannedDocsMenu } from "@/features/reception/components/ScannedDocsMenu";
 import type { DocumentScan } from "@/features/reception/api/scans";
@@ -249,6 +250,8 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
           )}
         </Button>
         {/* Kamera tanigan mehmonlar — xodimning o'z filiali bo'yicha */}
+        {/* Qarzlar — sababi bilan, doimiy eslatma (qarz bor ekan qizil) */}
+        <DebtsMenu />
         <RecognizedGuestsMenu onPickGuest={openBookingFor} />
         {/* Qabulxona telefoniga kelgan qo'ng'iroqlar: qurilma raqamni
             yuboradi, server mehmonni topadi va u shu yerda ko'rinadi */}

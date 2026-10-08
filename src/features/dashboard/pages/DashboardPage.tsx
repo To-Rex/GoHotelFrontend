@@ -36,7 +36,8 @@ import { useReservations } from "@/features/reservations/api/reservations"
 import { useGuests } from "@/features/guests/api/guests"
 import { useInvoices, usePayments } from "@/features/finance/api/finance"
 import { useExpenses } from "@/features/expenses/api/expenses"
-import { useShopSales } from "@/features/shop/api/shop"
+import { saleRemaining, useShopSales } from "@/features/shop/api/shop"
+import { DebtorsPanel } from "@/features/finance/components/DebtorsPanel"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
 import { useShiftSettings, useShiftHistory } from "@/features/shifts/api/shifts"
 import { useEmployees } from "@/features/employees/api/employees"
@@ -356,7 +357,8 @@ export const DashboardPage = () => {
     (s, x) => s + Number(x.total_amount || 0),
     0
   )
-  const shopDebtTotal = shopDebts.reduce((s, x) => s + Number(x.total_amount || 0), 0)
+  // Qisman to'langan savdoning faqat qoldig'i qarz
+  const shopDebtTotal = shopDebts.reduce((s, x) => s + saleRemaining(x), 0)
   // Bugungi sof natija: bron to'lovlari + do'kon − xarajatlar
   const todayNet = todayIncome + shopTodayRevenue - todayExpenses
 
@@ -646,6 +648,10 @@ export const DashboardPage = () => {
           </div>
         ))}
       </div>
+
+      {/* QARZDORLAR — kim, qancha va NIMA UCHUN. Qarz yo'q bo'lsa
+          ko'rinmaydi; bor bo'lsa har kuni birinchi ko'riladigan joyda */}
+      <DebtorsPanel title={tr("Qarzdorlar — undirilishi kerak")} initialLimit={4} />
 
       {/* Tushum grafigi + xonalar holati */}
       <div
