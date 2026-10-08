@@ -171,6 +171,101 @@ export const useDeactivateHotel = () => {
   })
 }
 
+/* --------------------------------------------- butunlay o'chirish -- */
+
+/** Boshqa (yoki global) jadval qatori shu mehmonxona qatoriga qaraydi. */
+export interface PurgeConflict {
+  table: string
+  column: string
+  references: string
+  rows: number
+  on_delete: string
+  /** true — o'chirishni to'xtatadi; false — u ustun bo'shatiladi */
+  blocking: boolean
+}
+
+export interface PurgeSharedHotel {
+  hotel_id: string
+  hotel_name: string
+  guests: number
+}
+
+/** Tizim akkaunti (SUPER_ADMIN, sozlovchi) — o'chmaydi, faqat ajratiladi. */
+export interface PurgeSystemUser {
+  id: string
+  username: string | null
+  user_type: string
+}
+
+export interface PurgePreview {
+  hotel: { id: string; name: string; code: string; status: string }
+  tables: { table: string; rows: number }[]
+  total_rows: number
+  shared_guests: { count: number; hotels: PurgeSharedHotel[] }
+  system_users: PurgeSystemUser[]
+  conflicts: PurgeConflict[]
+  files: number
+  can_purge: boolean
+  blocked_by: ("HOTEL_ACTIVE" | "CROSS_HOTEL_REFERENCES")[]
+}
+
+export interface PurgeResult {
+  hotel: PurgePreview["hotel"]
+  deleted: Record<string, number>
+  total_rows: number
+  guests_moved: number
+  guests_moved_to: PurgeSharedHotel[]
+  system_users_kept: PurgeSystemUser[]
+  set_null: PurgeConflict[]
+  files_removed: number
+  files_failed: number
+  seconds: number
+}
+
+/** Nima o'chishini ko'rsatadi — serverda hech narsa o'zgarmaydi. */
+export const useHotelPurgePreview = (hotelId?: string) =>
+  useQuery({
+    queryKey: ["panelHotelPurge", hotelId],
+    queryFn: async () => {
+      const { data } = await panelApi.get<PurgePreview>(
+        `/hotels/${hotelId}/purge-preview`
+      )
+      return data
+    },
+    enabled: !!hotelId,
+    // Har ochilganda yangi hisob — eski raqam bilan o'chirib yubormaslik uchun
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  })
+
+export const usePurgeHotel = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string
+      confirm_code: string
+      password: string
+    }) => {
+      const { id, ...body } = payload
+      const { data } = await panelApi.post<PurgeResult>(
+        `/hotels/${id}/purge`,
+        body
+      )
+      return data
+    },
+    // Mehmonxona ko'p bo'limda ko'rinadi (mehmonlar, bronlar, moliya,
+    // audit) — panelning hamma ro'yxati yangilanadi
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ["panelHotelPurge"] })
+      qc.invalidateQueries({
+        predicate: (query) =>
+          String(query.queryKey[0] ?? "").startsWith("panel"),
+      })
+    },
+  })
+}
+
 /* ------------------------------------------------------------ filial -- */
 
 export const useBranches = (hotelId?: string) =>

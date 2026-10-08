@@ -8,6 +8,7 @@ import {
   PlayCircle,
   Plus,
   Search,
+  Trash2,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -18,6 +19,7 @@ import {
   useSaveHotel,
   type PanelHotel,
 } from "../api/panel"
+import { HotelPurgeDialog } from "../components/HotelPurgeDialog"
 import {
   PanelButton,
   PanelCard,
@@ -47,6 +49,8 @@ export function HotelsPage() {
   const [search, setSearch] = useState("")
   const [editing, setEditing] = useState<Partial<PanelHotel> | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Butunlay o'chirish oynasi shu mehmonxona uchun ochiq
+  const [purging, setPurging] = useState<PanelHotel | null>(null)
 
   const { data: hotels = [], isLoading } = useHotels(search)
   const save = useSaveHotel()
@@ -209,11 +213,22 @@ export function HotelsPage() {
                     {tr("Faollashtirish")}
                   </PanelButton>
                 )}
+                <PanelButton
+                  variant="danger"
+                  className="ml-auto h-8 text-xs"
+                  title={tr("Mehmonxonani butunlay o'chirish")}
+                  onClick={() => setPurging(hotel)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {tr("O'chirish")}
+                </PanelButton>
               </div>
             </PanelCard>
           ))}
         </div>
       )}
+
+      <HotelPurgeDialog hotel={purging} onClose={() => setPurging(null)} />
 
       <PanelDialog
         open={!!editing}

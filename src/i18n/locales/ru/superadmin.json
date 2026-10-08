@@ -177,5 +177,45 @@
   "Sozlovchi qo'shish": "Добавить настройщика",
   "Familiya (ixtiyoriy)": "Фамилия (необязательно)",
   "Telefon (ixtiyoriy)": "Телефон (необязательно)",
-  "Login va parolni odamga o'zingiz yetkazasiz. U asosiy tizimga (panelga emas) kiradi va mehmonxonani tanlaydi.": "Логин и пароль вы передаёте человеку сами. Он входит в основную систему (не в панель) и выбирает гостиницу."
+  "Login va parolni odamga o'zingiz yetkazasiz. U asosiy tizimga (panelga emas) kiradi va mehmonxonani tanlaydi.": "Логин и пароль вы передаёте человеку сами. Он входит в основную систему (не в панель) и выбирает гостиницу.",
+  "Mehmonxonani butunlay o'chirish": "Удалить гостиницу полностью",
+  "\"{{name}}\" butunlay o'chirildi": "«{{name}}» удалена полностью",
+  "{{rows}} ta yozuv va {{files}} ta fayl o'chirildi ({{seconds}} s).": "Удалено записей: {{rows}}, файлов: {{files}} ({{seconds}} с).",
+  "{{count}} ta mehmon boshqa mehmonxonada ham bo'lgani uchun o'chirilmadi — o'sha mehmonxonaga o'tkazildi.": {
+    "one": "{{count}} гость не удалён, так как есть и в другой гостинице, — он перенесён туда.",
+    "few": "{{count}} гостя не удалены, так как есть и в другой гостинице, — они перенесены туда.",
+    "many": "{{count}} гостей не удалены, так как есть и в другой гостинице, — они перенесены туда.",
+    "other": "{{count}} гостя не удалены, так как есть и в другой гостинице, — они перенесены туда."
+  },
+  "{{count}} ta faylni omborxonadan o'chirib bo'lmadi — ma'lumotlar bazasi to'liq tozalandi.": {
+    "one": "{{count}} файл не удалось удалить из хранилища — база данных очищена полностью.",
+    "few": "{{count}} файла не удалось удалить из хранилища — база данных очищена полностью.",
+    "many": "{{count}} файлов не удалось удалить из хранилища — база данных очищена полностью.",
+    "other": "{{count}} файла не удалось удалить из хранилища — база данных очищена полностью."
+  },
+  "Nima o'chishi hisoblanmoqda...": "Подсчитываем, что будет удалено...",
+  "Mehmonxona va unga tegishli HAMMA ma'lumot o'chadi: filiallar, xonalar, xodimlar, mehmonlar, bronlar, to'lovlar, do'kon, hisobotlar, fayllar. Bu amalni qaytarib bo'lmaydi. Boshqa mehmonxonalar ma'lumotiga tegilmaydi.": "Будут удалены гостиница и ВСЕ её данные: филиалы, номера, сотрудники, гости, брони, платежи, магазин, отчёты, файлы. Это действие нельзя отменить. Данные других гостиниц не затрагиваются.",
+  "Jami {{rows}} ta yozuv, {{tables}} ta jadval, {{files}} ta fayl": "Всего записей: {{rows}}, таблиц: {{tables}}, файлов: {{files}}",
+  "{{count}} ta mehmon boshqa mehmonxonada ham bron qilgan — ular o'chmaydi, o'sha mehmonxonaga o'tkaziladi:": {
+    "one": "{{count}} гость бронировал и в другой гостинице — он не удаляется, а переносится туда:",
+    "few": "{{count}} гостя бронировали и в другой гостинице — они не удаляются, а переносятся туда:",
+    "many": "{{count}} гостей бронировали и в другой гостинице — они не удаляются, а переносятся туда:",
+    "other": "{{count}} гостя бронировали и в другой гостинице — они не удаляются, а переносятся туда:"
+  },
+  "{{count}} ta mehmon": {
+    "one": "{{count}} гость",
+    "few": "{{count}} гостя",
+    "many": "{{count}} гостей",
+    "other": "{{count}} гостя"
+  },
+  "Boshqa yozuvlardagi havolalar bo'shatiladi (yozuvlarning o'zi qoladi):": "Ссылки в других записях будут очищены (сами записи останутся):",
+  "Boshqa mehmonxona ma'lumotlari bu mehmonxonaga bog'langan — o'chirsak ular buziladi, shuning uchun o'chirilmaydi:": "Данные другой гостиницы связаны с этой — удаление повредило бы их, поэтому удалить нельзя:",
+  "Faol mehmonxona o'chirilmaydi — avval uni to'xtating.": "Активную гостиницу удалить нельзя — сначала остановите её.",
+  "Hozir to'xtatish": "Остановить сейчас",
+  "Mehmonxonani butunlay o'chirishni faqat tizim egasi bajaradi.": "Полностью удалить гостиницу может только владелец системы.",
+  "Tasdiqlash uchun mehmonxona kodini yozing: {{code}}": "Для подтверждения введите код гостиницы: {{code}}",
+  "Panel parolingiz": "Ваш пароль от панели",
+  "O'chirilmoqda...": "Удаление...",
+  "Butunlay o'chirish": "Удалить полностью",
+  "Tizim akkauntlari o'chirilmaydi — faqat mehmonxonadan ajratiladi:": "Системные учётные записи не удаляются — только отвязываются от гостиницы:"
 }

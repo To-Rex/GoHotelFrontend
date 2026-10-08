@@ -162,11 +162,14 @@ export function PanelDialog({
   open,
   title,
   onClose,
+  wide = false,
   children,
 }: {
   open: boolean
   title: string
   onClose: () => void
+  /** Kengroq va uzun mazmun uchun ichidan aylanadigan oyna */
+  wide?: boolean
   children: React.ReactNode
 }) {
   if (!open) return null
@@ -176,7 +179,10 @@ export function PanelDialog({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-2xl"
+        className={cn(
+          "w-full rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-2xl",
+          wide ? "max-h-[92vh] max-w-xl overflow-y-auto" : "max-w-md"
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-4 text-base font-bold text-slate-100">{title}</h2>

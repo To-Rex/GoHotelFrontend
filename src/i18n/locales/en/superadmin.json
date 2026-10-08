@@ -170,5 +170,37 @@
   "Sozlovchi qo'shish": "Add configurator",
   "Familiya (ixtiyoriy)": "Last name (optional)",
   "Telefon (ixtiyoriy)": "Phone (optional)",
-  "Login va parolni odamga o'zingiz yetkazasiz. U asosiy tizimga (panelga emas) kiradi va mehmonxonani tanlaydi.": "You hand the username and password to the person yourself. They sign in to the main system (not the panel) and choose a hotel."
+  "Login va parolni odamga o'zingiz yetkazasiz. U asosiy tizimga (panelga emas) kiradi va mehmonxonani tanlaydi.": "You hand the username and password to the person yourself. They sign in to the main system (not the panel) and choose a hotel.",
+  "Mehmonxonani butunlay o'chirish": "Delete hotel permanently",
+  "\"{{name}}\" butunlay o'chirildi": "\"{{name}}\" has been permanently deleted",
+  "{{rows}} ta yozuv va {{files}} ta fayl o'chirildi ({{seconds}} s).": "Deleted records: {{rows}}, files: {{files}} ({{seconds}} s).",
+  "{{count}} ta mehmon boshqa mehmonxonada ham bo'lgani uchun o'chirilmadi — o'sha mehmonxonaga o'tkazildi.": {
+    "one": "{{count}} guest was not deleted because they also stayed at another hotel — moved to that hotel.",
+    "other": "{{count}} guests were not deleted because they also stayed at another hotel — moved to that hotel."
+  },
+  "{{count}} ta faylni omborxonadan o'chirib bo'lmadi — ma'lumotlar bazasi to'liq tozalandi.": {
+    "one": "{{count}} file could not be removed from storage — the database was fully cleaned.",
+    "other": "{{count}} files could not be removed from storage — the database was fully cleaned."
+  },
+  "Nima o'chishi hisoblanmoqda...": "Calculating what will be deleted...",
+  "Mehmonxona va unga tegishli HAMMA ma'lumot o'chadi: filiallar, xonalar, xodimlar, mehmonlar, bronlar, to'lovlar, do'kon, hisobotlar, fayllar. Bu amalni qaytarib bo'lmaydi. Boshqa mehmonxonalar ma'lumotiga tegilmaydi.": "The hotel and ALL of its data will be deleted: branches, rooms, staff, guests, bookings, payments, shop, reports, files. This cannot be undone. Other hotels' data is not touched.",
+  "Jami {{rows}} ta yozuv, {{tables}} ta jadval, {{files}} ta fayl": "Total records: {{rows}}, tables: {{tables}}, files: {{files}}",
+  "{{count}} ta mehmon boshqa mehmonxonada ham bron qilgan — ular o'chmaydi, o'sha mehmonxonaga o'tkaziladi:": {
+    "one": "{{count}} guest also booked at another hotel — they are not deleted but moved to that hotel:",
+    "other": "{{count}} guests also booked at another hotel — they are not deleted but moved to that hotel:"
+  },
+  "{{count}} ta mehmon": {
+    "one": "{{count}} guest",
+    "other": "{{count}} guests"
+  },
+  "Boshqa yozuvlardagi havolalar bo'shatiladi (yozuvlarning o'zi qoladi):": "References in other records will be cleared (the records themselves stay):",
+  "Boshqa mehmonxona ma'lumotlari bu mehmonxonaga bog'langan — o'chirsak ular buziladi, shuning uchun o'chirilmaydi:": "Another hotel's data is linked to this hotel — deleting would break it, so deletion is blocked:",
+  "Faol mehmonxona o'chirilmaydi — avval uni to'xtating.": "An active hotel cannot be deleted — stop it first.",
+  "Hozir to'xtatish": "Stop now",
+  "Mehmonxonani butunlay o'chirishni faqat tizim egasi bajaradi.": "Only the system owner can permanently delete a hotel.",
+  "Tasdiqlash uchun mehmonxona kodini yozing: {{code}}": "To confirm, type the hotel code: {{code}}",
+  "Panel parolingiz": "Your panel password",
+  "O'chirilmoqda...": "Deleting...",
+  "Butunlay o'chirish": "Delete permanently",
+  "Tizim akkauntlari o'chirilmaydi — faqat mehmonxonadan ajratiladi:": "System accounts are not deleted — they are only detached from the hotel:"
 }
