@@ -4,7 +4,9 @@ import {
   Building2,
   CalendarRange,
   KeyRound,
+  HeartPulse,
   LayoutDashboard,
+  Megaphone,
   Loader2,
   LogOut,
   Menu,
@@ -58,6 +60,8 @@ const GROUPS = [
   {
     title: tr("Tizim"),
     links: [
+      { to: "/panel/broadcast", label: tr("E'lonlar"), icon: Megaphone },
+      { to: "/panel/system", label: tr("Tizim holati"), icon: HeartPulse },
       { to: "/panel/apps", label: tr("Dasturlar do'koni"), icon: PackageOpen },
       { to: "/panel/users", label: tr("Panel foydalanuvchilari"), icon: Users },
       { to: "/panel/audit", label: tr("Harakatlar tarixi"), icon: ScrollText },

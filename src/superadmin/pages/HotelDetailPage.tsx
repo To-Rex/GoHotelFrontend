@@ -15,6 +15,8 @@ import { panelError } from "../api/client"
 import {
   useBranches,
   useCreateStaff,
+  useEnterHotel,
+  useMoveStaffBranch,
   useDeleteBranch,
   useHotelRooms,
   useHotelStaff,
@@ -124,8 +126,20 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
   const { data: branches = [], isLoading } = useBranches(hotelId)
   const save = useSaveBranch()
   const remove = useDeleteBranch()
+  const enter = useEnterHotel()
   const [editing, setEditing] = useState<Partial<PanelBranch> | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Filiallar ajratilgan: har filial o'z sozlamalari bilan — asosiy tizim
+  // shu filialda (xohlasa to'g'ridan-to'g'ri Sozlamalar sahifasida) ochiladi
+  const open = async (branch: PanelBranch, path?: string) => {
+    setError(null)
+    try {
+      await enter.mutateAsync({ hotelId, branchId: branch.id, path })
+    } catch (e) {
+      setError(panelError(e))
+    }
+  }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -185,7 +199,24 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
+                <PanelButton
+                  className="h-8 text-xs"
+                  disabled={enter.isPending}
+                  title={tr("Asosiy tizimni shu filialda ochish")}
+                  onClick={() => open(branch)}
+                >
+                  {tr("Kirish")}
+                </PanelButton>
+                <PanelButton
+                  variant="ghost"
+                  className="h-8 text-xs"
+                  disabled={enter.isPending}
+                  title={tr("Shu filialning sozlamalarini ochish")}
+                  onClick={() => open(branch, "/settings")}
+                >
+                  {tr("Sozlamalar")}
+                </PanelButton>
                 <PanelButton
                   variant="ghost"
                   className="h-8 text-xs"
@@ -276,9 +307,24 @@ function BranchesTab({ hotelId }: { hotelId: string }) {
 
 function StaffTab({ hotelId }: { hotelId: string }) {
   const { data: staff = [], isLoading } = useHotelStaff(hotelId)
+  const { data: branches = [] } = useBranches(hotelId)
   const setStatus = useSetStaffStatus()
   const resetPassword = useResetStaffPassword()
   const createStaff = useCreateStaff()
+  const moveBranch = useMoveStaffBranch()
+
+  // Filiallar ajratilgan: xodim qaysi filialda ishlashi shu yerdan o'zgaradi
+  const move = async (person: HotelStaff, branchId: string) => {
+    if (!branchId || branchId === person.branch_id) return
+    setError(null)
+    try {
+      const r = await moveBranch.mutateAsync({ id: person.id, branchId })
+      setNotice(tr("{{username}} → {{branch}} filialiga o'tkazildi", { username: person.username, branch: r.branch_name }))
+      window.setTimeout(() => setNotice(null), 4000)
+    } catch (e) {
+      setError(panelError(e))
+    }
+  }
   const [target, setTarget] = useState<HotelStaff | null>(null)
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -366,6 +412,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
                 <th className="px-3 py-2 font-medium">{tr("Xodim")}</th>
                 <th className="px-3 py-2 font-medium">{tr("Login")}</th>
                 <th className="px-3 py-2 font-medium">{tr("Roli")}</th>
+                <th className="px-3 py-2 font-medium">{tr("Filial")}</th>
                 <th className="px-3 py-2 font-medium">{tr("Holat")}</th>
                 <th className="px-3 py-2" />
               </tr>
@@ -378,6 +425,26 @@ function StaffTab({ hotelId }: { hotelId: string }) {
                   </td>
                   <td className="px-3 py-2 text-slate-400">{person.username}</td>
                   <td className="px-3 py-2 text-slate-400">{person.user_type}</td>
+                  <td className="px-3 py-2">
+                    {branches.length > 1 && person.user_type !== "SUPER_ADMIN" ? (
+                      <select
+                        className="h-7 max-w-[160px] rounded-md border border-white/10 bg-slate-950/60 px-1.5 text-xs text-slate-200 focus:border-emerald-500/60 focus:outline-none"
+                        value={person.branch_id || ""}
+                        disabled={moveBranch.isPending}
+                        onChange={(e) => move(person, e.target.value)}
+                        title={tr("Filialga o'tkazish")}
+                      >
+                        {!person.branch_id && <option value="">—</option>}
+                        {branches.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-xs text-slate-400">{person.branch_name || "—"}</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <span
                       className={cn(

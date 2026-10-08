@@ -3,6 +3,7 @@ import { Route } from "react-router-dom"
 import { ApiLogsPage } from "./pages/ApiLogsPage"
 import { AppStorePage } from "./pages/AppStorePage"
 import { AuditPage } from "./pages/AuditPage"
+import { BroadcastPage } from "./pages/BroadcastPage"
 import { ConfiguratorsPage } from "./pages/ConfiguratorsPage"
 import { FinancePage } from "./pages/FinancePage"
 import { GuestsPage } from "./pages/GuestsPage"
@@ -14,6 +15,7 @@ import { PanelLoginPage } from "./pages/PanelLoginPage"
 import { PanelUsersPage } from "./pages/PanelUsersPage"
 import { ReservationsPage } from "./pages/ReservationsPage"
 import { SecurityPage } from "./pages/SecurityPage"
+import { SystemPage } from "./pages/SystemPage"
 
 /**
  * Panel marshrutlari — bitta joyda.
@@ -38,6 +40,8 @@ export function panelRoutes() {
         <Route path="audit" element={<AuditPage />} />
         <Route path="api-logs" element={<ApiLogsPage />} />
         <Route path="security" element={<SecurityPage />} />
+        <Route path="system" element={<SystemPage />} />
+        <Route path="broadcast" element={<BroadcastPage />} />
       </Route>
     </>
   )

@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query"
 
 import { uploadAppInChunks } from "./appUpload"
+import { enterMainApp, type EnterResult } from "./enter"
 import { PANEL_TOKEN_KEY, panelApi } from "./client"
 
 /** Panel API qatlami — barcha so'rovlar `/superadmin` ostida. */
@@ -75,6 +76,8 @@ export interface HotelStaff {
   status: string
   email: string | null
   phone: string | null
+  branch_id?: string | null
+  branch_name?: string | null
   last_login_at: string | null
 }
 
@@ -267,6 +270,21 @@ export const usePurgeHotel = () => {
   })
 }
 
+/* ------------------------------------------- mehmonxonaga kirish -- */
+
+/** Asosiy tizimni shu mehmonxona/filialda sozlovchi huquqida yangi oynada
+    ochadi (enter.ts). `path` — ochiladigan sahifa, masalan "/settings". */
+export const useEnterHotel = () =>
+  useMutation({
+    mutationFn: async (payload: { hotelId: string; branchId?: string | null; path?: string }) => {
+      const { data } = await panelApi.post<EnterResult>(`/hotels/${payload.hotelId}/enter`, {
+        branch_id: payload.branchId ?? null,
+      })
+      enterMainApp(data, payload.path)
+      return data
+    },
+  })
+
 /* ------------------------------------------------------------ filial -- */
 
 export const useBranches = (hotelId?: string) =>
@@ -332,6 +350,20 @@ export const useSetStaffStatus = () => {
       const { data } = await panelApi.patch(`/staff/${payload.id}/status`, {
         status: payload.status,
       })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["panelStaff"] }),
+  })
+}
+
+export const useMoveStaffBranch = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { id: string; branchId: string }) => {
+      const { data } = await panelApi.patch<{ id: string; branch_id: string; branch_name: string }>(
+        `/staff/${payload.id}/branch`,
+        { branch_id: payload.branchId }
+      )
       return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["panelStaff"] }),
@@ -771,6 +803,80 @@ export const usePanelGuests = (search?: string) =>
         params: { search: search?.trim() || undefined },
       })
       return Array.isArray(data) ? data : []
+    },
+  })
+
+/* --- Tizim holati ---------------------------------------------------- */
+
+export interface SystemStatus {
+  app: {
+    version: string
+    env: string
+    uptime_seconds: number
+    server_time: string
+    tz_offset_minutes: number
+  }
+  database: {
+    ok: boolean
+    version?: string
+    size?: string
+    connections?: number
+    migration?: string
+    counts?: Record<string, number>
+    open_shifts?: number
+    live_sessions?: number
+    error?: string
+  }
+  storage: {
+    ok: boolean
+    endpoint: string
+    secure?: boolean
+    buckets?: { name: string; exists: boolean }[]
+    error?: string
+  }
+  push: {
+    ok: boolean
+    project_id?: string | null
+    panel_key_stored?: boolean
+    panel_key_readable?: boolean
+    updated_at?: string | null
+    error?: string
+  }
+  scheduler: {
+    auto_checkout_enabled: boolean
+    interval_seconds: number
+    grace_minutes: number
+    running: boolean
+  }
+}
+
+export const useSystemStatus = () =>
+  useQuery({
+    queryKey: ["panelSystem"],
+    queryFn: async () => {
+      const { data } = await panelApi.get<SystemStatus>("/system")
+      return data
+    },
+    refetchInterval: 30_000,
+  })
+
+/* --- E'lonlar --------------------------------------------------------- */
+
+export const useBroadcast = () =>
+  useMutation({
+    mutationFn: async (payload: {
+      title: string
+      body: string | null
+      audience: "admins" | "staff"
+      hotel_id: string | null
+      branch_id: string | null
+      send_push: boolean
+    }) => {
+      const { data } = await panelApi.post<{ hotels: number; recipients: number; push: boolean }>(
+        "/broadcast",
+        payload
+      )
+      return data
     },
   })
 

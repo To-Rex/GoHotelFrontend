@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import {
   Building2,
   Loader2,
+  LogIn,
   PauseCircle,
   Pencil,
   PlayCircle,
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils"
 import { panelError } from "../api/client"
 import {
   useDeactivateHotel,
+  useEnterHotel,
   useHotels,
   useSaveHotel,
   type PanelHotel,
@@ -55,6 +57,17 @@ export function HotelsPage() {
   const { data: hotels = [], isLoading } = useHotels(search)
   const save = useSaveHotel()
   const deactivate = useDeactivateHotel()
+  const enter = useEnterHotel()
+
+  // Asosiy tizimni shu mehmonxonada sozlovchi huquqida yangi oynada ochadi
+  const open = async (hotel: PanelHotel) => {
+    setError(null)
+    try {
+      await enter.mutateAsync({ hotelId: hotel.id })
+    } catch (e) {
+      setError(panelError(e))
+    }
+  }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -180,6 +193,15 @@ export function HotelsPage() {
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
+                <PanelButton
+                  className="h-8 text-xs"
+                  title={tr("Asosiy tizimni shu mehmonxonada ochish (sozlovchi huquqida)")}
+                  disabled={enter.isPending}
+                  onClick={() => open(hotel)}
+                >
+                  <LogIn className="h-3.5 w-3.5" />
+                  {tr("Kirish")}
+                </PanelButton>
                 <Link
                   to={`/panel/hotels/${hotel.id}`}
                   className="inline-flex h-8 items-center rounded-lg border border-white/10 px-2.5 text-xs text-slate-300 hover:bg-white/5"
