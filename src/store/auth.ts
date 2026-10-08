@@ -18,7 +18,8 @@ export interface User {
   // Mehmonxona nomi (/auth/me dan) — brauzer tab sarlavhasida ko'rsatiladi
   hotel_name?: string;
   branch_id?: string;
-  // Filial nomi — sozlovchi / tizim ma'muri tanlagan filial (boshqalarda bo'sh)
+  // Joriy filial nomi: xodimda — o'z filiali, administrator / sozlovchida —
+  // tanlagani (filiallar to'liq ajratilgan)
   branch_name?: string | null;
   // Backend `/auth/me` da qaytaradigan ruxsat kodlari (faqat EMPLOYEE uchun to'ladi).
   // `undefined` — profil hali yuklanmagan (eski sessiya).

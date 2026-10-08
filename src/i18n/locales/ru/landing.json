@@ -67,7 +67,6 @@
   "Internet uzilib qolsa nima bo'ladi?": "Что будет, если пропадёт интернет?",
   "Ma'lumotlar bulutdagi serverda xavfsiz saqlanadi — qurilmangiz almashsa ham hech narsa yo'qolmaydi. Aloqa tiklanishi bilan ish davom etadi, o'rnatilgan PWA esa qayta ochilishda so'nggi holatni ko'rsatadi.": "Данные надёжно хранятся на облачном сервере — даже если вы смените устройство, ничего не потеряется. Как только связь восстановится, работа продолжится, а установленное PWA-приложение при повторном открытии покажет последнее состояние.",
   "Bir nechta filialim bor — hammasini boshqara olamanmi?": "У меня несколько филиалов — смогу ли я управлять всеми?",
-  "Ha, tizim ko'p filialli ishlashga mo'ljallangan: xonalar, xodimlar va bronlar filial kesimida yuritiladi, hisobotlar esa umumiy ko'rinishda jamlanadi.": "Да, система рассчитана на работу с несколькими филиалами: номера, сотрудники и брони ведутся по филиалам, а отчёты сводятся в общую картину.",
   "Xona turlari va qavatlar": "Типы номеров и этажи",
   "Qulayliklar katalogi": "Каталог удобств",
   "Qo'shimcha xizmatlar": "Дополнительные услуги",
@@ -185,5 +184,6 @@
   " son.": " сек.",
   "nav::Boshlash": "Начало работы",
   "© {{year}} GoHotel — mehmonxona boshqaruv tizimi": "© {{year}} GoHotel — система управления гостиницей",
-  "Hujjat suratlari himoyalangan omborda": "Фото документов — в защищённом хранилище"
+  "Hujjat suratlari himoyalangan omborda": "Фото документов — в защищённом хранилище",
+  "Ha, tizim ko'p filialli ishlashga mo'ljallangan: har filialning xonalari, xodimlari, bronlari, kassasi, hisobotlari va sozlamalari alohida yuritiladi. Administrator filiallar orasida bir bosishda o'tadi.": "Да, система рассчитана на работу с несколькими филиалами: у каждого филиала свои номера, сотрудники, брони, касса, отчёты и настройки. Администратор переключается между филиалами в один клик."
 }

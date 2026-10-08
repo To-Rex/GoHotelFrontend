@@ -212,7 +212,7 @@ const SETTING_GROUPS = [
   {
     key: "appearance",
     label: tr("Ko'rinish"),
-    desc: tr("Yon menyudagi sahifalar tartibi — mehmonxonaning barcha xodimlari uchun"),
+    desc: tr("Yon menyudagi sahifalar tartibi — shu filialning barcha xodimlari uchun"),
     icon: ListOrdered,
     iconClass: "bg-amber-50 text-amber-600",
     cards: ["nav-order"],
@@ -770,7 +770,7 @@ export const SettingsPage = () => {
       icon: Users,
       title: tr("To'liq tozalash (xodimlar bilan)"),
       description:
-        tr("Yuqoridagilarga qo'shimcha: barcha xodimlar (EMPLOYEE), ularning ruxsatlari va sessiyalari ham o'chiriladi."),
+        tr("Yuqoridagilarga qo'shimcha: shu filialning barcha xodimlari (EMPLOYEE), ularning ruxsatlari va sessiyalari ham o'chiriladi."),
       keeps: tr("Saqlanadi: administrator hisoblari, ruxsatlar katalogi va mehmonxona tuzilmasi."),
     },
   ]
@@ -786,7 +786,15 @@ export const SettingsPage = () => {
           <div>
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{tr("Sozlamalar")}</h1>
             <p className="text-sm text-gray-500">
-              {tr("{{v}} uchun tizim sozlamalari", { v: user?.hotel_name || tr("Mehmonxona") })}
+              {user?.branch_name
+                ? tr("{{hotel}} · {{branch}} filiali sozlamalari", {
+                    hotel: user?.hotel_name || tr("Mehmonxona"),
+                    branch: user.branch_name,
+                  })
+                : tr("{{v}} uchun tizim sozlamalari", { v: user?.hotel_name || tr("Mehmonxona") })}
+            </p>
+            <p className="text-xs text-gray-400">
+              {tr("Har filialning sozlamalari alohida — boshqa filialni yuqoridagi tanlagich orqali sozlaysiz.")}
             </p>
           </div>
         </div>
@@ -1227,7 +1235,7 @@ export const SettingsPage = () => {
                 </div>
                 <p className="mt-3 text-xs leading-relaxed text-gray-400">
                   {scanStoreImages
-                    ? tr("Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu mehmonxonaning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.")
+                    ? tr("Hujjat surati fayl omborida (MinIO) saqlanadi va faqat shu filialning mehmonlar bilan ishlaydigan xodimlariga ko'rinadi.")
                     : tr("Qaysi usul tanlangan bo'lsa ham, hujjat rasmi hech qaerda saqlanmaydi: serverda faqat xotirada o'qiladi va javob qaytgach yo'qoladi.")}
                 </p>
                 <SaveRow
@@ -1555,7 +1563,7 @@ export const SettingsPage = () => {
                 icon={Printer}
                 iconClass="bg-emerald-50 text-emerald-600"
                 title={tr("Chek dizayni")}
-                desc={tr("Do'kon chekining ko'rinishi: sarlavha, izohlar, ko'rsatiladigan maydonlar, QR-kod va qog'oz kengligi. Har mehmonxona o'z dizaynini alohida saqlaydi — boshqalar bilan aralashmaydi.")}
+                desc={tr("Do'kon chekining ko'rinishi: sarlavha, izohlar, ko'rsatiladigan maydonlar, QR-kod va qog'oz kengligi. Har filial o'z dizaynini alohida saqlaydi — boshqalar bilan aralashmaydi.")}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="max-w-xs text-sm leading-relaxed text-gray-600">
@@ -1734,13 +1742,13 @@ export const SettingsPage = () => {
 
           {group === "appearance" && (
             <>
-              {/* Yon menyu tartibi — mehmonxonaning barcha xodimlariga amal qiladi */}
+              {/* Yon menyu tartibi — filialning barcha xodimlariga amal qiladi */}
               <SettingCard
                 id="nav-order"
                 icon={ListOrdered}
                 iconClass="bg-amber-50 text-amber-600"
                 title={tr("Menyu tartibi")}
-                desc={tr("Chapdagi menyuda sahifalar qanday ketma-ketlikda turishini belgilang. Tartib mehmonxonaning barcha xodimlariga amal qiladi.")}
+                desc={tr("Chapdagi menyuda sahifalar qanday ketma-ketlikda turishini belgilang. Tartib shu filialning barcha xodimlariga amal qiladi.")}
               >
                 <NavOrderCard />
               </SettingCard>
@@ -1794,7 +1802,7 @@ export const SettingsPage = () => {
                 <div className="space-y-4 p-5">
                   <p className="text-sm text-gray-600">
                     {tr("Tizimni \"yangidek\" holatga qaytarish. Bu amal")}{" "}
-                    <span className="font-semibold text-red-600">{tr("qaytarib bo'lmaydi")}</span>{" "}{tr("va faqat sizning mehmonxonangiz ma'lumotlariga ta'sir qiladi.")}
+                    <span className="font-semibold text-red-600">{tr("qaytarib bo'lmaydi")}</span>{" "}{tr("va faqat shu filial ma'lumotlariga ta'sir qiladi — boshqa filiallarga tegilmaydi.")}
                   </p>
 
                   {/* Rejim tanlash */}

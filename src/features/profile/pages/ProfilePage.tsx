@@ -53,8 +53,11 @@ export const ProfilePage = () => {
   // jimgina bosh harfli avatar ko'rinadi)
   const { data: photosMap = {} } = useEmployeePhotos()
 
+  // Joriy filial: xodimda — o'ziniki, administratorda — tanlagani
   const branchName =
-    (user?.branch_id && branches.find((b) => b.id === user.branch_id)?.name) || "—"
+    user?.branch_name ||
+    (user?.branch_id && branches.find((b) => b.id === user.branch_id)?.name) ||
+    "—"
 
   const initials =
     `${user?.first_name?.[0] ?? ""}${user?.last_name?.[0] ?? ""}`.toUpperCase() || "?"
@@ -226,7 +229,7 @@ export const ProfilePage = () => {
                 <p className="text-xs text-emerald-700/80">
                   {user?.user_type === "CONFIGURATOR"
                     ? tr("Tanlangan mehmonxonaning barcha bo'limlari va sozlamalari sizga ochiq. Boshqa mehmonxonaga yuqoridagi mehmonxona tugmasi orqali o'tasiz.")
-                    : tr("Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.")}
+                    : tr("Mehmonxonaning barcha bo'limlari va amallari sizga ochiq. Filiallar alohida: boshqa filialga yuqoridagi filial tugmasi orqali o'tasiz.")}
                 </p>
               </div>
             </div>

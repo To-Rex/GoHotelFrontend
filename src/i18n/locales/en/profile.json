@@ -8,8 +8,8 @@
   "Hisobingiz haqidagi ma'lumotlar va sizga berilgan ruxsatlar": "Your account details and the permissions granted to you",
   "Mening ruxsatlarim": "My permissions",
   "Administrator — to'liq ruxsat": "Administrator — full access",
-  "Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.": "You have unrestricted access to all sections and actions of the system.",
   "Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.": "No permissions have been assigned to you yet — contact an administrator.",
   "Sozlovchi — to'liq ruxsat va sozlamalar": "Configurator — full access and settings",
-  "Tanlangan mehmonxonaning barcha bo'limlari va sozlamalari sizga ochiq. Boshqa mehmonxonaga yuqoridagi mehmonxona tugmasi orqali o'tasiz.": "All sections and settings of the selected hotel are open to you. Switch to another hotel with the hotel button at the top."
+  "Tanlangan mehmonxonaning barcha bo'limlari va sozlamalari sizga ochiq. Boshqa mehmonxonaga yuqoridagi mehmonxona tugmasi orqali o'tasiz.": "All sections and settings of the selected hotel are open to you. Switch to another hotel with the hotel button at the top.",
+  "Mehmonxonaning barcha bo'limlari va amallari sizga ochiq. Filiallar alohida: boshqa filialga yuqoridagi filial tugmasi orqali o'tasiz.": "All sections and actions of the hotel are open to you. Branches are separate: switch to another branch with the branch button at the top."
 }

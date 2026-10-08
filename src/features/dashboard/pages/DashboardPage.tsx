@@ -533,7 +533,9 @@ export const DashboardPage = () => {
             {user?.first_name ? `, ${user.first_name}` : ""}!
           </h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            {tr("{{v}} — bugungi holat bir qarashda", { v: user?.hotel_name || tr("Mehmonxona") })}
+            {tr("{{v}} — bugungi holat bir qarashda", {
+              v: [user?.hotel_name || tr("Mehmonxona"), user?.branch_name].filter(Boolean).join(" · "),
+            })}
           </p>
         </div>
         <div className="text-right">

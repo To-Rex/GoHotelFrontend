@@ -303,6 +303,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                 <p className="truncate text-xs text-muted-foreground">
                   @{user?.username}
                   {user?.hotel_name ? ` · ${user.hotel_name}` : ""}
+                  {user?.branch_name ? ` · ${user.branch_name}` : ""}
                 </p>
               </div>
               {/* Profil sahifasi */}

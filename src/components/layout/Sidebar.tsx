@@ -48,7 +48,7 @@ export const Sidebar = () => {
   const allowed = (href: string) =>
     canRoute(href) && (!restriction || openRoutes.includes(href));
 
-  // Administrator belgilagan tartib — mehmonxonaning barcha xodimlariga
+  // Belgilangan tartib — joriy filialning barcha xodimlariga
   // birdek amal qiladi. Tartib faqat JOYLASHUVni o'zgartiradi: qaysi sahifa
   // ko'rinishini yuqoridagi ruxsat/cheklov filtri hal qiladi.
   const { data: navOrder } = useNavOrder();

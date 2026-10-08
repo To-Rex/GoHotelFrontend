@@ -18,6 +18,7 @@ import {
   useSaveBranchSms,
   useTestBranchSms,
 } from "../api/sms"
+import { useAuthStore } from "@/store/auth"
 import { tr } from "@/i18n"
 
 /**
@@ -30,7 +31,11 @@ import { tr } from "@/i18n"
  * ko'rsatadi.
  */
 export function SmsKeysCard() {
-  const { data: branches = [], isLoading } = useBranches()
+  const { data: all = [], isLoading } = useBranches()
+  // Filiallar ajratilgan — sozlama JORIY filialniki (boshqa filialning
+  // kalitini o'sha filialni tanlab boshqarasiz)
+  const current = useAuthStore((s) => s.user?.branch_id)
+  const branches = (all as Array<{ id: string }>).filter((b) => !current || b.id === current)
 
   return (
     <section

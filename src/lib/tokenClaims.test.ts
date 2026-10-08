@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { needsReloadForToken, tokenClaims, tokenHotelId } from "./tokenClaims"
+import { needsReloadForToken, tokenBranchId, tokenClaims, tokenHotelId } from "./tokenClaims"
 
 /* Boshqa tabda mehmonxona almashtirilganda shu tab o'zini yangilaydi. */
 
@@ -32,6 +32,14 @@ describe("tokenHotelId", () => {
   })
 })
 
+describe("tokenBranchId", () => {
+  it("filial bor / yo'q / o'qilmaydi", () => {
+    expect(tokenBranchId(jwt({ branch_id: "b1" }))).toBe("b1")
+    expect(tokenBranchId(jwt({ hotel_id: "h1" }))).toBeNull()
+    expect(tokenBranchId("buzuq")).toBeUndefined()
+  })
+})
+
 describe("needsReloadForToken", () => {
   const tokenX = jwt({ hotel_id: "x" })
   const tokenY = jwt({ hotel_id: "y" })
@@ -44,6 +52,16 @@ describe("needsReloadForToken", () => {
   it("odatiy token yangilanishi (o'sha mehmonxona) — yo'q", () => {
     expect(needsReloadForToken("accessToken", tokenX, "x")).toBe(false)
     expect(needsReloadForToken("accessToken", jwt({ hotel_id: null }), null)).toBe(false)
+  })
+
+  it("administrator boshqa tabda filialni almashtirdi — qayta yuklash", () => {
+    const a1 = jwt({ hotel_id: "x", branch_id: "a1" })
+    const a2 = jwt({ hotel_id: "x", branch_id: "a2" })
+    expect(needsReloadForToken("accessToken", a2, "x", "a1")).toBe(true)
+    expect(needsReloadForToken("accessToken", a1, "x", "a1")).toBe(false)
+    // Tokenda filial yo'q (eski token) yoki joriy filial noma'lum — yo'q
+    expect(needsReloadForToken("accessToken", tokenX, "x", "a1")).toBe(false)
+    expect(needsReloadForToken("accessToken", a2, "x")).toBe(false)
   })
 
   it("boshqa kalit, o'chirilgan yoki buzuq token — yo'q", () => {

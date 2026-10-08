@@ -52,8 +52,10 @@ export const MainLayout = () => {
   // Brauzer tab sarlavhasi — foydalanuvchi mehmonxonasining nomi.
   // SUPER_ADMIN da (yoki nom hali yuklanmagan bo'lsa) "GoHotel" qoladi.
   useEffect(() => {
-    document.title = user?.hotel_name || "GoHotel";
-  }, [user?.hotel_name]);
+    // Bir nechta tabda turli filial ochiq bo'lishi mumkin — sarlavhada filial ham
+    document.title =
+      [user?.hotel_name, user?.branch_name].filter(Boolean).join(" · ") || "GoHotel";
+  }, [user?.hotel_name, user?.branch_name]);
 
   // Ish vaqti nazorati: server shu xodimni HOZIR to'syaptimi. Faqat shu
   // qobiq ochilganda YANGI olingan /auth/me javobiga qaraladi (saqlangan
@@ -86,8 +88,8 @@ export const MainLayout = () => {
   // mehmonxonaga yozib) qolmasligi uchun o'zini qayta yuklaydi.
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      const current = useAuthStore.getState().user?.hotel_id;
-      if (needsReloadForToken(event.key, event.newValue, current)) {
+      const me = useAuthStore.getState().user;
+      if (needsReloadForToken(event.key, event.newValue, me?.hotel_id, me?.branch_id ?? null)) {
         window.location.reload();
       }
     };

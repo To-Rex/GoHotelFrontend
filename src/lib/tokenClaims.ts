@@ -1,10 +1,11 @@
 /* JWT ichidagi ochiq ma'lumot (imzo TEKSHIRILMAYDI — faqat brauzerdagi
    holatni token bilan solishtirish uchun; ruxsat qarorlari serverda).
 
-   Sozlovchi va tizim ma'muri mehmonxonani almashtirganda yangi token
-   localStorage'ga yoziladi — u barcha tablar uchun umumiy. Boshqa tabda
-   eski mehmonxona nomi turgan holda so'rovlar yangi mehmonxonaga ketmasligi
-   uchun o'sha tab tokendagi mehmonxonaga qarab o'zini qayta yuklaydi. */
+   Sozlovchi va tizim ma'muri mehmonxonani, administrator esa filialni
+   almashtirganda yangi token localStorage'ga yoziladi — u barcha tablar
+   uchun umumiy. Boshqa tabda eski mehmonxona/filial ma'lumoti turgan holda
+   so'rovlar yangisiga ketmasligi uchun o'sha tab tokendagi mehmonxona va
+   filialga qarab o'zini qayta yuklaydi. */
 
 export function tokenClaims(token: string | null | undefined): Record<string, unknown> | null {
   if (!token) return null
@@ -31,18 +32,30 @@ export function tokenHotelId(token: string | null | undefined): string | null | 
   return typeof value === "string" && value ? value : null
 }
 
+/** Tokendagi filial (`branch_id` claim). O'qib bo'lmasa — `undefined`. */
+export function tokenBranchId(token: string | null | undefined): string | null | undefined {
+  const claims = tokenClaims(token)
+  if (!claims) return undefined
+  const value = claims.branch_id
+  return typeof value === "string" && value ? value : null
+}
+
 /**
  * Boshqa tab tokenni almashtirdi (localStorage `storage` hodisasi): undagi
- * mehmonxona shu tabdagidan farq qilsa — tab qayta yuklanishi kerak.
+ * mehmonxona yoki filial shu tabdagidan farq qilsa — tab qayta yuklanishi
+ * kerak. Filial faqat tokenda bo'lsa solishtiriladi (eski tokenlarda yo'q).
  * Token o'qilmasa yoki hodisa boshqa kalit bo'yicha bo'lsa — yo'q.
  */
 export function needsReloadForToken(
   key: string | null,
   newValue: string | null,
-  currentHotelId: string | null | undefined
+  currentHotelId: string | null | undefined,
+  currentBranchId?: string | null
 ): boolean {
   if (key !== "accessToken" || !newValue) return false
   const next = tokenHotelId(newValue)
   if (next === undefined) return false
-  return next !== (currentHotelId ?? null)
+  if (next !== (currentHotelId ?? null)) return true
+  const branch = tokenBranchId(newValue)
+  return !!branch && currentBranchId !== undefined && branch !== (currentBranchId ?? null)
 }

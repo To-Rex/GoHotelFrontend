@@ -218,7 +218,8 @@ export const HousekeepingPage = () => {
 
   // --- Yaratish dialogi ---
   const [modalOpen, setModalOpen] = useState(false)
-  const [branchId, setBranchId] = useState("")
+  // Filiallar ajratilgan: vazifa doim JORIY filialda yaratiladi
+  const branchId = user?.branch_id || branches[0]?.id || ""
   const [roomId, setRoomId] = useState("")
   const [taskType, setTaskType] = useState("CLEANING")
   const [priority, setPriority] = useState("MEDIUM")
@@ -226,10 +227,6 @@ export const HousekeepingPage = () => {
   const [scheduledDate, setScheduledDate] = useState("")
   const [notes, setNotes] = useState("")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!branchId && branches.length > 0) setBranchId(branches[0].id)
-  }, [branches, branchId])
 
   const branchRooms = rooms.filter((r) => r.branch_id === branchId)
 
@@ -749,25 +746,6 @@ export const HousekeepingPage = () => {
             <DialogTitle>{tr("Yangi vazifa")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {branches.length > 1 && (
-              <div className="space-y-1">
-                <label className="text-sm font-medium">{tr("Filial *")}</label>
-                <select
-                  className={selectClass}
-                  value={branchId}
-                  onChange={(e) => {
-                    setBranchId(e.target.value)
-                    setRoomId("")
-                  }}
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
             <div className="space-y-1">
               <label className="text-sm font-medium">{tr("Xona *")}</label>
               <select

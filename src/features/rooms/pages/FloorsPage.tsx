@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Layers, Plus, Pencil, Trash2, Loader2, DoorOpen, Building2 } from "lucide-react"
 import {
   useBranches,
@@ -10,6 +10,7 @@ import {
 } from "../api/rooms"
 import type { Floor } from "@/types/api"
 import { usePermissions } from "@/lib/permissions"
+import { useAuthStore } from "@/store/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -28,13 +29,11 @@ export const FloorsPage = () => {
   const canEdit = can("floor.update")
   const canDelete = can("floor.delete")
 
+  const user = useAuthStore((s) => s.user)
   const { data: branches = [], isLoading: branchesLoading } = useBranches()
-  const [branchId, setBranchId] = useState("")
-
-  // Birinchi filialni avtomatik tanlaymiz
-  useEffect(() => {
-    if (!branchId && branches.length > 0) setBranchId(branches[0].id)
-  }, [branches, branchId])
+  // Filiallar to'liq ajratilgan: sahifa doim JORIY filialda (administrator
+  // boshqasini Navbar'dagi filial tanlagichi orqali ochadi)
+  const branchId = user?.branch_id || branches[0]?.id || ""
 
   const selectedBranch = branches.find((b) => b.id === branchId) || null
   const { data: floors = [], isLoading: floorsLoading } = useFloorsByBranch(branchId)
@@ -164,24 +163,6 @@ export const FloorsPage = () => {
         </div>
       ) : (
         <>
-          {/* Filial tanlash (bir nechta bo'lsa) */}
-          {branches.length > 1 && (
-            <div className="max-w-xs space-y-1">
-              <label className="text-sm font-medium">{tr("Filial")}</label>
-              <select
-                className="w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-              >
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.code ? `${b.name} (${b.code})` : b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           {floorsLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               <Skeleton className="h-36 w-full rounded-lg" />

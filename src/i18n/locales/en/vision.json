@@ -15,7 +15,6 @@
   "Filial topilmadi": "No branch found",
   "Suratlar filial bo'yicha ajratiladi, lekin bu mehmonxonada filial yaratilmagan. Avval filial qo'shing.": "Photos are separated by branch, but this hotel has no branches yet. Add a branch first.",
   "Kameradan yuz tanlash": "Pick a face from the camera",
-  "— tanlang —": "— select —",
   "Har bir karta — bitta odam. Bir necha marta o'tgan bo'lsa suratlari birlashtirilgan va hammasi birga biriktiriladi.": "Each card is one person. If they passed by several times, their photos are merged and linked all together.",
   "Suratlar filial bo'yicha ajratiladi — boshqa filialning kameralaridan kelgan yuzlar bu yerda ko'rinmaydi.": "Photos are separated by branch — faces from another branch's cameras aren't shown here.",
   "Suratlarni olishda xatolik. Kamera agenti ishlayaptimi va kameralar filialga biriktirilganmi — tekshiring.": "Failed to load photos. Check that the camera agent is running and the cameras are assigned to a branch.",

@@ -10,8 +10,8 @@
   "Hisobingiz haqidagi ma'lumotlar va sizga berilgan ruxsatlar": "Данные вашей учётной записи и выданные вам права доступа",
   "Mening ruxsatlarim": "Мои права доступа",
   "Administrator — to'liq ruxsat": "Администратор — полный доступ",
-  "Tizimning barcha bo'limlari va amallariga cheklovsiz kirish huquqiga egasiz.": "У вас неограниченный доступ ко всем разделам и действиям системы.",
   "Sizga hali ruxsatlar biriktirilmagan — administratorga murojaat qiling.": "Вам ещё не назначены права доступа — обратитесь к администратору.",
   "Sozlovchi — to'liq ruxsat va sozlamalar": "Настройщик — полный доступ и настройки",
-  "Tanlangan mehmonxonaning barcha bo'limlari va sozlamalari sizga ochiq. Boshqa mehmonxonaga yuqoridagi mehmonxona tugmasi orqali o'tasiz.": "Вам открыты все разделы и настройки выбранной гостиницы. В другую гостиницу можно перейти кнопкой гостиницы вверху."
+  "Tanlangan mehmonxonaning barcha bo'limlari va sozlamalari sizga ochiq. Boshqa mehmonxonaga yuqoridagi mehmonxona tugmasi orqali o'tasiz.": "Вам открыты все разделы и настройки выбранной гостиницы. В другую гостиницу можно перейти кнопкой гостиницы вверху.",
+  "Mehmonxonaning barcha bo'limlari va amallari sizga ochiq. Filiallar alohida: boshqa filialga yuqoridagi filial tugmasi orqali o'tasiz.": "Вам доступны все разделы и действия гостиницы. Филиалы раздельны: в другой филиал вы переходите кнопкой филиала вверху."
 }

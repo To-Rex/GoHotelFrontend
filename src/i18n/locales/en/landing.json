@@ -67,7 +67,6 @@
   "Internet uzilib qolsa nima bo'ladi?": "What happens if the internet goes down?",
   "Ma'lumotlar bulutdagi serverda xavfsiz saqlanadi — qurilmangiz almashsa ham hech narsa yo'qolmaydi. Aloqa tiklanishi bilan ish davom etadi, o'rnatilgan PWA esa qayta ochilishda so'nggi holatni ko'rsatadi.": "Your data is stored safely on a cloud server — nothing is lost even if you change devices. Work continues as soon as the connection is back, and the installed PWA shows the latest state when you reopen it.",
   "Bir nechta filialim bor — hammasini boshqara olamanmi?": "I have several branches — can I manage them all?",
-  "Ha, tizim ko'p filialli ishlashga mo'ljallangan: xonalar, xodimlar va bronlar filial kesimida yuritiladi, hisobotlar esa umumiy ko'rinishda jamlanadi.": "Yes, the system is built for multi-branch operation: rooms, employees and bookings are kept per branch, while reports are combined into one overall view.",
   "Xona turlari va qavatlar": "Room types and floors",
   "Qulayliklar katalogi": "Amenities catalog",
   "Qo'shimcha xizmatlar": "Extra services",
@@ -185,5 +184,6 @@
   " son.": " sec",
   "nav::Boshlash": "Get started",
   "© {{year}} GoHotel — mehmonxona boshqaruv tizimi": "© {{year}} GoHotel — hotel management system",
-  "Hujjat suratlari himoyalangan omborda": "Document images kept in protected storage"
+  "Hujjat suratlari himoyalangan omborda": "Document images kept in protected storage",
+  "Ha, tizim ko'p filialli ishlashga mo'ljallangan: har filialning xonalari, xodimlari, bronlari, kassasi, hisobotlari va sozlamalari alohida yuritiladi. Administrator filiallar orasida bir bosishda o'tadi.": "Yes, the system is built for multiple branches: each branch keeps its own rooms, staff, bookings, cash desk, reports and settings. The administrator switches between branches in one click."
 }

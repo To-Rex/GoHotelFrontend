@@ -5,6 +5,7 @@ import {
   SETTINGS_ROUTES,
   isAdminType,
   canManageSettingsType,
+  canSwitchBranchType,
   canSwitchContextType,
   normalizeRoute,
 } from "./permissions"
@@ -128,5 +129,13 @@ describe("sozlovchi (CONFIGURATOR)", () => {
     expect(canSwitchContextType("SUPER_ADMIN")).toBe(true)
     expect(canSwitchContextType("ADMIN")).toBe(false)
     expect(canSwitchContextType("EMPLOYEE")).toBe(false)
+  })
+
+  it("filialni administrator ham tanlaydi, xodim — yo'q", () => {
+    expect(canSwitchBranchType("ADMIN")).toBe(true)
+    expect(canSwitchBranchType("CONFIGURATOR")).toBe(true)
+    expect(canSwitchBranchType("SUPER_ADMIN")).toBe(true)
+    expect(canSwitchBranchType("EMPLOYEE")).toBe(false)
+    expect(canSwitchBranchType(undefined)).toBe(false)
   })
 })

@@ -127,6 +127,12 @@ export const canManageSettingsType = (type?: string | null): boolean =>
 export const canSwitchContextType = (type?: string | null): boolean =>
   type === "CONFIGURATOR" || type === "SUPER_ADMIN";
 
+/** Filialni tanlay oladiganlar: yuqoridagilar va administrator (faqat o'z
+ *  mehmonxonasi filiallari orasida — filiallar to'liq ajratilgan, boshqa
+ *  filial ma'lumotini administrator faqat shu tanlov orqali ko'radi). */
+export const canSwitchBranchType = (type?: string | null): boolean =>
+  type === "ADMIN" || canSwitchContextType(type);
+
 export function usePermissions() {
   const user = useAuthStore((s) => s.user);
 

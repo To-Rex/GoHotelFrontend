@@ -1166,23 +1166,13 @@ export const RoomsPage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">{tr("Filial *")}</label>
-                <select
-                  className={selectClass}
-                  value={branchId}
-                  onChange={(e) => {
-                    setBranchId(e.target.value)
-                    setFloorId("")
-                  }}
-                  disabled={!!editing}
-                >
-                  <option value="">{tr("Filialni tanlang")}</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="text-xs font-medium text-gray-600">{tr("Filial")}</label>
+                {/* Filiallar ajratilgan: xona doim JORIY filialda yaratiladi */}
+                <Input
+                  value={branches.find((b) => b.id === branchId)?.name || user?.branch_name || ""}
+                  disabled
+                  readOnly
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

@@ -341,7 +341,7 @@ const FAQ = [
   },
   {
     q: tr("Bir nechta filialim bor — hammasini boshqara olamanmi?"),
-    a: tr("Ha, tizim ko'p filialli ishlashga mo'ljallangan: xonalar, xodimlar va bronlar filial kesimida yuritiladi, hisobotlar esa umumiy ko'rinishda jamlanadi."),
+    a: tr("Ha, tizim ko'p filialli ishlashga mo'ljallangan: har filialning xonalari, xodimlari, bronlari, kassasi, hisobotlari va sozlamalari alohida yuritiladi. Administrator filiallar orasida bir bosishda o'tadi."),
   },
 ]
 
