@@ -428,6 +428,8 @@ export const useVisionStats = (enabled = true) =>
       const { data } = await api.get<{
         profiles: number;
         guests_with_face: number;
+        /** Shu mehmonxonada biriktirilgan shablonlar (indeks butun tizim uchun bitta) */
+        enrolled_here?: number;
         active_devices: number;
         model: string;
         match_threshold: number;

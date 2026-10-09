@@ -29,8 +29,10 @@ import { tr, trc } from "@/i18n"
  *
  * Agent xodim hisobi bilan ishlay olmaydi: u oylab uzluksiz turadi, xodim
  * tokeni esa ikki soatda tugaydi. Shuning uchun har kompyuterga alohida,
- * muddatsiz qurilma tokeni beriladi va u mehmonxonaga bog'lanadi — qidiruv
- * doirasi ham shu yerdan keladi.
+ * muddatsiz qurilma tokeni beriladi va u mehmonxonaga bog'lanadi — kamera
+ * va suratlar qaysi mehmonxonaniki ekani shu yerdan keladi. Yuzni tanish
+ * esa butun tizim mehmonlari ichidan: boshqa mehmonxonada biriktirilgan
+ * mehmon ham taniladi.
  *
  * Token bazada OCHIQ saqlanmaydi, faqat SHA-256 xeshi. Ya'ni u shu yerda
  * bir marta ko'rsatiladi va boshqa hech qayerdan o'qib bo'lmaydi.
