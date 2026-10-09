@@ -30,7 +30,7 @@ import {
   hasCamera,
   getFaceAvailability,
   faceStepDecision,
-  FACE_REQUIRED_MESSAGE,
+  skipReason,
   verifyFaceLogin,
   loginWithoutCamera,
   faceErrorMessage,
@@ -212,27 +212,19 @@ export const LoginPage = () => {
       const { data } = await api.post("/auth/login", values);
 
       if (data?.face_required && data?.face_token) {
-        /* Yuz biriktirgan xodim — hisobga faqat o'sha yuz bilan kiriladi.
-           Parol bilan o'tkazib yuborish faqat server yuzni tekshira
-           olmaganda (dvigatel yo'q); kamerasiz qurilmada esa kirish
-           to'xtatiladi (faceStepDecision). */
+        /* Yuz biriktirgan xodim. Kamerali qurilmada yuz bosqichi majburiy
+           (faqat o'sha yuz ochadi, o'tkazib yuborish yo'q); kamerasiz
+           kompyuterda parol yetarli (faceStepDecision). */
         const [engineAvailable, cameraPresent] = await Promise.all([
           getFaceAvailability(),
           hasCamera(),
         ]);
-        const decision = faceStepDecision(engineAvailable, cameraPresent);
-        if (decision === 'verify') {
+        if (faceStepDecision(engineAvailable, cameraPresent) === 'verify') {
           setFaceToken(data.face_token);
           setFaceOpen(true);
           return;
         }
-        if (decision === 'blocked') {
-          setError(FACE_REQUIRED_MESSAGE());
-          return;
-        }
-        await finishLogin(
-          await loginWithoutCamera(data.face_token, /* i18n:skip — serverga yoziladigan sabab */ "serverda yuz tekshiruvi yo'q")
-        );
+        await finishLogin(await loginWithoutCamera(data.face_token, skipReason(engineAvailable)));
         return;
       }
 
