@@ -12,6 +12,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useBranches } from "@/features/rooms/api/rooms"
+import { useAuthStore } from "@/store/auth"
+import { defaultDeviceBranchId } from "../lib/cameraBranch"
 import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import {
@@ -109,12 +111,21 @@ export function VisionDevicesCard() {
   const canManage = can("employee.manage")
   const { data: devices = [], isLoading, isError } = useVisionDevices()
   const { data: branches = [] } = useBranches()
+  const currentBranchId = useAuthStore((s) => s.user?.branch_id) || null
   const create = useCreateVisionDevice()
   const revoke = useRevokeVisionDevice()
 
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState("")
   const [branchId, setBranchId] = useState("")
+
+  /* Sukutda — sozlovchi turgan filial: shu qurilmaning kameralari birinchi
+     suratdan boshlab to'g'ri filialga tushadi, qo'lda biriktirish shart
+     bo'lmaydi. Boshqa filial yoki "keyin belgilanadi" tanlovi qoladi. */
+  const openForm = () => {
+    setBranchId(defaultDeviceBranchId(currentBranchId, branches as Array<{ id: string }>))
+    setAdding(true)
+  }
   const [fresh, setFresh] = useState<VisionDeviceCreated | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -162,7 +173,7 @@ export function VisionDevicesCard() {
           {tr("Har bir kamera kompyuteriga bitta token. Token muddatsiz va shu mehmonxonaga bog'langan.")}
         </p>
         {canManage && !adding && (
-          <Button type="button" size="sm" onClick={() => setAdding(true)}>
+          <Button type="button" size="sm" onClick={openForm}>
             <Plus className="mr-1.5 h-3.5 w-3.5" />
             {tr("Yangi qurilma")}
           </Button>
@@ -186,7 +197,7 @@ export function VisionDevicesCard() {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">
-                {tr("Filial (ixtiyoriy)")}
+                {tr("Filial — qurilma kameralari shu filialga tushadi")}
               </label>
               <select
                 className="h-10 w-full rounded-lg border border-gray-300 bg-white px-2 text-sm"
@@ -196,7 +207,7 @@ export function VisionDevicesCard() {
                 <option value="">{tr("— keyin kamera bo'yicha belgilanadi —")}</option>
                 {(branches as Array<{ id: string; name: string }>).map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
+                    {b.id === currentBranchId ? tr("{{name}} (siz shu yerdasiz)", { name: b.name }) : b.name}
                   </option>
                 ))}
               </select>
@@ -204,7 +215,8 @@ export function VisionDevicesCard() {
           </div>
           {/* Kameraning filiali kamera darajasida ham belgilanadi, shuning
               uchun bu yerda majburiy emas — bitta kompyuter turli
-              filiallarning kameralarini boqishi mumkin. */}
+              filiallarning kameralarini boqishi mumkin. Sukut — sozlovchi
+              turgan filial (defaultDeviceBranchId). */}
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" onClick={submit} disabled={create.isPending}>
               {create.isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
