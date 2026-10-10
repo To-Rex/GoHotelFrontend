@@ -330,6 +330,15 @@ export interface RoomReservation {
     added_at?: string | null;
     left_at?: string | null;
     returned_at?: string | null;
+    arrived_late?: boolean | null;
+  }> | null;
+  /** Kechikib keladigan hamrohlar (joy band, hali kelmagan) */
+  expected_companions?: Array<{
+    id: string;
+    name?: string | null;
+    phone?: string | null;
+    note?: string | null;
+    created_at?: string | null;
   }> | null;
   created_at: string;
 

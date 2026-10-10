@@ -1,4 +1,4 @@
-import type { ReservationCompanion } from "@/types/api"
+import type { ExpectedCompanion, ReservationCompanion } from "@/types/api"
 import { tr, trc } from "@/i18n"
 
 /* Turish davomida hamrohlar: ketdi / qaytdi / o'rniga yangisi keldi.
@@ -19,8 +19,15 @@ export interface CompanionReservationLike {
   adults: number
   guest_id?: string
   companions?: ReservationCompanion[] | null
+  /** Kechikib keladigan hamrohlar — joy egallaydi */
+  expected_companions?: ExpectedCompanion[] | null
   checkout_requested_at?: string | null
 }
+
+/** Kechikib keladigan hamrohlar (bo'sh yozuvlarsiz) */
+export const expectedCompanions = (
+  res: Pick<CompanionReservationLike, "expected_companions">
+): ExpectedCompanion[] => (res.expected_companions || []).filter((e) => e && e.id)
 
 /** Hamroh hozir xonadami — "ketdi" belgisi yo'q (eski yozuvlar ham) */
 export const isPresent = (c: CompanionLike): boolean => !c?.left_at
@@ -37,10 +44,18 @@ export const guestCapacity = (adults: number): number =>
 export const insideCount = (res: Pick<CompanionReservationLike, "companions">): number =>
   1 + presentCompanions(res.companions).length
 
-/** Bo'sh joylar: mehmonlar soni − ichkaridagilar (manfiy bo'lmaydi) */
+/** Bo'sh joylar: mehmonlar soni − ichkaridagilar − kechikib keladiganlar
+    (manfiy bo'lmaydi). Kutilayotgan hamroh joyini boshqasi egallamasin. */
 export const freeSeats = (
-  res: Pick<CompanionReservationLike, "adults" | "companions">
-): number => Math.max(guestCapacity(res.adults) - insideCount(res), 0)
+  res: Pick<CompanionReservationLike, "adults" | "companions" | "expected_companions">
+): number =>
+  Math.max(guestCapacity(res.adults) - insideCount(res) - expectedCompanions(res).length, 0)
+
+/** Hamroh kechikib keladi deb belgilash mumkinmi — bo'sh joy bo'lsa */
+export const canExpectCompanion = (res: CompanionReservationLike): boolean =>
+  (res.status === "CONFIRMED" || res.status === "CHECKED_IN") &&
+  !res.checkout_requested_at &&
+  freeSeats(res) > 0
 
 export type CompanionAddCheck = { ok: true } | { ok: false; reason: string }
 
@@ -56,7 +71,9 @@ export function companionAddCheck(res: CompanionReservationLike): CompanionAddCh
       reason: tr("Chiqish jarayoni boshlangan — yangi hamroh qo'shilmaydi"),
     }
   }
-  if (freeSeats(res) === 0) {
+  /* Joy faqat kechikib keladiganlar hisobiga band — kelgan odam o'sha kutilgan
+     hamroh deb olinadi (server ham shunday qiladi) */
+  if (freeSeats(res) === 0 && expectedCompanions(res).length === 0) {
     return {
       ok: false,
       reason: tr("Xonada joy yo'q: mehmonlar soni {{adults}}, hammasi ichkarida. Avval ketgan hamrohni belgilang yoki bronni tahrirlab mehmonlar sonini oshiring", { adults: guestCapacity(res.adults) }),
@@ -123,7 +140,9 @@ export function companionStatusLabel(c: ReservationCompanion, now: Date = new Da
       : state === "returned"
         ? trc("status", "Qaytdi")
         : state === "added"
-          ? tr("Qo'shildi")
+          ? c.arrived_late
+            ? tr("Kechikib keldi")
+            : tr("Qo'shildi")
           : tr("Ichkarida")
   return at ? `${word} · ${at}` : word
 }

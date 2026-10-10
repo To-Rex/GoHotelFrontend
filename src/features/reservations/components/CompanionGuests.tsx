@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { ChevronDown, Search, ScanLine, UserPlus, Video, X, CheckCircle2, Loader2 } from "lucide-react"
+import { ChevronDown, Clock, Search, ScanLine, UserPlus, Video, X, CheckCircle2, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
@@ -82,6 +82,9 @@ interface Props {
   hideHeader?: boolean
   /** Bo'sh joy matni; standart "N-mehmon tanlanmagan" */
   slotLabel?: (index: number) => string
+  /** Berilsa bo'sh joyda "Kechikib keladi" tugmasi chiqadi — hamroh keyin
+      keladi, kelganda bron oynasidan biriktiriladi */
+  onMarkLate?: () => void
 }
 
 const guestName = (g: any) =>
@@ -101,6 +104,7 @@ export const CompanionGuests = ({
   onError,
   hideHeader = false,
   slotLabel,
+  onMarkLate,
 }: Props) => {
   const { can } = usePermissions()
   const canCreateGuest = can("guest.create")
@@ -506,6 +510,19 @@ export const CompanionGuests = ({
                   <ScanLine className="h-3.5 w-3.5" />
                   {tr("Skaner")}
                 </button>
+                {/* Hamroh hozir yo'q — keyin keladi: joy band qilinadi,
+                    kelganda bron oynasidan biriktiriladi */}
+                {onMarkLate && (
+                  <button
+                    type="button"
+                    onClick={onMarkLate}
+                    title={tr("Hamroh keyinroq keladi — joyi band qilinadi, kelganda bron oynasida biriktiriladi")}
+                    className="flex flex-shrink-0 items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                    {tr("Kechikib keladi")}
+                  </button>
+                )}
               </div>
             ) : newGuest ? (
               /* Yangi hamroh — eng zarur maydonlar */

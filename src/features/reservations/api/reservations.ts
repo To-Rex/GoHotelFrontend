@@ -405,6 +405,11 @@ interface CompanionTarget {
   hotelId?: string;
 }
 
+interface CompanionAddTarget extends CompanionTarget {
+  /** Kechikib kelishi kutilgan hamroh keldi — o'sha yozuv o'rniga */
+  expectedId?: string;
+}
+
 const companionParams = (hotelId?: string) => ({
   params: hotelId ? { hotel_id: hotelId } : {},
 });
@@ -414,10 +419,55 @@ export const useAddCompanion = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, guestId, hotelId }: CompanionTarget) => {
+    mutationFn: async ({ id, guestId, hotelId, expectedId }: CompanionAddTarget) => {
       const { data } = await api.post<Reservation>(
         `/reservations/${id}/companions`,
-        { guest_id: guestId },
+        expectedId ? { guest_id: guestId, expected_id: expectedId } : { guest_id: guestId },
+        companionParams(hotelId)
+      );
+      return data;
+    },
+    onSuccess: () => invalidateCompanionViews(queryClient),
+  });
+};
+
+/** "Hamroh kechikib keladi" — joy band qilinadi (CONFIRMED / CHECKED_IN) */
+export const useAddExpectedCompanion = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      hotelId,
+      name,
+      phone,
+      note,
+    }: {
+      id: string;
+      hotelId?: string;
+      name?: string | null;
+      phone?: string | null;
+      note?: string | null;
+    }) => {
+      const { data } = await api.post<Reservation>(
+        `/reservations/${id}/expected-companions`,
+        { name: name || null, phone: phone || null, note: note || null },
+        companionParams(hotelId)
+      );
+      return data;
+    },
+    onSuccess: () => invalidateCompanionViews(queryClient),
+  });
+};
+
+/** Kutilgan hamroh kelmadi (yoki adashib belgilangan) — joy bo'shaydi */
+export const useCancelExpectedCompanion = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, expectedId, hotelId }: { id: string; expectedId: string; hotelId?: string }) => {
+      const { data } = await api.delete<Reservation>(
+        `/reservations/${id}/expected-companions/${expectedId}`,
         companionParams(hotelId)
       );
       return data;

@@ -560,6 +560,15 @@ const ReservationItem = ({
             .join(", ")}
         </p>
       )}
+      {/* Kechikib keladigan hamrohlar — joyi band, hali kelmagan */}
+      {res.expected_companions && res.expected_companions.length > 0 && (
+        <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-amber-700">
+          <Clock className="h-3.5 w-3.5 text-amber-500" />
+          {tr("Kechikib keladi: {{names}}", {
+            names: res.expected_companions.map((e) => e.name || tr("hamroh")).join(", "),
+          })}
+        </p>
+      )}
 
       {/* Muddat va summa (chegirma / to'langan qismi bilan) */}
       <div className="mt-2.5 flex items-end justify-between gap-2">

@@ -163,5 +163,7 @@
   "Masalan: 500000": "E.g. 500000",
   "Xona almashtirish chegirmasi": "Room change discount",
   "{{amount}} so'm": "{{amount}} UZS",
-  "· chegirma {{amount}} so'm": "· discount {{amount}} UZS"
+  "· chegirma {{amount}} so'm": "· discount {{amount}} UZS",
+  "Kechikib keladi: {{names}}": "Arriving later: {{names}}",
+  "hamroh": "companion"
 }

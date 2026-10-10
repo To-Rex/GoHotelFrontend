@@ -204,5 +204,7 @@
   "Masalan: 500000": "Например: 500000",
   "Xona almashtirish chegirmasi": "Скидка при смене номера",
   "{{amount}} so'm": "{{amount}} сум",
-  "· chegirma {{amount}} so'm": "· скидка {{amount}} сум"
+  "· chegirma {{amount}} so'm": "· скидка {{amount}} сум",
+  "Kechikib keladi: {{names}}": "Приедут позже: {{names}}",
+  "hamroh": "сопровождающий"
 }

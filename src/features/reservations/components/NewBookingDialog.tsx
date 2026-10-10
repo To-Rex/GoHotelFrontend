@@ -19,11 +19,13 @@ import {
   Video,
   Wallet,
   Ban,
+  Clock,
   type LucideIcon,
 } from "lucide-react"
 
 import { useCreateReservation, useCheckInReservation, useReservations } from "../api/reservations"
 import { ReceiptAutoPrintToggle, useBookingReceiptPrinter } from "../lib/receiptPrinter"
+import { lateCompanionPayload, newLateCompanion, type LateCompanion } from "../lib/lateCompanions"
 import { useRooms, useRoomTypes } from "@/features/rooms/api/rooms"
 import {
   blockingTaskMap,
@@ -316,6 +318,12 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [localError, setLocalError] = useState<string | null>(null)
   // Xonadagi hamrohlar — mehmonlar soni 1 dan ko'p bo'lganda
   const [companions, setCompanions] = useState<Companion[]>([])
+  /* Kechikib keladigan hamrohlar: hozir yo'q, keyin keladi. Joy band qilinadi
+     va majburiy rejimda "hisobga olingan" sanaladi; kelganda bron oynasidan
+     haqiqiy hamroh sifatida biriktiriladi. Ism/telefon ixtiyoriy. */
+  const [lateCompanions, setLateCompanions] = useState<LateCompanion[]>([])
+  const updateLate = (key: string, patch: Partial<LateCompanion>) =>
+    setLateCompanions((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)))
   /* Oyna ochiq turganda telefondan kelgan skan — hamrohga yo'naltiriladi */
   const [companionScan, setCompanionScan] = useState<CompanionScan | null>(null)
   const { data: bookingDefaults } = useBookingDefaults()
@@ -671,6 +679,7 @@ function SectionMark({
     setPendingScan(null)
     setLocalError(null)
     setCompanions([])
+    setLateCompanions([])
     setCompanionScan(null)
     clearGuestPhoto()
     /* Telefonda skanerlangan hujjat: mehmon bazada topilmagan bo'lsa
@@ -794,7 +803,7 @@ function SectionMark({
       }
       // Asosiy mehmonning o'zi qayta skanerlansa hamroh qilinmaydi
       if (scan.guest_id && scan.guest_id === selectedGuestId) return true
-      const needed = companions.length + 2
+      const needed = companions.length + lateCompanions.length + 2
       if ((Number(getValues("adults")) || 1) < needed) {
         setValue("adults", needed, { shouldDirty: true })
       }
@@ -802,14 +811,22 @@ function SectionMark({
       return true
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedGuestId, showNewGuest, companions.length])
+  }, [open, selectedGuestId, showNewGuest, companions.length, lateCompanions.length])
 
   const adultsCount = Math.max(Number(watch("adults")) || 1, 1)
-  const trimmedCompanions = useMemo(
-    () => companions.slice(0, companionSlots(adultsCount)),
-    [companions, adultsCount]
+  // Kechikib keladiganlar ham joy egallaydi (mehmonlar soni kamaysa ular ham qisqaradi)
+  const trimmedLate = useMemo(
+    () => lateCompanions.slice(0, companionSlots(adultsCount)),
+    [lateCompanions, adultsCount]
   )
-  const companionsMissing = missingCompanions(adultsCount, trimmedCompanions.length)
+  const trimmedCompanions = useMemo(
+    () => companions.slice(0, Math.max(companionSlots(adultsCount) - trimmedLate.length, 0)),
+    [companions, adultsCount, trimmedLate.length]
+  )
+  const companionsMissing = missingCompanions(
+    adultsCount,
+    trimmedCompanions.length + trimmedLate.length
+  )
 
   // Yangi mehmon formasida passport/telefon terilishi bilan mavjud mehmonni
   // jonli aniqlash — dublikat yaratmaslik va ishni tezlashtirish uchun
@@ -1160,6 +1177,8 @@ function SectionMark({
         children: values.children || 0,
         // Hamrohlar — har biri bazadagi haqiqiy mehmon
         companion_guest_ids: trimmedCompanions.map((c) => c.id),
+        // Kechikib keladigan hamrohlar — joy band, kelganda biriktiriladi
+        expected_companions: lateCompanionPayload(trimmedLate),
         notes: values.notes,
         payment_amount: paymentsTotal,
         payment_method: (paymentRows[0]?.payment_method as any) || null,
@@ -2094,7 +2113,7 @@ function SectionMark({
 
         {/* Xonadagi qolgan mehmonlar ham ro'yxatga olinadi */}
         <CompanionGuests
-          adults={adultsCount}
+          adults={adultsCount - trimmedLate.length}
           mainGuestId={selectedGuestId || undefined}
           guests={guests}
           value={trimmedCompanions}
@@ -2105,7 +2124,64 @@ function SectionMark({
           incomingScan={companionScan}
           onIncomingScanHandled={() => setCompanionScan(null)}
           onError={showError}
+          onMarkLate={() => setLateCompanions((prev) => [...prev, newLateCompanion()])}
         />
+        {/* Kechikib keladigan hamrohlar — joy band; kelganda bron oynasidagi
+            "Xonadagi mehmonlar" bo'limida "Keldi" bilan biriktiriladi */}
+        {trimmedLate.length > 0 && (
+          <div className="space-y-2">
+            <p className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+              <Clock className="h-4 w-4 text-amber-500" />
+              {tr("Kechikib keladigan hamrohlar")}
+              <span className="text-xs font-normal text-gray-400">({trimmedLate.length})</span>
+            </p>
+            {trimmedLate.map((late) => (
+              <div
+                key={late.key}
+                className="rounded-lg border border-amber-200 bg-amber-50/50 px-3 py-2"
+              >
+                <div className="flex items-start gap-2">
+                  <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-3">
+                    <Input
+                      value={late.name}
+                      onChange={(e) => updateLate(late.key, { name: e.target.value })}
+                      placeholder={tr("Ismi (ixtiyoriy)")}
+                      className="h-9 bg-white"
+                      maxLength={120}
+                    />
+                    <Input
+                      value={late.phone}
+                      onChange={(e) => updateLate(late.key, { phone: e.target.value })}
+                      placeholder={tr("Telefon (ixtiyoriy)")}
+                      className="h-9 bg-white"
+                      maxLength={32}
+                    />
+                    <Input
+                      value={late.note}
+                      onChange={(e) => updateLate(late.key, { note: e.target.value })}
+                      placeholder={tr("Izoh: masalan, kechqurun keladi")}
+                      className="h-9 bg-white"
+                      maxLength={200}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLateCompanions((prev) => prev.filter((l) => l.key !== late.key))
+                    }
+                    title={tr("Kechikib kelishini bekor qilish — joy yana tanlash uchun ochiladi")}
+                    className="mt-1 flex-shrink-0 rounded-md p-1 text-amber-600 transition-colors hover:bg-amber-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="mt-1.5 text-[11px] leading-snug text-amber-700">
+                  {tr("Joyi band qilinadi. Hamroh kelganda bron oynasidagi \"Xonadagi mehmonlar\" bo'limida \"Keldi\" tugmasi bilan biriktiriladi.")}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
         {companionsMissing > 0 && guestsRequired && (
           <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
             {tr("Xonadagi har bir mehmon ro'yxatga olinishi kerak — yana {{companionsMissing}} ta mehmon kiritilishi zarur.", { companionsMissing })}

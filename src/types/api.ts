@@ -111,6 +111,8 @@ export interface Reservation {
   /** Hamrohlar — bron yaratilganda va turish davomida qo'shilganlar.
       Yozuv o'chirilmaydi: ketgani `left_at` bilan belgilanadi. */
   companions?: ReservationCompanion[] | null;
+  /** Kechikib keladigan hamrohlar (joy band, hali kelmagan) */
+  expected_companions?: ExpectedCompanion[] | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -129,6 +131,21 @@ export interface ReservationCompanion {
   left_by?: string | null;
   returned_at?: string | null;
   returned_by?: string | null;
+  /** Kechikib kelishi kutilgan hamroh edi (keldi va biriktirildi) */
+  arrived_late?: boolean | null;
+  expected_since?: string | null;
+  expected_name?: string | null;
+}
+
+/** Kechikib keladigan hamroh — hali mehmon emas, joy band qilingan.
+    Kelganda bron oynasida "Keldi" bilan haqiqiy hamrohga aylanadi. */
+export interface ExpectedCompanion {
+  id: string;
+  name?: string | null;
+  phone?: string | null;
+  note?: string | null;
+  created_at?: string | null;
+  created_by?: string | null;
 }
 
 export interface RoomMove {
