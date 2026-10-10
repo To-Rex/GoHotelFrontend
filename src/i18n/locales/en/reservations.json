@@ -323,5 +323,11 @@
   "Sababni yozing (kamida 3 ta belgi)": "Enter a reason (at least 3 characters)",
   "Kim, qachon va nima uchun chiqargani saqlanadi, rahbariyatga xabar boradi. Qarz ro'yxatda qolaveradi.": "Who checked the guest out, when and why is saved and management is notified. The debt stays on the list.",
   "Qarz bilan chiqarish": "Check out with debt",
-  "Bu bron kalendarda topilmadi. Qarzni Moliya sahifasidagi qarzdorlar ro'yxatida ko'ring.": "This booking isn't on the calendar. See the debt in the debtors list on the Finance page."
+  "Bu bron kalendarda topilmadi. Qarzni Moliya sahifasidagi qarzdorlar ro'yxatida ko'ring.": "This booking isn't on the calendar. See the debt in the debtors list on the Finance page.",
+  "Bron {{number}} cheki": "Booking {{number}} receipt",
+  "Sozlama shu kompyuter uchun saqlanadi. Printer manzili Do'kon sahifasidagi printer sozlamasida.": "The setting is saved for this computer. The printer address is in the printer settings on the Shop page.",
+  "To'lov qilinsa chek chiqarish": "Print a receipt when paid",
+  "Chek chiqarilmoqda...": "Printing receipt...",
+  "Printer yo'q kompyuterda to'lovdan keyin chek chiqarishni o'chiradi (bron oynasida qayta yoqish mumkin)": "Turns off printing a receipt after payment on a computer without a printer (can be turned back on in the booking window)",
+  "Bu kompyuterda chek chiqarmaslik": "Don't print receipts on this computer"
 }

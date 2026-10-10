@@ -361,6 +361,11 @@ export interface ReservationReceiptData {
   penalty_amount?: number | null
   /** Bronga yozilgan xizmatlar/qo'shimchalar */
   services?: Array<{ name: string; quantity?: number | null; amount: number }>
+  /** Shu chekdagi to'lov(lar) — usul nomi bilan (bron yaratilganda hammasi,
+   *  qo'shimcha to'lovda faqat shu to'lov) */
+  payments?: Array<{ label: string; amount: number }>
+  /** true — `payments` faqat SHU safargi to'lov ("Shu to'lov" qatori) */
+  payments_now?: boolean
   created_at?: string | null
   created_by_name?: string | null
   status?: string | null
@@ -377,7 +382,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const money = (n: number) => Number(n || 0).toLocaleString()
 
-const buildReservationElements = (
+export const buildReservationElements = (
   data: ReservationReceiptData,
   hotelName: string,
   design: ReceiptSettings
@@ -466,6 +471,27 @@ const buildReservationElements = (
     size: 2,
   })
   elements.push({ type: "row", left: tr("To'langan:"), right: tr("{{paid_amount}} So'm", { paid_amount: money(data.paid_amount) }) })
+
+  // Qaysi usul bilan to'langani. Qo'shimcha to'lovda — shu safargi summa
+  // alohida qatorda (mehmon nima uchun chek olayotganini ko'radi)
+  const payments = (data.payments || []).filter((p) => Number(p.amount) > 0)
+  if (payments.length > 0) {
+    if (data.payments_now) {
+      elements.push({
+        type: "row",
+        left: tr("Shu to'lov:"),
+        right: tr("{{amount}} So'm", { amount: money(payments.reduce((s, p) => s + Number(p.amount), 0)) }),
+        bold: true,
+      })
+    }
+    if (payments.length === 1) {
+      elements.push({ type: "row", left: tr("To'lov turi:"), right: payments[0].label })
+    } else {
+      for (const p of payments) {
+        elements.push({ type: "row", left: `  ${p.label}:`, right: money(p.amount) })
+      }
+    }
+  }
 
   // Qoldiq har doim ko'rsatiladi: mehmon nima to'lagani va nima qolganini
   // chekdan ko'rishi kerak. Ortiqcha to'lov ham yashirilmaydi.

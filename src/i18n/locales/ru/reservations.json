@@ -338,5 +338,11 @@
   "Sababni yozing (kamida 3 ta belgi)": "Укажите причину (минимум 3 символа)",
   "Kim, qachon va nima uchun chiqargani saqlanadi, rahbariyatga xabar boradi. Qarz ro'yxatda qolaveradi.": "Сохранится, кто, когда и почему выписал; руководство получит уведомление. Долг останется в списке.",
   "Qarz bilan chiqarish": "Выписать с долгом",
-  "Bu bron kalendarda topilmadi. Qarzni Moliya sahifasidagi qarzdorlar ro'yxatida ko'ring.": "Эта бронь не найдена в календаре. Посмотрите долг в списке должников на странице «Финансы»."
+  "Bu bron kalendarda topilmadi. Qarzni Moliya sahifasidagi qarzdorlar ro'yxatida ko'ring.": "Эта бронь не найдена в календаре. Посмотрите долг в списке должников на странице «Финансы».",
+  "Bron {{number}} cheki": "Чек брони {{number}}",
+  "Sozlama shu kompyuter uchun saqlanadi. Printer manzili Do'kon sahifasidagi printer sozlamasida.": "Настройка сохраняется для этого компьютера. Адрес принтера — в настройках принтера на странице «Магазин».",
+  "To'lov qilinsa chek chiqarish": "Печатать чек при оплате",
+  "Chek chiqarilmoqda...": "Печать чека...",
+  "Printer yo'q kompyuterda to'lovdan keyin chek chiqarishni o'chiradi (bron oynasida qayta yoqish mumkin)": "Отключает печать чека после оплаты на компьютере без принтера (можно снова включить в окне брони)",
+  "Bu kompyuterda chek chiqarmaslik": "Не печатать чеки на этом компьютере"
 }

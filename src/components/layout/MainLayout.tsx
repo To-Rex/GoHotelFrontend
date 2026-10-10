@@ -3,6 +3,7 @@ import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { FaceRequiredGate } from "@/features/auth/components/FaceRequiredGate";
+import { ReceiptPrintNotice } from "@/features/reservations/lib/receiptPrinter";
 import { useAuthStore } from "@/store/auth";
 import { usePermissions } from "@/lib/permissions";
 import { LANDING_GATE_ROUTE } from "./LandingRedirect";
@@ -165,6 +166,8 @@ export const MainLayout = () => {
             o'tkazib yuboriladi — ya'ni parolning o'zi yetarli bo'lib
             qoladi. Izoh komponentda. */}
         <FaceRequiredGate />
+        {/* To'lovdan keyingi bron cheki natijasi (oyna yopilgandan keyin ham) */}
+        <ReceiptPrintNotice />
         <main
           className={cn(
             "flex-1 min-h-0",

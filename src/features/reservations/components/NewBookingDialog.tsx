@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 
 import { useCreateReservation, useCheckInReservation, useReservations } from "../api/reservations"
+import { ReceiptAutoPrintToggle, useBookingReceiptPrinter } from "../lib/receiptPrinter"
 import { useRooms, useRoomTypes } from "@/features/rooms/api/rooms"
 import {
   blockingTaskMap,
@@ -232,6 +233,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
 
   const createReservationMutation = useCreateReservation()
   const checkInMutation = useCheckInReservation()
+  // To'lov bilan yaratilgan bronga chek (sozlama yoqilgan bo'lsa)
+  const receiptPrinter = useBookingReceiptPrinter()
   const createGuestMutation = useCreateGuest()
   const enrollFaceMutation = useEnrollSighting()
 
@@ -1253,20 +1256,39 @@ function SectionMark({
          yiqilsa (masalan xona hali tayyor bo'lmasa) bron saqlangan qoladi
          va odatdagi "Mehmon keldi" tugmasi bilan qo'lda rasmiylashtiriladi. */
       let autoCheckInFailed = false
+      let finalReservation = createdReservation
       if (
         startsNow &&
         createdReservation?.id &&
         createdReservation.status === "CONFIRMED"
       ) {
         try {
-          await checkInMutation.mutateAsync({
+          const checkedIn = await checkInMutation.mutateAsync({
             id: createdReservation.id,
             hotelId: createdReservation.hotel_id || hotelId || undefined,
           })
+          if (checkedIn?.id) finalReservation = checkedIn
         } catch (checkInError) {
           console.error("Avtomatik kirishda xatolik", checkInError)
           autoCheckInFailed = true
         }
+      }
+
+      /* Pul olindi — chek. Bron BUZILMAYDI: chiqarish alohida qadam,
+         natija (yoki "qayta urinish") sahifa ustidagi xabarda ko'rinadi,
+         chunki bu oyna hozir yopiladi. */
+      if (finalReservation?.reservation_number) {
+        const pickedGuest = guestId ? guests.find((g: any) => g.id === guestId) : null
+        const guestName = pickedGuest
+          ? `${pickedGuest.first_name || ""} ${pickedGuest.last_name || ""}`.trim()
+          : `${values.new_guest_first_name || ""} ${values.new_guest_last_name || ""}`.trim()
+        receiptPrinter.printAfterPayment(finalReservation as any, paymentsTotal, {
+          guestName: guestName || null,
+          roomNumber: chosenRoom?.room_number ?? null,
+          roomType:
+            roomTypesData.find((t: any) => t.id === chosenRoom?.room_type_id)?.name ?? null,
+          payments: paymentRows.map((p) => ({ method: p.payment_method, amount: p.amount })),
+        })
       }
 
       setShowNewGuest(false)
@@ -2281,6 +2303,9 @@ function SectionMark({
                 </span>
               )}
             </div>
+            {/* To'lov bilan yaratilsa chek avtomatik chiqadi (shu kompyuter
+                uchun sozlama; printer yo'q bo'lsa o'chirib qo'yiladi) */}
+            <ReceiptAutoPrintToggle className="mt-2" />
           </div>
           </div>
         </div>

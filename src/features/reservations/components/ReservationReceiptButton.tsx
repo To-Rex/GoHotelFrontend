@@ -1,38 +1,15 @@
 import { useState } from "react"
 import { Loader2, Printer } from "lucide-react"
-import { differenceInCalendarDays, differenceInHours, format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/store/auth"
 import { useReceiptSettings } from "@/features/shop/api/shop"
-import { printReservationReceipt, type ReservationReceiptData } from "@/lib/tprints"
+import { printReservationReceipt } from "@/lib/tprints"
 import { cn } from "@/lib/utils"
 import { tr } from "@/i18n"
+import { buildReservationReceiptData, type ReceiptReservation } from "../lib/receipt"
 
-/** Chek uchun yetarli bo'lgan eng kichik ma'lumot.
- *
- *  To'liq `Reservation` emas: xona bandlovlari ro'yxati kabi qisqartirilgan
- *  javoblar ham shu tugmadan foydalana olishi kerak — chek baribir faqat shu
- *  maydonlardan quriladi. */
-export interface ReceiptReservation {
-  reservation_number: string
-  booking_type: string
-  check_in_date: string
-  check_out_date: string
-  check_in_datetime?: string | null
-  check_out_datetime?: string | null
-  adults: number
-  children: number
-  total_amount: number
-  paid_amount: number
-  discount_amount: number
-  /** Qimmatroq xonaga ko'chirishda berilgan chegirma — chekda umumiy
-   *  chegirmaga qo'shiladi (eski server javobida bo'lmasligi mumkin) */
-  move_discount_amount?: number | null
-  /** Faol jarimalar yig'indisi — chekda alohida qator */
-  penalty_amount?: number | null
-  created_at: string
-  status: string
-}
+// Tur shu yerdan ham olinadi (eski importlar buzilmasin)
+export type { ReceiptReservation } from "../lib/receipt"
 
 /* Bron cheki — istalgan bron uchun, jumladan eskilari uchun ham.
 
@@ -55,13 +32,6 @@ interface Props {
   className?: string
 }
 
-const fmtDate = (value?: string | null, withTime = false) => {
-  if (!value) return "—"
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return format(date, withTime ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy")
-}
-
 export const ReservationReceiptButton = ({
   reservation,
   compact = false,
@@ -78,48 +48,19 @@ export const ReservationReceiptButton = ({
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
 
-  const hourly = (reservation.booking_type || "").toUpperCase() === "HOURLY"
-  const checkIn = reservation.check_in_datetime || reservation.check_in_date
-  const checkOut = reservation.check_out_datetime || reservation.check_out_date
-
-  // Soatlik bronda soat, kunlikda sutka sanaladi — chekda o'lchov birligi
-  // ham shunga qarab yoziladi
-  const duration = (() => {
-    const from = new Date(checkIn)
-    const to = new Date(checkOut)
-    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return null
-    const value = hourly
-      ? differenceInHours(to, from)
-      : differenceInCalendarDays(to, from)
-    return value > 0 ? value : null
-  })()
-
   const doPrint = async () => {
     setBusy(true)
     setError(null)
     setDone(false)
-    const data: ReservationReceiptData = {
-      reservation_number: reservation.reservation_number,
-      guest_name: guestName,
-      room_number: roomNumber,
-      room_type: roomType,
-      check_in: fmtDate(checkIn, hourly),
-      check_out: fmtDate(checkOut, hourly),
-      nights: duration,
-      booking_type: reservation.booking_type,
-      adults: reservation.adults,
-      children: reservation.children,
-      total_amount: Number(reservation.total_amount || 0),
-      paid_amount: Number(reservation.paid_amount || 0),
-      discount_amount:
-        Number(reservation.discount_amount || 0) +
-        Number(reservation.move_discount_amount || 0),
-      penalty_amount: Number(reservation.penalty_amount || 0),
+    // Soatlik bronda soat, kunlikda sutka — chek ma'lumoti umumiy yig'uvchidan
+    // (avtomatik chek bilan bir xil)
+    const data = buildReservationReceiptData(reservation, {
+      guestName,
+      roomNumber,
+      roomType,
+      createdByName,
       services,
-      created_at: reservation.created_at,
-      created_by_name: createdByName,
-      status: reservation.status,
-    }
+    })
     const result = await printReservationReceipt(
       data,
       user?.hotel_name || "GoHotel",

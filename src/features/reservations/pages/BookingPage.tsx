@@ -55,6 +55,7 @@ import {
 import { blockingTaskMap, roomBookingBlock } from "@/features/rooms/lib/roomBookable"
 import { useGuests } from "@/features/guests/api/guests"
 import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
+import { ReceiptAutoPrintToggle, useBookingReceiptPrinter } from "../lib/receiptPrinter"
 import { ReservationCompanionsPanel } from "../components/ReservationCompanionsPanel"
 import { ReservationPenaltiesPanel } from "../components/ReservationPenaltiesPanel"
 import { DebtCheckoutDialog, ReservationDebtPanel } from "../components/ReservationDebtPanel"
@@ -405,6 +406,8 @@ export function BookingPage() {
   }
   const moveRoomMutation = useMoveRoom()
   const settleMutation = useSettleReservation()
+  // Qo'shimcha to'lov qabul qilinganda chek (sozlama yoqilgan bo'lsa)
+  const receiptPrinter = useBookingReceiptPrinter()
   const checkInMutation = useCheckInReservation()
   // Bron tahriri vaqt oynasi (default 10 daqiqa; 0 — cheklovsiz; admin bypass)
   const { data: editWindow } = useEditWindowSettings()
@@ -732,6 +735,18 @@ export function BookingPage() {
       })
       setSelectedReservation(updated)
       setSettleAmount("")
+      // Pul olindi — chek (qaytarimda emas). Bronga ta'sir qilmaydi.
+      if (direction === "PAY" && updated?.reservation_number) {
+        const roomObj = rooms.find((r) => r.id === updated.room_id)
+        receiptPrinter.printAfterPayment(updated as any, amt, {
+          guestName: getGuestName(updated).trim() || null,
+          roomNumber: roomObj?.room_number ?? null,
+          roomType:
+            roomTypesData.find((t: any) => t.id === roomObj?.room_type_id)?.name ?? null,
+          payments: [{ method: settleMethod, amount: amt }],
+          paymentsNow: true,
+        })
+      }
     } catch (e) {
       setSettleError(apiErrorMessage(e))
     }
@@ -2434,6 +2449,7 @@ export function BookingPage() {
                             )}
                             {isRefund ? tr("Pulni qaytarish") : tr("To'lovni qabul qilish")}
                           </Button>
+                          {!isRefund && <ReceiptAutoPrintToggle />}
                           <p className="text-[11px] leading-relaxed text-gray-500">
                             {isRefund
                               ? tr("Qaytarim hisobotlarda minus bilan aks etadi (kassadan chiqim).")
