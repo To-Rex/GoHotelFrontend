@@ -119,5 +119,10 @@
   "joriy": "current",
   "Bu filialda {{count}} ta kamera.": "{{count}} cameras in this branch.",
   "Hammasini shu filialga ({{count}})": "All to this branch ({{count}})",
-  "Filial — qurilma kameralari shu filialga tushadi": "Branch — the device's cameras will land in this branch"
+  "Filial — qurilma kameralari shu filialga tushadi": "Branch — the device's cameras will land in this branch",
+  "Baribir shu mehmonga biriktirilsinmi? (Bir yuz ikki mehmonda bo'lsa keyin hech biri ishonchli tanilmaydi.)": "Assign to this guest anyway? (If one face belongs to two guests, neither will be recognized reliably later.)",
+  " · o'xshashlik {{pct}}%": " · similarity {{pct}}%",
+  "Bu «{{name}}» emasmi?\n\nMoslik bekor qilinadi: yuz \"tanilmagan\"ga qaytadi (to'g'ri mehmonga biriktirish mumkin), shu epizoddan o'rganilgan xato shablon o'chiriladi.": "This is not “{{name}}”?\n\nThe match will be cancelled: the face returns to “unrecognized” (it can be assigned to the right guest), and the wrong template learned from this episode is deleted.",
+  "Bu u emas — moslikni bekor qilish": "Not them — cancel the match",
+  "Bu u emas": "Not them"
 }

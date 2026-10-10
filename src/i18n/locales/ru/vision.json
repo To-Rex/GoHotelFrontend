@@ -122,5 +122,10 @@
   "joriy": "текущий",
   "Bu filialda {{count}} ta kamera.": "В этом филиале {{count}} камер.",
   "Hammasini shu filialga ({{count}})": "Все в этот филиал ({{count}})",
-  "Filial — qurilma kameralari shu filialga tushadi": "Филиал — камеры устройства попадут в этот филиал"
+  "Filial — qurilma kameralari shu filialga tushadi": "Филиал — камеры устройства попадут в этот филиал",
+  "Baribir shu mehmonga biriktirilsinmi? (Bir yuz ikki mehmonda bo'lsa keyin hech biri ishonchli tanilmaydi.)": "Всё равно привязать к этому гостю? (Если одно лицо будет у двух гостей, потом ни один не будет распознаваться уверенно.)",
+  " · o'xshashlik {{pct}}%": " · сходство {{pct}}%",
+  "Bu «{{name}}» emasmi?\n\nMoslik bekor qilinadi: yuz \"tanilmagan\"ga qaytadi (to'g'ri mehmonga biriktirish mumkin), shu epizoddan o'rganilgan xato shablon o'chiriladi.": "Это не «{{name}}»?\n\nСовпадение будет отменено: лицо вернётся в «нераспознанные» (его можно привязать к правильному гостю), ошибочный шаблон, выученный из этого эпизода, будет удалён.",
+  "Bu u emas — moslikni bekor qilish": "Это не он — отменить совпадение",
+  "Bu u emas": "Это не он"
 }

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { tr } from '@/i18n';
 
 /**
  * Kameradan kelgan yuz suratlari (ko'rinishlar).
@@ -34,6 +35,9 @@ export interface Sighting {
   /** Vektori saqlangan va hali hech kimga biriktirilmagan. */
   can_enroll: boolean;
   acknowledged: boolean;
+  /** "Aniq emas" ko'rinishda — kim bo'lishi mumkin (xodim tasdiqlaydi) */
+  candidate_guest_id?: string | null;
+  candidate_name?: string | null;
   /** `distinctGuests` rejimida: bitta qatorga yig'ilgan ko'rinishlar soni */
   sighting_count?: number;
   /** Ko'rsatiladigan surat — guruhdagi eng aniq kadr (bo'lmasa `id`) */
@@ -209,21 +213,78 @@ export const useEnrollSighting = () => {
           va vektorlari shablonga qo'shiladi. */
       sightingIds?: string[];
     }) => {
-      const { data } = await api.post<EnrollResult>(
-        `/vision/sightings/${payload.sightingId}/enroll`,
-        {
-          guest_id: payload.guestId,
-          consent: payload.consent,
-          sighting_ids: payload.sightingIds ?? [],
-        }
-      );
-      return data;
+      const body = {
+        guest_id: payload.guestId,
+        consent: payload.consent,
+        sighting_ids: payload.sightingIds ?? [],
+      };
+      try {
+        const { data } = await api.post<EnrollResult>(
+          `/vision/sightings/${payload.sightingId}/enroll`,
+          body
+        );
+        return data;
+      } catch (err: any) {
+        /* Bir yuz — bir mehmon. Server bu yuz boshqa mehmonga biriktirilganini
+           ko'rsa 409 qaytaradi: xodim tasdiqlasa `force` bilan qayta
+           yuboriladi, aks holda xato chaqiruvchiga ketadi. Hamma biriktirish
+           joylari (mehmonlar, bron, hamrohlar) shu yerdan o'tadi. */
+        if (!isOtherGuestsFace(err) || !confirmForce(err)) throw err;
+        const { data } = await api.post<EnrollResult>(
+          `/vision/sightings/${payload.sightingId}/enroll`,
+          { ...body, force: true }
+        );
+        return data;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vision-sightings'] });
       queryClient.invalidateQueries({ queryKey: ['vision-sighting-groups'] });
       queryClient.invalidateQueries({ queryKey: ['guest-face-status'] });
       queryClient.invalidateQueries({ queryKey: ['guests'] });
+    },
+  });
+};
+
+export const OTHER_GUEST_FACE = 'FACE_BELONGS_TO_OTHER_GUEST';
+
+export const isOtherGuestsFace = (err: any) =>
+  err?.response?.status === 409 && err?.response?.data?.error_code === OTHER_GUEST_FACE;
+
+const confirmForce = (err: any) =>
+  window.confirm(
+    `${err?.response?.data?.detail || ''}\n\n` +
+      tr("Baribir shu mehmonga biriktirilsinmi? (Bir yuz ikki mehmonda bo'lsa keyin hech biri ishonchli tanilmaydi.)")
+  );
+
+export interface RejectResult {
+  rejected: boolean;
+  profiles_removed: number;
+  sightings_cleared: number;
+  can_enroll: boolean;
+}
+
+/**
+ * "Bu u emas": moslik bekor qilinadi — ko'rinish "tanilmagan"ga qaytadi
+ * (to'g'ri mehmonga biriktirish mumkin), shu epizoddan o'rganilgan xato
+ * shablon o'chiriladi. `ids` — qatorga yig'ilgan qolgan ko'rinishlar; server
+ * o'zi ham shu kameradagi yaqin ko'rinishlarni tozalaydi, bular zaxira.
+ */
+export const useRejectSighting = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { id: string; ids?: string[] }) => {
+      const { data } = await api.post<RejectResult>(`/vision/sightings/${args.id}/reject`);
+      const rest = (args.ids ?? []).filter((other) => other !== args.id);
+      if (rest.length) {
+        await Promise.allSettled(rest.map((other) => api.post(`/vision/sightings/${other}/reject`)));
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vision-sightings'] });
+      queryClient.invalidateQueries({ queryKey: ['vision-sighting-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['guest-face-status'] });
     },
   });
 };

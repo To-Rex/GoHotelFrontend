@@ -7,6 +7,7 @@ import {
   Maximize2,
   ScanFace,
   User,
+  UserX,
   X,
 } from "lucide-react"
 
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils"
 import {
   fetchSightingImage,
   useAcknowledgeSighting,
+  useRejectSighting,
   useSightings,
   type Sighting,
 } from "../api/vision"
@@ -188,19 +190,33 @@ function metaLine(sighting: Sighting): string {
   return (
     timeAgo(sighting.seen_at) +
     (sighting.visits > 0 ? tr(" · {{visits}}-tashrif", { visits: sighting.visits }) : "") +
-    (sighting.camera_name ? ` · ${sighting.camera_name}` : "")
+    (sighting.camera_name ? ` · ${sighting.camera_name}` : "") +
+    // O'xshashlik foizi: xodim mos kelish qanchalik ishonchli ekanini
+    // ko'radi va shubhali bo'lsa "Bu u emas" deydi
+    (sighting.similarity > 0 ? tr(" · o'xshashlik {{pct}}%", { pct: Math.round(sighting.similarity * 100) }) : "")
   )
 }
+
+/** "Bu u emas" — tasdiq matni */
+const confirmNotThem = (sighting: Sighting) =>
+  window.confirm(
+    tr("Bu «{{name}}» emasmi?\n\nMoslik bekor qilinadi: yuz \"tanilmagan\"ga qaytadi (to'g'ri mehmonga biriktirish mumkin), shu epizoddan o'rganilgan xato shablon o'chiriladi.", {
+      name: sighting.guest_name || tr("Mehmon"),
+    })
+  )
 
 /* Yangi tanilgan mehmon haqida xabar — ekranning o'ng yuqorisida */
 function RecognizedToast({
   sighting,
   onOpen,
   onClose,
+  onReject,
 }: {
   sighting: RecognizedGuest
   onOpen: () => void
   onClose: () => void
+  /** "Bu u emas" — ruxsati bo'lmasa berilmaydi */
+  onReject?: () => void
 }) {
   const [paused, setPaused] = useState(false)
   /* Ota komponent har so'rovda qayta chiziladi va `onClose` yangilanadi —
@@ -250,13 +266,26 @@ function RecognizedToast({
           >
             <StatusLine sighting={sighting} />
           </p>
-          <button
-            type="button"
-            onClick={onOpen}
-            className="mt-2 w-full rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-700"
-          >
-            {sighting.has_active_reservation ? tr("Bronini ochish") : tr("Bandlov ochish")}
-          </button>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={onOpen}
+              className="flex-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-700"
+            >
+              {sighting.has_active_reservation ? tr("Bronini ochish") : tr("Bandlov ochish")}
+            </button>
+            {onReject && (
+              <button
+                type="button"
+                onClick={onReject}
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title={tr("Bu u emas — moslikni bekor qilish")}
+              >
+                <UserX size={13} />
+                {tr("Bu u emas")}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -281,9 +310,11 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const knownRef = useRef<Set<string> | null>(null)
   const acknowledge = useAcknowledgeSighting()
+  const reject = useRejectSighting()
 
   const branchId = user?.branch_id || null
   const allowed = !!branchId && can("guest.view")
+  const canReject = can("guest.update")
 
   const { data, isError } = useSightings({
     branchId: branchId || undefined,
@@ -359,6 +390,15 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
     acknowledge.mutate({ id: sighting.id, allForGuest: true, ids: sighting.sighting_ids })
   }
 
+  /* "Bu u emas": kamera adashgan — moslik bekor, xato shablon o'chadi.
+     Yuz "tanilmagan" ro'yxatiga qaytadi va to'g'ri mehmonga biriktiriladi. */
+  const notThem = (event: React.MouseEvent, sighting: RecognizedGuest) => {
+    event.stopPropagation()
+    if (!confirmNotThem(sighting)) return
+    closeToast(sighting.guest_id)
+    reject.mutate({ id: sighting.id, ids: sighting.sighting_ids })
+  }
+
   // Toastlar panel tugmasidan mustaqil — sahifaning ustida
   const toastLayer =
     allowed && toasts.length > 0 && typeof document !== "undefined"
@@ -370,6 +410,15 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                 sighting={t}
                 onOpen={() => pick(t)}
                 onClose={() => closeToast(t.guest_id)}
+                onReject={
+                  canReject
+                    ? () => {
+                        if (!confirmNotThem(t)) return
+                        closeToast(t.guest_id)
+                        reject.mutate({ id: t.id, ids: t.sighting_ids })
+                      }
+                    : undefined
+                }
               />
             ))}
           </div>,
@@ -460,6 +509,17 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                       <StatusLine sighting={sighting} />
                     </p>
                   </div>
+                  {canReject && (
+                    <button
+                      type="button"
+                      onClick={(e) => notThem(e, sighting)}
+                      className="flex-shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-amber-50 hover:text-amber-700"
+                      title={tr("Bu u emas — moslikni bekor qilish")}
+                      aria-label={tr("Bu u emas — moslikni bekor qilish")}
+                    >
+                      <UserX size={15} />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => dismiss(e, sighting)}
@@ -528,6 +588,17 @@ export function RecognizedGuestsMenu({ onPickGuest }: RecognizedGuestsMenuProps)
                         ? tr("Bronini ochish")
                         : tr("Bandlov ochish")}
                     </button>
+                    {canReject && (
+                      <button
+                        type="button"
+                        onClick={(e) => notThem(e, sighting)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 text-xs text-muted-foreground transition-colors hover:bg-amber-50 hover:text-amber-700"
+                        title={tr("Bu u emas — moslikni bekor qilish")}
+                      >
+                        <UserX size={14} />
+                        {tr("Bu u emas")}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => dismiss(e, sighting)}
