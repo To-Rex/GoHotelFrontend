@@ -28,6 +28,8 @@ import {
 import { usePermissions } from "@/lib/permissions"
 import { CashNowCard } from "../components/CashNowCard"
 import { HandoversSection } from "../components/HandoversSection"
+import { NonCashMethods } from "../components/NonCashMethods"
+import { hasNonCashIncome } from "../lib/methodSummary"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -1420,6 +1422,13 @@ export const ShiftsHistoryPage = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Naqdsiz to'lovlar — shu smenada qabul qilingan (kassaga
+                    kirmaydi, smenadan smenaga o'tmaydi). Faqat summa bo'lsa
+                    ko'rsatiladi: tarixda 0 qatorlar shovqin qiladi. */}
+                {hasNonCashIncome(detailTarget.methods) && (
+                  <NonCashMethods rows={detailTarget.methods} />
+                )}
 
                 {/* Topshirilgan / yopgan */}
                 {(detailTarget.accepted_by_name || detailTarget.closed_by_name) && (

@@ -205,5 +205,9 @@
   "Qabul qiluvchining boshlang'ich kassasi: {{amount}} so'm": "Начальная касса принявшего: {{amount}} сум",
   "kutilgan {{expected}}": "ожидалось {{expected}}",
   "farq": "разница",
-  "Yana ko'rsatish ({{count}})": "Показать ещё ({{count}})"
+  "Yana ko'rsatish ({{count}})": "Показать ещё ({{count}})",
+  "Naqdsiz to'lovlar (smenada)": "Безналичные платежи (за смену)",
+  "Kassaga kirmaydi — har smenada 0 dan boshlanadi": "В кассу не входят — начинаются с 0 каждую смену",
+  "Boshqa usul": "Другой способ",
+  "Naqdsiz (kassaga kirmaydi): {{v}}": "Безналичными (не в кассу): {{v}}"
 }

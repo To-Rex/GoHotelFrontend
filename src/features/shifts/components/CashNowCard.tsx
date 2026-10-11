@@ -6,6 +6,7 @@ import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { isForbiddenError, useCashOverview, type CashDrawer } from "../api/shifts"
 import { tr } from "@/i18n"
+import { NonCashMethods } from "./NonCashMethods"
 
 /* Kassada hozir — ochiq smenalardagi kassalarda HOZIR bo'lishi kerak bo'lgan
    naqd pul (server: `/shifts/cash-overview`, smena topshirish bilan AYNAN bir
@@ -60,6 +61,8 @@ function DrawerRow({ drawer }: { drawer: CashDrawer }) {
           expenses: fmt(drawer.expenses_cash),
         })}
       </p>
+      {/* Naqdsiz to'lovlar — bu sessiyada qabul qilingan (kassaga kirmaydi) */}
+      <NonCashMethods rows={drawer.methods} compact className="mt-1.5" />
       {pending && counted != null && (
         <p
           className={cn(

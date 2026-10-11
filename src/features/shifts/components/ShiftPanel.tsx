@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { tr } from "@/i18n"
+import { NonCashMethods } from "./NonCashMethods"
 
 const fmtMoney = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 
@@ -62,8 +63,15 @@ export const ShiftPanel = () => {
 
   // Sanash dialogi: "cash" — kassani topshirish, "end" — smenani tugallash
   const [countDialog, setCountDialog] = useState<"cash" | "end" | null>(null)
+  // Faol sessiya panelida naqdsiz to'lovlar tarkibi ham ko'rsatiladi, shuning
+  // uchun so'rov dialog yopiq bo'lsa ham yoniq turadi. "Ko'r sanash"
+  // buzilmaydi: kutilgan NAQD summa faqat dialog ochilganda ko'rsatiladi,
+  // panelda esa faqat naqdsiz usullar qatori o'qiladi.
+  const myActive = !!state?.my_session && state.my_session.status === "ACTIVE"
   // Dialog ochilganda kassada bo'lishi kerak bo'lgan summa (tarkibi bilan)
-  const { data: expectedData, isFetching: expectedFetching } = useExpectedCash(!!countDialog)
+  const { data: expectedData, isFetching: expectedFetching } = useExpectedCash(
+    !!countDialog || myActive
+  )
   const [counted, setCounted] = useState("")
   const [notes, setNotes] = useState("")
   const [countError, setCountError] = useState<string | null>(null)
@@ -378,6 +386,10 @@ export const ShiftPanel = () => {
             </div>
           </div>
 
+          {/* Naqdsiz to'lovlar — shu smenada qabul qilingan (kassaga
+              kirmaydi). Har yangi smenada 0 dan boshlanadi. */}
+          <NonCashMethods rows={expectedData?.methods} className="mt-3" />
+
           {cutDue && (
             <p
               className={cn(
@@ -460,6 +472,10 @@ export const ShiftPanel = () => {
                   {!report.cash_diff && tr(" — mos keldi")}
                 </span>
               </div>
+              {/* Smenada qabul qilingan naqdsiz to'lovlar — kassaga kirmaydi */}
+              {report.methods && (
+                <NonCashMethods rows={report.methods} compact className="px-3" />
+              )}
             </div>
           )}
           <DialogFooter>
@@ -498,6 +514,12 @@ export const ShiftPanel = () => {
                 <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
                   {tr("Boshlang'ich {{opening_cash}} + naqd to'lovlar {{payments_cash}} + do'kon {{shop_cash}} − naqd xarajatlar {{expenses_cash}}", { opening_cash: fmtMoney(expectedData.opening_cash), payments_cash: fmtMoney(expectedData.payments_cash), shop_cash: fmtMoney(expectedData.shop_cash), expenses_cash: fmtMoney(expectedData.expenses_cash) })}
                 </p>
+                {/* Naqdsiz turlar kassaga kirmaydi — alohida ko'rsatiladi */}
+                <NonCashMethods
+                  rows={expectedData.methods}
+                  compact
+                  className="mt-1.5 border-t border-primary-100/70 pt-1.5"
+                />
               </div>
             )}
             <p className="rounded-xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600">

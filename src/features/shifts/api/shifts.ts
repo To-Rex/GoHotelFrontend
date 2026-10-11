@@ -25,6 +25,22 @@ export interface ShiftCorrection {
   note: string;
 }
 
+/** Sessiyada qabul qilingan to'lov usuli (backend: `cash_breakdown.methods`).
+ *
+ *  Naqdsiz pul kassaga kirmaydi va smenadan smenaga o'tmaydi — bu shu
+ *  sessiya KO'RSATKICHI: summalar aynan sessiya oynasi (created_by + vaqt)
+ *  bo'yicha hisoblanadi, shuning uchun har yangi sessiyada 0 dan boshlanadi.
+ *  Eski kodlar (CREDIT_CARD, MOBILE_PAYMENT, TRANSFER) o'z holicha keladi —
+ *  ko'rsatishda `canonicalMethod` bilan kanonik usulga yig'iladi. */
+export interface ShiftMethodRow {
+  method: string;
+  payments: number;
+  shop: number;
+  expenses: number;
+  /** payments + shop (xarajat alohida) */
+  income: number;
+}
+
 export interface ShiftSession {
   id: string;
   user_id: string;
@@ -44,6 +60,11 @@ export interface ShiftSession {
   accepted_by_name?: string | null;
   closed_by_name?: string | null;
   corrections?: ShiftCorrection[];
+  /** To'lov usullari tarkibi — yopilgan sessiyada (tarixda) va yopilish
+   *  hisobotida keladi; ochiq sessiyada "ko'r sanash" qoidasi bo'yicha
+   *  yashiriladi */
+  methods?: ShiftMethodRow[];
+  non_cash_income?: number;
   new_session?: ShiftSession;
 }
 
@@ -182,6 +203,11 @@ export interface CashBreakdown {
   shop_cash: number;
   expenses_cash: number;
   expected_cash: number;
+  /** Shu sessiyada qabul qilingan to'lovlar usul bo'yicha (naqd ham,
+   *  naqdsiz ham). Naqd qism yuqoridagi maydonlarda; naqdsiz turlar kassaga
+   *  kirmaydi — faqat shu sessiya ko'rsatkichi (har smenada 0 dan) */
+  methods: ShiftMethodRow[];
+  non_cash_income: number;
 }
 
 export const useExpectedCash = (enabled: boolean) =>

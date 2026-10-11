@@ -195,5 +195,9 @@
   "Qabul qiluvchining boshlang'ich kassasi: {{amount}} so'm": "Receiver's opening cash: {{amount}} UZS",
   "kutilgan {{expected}}": "expected {{expected}}",
   "farq": "difference",
-  "Yana ko'rsatish ({{count}})": "Show more ({{count}})"
+  "Yana ko'rsatish ({{count}})": "Show more ({{count}})",
+  "Naqdsiz to'lovlar (smenada)": "Non-cash payments (this shift)",
+  "Kassaga kirmaydi — har smenada 0 dan boshlanadi": "Not part of the drawer — starts from 0 each shift",
+  "Boshqa usul": "Other method",
+  "Naqdsiz (kassaga kirmaydi): {{v}}": "Non-cash (not in drawer): {{v}}"
 }
