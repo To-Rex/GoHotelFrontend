@@ -395,19 +395,33 @@ export const SettingsPage = () => {
   const { data: assignSettings } = useHkAssignMode()
   const saveAssignMutation = useSaveHkAssignMode()
   const [assignMode, setAssignMode] = useState<HkAssignMode>("queue")
+  // `claim` rejimida egasiz qolgan vazifa shu daqiqadan keyin navbat
+  // qoidasi bo'yicha biriktiriladi (0 — fallback o'chirilgan)
+  const [assignFallback, setAssignFallback] = useState("30")
   const [assignSaved, setAssignSaved] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
 
   useEffect(() => {
     // Eski backend bu endpointni bilmasa — standart "queue" qoladi
     if (assignSettings?.mode) setAssignMode(assignSettings.mode)
+    if (typeof assignSettings?.claim_fallback_minutes === "number") {
+      setAssignFallback(String(assignSettings.claim_fallback_minutes))
+    }
   }, [assignSettings])
 
   const onSaveAssignMode = async () => {
     setAssignError(null)
     setAssignSaved(false)
+    // Bo'sh/buzuq qiymatda standart 30 qoladi — 0 ataylab o'chirish
+    const fallbackRaw = assignFallback.trim()
+    let fallback = fallbackRaw === "" ? 30 : Number(fallbackRaw.replace(/\s/g, ""))
+    if (Number.isNaN(fallback) || fallback < 0) fallback = 30
+    fallback = Math.min(Math.floor(fallback), 1440)
     try {
-      await saveAssignMutation.mutateAsync(assignMode)
+      await saveAssignMutation.mutateAsync({
+        mode: assignMode,
+        claim_fallback_minutes: fallback,
+      })
       setAssignSaved(true)
       window.setTimeout(() => setAssignSaved(false), 3000)
     } catch (e) {
@@ -1622,6 +1636,28 @@ export const SettingsPage = () => {
                     </button>
                   ))}
                 </div>
+                {/* `claim` rejimida vazifa egasiz qolib ketmasligi uchun:
+                    muddat o'tgach navbat qoidasi bo'yicha biriktiriladi */}
+                {assignMode === "claim" && (
+                  <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/40 p-3.5">
+                    <label className="text-xs font-medium text-gray-700">
+                      {tr("Egasiz qolsa avtomatik biriktirish (daqiqa)")}
+                    </label>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={1440}
+                        value={assignFallback}
+                        onChange={(e) => setAssignFallback(e.target.value)}
+                        className="w-28 bg-white"
+                      />
+                      <span className="max-w-lg text-xs leading-relaxed text-gray-500">
+                        {tr("Shu vaqt ichida hech kim «Boshlash»ni bosmasa, vazifa navbat qoidasi bo'yicha farroshga biriktiriladi — egasiz qolmaydi. 0 — o'chirilgan (faqat farroshlar o'zi oladi).")}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <SaveRow
                   onSave={onSaveAssignMode}
                   pending={saveAssignMutation.isPending}

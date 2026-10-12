@@ -278,5 +278,7 @@
   "Do'kon chekining ko'rinishi: sarlavha, izohlar, ko'rsatiladigan maydonlar, QR-kod va qog'oz kengligi. Har filial o'z dizaynini alohida saqlaydi — boshqalar bilan aralashmaydi.": "Вид чека магазина: заголовок, примечания, отображаемые поля, QR-код и ширина бумаги. Каждый филиал хранит свой дизайн отдельно — он не смешивается с другими.",
   "Chapdagi menyuda sahifalar qanday ketma-ketlikda turishini belgilang. Tartib shu filialning barcha xodimlariga amal qiladi.": "Укажите, в каком порядке страницы стоят в левом меню. Порядок действует для всех сотрудников этого филиала.",
   "va faqat shu filial ma'lumotlariga ta'sir qiladi — boshqa filiallarga tegilmaydi.": "и затрагивает только данные этого филиала — другие филиалы не затрагиваются.",
-  "Yuqoridagilarga qo'shimcha: shu filialning barcha xodimlari (EMPLOYEE), ularning ruxsatlari va sessiyalari ham o'chiriladi.": "Дополнительно: удаляются все сотрудники этого филиала (EMPLOYEE), их права и сессии."
+  "Yuqoridagilarga qo'shimcha: shu filialning barcha xodimlari (EMPLOYEE), ularning ruxsatlari va sessiyalari ham o'chiriladi.": "Дополнительно: удаляются все сотрудники этого филиала (EMPLOYEE), их права и сессии.",
+  "Egasiz qolsa avtomatik biriktirish (daqiqa)": "Автоназначение, если никто не взял (минуты)",
+  "Shu vaqt ichida hech kim «Boshlash»ni bosmasa, vazifa navbat qoidasi bo'yicha farroshga biriktiriladi — egasiz qolmaydi. 0 — o'chirilgan (faqat farroshlar o'zi oladi).": "Если за это время никто не нажмёт «Начать», задача будет назначена уборщику по очереди — без исполнителя не останется. 0 — выключено (уборщики берут сами)."
 }

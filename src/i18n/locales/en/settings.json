@@ -276,5 +276,7 @@
   "Do'kon chekining ko'rinishi: sarlavha, izohlar, ko'rsatiladigan maydonlar, QR-kod va qog'oz kengligi. Har filial o'z dizaynini alohida saqlaydi — boshqalar bilan aralashmaydi.": "Shop receipt layout: header, notes, displayed fields, QR code and paper width. Each branch keeps its own design separately — it does not mix with others.",
   "Chapdagi menyuda sahifalar qanday ketma-ketlikda turishini belgilang. Tartib shu filialning barcha xodimlariga amal qiladi.": "Set the order of pages in the left menu. The order applies to all staff of this branch.",
   "va faqat shu filial ma'lumotlariga ta'sir qiladi — boshqa filiallarga tegilmaydi.": "and affects only this branch's data — other branches are not touched.",
-  "Yuqoridagilarga qo'shimcha: shu filialning barcha xodimlari (EMPLOYEE), ularning ruxsatlari va sessiyalari ham o'chiriladi.": "In addition: all employees of this branch (EMPLOYEE), their permissions and sessions are deleted."
+  "Yuqoridagilarga qo'shimcha: shu filialning barcha xodimlari (EMPLOYEE), ularning ruxsatlari va sessiyalari ham o'chiriladi.": "In addition: all employees of this branch (EMPLOYEE), their permissions and sessions are deleted.",
+  "Egasiz qolsa avtomatik biriktirish (daqiqa)": "Auto-assign if nobody claims (minutes)",
+  "Shu vaqt ichida hech kim «Boshlash»ni bosmasa, vazifa navbat qoidasi bo'yicha farroshga biriktiriladi — egasiz qolmaydi. 0 — o'chirilgan (faqat farroshlar o'zi oladi).": "If nobody taps “Start” within this time, the task is assigned to a cleaner by the queue rule — it never stays unassigned. 0 — off (cleaners claim it themselves)."
 }

@@ -51,6 +51,10 @@ export type HkAssignMode = 'queue' | 'claim';
 
 export interface HkAssignSettings {
   mode: HkAssignMode;
+  /** `claim` rejimida egasiz vazifa shu daqiqadan keyin navbat qoidasi
+   *  bo'yicha biriktiriladi (0 — o'chirilgan, sof claim) */
+  claim_fallback_minutes: number;
+  claim_fallback_default?: number;
   modes: HkAssignMode[];
   default: HkAssignMode;
 }
@@ -67,13 +71,19 @@ export const useHkAssignMode = () => {
   });
 };
 
+export interface HkAssignPayload {
+  mode: HkAssignMode;
+  /** Yuborilmasa — saqlangan qiymat o'zgartirilmaydi */
+  claim_fallback_minutes?: number;
+}
+
 export const useSaveHkAssignMode = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (mode: HkAssignMode) => {
+    mutationFn: async (payload: HkAssignPayload) => {
       const { data } = await api.put<HkAssignSettings>(
         '/housekeeping/assignment-settings',
-        { mode }
+        payload
       );
       return data;
     },
