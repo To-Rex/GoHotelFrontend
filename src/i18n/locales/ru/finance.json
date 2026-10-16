@@ -144,5 +144,12 @@
   "chegirma {{v}}": "скидка {{v}}",
   "mehmon chiqqanda bron jamisiga qo'shiladi": "добавится к сумме брони при выезде гостя",
   "sotgan: {{name}}": "продал(а): {{name}}",
-  "{{charged}} dan {{left}} qoldi": "из {{charged}} осталось {{left}}"
+  "{{charged}} dan {{left}} qoldi": "из {{charged}} осталось {{left}}",
+  "To'lov turini tahrirlash": "Изменить способ оплаты",
+  "Faqat to'lov turi o'zgaradi — summa, sana va boshqa maydonlar tegilmaydi. Har tahrir (nimadan nimaga, kim, qachon) saqlanadi.": "Меняется только способ оплаты — сумма, дата и остальные поля не затрагиваются. Каждое изменение (с чего на что, кто, когда) сохраняется.",
+  "Yangi to'lov turi": "Новый способ оплаты",
+  "Masalan: xato bosilgan": "Например: нажали по ошибке",
+  "Tahrir tarixi": "История изменений",
+  "{{old}} → {{new}}": "{{old}} → {{new}}",
+  "Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "Менеджер может изменить только платежи за последние 2 дня"
 }
