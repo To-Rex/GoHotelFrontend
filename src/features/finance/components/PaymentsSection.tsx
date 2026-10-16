@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Pencil } from "lucide-react"
 
 import {
   Table,
@@ -11,7 +12,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { SortableHead, TablePager, TableSearch } from "@/components/ui/table-tools"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
+import { usePermissions } from "@/lib/permissions"
 import { usePaymentsPage } from "../api/finance"
+import { canEditPaymentMethod } from "../lib/paymentEdit"
+import { PaymentMethodEditDialog } from "./PaymentMethodEditDialog"
 import {
   PAGE_SIZE,
   clampPage,
@@ -22,6 +26,7 @@ import {
   toggleSort,
 } from "@/lib/tableState"
 import { tr } from "@/i18n"
+import type { PaymentRecord } from "@/types/api"
 
 /**
  * To'lovlar jadvali — sahifalab, qidirib va saralab.
@@ -42,6 +47,20 @@ export function PaymentsSection({
   dateTo?: string
 }) {
   const [state, setState] = useState(() => initialTableState("payment_date"))
+
+  // To'lov turini tahrirlash: admin cheklovsiz, menejer faqat oxirgi
+  // 2 kunlik to'lovlarda (server ham xuddi shunday tekshiradi)
+  const { isAdmin, can } = usePermissions()
+  const canEdit = isAdmin || can("shift.force_close")
+  const [editTarget, setEditTarget] = useState<PaymentRecord | null>(null)
+  const methodEditable = (p: PaymentRecord) =>
+    canEditPaymentMethod({ payment: p, isAdmin, canForceClose: canEdit })
+  const editTitle = (p: PaymentRecord) =>
+    canEdit
+      ? methodEditable(p)
+        ? tr("To'lov turini tahrirlash")
+        : tr("Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi")
+      : ""
 
   // Davr o'zgarsa birinchi sahifaga qaytiladi: 7-sahifada turib boshqa
   // oyga o'tgan odam bo'sh ekran ko'rmasligi kerak
@@ -130,10 +149,22 @@ export function PaymentsSection({
                       {tr("{{amount}} So'm", { amount: fmt(p.amount) })}
                     </span>
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-center justify-between gap-2">
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                       {PAYMENT_METHOD_LABELS[p.payment_method] || p.payment_method}
                     </span>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => setEditTarget(p)}
+                        disabled={!methodEditable(p)}
+                        title={editTitle(p)}
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        {tr("Tahrirlash")}
+                      </button>
+                    )}
                   </div>
                   {(p.notes || p.reference) && (
                     <p className="mt-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs text-gray-500">
@@ -184,12 +215,13 @@ export function PaymentsSection({
                   >
                     {tr("Summa")}
                   </SortableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-gray-400">
+                    <TableCell colSpan={6} className="text-center py-6 text-gray-400">
                       {state.search
                         ? tr("Qidiruv bo'yicha to'lov topilmadi")
                         : tr("Tanlangan davrda to'lovlar yo'q")}
@@ -211,6 +243,19 @@ export function PaymentsSection({
                       <TableCell className="text-right text-green-600 font-semibold">
                         {tr("{{amount}} So'm", { amount: fmt(p.amount) })}
                       </TableCell>
+                      <TableCell className="text-right">
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => setEditTarget(p)}
+                            disabled={!methodEditable(p)}
+                            title={editTitle(p)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -223,6 +268,11 @@ export function PaymentsSection({
           <div className="overflow-hidden rounded-2xl border md:hidden">{pager}</div>
         </>
       )}
+
+      <PaymentMethodEditDialog
+        payment={editTarget}
+        onClose={() => setEditTarget(null)}
+      />
     </div>
   )
 }

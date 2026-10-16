@@ -357,6 +357,16 @@ export interface FinanceSummary {
 }
 
 // To'lov yozuvi (GET /finance/payments)
+/** To'lov turi tahriri tarixi yozuvi (payments.method_changes). */
+export interface PaymentMethodChange {
+  old: string | null;
+  new: string;
+  by?: string | null;
+  by_name?: string | null;
+  at: string;
+  note?: string | null;
+}
+
 export interface PaymentRecord {
   id: string;
   hotel_id: string;
@@ -368,6 +378,8 @@ export interface PaymentRecord {
   reference?: string | null;
   notes?: string | null;
   created_at: string;
+  /** Faqat to'lov turi tahrirlari (summa tegilmaydi) — audit tarixi */
+  method_changes?: PaymentMethodChange[] | null;
 }
 
 export interface Invoice {

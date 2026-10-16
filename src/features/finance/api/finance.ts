@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AxiosResponse } from 'axios';
 import { api } from '@/lib/api';
 import type { FinanceSummary, Invoice, PaymentRecord } from '@/types/api';
@@ -105,6 +105,47 @@ export const usePaymentsPage = ({
     },
     enabled,
     placeholderData: keepPreviousData,
+  });
+};
+
+/** To'lov TURINI tahrirlash (summa tegilmaydi).
+ *
+ *  Huquq serverda: admin/super admin cheklovsiz, menejer faqat oxirgi
+ *  2 kunlik to'lovlar. Tahrir tarixi javobdagi `method_changes` da qaytadi.
+ *  Usul o'zgarishi moliyaviy ko'rsatkichlarga (usul kesimi, kutilgan naqd,
+ *  xodimlar hisoboti) ta'sir qiladi — shu sababli tegishli kesh kalitlari
+ *  hammasi yangilanadi. */
+export const useUpdatePaymentMethod = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      payment_method: string;
+      note?: string;
+    }) => {
+      const { data } = await api.patch<PaymentRecord>(
+        `/finance/payments/${payload.id}/method`,
+        {
+          payment_method: payload.payment_method,
+          note: payload.note || undefined,
+        }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      for (const queryKey of [
+        ['payments'],
+        ['paymentsPage'],
+        ['invoices'],
+        ['invoicesPage'],
+        ['financeSummary'],
+        ['cashOverview'],
+        ['shiftExpectedCash'],
+        ['shiftHandovers'],
+      ]) {
+        qc.invalidateQueries({ queryKey });
+      }
+    },
   });
 };
 
