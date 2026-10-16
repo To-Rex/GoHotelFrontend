@@ -209,5 +209,9 @@
   "Naqdsiz to'lovlar (smenada)": "Безналичные платежи (за смену)",
   "Kassaga kirmaydi — har smenada 0 dan boshlanadi": "В кассу не входят — начинаются с 0 каждую смену",
   "Boshqa usul": "Другой способ",
-  "Naqdsiz (kassaga kirmaydi): {{v}}": "Безналичными (не в кассу): {{v}}"
+  "Naqdsiz (kassaga kirmaydi): {{v}}": "Безналичными (не в кассу): {{v}}",
+  "Smena tugallangan — kassa admin/menejer tasdig'ini kutmoqda. Tasdiqlangach sessiya yopiladi va (xodim davom etsa) yangi kassa 0 so'mdan ochiladi.": "Смена завершена — касса ожидает подтверждения админа/менеджера. После подтверждения сессия закроется и (если сотрудник продолжает) новая касса откроется с 0.",
+  "Kassani tasdiqlash": "Подтвердить кассу",
+  "Tasdiqlangach sessiya yopiladi va (xodim ishda davom etsa) yangi kassa 0 so'mdan ochiladi.": "После подтверждения сессия закроется и (если сотрудник продолжает работать) новая касса откроется с 0.",
+  "Admin yoki menejer tasdig'i kutilmoqda — tasdiqlangach sessiya yopiladi va yangi kassa 0 so'mdan ochiladi. Bu vaqtda ishlash mumkin emas.": "Ожидается подтверждение админа или менеджера — после подтверждения сессия закроется и новая касса откроется с 0. В это время работать нельзя."
 }

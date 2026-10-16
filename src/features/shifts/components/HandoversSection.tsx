@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react"
 import { format } from "date-fns"
-import { AlertTriangle, ArrowRight, ArrowRightLeft, Clock, LogOut, ShieldAlert } from "lucide-react"
+import { AlertTriangle, ArrowRight, ArrowRightLeft, Clock, Loader2, LogOut, ShieldAlert, ShieldCheck } from "lucide-react"
 
 import { Skeleton } from "@/components/ui/skeleton"
+import { apiErrorMessage } from "@/lib/apiError"
+import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import {
   handoverMismatch,
   isForbiddenError,
+  useApproveHandover,
   useShiftHandovers,
   type HandoverKind,
   type ShiftHandover,
@@ -89,6 +92,13 @@ export function HandoversSection({
 }) {
   const { data, isLoading, isError, error } = useShiftHandovers(dateFrom, dateTo)
   const [visible, setVisible] = useState(20)
+
+  // Tasdiq rejimi: topshirilgan (tasdiq kutayotgan) kassani admin/menejer
+  // shu yerdan tasdiqlaydi — tasdiqlangach sessiya yopiladi
+  const { isAdmin, can } = usePermissions()
+  const canForce = isAdmin || can("shift.force_close")
+  const approveMutation = useApproveHandover()
+  const [approveError, setApproveError] = useState<string | null>(null)
 
   const items = useMemo(() => {
     const all = data?.items ?? []
@@ -235,11 +245,36 @@ export function HandoversSection({
                         {tr("kutilgan {{expected}}", { expected: fmt(h.expected_cash) })} ·{" "}
                         {tr("farq")} <DiffText diff={h.cash_diff} />
                       </p>
+                      {h.kind === "PENDING" && h.pending_approval && canForce && (
+                        <button
+                          type="button"
+                          disabled={approveMutation.isPending}
+                          onClick={async () => {
+                            setApproveError(null)
+                            try {
+                              await approveMutation.mutateAsync({ sessionId: h.id })
+                            } catch (e) {
+                              setApproveError(apiErrorMessage(e))
+                            }
+                          }}
+                          className="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
+                        >
+                          {approveMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <ShieldCheck className="h-3 w-3" />
+                          )}
+                          {tr("Kassani tasdiqlash")}
+                        </button>
+                      )}
                     </div>
                   </li>
                 )
               })}
             </ul>
+          )}
+          {approveError && (
+            <p className="border-t px-4 py-2 text-xs text-red-600">{approveError}</p>
           )}
           {items.length > visible && (
             <div className="border-t px-4 py-2.5 text-center">

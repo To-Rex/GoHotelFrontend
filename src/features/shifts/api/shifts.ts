@@ -11,6 +11,10 @@ export interface ShiftSettings {
    *  true  — topshirilmaguncha ishlab bo'lmaydi
    *  false — faqat eslatiladi, ish davom etaveradi */
   day_close_required: boolean;
+  /** Kassani topshirishda admin/menejer tasdig'i talab qilinsin:
+   *  topshirilgan sessiya tasdiq kutadi; tasdiqlangach yopiladi va
+   *  (kassir davom etsa) yangi kassa 0 so'mdan ochiladi */
+  handover_approval: boolean;
 }
 
 // Sanalgan summa tuzatilishi (audit yozuvi) — eski qiymat saqlanadi
@@ -60,6 +64,9 @@ export interface ShiftSession {
   accepted_by_name?: string | null;
   closed_by_name?: string | null;
   corrections?: ShiftCorrection[];
+  /** Tasdiq rejimida topshirilgan sessiya kutayotgani:
+   *  "close_cash" (kassa topshirildi) | "end_shift" (smena tugallandi) */
+  pending_approval?: "close_cash" | "end_shift" | null;
   /** To'lov usullari tarkibi — yopilgan sessiyada (tarixda) va yopilish
    *  hisobotida keladi; ochiq sessiyada "ko'r sanash" qoidasi bo'yicha
    *  yashiriladi */
@@ -157,6 +164,28 @@ export const useAcceptShift = () =>
     const { data } = await api.post<ShiftSession>("/shifts/accept", payload);
     return data;
   });
+
+/** Tasdiq rejimida topshirilgan kassani TASDIQLASH (admin/menejer).
+ *  Tasdiqlangach sessiya yopiladi (pul kassadan chiqadi) va kassa
+ *  topshirilgan oqimda yangi sessiya 0 so'mdan ochiladi. */
+export const useApproveHandover = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { sessionId: string; notes?: string }) => {
+      const { data } = await api.post<ShiftSession>(
+        `/shifts/${payload.sessionId}/approve`,
+        { notes: payload.notes || undefined }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["shiftState"] });
+      qc.invalidateQueries({ queryKey: ["cashOverview"] });
+      qc.invalidateQueries({ queryKey: ["shiftHandovers"] });
+      qc.invalidateQueries({ queryKey: ["shiftHistory"] });
+    },
+  });
+};
 
 export const useForceCloseShift = () =>
   useShiftMutation(
@@ -293,6 +322,9 @@ export interface ShiftHandover {
   force_closed: boolean;
   corrected: boolean;
   notes?: string | null;
+  /** Tasdiq rejimida: "close_cash" | "end_shift" (aks holda yo'q) — admin/
+   *  menejer tasdiqlashi kerak */
+  pending_approval?: "close_cash" | "end_shift" | null;
   /** Qabul qiluvchining yangi sessiyasi boshlang'ich kassasi */
   received_opening_cash?: number | null;
 }

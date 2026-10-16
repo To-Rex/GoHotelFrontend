@@ -509,6 +509,8 @@ export const SettingsPage = () => {
   const [shiftMode, setShiftMode] = useState<"simple" | "cash">("simple")
   const [dayClose, setDayClose] = useState("00:00")
   const [dayCloseRequired, setDayCloseRequired] = useState(true)
+  // Tasdiq rejimi: topshirilgan kassa admin/menejer tasdig'ini kutadi
+  const [handoverApproval, setHandoverApproval] = useState(false)
   const [shiftSaved, setShiftSaved] = useState(false)
   const [shiftError, setShiftError] = useState<string | null>(null)
 
@@ -517,6 +519,7 @@ export const SettingsPage = () => {
       setShiftMode(shiftSettings.mode)
       setDayClose(shiftSettings.day_close)
       setDayCloseRequired(shiftSettings.day_close_required !== false)
+      setHandoverApproval(shiftSettings.handover_approval === true)
     }
   }, [shiftSettings])
 
@@ -528,6 +531,7 @@ export const SettingsPage = () => {
         mode: shiftMode,
         day_close: dayClose,
         day_close_required: dayCloseRequired,
+        handover_approval: handoverApproval,
       })
       setShiftSaved(true)
       window.setTimeout(() => setShiftSaved(false), 3000)
@@ -1354,6 +1358,26 @@ export const SettingsPage = () => {
                           {dayCloseRequired
                             ? tr("Kesim vaqti kelgach xodim kassani topshirmaguncha bron va to'lov qabul qila olmaydi — faqat kassa va hisobot sahifalari ochiq qoladi.")
                             : tr("Xodim ishlashda davom etaveradi, kassa hisobotlari sahifasida esa eslatma turadi. Diqqat: topshirilmagan pul kassada yig'ilib boradi va har kungi farqni kuzatish qiyinlashadi.")}
+                        </span>
+                      </span>
+                    </label>
+
+                    {/* Tasdiq rejimi — topshirilgan kassa admin/menejer
+                        tasdig'ini kutadi; tasdiqlangach yopiladi */}
+                    <label className="mt-3 flex cursor-pointer items-start gap-2.5 border-t border-gray-200 pt-3">
+                      <Checkbox
+                        checked={handoverApproval}
+                        onCheckedChange={(v) => setHandoverApproval(v === true)}
+                        className="mt-0.5"
+                      />
+                      <span className="text-sm">
+                        <b className="font-medium text-gray-900">
+                          {tr("Kassani topshirishda admin tasdig'i talab qilinsin")}
+                        </b>
+                        <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                          {handoverApproval
+                            ? tr("Xodim kassani topshirgach sessiya tasdiq kutadi: faqat admin yoki menejer tasdiqlagach yopiladi va (xodim ishda davom etsa) yangi kassa 0 so'mdan ochiladi. Tasdiq kutilganda qabul tugmasi (keyingi xodim paroli) ishlamaydi.")
+                            : tr("O'chiq — hozirgi oqim: topshirilgan kassani keyingi xodim o'z paroli bilan qabul qiladi. Yoqilsa, topshirilgan kassa faqat admin/menejer tasdig'idan keyin yopiladi.")}
                         </span>
                       </span>
                     </label>

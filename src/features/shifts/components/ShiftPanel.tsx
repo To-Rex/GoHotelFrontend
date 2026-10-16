@@ -19,6 +19,7 @@ import {
   useEndShift,
   useAcceptShift,
   useForceCloseShift,
+  useApproveHandover,
   useExpectedCash,
   isWorkEnded,
   isCutDue,
@@ -60,6 +61,8 @@ export const ShiftPanel = () => {
   const endShiftMutation = useEndShift()
   const acceptMutation = useAcceptShift()
   const forceMutation = useForceCloseShift()
+  // Tasdiq rejimi: topshirilgan kassani admin/menejer tasdiqlaydi
+  const approveMutation = useApproveHandover()
 
   // Sanash dialogi: "cash" — kassani topshirish, "end" — smenani tugallash
   const [countDialog, setCountDialog] = useState<"cash" | "end" | null>(null)
@@ -170,6 +173,17 @@ export const ShiftPanel = () => {
     }
   }
 
+  // Tasdiq rejimi: topshirilgan kassani tasdiqlash (admin/menejer)
+  const submitApprove = async () => {
+    if (!blocking) return
+    setActionError(null)
+    try {
+      await approveMutation.mutateAsync({ sessionId: blocking.id })
+    } catch (e) {
+      setActionError(apiErrorMessage(e))
+    }
+  }
+
   const submitForce = async () => {
     if (!blocking) return
     setForceError(null)
@@ -221,7 +235,9 @@ export const ShiftPanel = () => {
               </p>
               <p className="mt-0.5 text-sm text-red-600/80">
                 {blocking.status === "PENDING_HANDOVER"
-                  ? tr("Smena tugallangan — qabul qilib olishingiz mumkin. Kassadagi pul sizga o'tadi va yangi smenangizning BOSHLANG'ICH kassasi bo'ladi; avvalgi tushum-chiqim hisobi avvalgi xodimda qoladi.")
+                  ? blocking.pending_approval
+                    ? tr("Smena tugallangan — kassa admin/menejer tasdig'ini kutmoqda. Tasdiqlangach sessiya yopiladi va (xodim davom etsa) yangi kassa 0 so'mdan ochiladi.")
+                    : tr("Smena tugallangan — qabul qilib olishingiz mumkin. Kassadagi pul sizga o'tadi va yangi smenangizning BOSHLANG'ICH kassasi bo'ladi; avvalgi tushum-chiqim hisobi avvalgi xodimda qoladi.")
                   : tr("Xodim smenani tugallamagan. Menejer yoki administrator majburiy yopishi kerak.")}
               </p>
 
@@ -242,7 +258,7 @@ export const ShiftPanel = () => {
                   </div>
                 )}
 
-              {blocking.status === "PENDING_HANDOVER" && (
+              {blocking.status === "PENDING_HANDOVER" && !blocking.pending_approval && (
                 <div className="mt-3 flex flex-wrap items-end gap-2">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-red-700">
@@ -267,6 +283,21 @@ export const ShiftPanel = () => {
                     <ShieldCheck className="mr-1.5 h-4 w-4" />
                     {tr("Smenani qabul qilish")}
                   </Button>
+                </div>
+              )}
+              {/* Tasdiq rejimi: qabul parol o'rniga admin/menejer tasdiqlaydi */}
+              {blocking.status === "PENDING_HANDOVER" && blocking.pending_approval && canForce && (
+                <div className="mt-3">
+                  <Button onClick={submitApprove} disabled={approveMutation.isPending}>
+                    {approveMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    <ShieldCheck className="mr-1.5 h-4 w-4" />
+                    {tr("Kassani tasdiqlash")}
+                  </Button>
+                  <p className="mt-1.5 text-xs text-red-600/70">
+                    {tr("Tasdiqlangach sessiya yopiladi va (xodim ishda davom etsa) yangi kassa 0 so'mdan ochiladi.")}
+                  </p>
                 </div>
               )}
               {acceptError && (
@@ -429,7 +460,9 @@ export const ShiftPanel = () => {
           <div>
             <p className="font-bold text-sky-800">{tr("Smena tugallandi")}</p>
             <p className="text-sm text-sky-700/80">
-              {tr("Keyingi xodim o'z logini bilan kirib, parol orqali qabul qilishi kutilmoqda. Hisob-kitobingiz saqlandi.")}
+              {my.pending_approval
+                ? tr("Admin yoki menejer tasdig'i kutilmoqda — tasdiqlangach sessiya yopiladi va yangi kassa 0 so'mdan ochiladi. Bu vaqtda ishlash mumkin emas.")
+                : tr("Keyingi xodim o'z logini bilan kirib, parol orqali qabul qilishi kutilmoqda. Hisob-kitobingiz saqlandi.")}
             </p>
           </div>
         </div>
