@@ -8,6 +8,7 @@ import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { useDebtors, type DebtorReservation } from "../api/debtors"
 import { useDebtSettings } from "@/features/settings/api/debtSettings"
+import { isDebtToastHeld, onDebtToastGateChange, takePendingDebtToasts } from "../lib/debtToastGate"
 import { newDebtors, rankDebtors, shouldRemind } from "../lib/debtReminder"
 import { reasonsSummary } from "../lib/debtReasons"
 import { DebtReasons } from "./DebtReasons"
@@ -84,20 +85,32 @@ export function DebtsMenu() {
   const [toast, setToast] = useState<Toast | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const seenRef = useRef<Set<string> | null>(readSeen())
+  // Bron oynasi yopilganda (to'lovsiz) qayta baholash uchun hisoblagich
+  const [gateTick, setGateTick] = useState(0)
+
+  useEffect(() => onDebtToastGateChange(() => setGateTick((t) => t + 1)), [])
 
   const items = useMemo(() => rankDebtors(data?.items || []), [data])
   const summary = data?.summary
 
-  /* Eslatmalar: yangi qarz — darhol; davriy — oraliqda */
+  /* Eslatmalar: yangi qarz — darhol; davriy — oraliqda.
+     Bron oynasi ochiq turganda o'sha bron to'xtatiladi (`debtToastGate`);
+     oyna to'lovsiz yopilsa — shu yerda, yopilgandan keyin ko'rsatiladi. */
   useEffect(() => {
     if (!data) return
-    const fresh = newDebtors(seenRef.current, data.items)
+    const fresh = newDebtors(seenRef.current, data.items).filter(
+      (item) => !isDebtToastHeld(item.id)
+    )
     const ids = data.items.map((i) => i.id)
     seenRef.current = new Set(ids)
     writeSeen(ids)
     if (open) return
-    if (fresh.length) {
-      setToast({ kind: "new", items: fresh })
+    // Oynasi to'lovsiz yopilgan bronlar — kutilayotganlar ro'yxatidan
+    const released = takePendingDebtToasts()
+    const releasedItems = data.items.filter((item) => released.has(item.id))
+    const alertItems = [...releasedItems, ...fresh.filter((i) => !released.has(i.id))]
+    if (alertItems.length) {
+      setToast({ kind: "new", items: alertItems })
       return
     }
     const now = Date.now()
@@ -113,7 +126,7 @@ export function DebtsMenu() {
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
+  }, [data, gateTick, open])
 
   useEffect(() => {
     if (!open) return

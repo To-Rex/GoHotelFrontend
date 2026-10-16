@@ -207,6 +207,8 @@ export const useMoveRoom = () => {
 
 // Bron balansi bo'yicha hisob-kitob: xona almashtirishdan keyin qo'shimcha
 // to'lov (PAY, qisman ham mumkin) yoki ortiqcha to'langanni qaytarish (REFUND).
+// `payments` berilsa — BO'LIB to'lash: har bo'lak alohida to'lov bo'lib
+// yoziladi (masalan yarmi naqd, yarmi online), jami `amount` bo'lishi shart.
 // Qaytarim manfiy Payment bo'lib yoziladi — hisobotlarda avtomatik aks etadi.
 export const useSettleReservation = () => {
   const queryClient = useQueryClient();
@@ -217,15 +219,22 @@ export const useSettleReservation = () => {
       amount,
       paymentMethod,
       direction,
+      payments,
     }: {
       id: string;
       amount: number;
       paymentMethod: string;
       direction: 'PAY' | 'REFUND';
+      payments?: Array<{ amount: number; payment_method: string }>;
     }) => {
       const { data } = await api.post<Reservation>(
         `/reservations/${id}/settle-payment`,
-        { amount, payment_method: paymentMethod, direction }
+        {
+          amount,
+          payment_method: paymentMethod,
+          direction,
+          payments: payments?.length ? payments : undefined,
+        }
       );
       return data;
     },
@@ -233,6 +242,9 @@ export const useSettleReservation = () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      // Navbardagi qarz belgisi/eslatmasi darhol yangilansin (to'lov
+      // qarzni yopsa — ro'yxatdan tushadi, bo'lib to'lovda esa qoldiq qoladi)
+      invalidateDebts(queryClient);
       // Bron/hisob-faktura pul harakatiga olib keladi — smenani
       // topshirish dialogi eski summani ko'rsatmasligi uchun kassa
       // hisobi qayta olinsin

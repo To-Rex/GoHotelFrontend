@@ -73,8 +73,16 @@ import { usePermissions } from "@/lib/permissions"
 import { HourlyBoard } from "../components/HourlyBoard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import {
+  PaymentPartsEditor,
+  emptyPartRows,
+  partsOf,
+  type PartRow,
+} from "@/features/shop/components/PaymentPartsEditor"
+import { holdDebtToast, releaseDebtToast } from "@/features/finance/lib/debtToastGate"
 import { useBookingDefaults } from "@/features/settings/api/bookingDefaults"
 import {
   dailyPriceMultiplier,
@@ -248,13 +256,38 @@ export function BookingPage() {
   const [settleAmount, setSettleAmount] = useState("")
   const [settleMethod, setSettleMethod] = useState("CASH")
   const [settleError, setSettleError] = useState<string | null>(null)
+  // Bo'lib to'lash: bir necha bo'lak (masalan yarmi naqd, yarmi online)
+  const [settleSplit, setSettleSplit] = useState(false)
+  const [settleParts, setSettleParts] = useState<PartRow[]>(() => emptyPartRows())
   useEffect(() => {
     if (manageOpen) {
       setSettleAmount("")
       setSettleMethod("CASH")
       setSettleError(null)
+      setSettleSplit(false)
+      setSettleParts(emptyPartRows())
     }
   }, [manageOpen])
+
+  // Qarz eslatmasi darvozasi: boshqarish oynasi ochilganda shu bron haqidagi
+  // toast to'xtatiladi. Oyna TO'LOVSIZ yopilsa — o'shanda ko'rsatiladi
+  // (DebtsMenu); oynada to'lov qabul qilingan bo'lsa — umuman chiqmaydi.
+  const debtPaidRef = useRef(false)
+  const heldDebtIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    const id = selectedReservation?.id ?? null
+    const heldId = heldDebtIdRef.current
+    if (heldId && heldId !== id) {
+      releaseDebtToast(heldId, debtPaidRef.current)
+      heldDebtIdRef.current = null
+      debtPaidRef.current = false
+    }
+    if (id && heldDebtIdRef.current !== id) {
+      holdDebtToast(id)
+      heldDebtIdRef.current = id
+      debtPaidRef.current = false
+    }
+  }, [selectedReservation?.id])
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -711,13 +744,25 @@ export function BookingPage() {
   }
 
   // Qo'shimcha to'lov (PAY) yoki qaytarim (REFUND) — maxAmount dan oshmaydi,
-  // qisman summa ham mumkin (qolgani qarz/ortiqcha bo'lib qolaveradi)
+  // qisman summa ham mumkin (qolgani qarz/ortiqcha bo'lib qolaveradi).
+  // "Bo'lib to'lash" yoqilgan bo'lsa — bo'laklar (usullar aralash) yuboriladi.
   const handleSettle = async (direction: "PAY" | "REFUND", maxAmount: number) => {
     if (!selectedReservation) return
-    const amt = settleAmount.trim() === "" ? maxAmount : Number(settleAmount)
-    if (!amt || isNaN(amt) || amt <= 0) {
-      setSettleError(tr("Summani kiriting"))
-      return
+    let amt: number
+    let parts: Array<{ amount: number; payment_method: string }> | undefined
+    if (direction === "PAY" && settleSplit) {
+      parts = partsOf(settleParts)
+      amt = parts.reduce((sum, p) => sum + p.amount, 0)
+      if (!parts.length || amt <= 0) {
+        setSettleError(tr("Summani kiriting"))
+        return
+      }
+    } else {
+      amt = settleAmount.trim() === "" ? maxAmount : Number(settleAmount)
+      if (!amt || isNaN(amt) || amt <= 0) {
+        setSettleError(tr("Summani kiriting"))
+        return
+      }
     }
     if (amt > maxAmount + 0.01) {
       setSettleError(
@@ -732,9 +777,13 @@ export function BookingPage() {
         amount: amt,
         paymentMethod: settleMethod,
         direction,
+        payments: parts,
       })
       setSelectedReservation(updated)
       setSettleAmount("")
+      setSettleParts(emptyPartRows())
+      // Oynada to'lov qabul qilindi — qarz eslatmasi (toast) chiqmaydi
+      if (direction === "PAY") debtPaidRef.current = true
       // Pul olindi — chek (qaytarimda emas). Bronga ta'sir qilmaydi.
       if (direction === "PAY" && updated?.reservation_number) {
         const roomObj = rooms.find((r) => r.id === updated.room_id)
@@ -743,7 +792,9 @@ export function BookingPage() {
           roomNumber: roomObj?.room_number ?? null,
           roomType:
             roomTypesData.find((t: any) => t.id === roomObj?.room_type_id)?.name ?? null,
-          payments: [{ method: settleMethod, amount: amt }],
+          payments:
+            parts?.map((p) => ({ method: p.payment_method, amount: p.amount })) ??
+            [{ method: settleMethod, amount: amt }],
           paymentsNow: true,
         })
       }
@@ -2401,35 +2452,59 @@ export function BookingPage() {
                               {tr("{{maxAmount}} So'm", { maxAmount: maxAmount.toLocaleString() })}
                             </b>
                           </p>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Input
-                              type="number"
-                              min={0}
-                              max={maxAmount}
-                              value={settleAmount}
-                              onChange={(e) => setSettleAmount(e.target.value)}
-                              placeholder={maxAmount.toLocaleString()}
-                              className="h-9 w-32 bg-white"
+                          {!isRefund && (
+                            <label className="flex cursor-pointer flex-wrap items-center gap-2 text-xs font-medium text-gray-700">
+                              <Checkbox
+                                checked={settleSplit}
+                                onCheckedChange={(v) => setSettleSplit(v === true)}
+                              />
+                              {tr("Bo'lib to'lash")}
+                              <span className="font-normal text-gray-400">
+                                {tr("masalan, yarmi naqd — yarmi online")}
+                              </span>
+                            </label>
+                          )}
+                          {!isRefund && settleSplit ? (
+                            <PaymentPartsEditor
+                              rows={settleParts}
+                              onChange={setSettleParts}
+                              limit={maxAmount}
+                              methods={PAYMENT_METHOD_OPTIONS.map((m) => ({
+                                key: m.value,
+                                label: m.label,
+                              }))}
                             />
-                            <button
-                              type="button"
-                              onClick={() => setSettleAmount(String(maxAmount))}
-                              className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
-                            >
-                              {tr("To'liq")}
-                            </button>
-                            <select
-                              className="flex h-9 items-center rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                              value={settleMethod}
-                              onChange={(e) => setSettleMethod(e.target.value)}
-                            >
-                              {PAYMENT_METHOD_OPTIONS.map((m) => (
-                                <option key={m.value} value={m.value}>
-                                  {m.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Input
+                                type="number"
+                                min={0}
+                                max={maxAmount}
+                                value={settleAmount}
+                                onChange={(e) => setSettleAmount(e.target.value)}
+                                placeholder={maxAmount.toLocaleString()}
+                                className="h-9 w-32 bg-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setSettleAmount(String(maxAmount))}
+                                className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
+                              >
+                                {tr("To'liq")}
+                              </button>
+                              <select
+                                className="flex h-9 items-center rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={settleMethod}
+                                onChange={(e) => setSettleMethod(e.target.value)}
+                              >
+                                {PAYMENT_METHOD_OPTIONS.map((m) => (
+                                  <option key={m.value} value={m.value}>
+                                    {m.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                           {settleError && (
                             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
                               {settleError}
