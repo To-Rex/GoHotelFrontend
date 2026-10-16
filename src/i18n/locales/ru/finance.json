@@ -146,10 +146,17 @@
   "sotgan: {{name}}": "продал(а): {{name}}",
   "{{charged}} dan {{left}} qoldi": "из {{charged}} осталось {{left}}",
   "To'lov turini tahrirlash": "Изменить способ оплаты",
-  "Faqat to'lov turi o'zgaradi — summa, sana va boshqa maydonlar tegilmaydi. Har tahrir (nimadan nimaga, kim, qachon) saqlanadi.": "Меняется только способ оплаты — сумма, дата и остальные поля не затрагиваются. Каждое изменение (с чего на что, кто, когда) сохраняется.",
   "Yangi to'lov turi": "Новый способ оплаты",
   "Masalan: xato bosilgan": "Например: нажали по ошибке",
   "Tahrir tarixi": "История изменений",
   "{{old}} → {{new}}": "{{old}} → {{new}}",
-  "Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "Менеджер может изменить только платежи за последние 2 дня"
+  "Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "Менеджер может изменить только платежи за последние 2 дня",
+  "Har tahrir (nimadan nimaga, qancha, kim, qachon) saqlanadi — hech narsa o'chirilmaydi.": "Каждое изменение (с чего на что, сколько, кто, когда) сохраняется — ничего не удаляется.",
+  "Qisman o'tkazish": "Частичный перенос",
+  "Masalan: 50 000": "Например: 50 000",
+  "Summa to'lov summasidan kichik bo'lishi kerak": "Сумма должна быть меньше суммы платежа",
+  "Qoladi: {{amount}} So'm — avvalgi turda": "Останется: {{amount}} сум — в прежнем способе",
+  "{{new}} usulida yangi to'lov qatori yaratiladi": "Будет создан новый платёж способом «{{new}}»",
+  "Summaning bir qismi yangi turga o'tadi (masalan, 100 000 dan 50 000)": "Часть суммы переходит в новый способ (например, из 100 000 — 50 000)",
+  "qisman": "частично"
 }

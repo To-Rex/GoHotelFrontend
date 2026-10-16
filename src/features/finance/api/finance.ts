@@ -122,12 +122,15 @@ export const useUpdatePaymentMethod = () => {
       id: string;
       payment_method: string;
       note?: string;
+      /** Qisman: summaning shu qismi yangi usulga o'tadi (yangi to'lov qatori) */
+      amount?: number;
     }) => {
       const { data } = await api.patch<PaymentRecord>(
         `/finance/payments/${payload.id}/method`,
         {
           payment_method: payload.payment_method,
           note: payload.note || undefined,
+          amount: payload.amount,
         }
       );
       return data;

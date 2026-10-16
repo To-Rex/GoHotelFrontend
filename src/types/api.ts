@@ -365,6 +365,12 @@ export interface PaymentMethodChange {
   by_name?: string | null;
   at: string;
   note?: string | null;
+  /** "full" — butun summa almashdi; "partial" — qismi yangi qatorga o'tdi */
+  kind?: "full" | "partial" | null;
+  /** Qisman o'tkazilgan summa (kind="partial" bo'lsa) */
+  amount?: number | null;
+  /** Qisman o'tkazishda yaratilgan yangi to'lov raqami */
+  new_payment_number?: string | null;
 }
 
 export interface PaymentRecord {

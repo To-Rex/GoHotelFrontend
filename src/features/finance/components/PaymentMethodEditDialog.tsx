@@ -3,6 +3,7 @@ import { format } from "date-fns"
 import { Loader2, Pencil } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -17,14 +18,16 @@ import { cn } from "@/lib/utils"
 import { tr } from "@/i18n"
 import type { PaymentRecord } from "@/types/api"
 import { useUpdatePaymentMethod } from "../api/finance"
+import { parsePartialAmount } from "../lib/paymentEdit"
 
-/* To'lov turini tahrirlash oynasi.
+/* To'lov turini tahrirlash oynasi — BUTUN summa yoki QISMAN.
 
-   Faqat TUR o'zgaradi — summa, sana va boshqa maydonlar tegilmaydi. Har
-   tahrir `method_changes` tarixida (nimadan nimaga, kim, qachon, izoh) va
-   audit jurnalida qoladi — hech narsa o'chirilmaydi. Huquq va 2 kunlik
-   menejer oynasi serverda qayta tekshiriladi (tugma shu qoidaga qarab
-   ko'rsatiladi/yashiriladi). */
+   Qisman: summaning bir qismi yangi to'lov qatori bo'lib boshqa turga
+   o'tadi (masalan 100 000 naqd → 50 000 naqd + 50 000 online), qolgani
+   avvalgi turda qoladi. Summa yig'indisi o'zgarmaydi. Har tahrir
+   `method_changes` tarixida (nimadan nimaga, qancha, kim, qachon, izoh)
+   va audit jurnalida qoladi. Huquq va 2 kunlik menejer oynasi serverda
+   qayta tekshiriladi. */
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 
@@ -38,28 +41,37 @@ export function PaymentMethodEditDialog({
   const mutation = useUpdatePaymentMethod()
   const [method, setMethod] = useState("")
   const [note, setNote] = useState("")
+  const [partial, setPartial] = useState(false)
+  const [amountStr, setAmountStr] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!payment) return
     setMethod(payment.payment_method)
     setNote("")
+    setPartial(false)
+    setAmountStr("")
     setError(null)
   }, [payment])
 
   if (!payment) return null
 
+  const total = Number(payment.amount || 0)
   const changed = method !== "" && method !== payment.payment_method
+  const parsed = partial && total > 0 ? parsePartialAmount(total, amountStr) : { amount: null, error: null }
+  const partialReady = !partial || parsed.error === null
+  const canSave = changed && partialReady && !mutation.isPending
   const history = payment.method_changes ?? []
 
   const save = async () => {
-    if (!changed) return
+    if (!canSave) return
     setError(null)
     try {
       await mutation.mutateAsync({
         id: payment.id,
         payment_method: method,
         note: note.trim() || undefined,
+        amount: partial && parsed.amount !== null ? parsed.amount : undefined,
       })
       onClose()
     } catch (e) {
@@ -69,7 +81,7 @@ export function PaymentMethodEditDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-[470px]">
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="h-4 w-4 text-primary-600" />
@@ -88,12 +100,12 @@ export function PaymentMethodEditDialog({
               </p>
             </div>
             <p className="font-bold tabular-nums text-gray-900">
-              {tr("{{amount}} So'm", { amount: fmt(payment.amount) })}
+              {tr("{{amount}} So'm", { amount: fmt(total) })}
             </p>
           </div>
 
           <p className="text-xs leading-relaxed text-gray-500">
-            {tr("Faqat to'lov turi o'zgaradi — summa, sana va boshqa maydonlar tegilmaydi. Har tahrir (nimadan nimaga, kim, qachon) saqlanadi.")}
+            {tr("Har tahrir (nimadan nimaga, qancha, kim, qachon) saqlanadi — hech narsa o'chirilmaydi.")}
           </p>
 
           <div>
@@ -118,6 +130,53 @@ export function PaymentMethodEditDialog({
               ))}
             </div>
           </div>
+
+          {total > 0 && (
+            <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2.5">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                <Checkbox
+                  checked={partial}
+                  onCheckedChange={(v) => {
+                    setPartial(v === true)
+                    if (v !== true) setAmountStr("")
+                  }}
+                />
+                {tr("Qisman o'tkazish")}
+              </label>
+              {partial && (
+                <div className="mt-2 space-y-1.5">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={total}
+                    value={amountStr}
+                    onChange={(e) => setAmountStr(e.target.value)}
+                    placeholder={tr("Masalan: 50 000")}
+                    autoFocus
+                  />
+                  {parsed.error === "range" ? (
+                    <p className="text-[11px] font-medium text-red-600">
+                      {tr("Summa to'lov summasidan kichik bo'lishi kerak")}
+                    </p>
+                  ) : partial && parsed.amount !== null ? (
+                    <p className="text-[11px] leading-relaxed text-gray-500">
+                      {tr("Qoladi: {{amount}} So'm — avvalgi turda", {
+                        amount: fmt(total - parsed.amount),
+                      })}{" "}
+                      ·{" "}
+                      {tr("{{new}} usulida yangi to'lov qatori yaratiladi", {
+                        new: PAYMENT_METHOD_LABELS[method] || method,
+                      })}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-gray-400">
+                      {tr("Summaning bir qismi yangi turga o'tadi (masalan, 100 000 dan 50 000)")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-600">
@@ -144,6 +203,16 @@ export function PaymentMethodEditDialog({
                         new: PAYMENT_METHOD_LABELS[h.new] || h.new,
                       })}
                     </b>
+                    {h.amount ? (
+                      <span className="font-medium">
+                        · {tr("{{amount}} So'm", { amount: fmt(h.amount) })}
+                      </span>
+                    ) : null}
+                    {h.kind === "partial" && (
+                      <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                        {tr("qisman")}
+                      </span>
+                    )}
                     <span className="text-gray-400">
                       {h.by_name || ""}
                       {h.by_name && h.at ? " · " : ""}
@@ -165,7 +234,7 @@ export function PaymentMethodEditDialog({
           <Button variant="outline" onClick={onClose}>
             {tr("Bekor qilish")}
           </Button>
-          <Button onClick={save} disabled={!changed || mutation.isPending}>
+          <Button onClick={save} disabled={!canSave}>
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {tr("Saqlash")}
           </Button>

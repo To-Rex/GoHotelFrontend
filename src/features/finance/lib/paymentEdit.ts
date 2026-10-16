@@ -35,3 +35,21 @@ export const canEditPaymentMethod = ({
   if (!canForceClose) return false
   return isWithinManagerWindow(payment.created_at, now)
 }
+
+/** Qisman o'tkazish summasini o'qish va tekshirish.
+ *
+ *  `0 < amount <= total` bo'lishi shart; `total` ga teng bo'lsa server
+ *  buni oddiy (to'liq) tahrir deb oladi. Xato bo'lsa `amount: null` va
+ *  sabab qaytadi ("nan" — bo'sh/buzuq, "range" — summadan katta/noto'g'ri).
+ */
+export const parsePartialAmount = (
+  total: number,
+  raw: string
+): { amount: number | null; error: "nan" | "range" | null } => {
+  const text = (raw || "").trim()
+  if (!text) return { amount: null, error: "nan" }
+  const value = Number(text.replace(/\s/g, "").replace(",", "."))
+  if (!Number.isFinite(value) || value <= 0) return { amount: null, error: "nan" }
+  if (value > total) return { amount: null, error: "range" }
+  return { amount: value, error: null }
+}

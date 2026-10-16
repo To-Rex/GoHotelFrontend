@@ -130,10 +130,17 @@
   "sotgan: {{name}}": "sold by: {{name}}",
   "{{charged}} dan {{left}} qoldi": "{{left}} left of {{charged}}",
   "To'lov turini tahrirlash": "Edit payment method",
-  "Faqat to'lov turi o'zgaradi — summa, sana va boshqa maydonlar tegilmaydi. Har tahrir (nimadan nimaga, kim, qachon) saqlanadi.": "Only the payment method changes — the amount, date and other fields are untouched. Every change (from → to, who, when) is kept.",
   "Yangi to'lov turi": "New payment method",
   "Masalan: xato bosilgan": "For example: pressed by mistake",
   "Tahrir tarixi": "Change history",
   "{{old}} → {{new}}": "{{old}} → {{new}}",
-  "Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "A manager can edit only payments from the last 2 days"
+  "Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "A manager can edit only payments from the last 2 days",
+  "Har tahrir (nimadan nimaga, qancha, kim, qachon) saqlanadi — hech narsa o'chirilmaydi.": "Every change (from → to, how much, who, when) is kept — nothing is deleted.",
+  "Qisman o'tkazish": "Partial move",
+  "Masalan: 50 000": "For example: 50 000",
+  "Summa to'lov summasidan kichik bo'lishi kerak": "Amount must be less than the payment amount",
+  "Qoladi: {{amount}} So'm — avvalgi turda": "Remaining: {{amount}} so'm — in the previous method",
+  "{{new}} usulida yangi to'lov qatori yaratiladi": "A new payment will be created with “{{new}}”",
+  "Summaning bir qismi yangi turga o'tadi (masalan, 100 000 dan 50 000)": "Part of the amount moves to the new method (e.g. 50 000 out of 100 000)",
+  "qisman": "partial"
 }
