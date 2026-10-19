@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest"
 import {
   DEBT_BAR_CLASS,
+  DURATION_OPTIONS,
+  DURATION_OPTIONS_EXTENDED,
   HOURLY_TURNOVER_MIN,
   busyIntervalsFor,
   companionSlots,
@@ -297,5 +299,17 @@ describe("qarz ko'rsatkichi", () => {
       "Chiqib ketgan"
     )
     expect(debtHint(res())).toBe("")
+  })
+})
+
+describe("davomiylik variantlari", () => {
+  it("1-12 standart, tugma bilan 24 soatgacha ochiladi", () => {
+    expect(DURATION_OPTIONS[0]).toBe(1)
+    expect(DURATION_OPTIONS.at(-1)).toBe(12)
+    expect(DURATION_OPTIONS_EXTENDED.length).toBe(24)
+    expect(DURATION_OPTIONS_EXTENDED.at(-1)).toBe(24)
+    expect(DURATION_OPTIONS_EXTENDED).toEqual(
+      expect.arrayContaining(DURATION_OPTIONS)
+    )
   })
 })

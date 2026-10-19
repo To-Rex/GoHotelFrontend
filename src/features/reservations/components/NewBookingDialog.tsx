@@ -10,6 +10,7 @@ import {
   BedDouble,
   CalendarPlus,
   ChevronDown,
+  ChevronUp,
   Loader2,
   Upload,
   ArrowLeft,
@@ -96,6 +97,7 @@ import {
 import { cn } from "@/lib/utils"
 import {
   DURATION_OPTIONS,
+  DURATION_OPTIONS_EXTENDED,
   HOURLY_TURNOVER_MIN,
   PAYMENT_METHOD_OPTIONS,
   addDaysStr,
@@ -288,6 +290,8 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [pickedFace, setPickedFace] = useState<SightingGroup | null>(null)
   const [selectedGuestId, setSelectedGuestId] = useState<string>("")
   const [bookingType, setBookingType] = useState<"DAILY" | "HOURLY">("DAILY")
+  // "Necha soat?" — avval 1..12; tugma bosilganda 24 soatgacha ko'rsatiladi
+  const [allDurations, setAllDurations] = useState(false)
   const [extraPayments, setExtraPayments] = useState<Array<{ amount: string; method: string }>>([])
 
   /* Xodim to'lamoqchi bo'lgan JAMI summa. Birinchi maydon shundan
@@ -449,6 +453,10 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   useEffect(() => {
     if (!open) stopCamera()
   }, [open, stopCamera])
+  // Dialog yopilganda davomiylik ro'yxati yana 12 soatgacha yig'iladi
+  useEffect(() => {
+    if (!open) setAllDurations(false)
+  }, [open])
   useEffect(() => () => stopCamera(), [stopCamera])
 
   const capturePhoto = () => {
@@ -1540,7 +1548,7 @@ function SectionMark({
                 </span>
               </label>
               <div className="grid grid-cols-6 gap-1.5">
-                {DURATION_OPTIONS.map((h) => {
+                {(allDurations ? DURATION_OPTIONS_EXTENDED : DURATION_OPTIONS).map((h) => {
                   const conflict = durationConflicts(h)
                   const active = Math.abs(hourCount - h) < 0.01
                   return (
@@ -1567,6 +1575,24 @@ function SectionMark({
                   )
                 })}
               </div>
+              {/* 13-24 soatlik variantlar — pastdagi tugma bilan ochiladi */}
+              <button
+                type="button"
+                onClick={() => setAllDurations((v) => !v)}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-700 transition-colors hover:text-primary-800"
+              >
+                {allDurations ? (
+                  <>
+                    {tr("Kamroq ko'rsatish")}
+                    <ChevronUp className="h-3 w-3" />
+                  </>
+                ) : (
+                  <>
+                    {tr("Yana (24 soatgacha)")}
+                    <ChevronDown className="h-3 w-3" />
+                  </>
+                )}
+              </button>
             </div>
             {dialogBusyTimes.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 text-xs">

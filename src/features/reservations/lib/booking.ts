@@ -15,6 +15,10 @@ export const HOURLY_TURNOVER_MIN = 15
 /** Soatlik bron uchun tayyor davomiyliklar (1 dan 12 soatgacha) */
 export const DURATION_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
 
+/** Kengaytirilgan ro'yxat — 24 soatgacha ("Yana (24 soatgacha)" tugmasi
+ *  bosilganda ko'rsatiladi). Kechki/qo'shimcha uzun bronlar uchun. */
+export const DURATION_OPTIONS_EXTENDED = Array.from({ length: 24 }, (_, i) => i + 1)
+
 /** Qisman (bo'lib) to'lov qatorlari uchun to'lov usullari.
  *
  *  Ro'yxat butun ilova uchun bitta joyda — `@/lib/paymentMethods`. */
