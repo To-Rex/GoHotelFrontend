@@ -1898,12 +1898,12 @@ function SectionMark({
               {storeScanImages && <PendingScanImages scan={pendingScan?.images ?? null} />}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">{tr("Ism *")}</label>
-                  <Input placeholder={tr("Ism")} {...register("new_guest_first_name")} />
-                </div>
-                <div className="space-y-1">
                   <label className="text-xs font-medium">{tr("Familiya")}</label>
                   <Input placeholder={tr("Familiya")} {...register("new_guest_last_name")} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">{tr("Ism *")}</label>
+                  <Input placeholder={tr("Ism")} {...register("new_guest_first_name")} />
                 </div>
               </div>
               <div className="space-y-1">

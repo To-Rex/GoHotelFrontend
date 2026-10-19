@@ -530,18 +530,18 @@ export const CompanionGuests = ({
                 <div className="grid grid-cols-2 gap-2">
                   <Input
                     className="h-9"
-                    placeholder={tr("Ism *")}
-                    value={newGuest.first_name}
-                    onChange={(e) =>
-                      setNewGuest({ ...newGuest, first_name: e.target.value })
-                    }
-                  />
-                  <Input
-                    className="h-9"
                     placeholder={tr("Familiya")}
                     value={newGuest.last_name}
                     onChange={(e) =>
                       setNewGuest({ ...newGuest, last_name: e.target.value })
+                    }
+                  />
+                  <Input
+                    className="h-9"
+                    placeholder={tr("Ism *")}
+                    value={newGuest.first_name}
+                    onChange={(e) =>
+                      setNewGuest({ ...newGuest, first_name: e.target.value })
                     }
                   />
                 </div>
