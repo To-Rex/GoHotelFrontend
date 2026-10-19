@@ -61,7 +61,7 @@ import {
   useBookingDefaults,
   resolveBookingType,
 } from "@/features/settings/api/bookingDefaults"
-import { dailyPriceMultiplier, resolveDailyUnit } from "../lib/dailyUnit"
+import { dailyPriceMultiplier, hourlyUnits, resolveDailyUnit } from "../lib/dailyUnit"
 import {
   useDiscountRules,
   ruleFor,
@@ -926,8 +926,10 @@ function SectionMark({
   const dialogDayPrice = dialogRoomPrice * dayMultiplier
   const dialogDailyTotal = dialogNightCount * dialogDayPrice
   const totalPrice = dialogDailyTotal
-  // Soatlik bron narxi davomiylikka BOG'LIQ EMAS — kunlik narx to'liq olinadi
-  const hourlyTotal = dialogRoomPrice
+  // Soatlik bron narxi davomiylikka BOG'LIQ EMAS — 12 soatlik birlik narxi.
+  // 24 soatlik rejimda 12 soatdan oshsa — to'liq kun (ikki birlik, × 2)
+  const hourlyTotal =
+    dialogRoomPrice * hourlyUnits(fullDays ? "24h" : "12h", hourCount)
   const effectiveTotal = bookingType === "HOURLY" ? hourlyTotal : dialogDailyTotal
 
   // Chegirma hisobi — backend bilan bir xil mantiq

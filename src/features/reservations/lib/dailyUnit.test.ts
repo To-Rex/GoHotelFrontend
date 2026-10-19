@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   dailyPriceMultiplier,
+  hourlyUnits,
   lastOccupiedDay,
   reservationDailyUnit,
   resolveDailyUnit,
@@ -84,5 +85,19 @@ describe("dailyPriceMultiplier", () => {
     expect(reservationDailyUnit({ daily_unit: "24h" })).toBe("24h")
     expect(reservationDailyUnit({})).toBe("12h")
     expect(reservationDailyUnit(null)).toBe("12h")
+  })
+})
+
+describe("hourlyUnits", () => {
+  it("24 soatlik rejimda 12 soatdan oshsa — to'liq kun (× 2)", () => {
+    expect(hourlyUnits("24h", 12)).toBe(1)
+    expect(hourlyUnits("24h", 12.01)).toBe(2)
+    expect(hourlyUnits("24h", 14)).toBe(2)
+    expect(hourlyUnits("24h", 24)).toBe(2)
+    // 12 soatlik rejimda avvalgidek — 1
+    expect(hourlyUnits("12h", 14)).toBe(1)
+    expect(hourlyUnits(undefined, 24)).toBe(1)
+    // 250 000 so'mlik xona: 14 soat — 500 000
+    expect(hourlyUnits("24h", 14) * 250_000).toBe(500_000)
   })
 })

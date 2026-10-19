@@ -34,6 +34,18 @@ export const dailyPriceMultiplier = (
 ): number =>
   (bookingType || "DAILY") !== "HOURLY" && unit === "24h" ? FULL_DAY_MULTIPLIER : 1
 
+/** 24 soatlik rejimda soatlik bron shu soatdan OSHSA — to'liq kun
+ *  (server: HOURLY_FULL_DAY_HOURS). */
+export const HOURLY_FULL_DAY_HOURS = 12
+
+/** Soatlik bron birliklari: 24 soatlik rejimda 12 soatdan oshsa — ikki
+ *  12 soatlik birlik (narx × 2), aks holda 1 (server bilan bir xil). */
+export const hourlyUnits = (
+  unit: DailyUnit | string | null | undefined,
+  hours: number
+): number =>
+  unit === "24h" && Number(hours) > HOURLY_FULL_DAY_HOURS ? FULL_DAY_MULTIPLIER : 1
+
 /** Bronga yozilgan rejim; eski server javobida bo'lmasa — 12 soatlik. */
 export const reservationDailyUnit = (
   res: { daily_unit?: string | null } | null | undefined
