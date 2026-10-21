@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Guest } from '@/types/api';
 
@@ -12,6 +12,47 @@ export const useGuests = () => {
       return Array.isArray(data) ? data : (data.items || []);
     },
   });
+};
+
+export const GUESTS_PAGE_SIZE = 50;
+
+export const guestsPageHasMore = (count: number, pageSize = GUESTS_PAGE_SIZE): boolean =>
+  count === pageSize;
+
+const asGuestList = (data: Guest[] | { items?: Guest[] } | null | undefined): Guest[] =>
+  Array.isArray(data) ? data : (data?.items || []);
+
+export const useGuestList = (query: string) => {
+  const q = query.trim();
+  return useInfiniteQuery({
+    queryKey: ['guests', 'list', q],
+    queryFn: async ({ pageParam }) => {
+      const { data } = await api.get<Guest[] | { items: Guest[] }>('/guests/', {
+        params: {
+          page: pageParam,
+          page_size: GUESTS_PAGE_SIZE,
+          ...(q ? { query: q } : {}),
+        },
+      });
+      const items = asGuestList(data);
+      return { items, page: pageParam, hasMore: guestsPageHasMore(items.length) };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const searchGuests = async (query: string, limit = 20): Promise<Guest[]> => {
+  const { data } = await api.get<Guest[] | { items: Guest[] }>('/guests/', {
+    params: { page: 1, page_size: limit, query },
+  });
+  return asGuestList(data);
+};
+
+export const fetchGuest = async (id: string): Promise<Guest> => {
+  const { data } = await api.get<Guest>(`/guests/${id}`);
+  return data;
 };
 
 export const useCreateGuest = () => {

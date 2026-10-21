@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ban, Plus, Search, Loader2, Upload, X, Pencil, Users, IdCard, Phone, ScanLine, Video } from "lucide-react";
 import {
-  useGuests,
+  fetchGuest,
+  searchGuests,
+  useGuestList,
   useCreateGuest,
   useUpdateGuest,
   uploadGuestFile,
@@ -67,7 +69,32 @@ const DOC_TYPE_LABELS: Record<string, string> = Object.fromEntries(
 );
 
 export const GuestsPage = () => {
-  const { data: guests, isLoading, isError } = useGuests();
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const {
+    data: guestPages,
+    isLoading,
+    isError,
+    isFetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useGuestList(debouncedSearch);
+  const guests = useMemo(
+    () => guestPages?.pages.flatMap((page) => page.items) ?? [],
+    [guestPages]
+  );
+
+  useEffect(() => {
+    const term = search.trim();
+    if (!term) {
+      setDebouncedSearch("");
+      return;
+    }
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { can, isAdmin } = usePermissions();
   const canCreate = can("guest.create");
   const canEdit = can("guest.update");
@@ -83,7 +110,6 @@ export const GuestsPage = () => {
   const storeScanImages = scanSettings?.store_images !== false;
   const [scanImages, setScanImages] = useState<ScanImages | null>(null);
 
-  const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   // null — yangi mehmon qo'shish; aks holda tanlangan mehmon tahrirlanadi
   const [editing, setEditing] = useState<Guest | null>(null);
@@ -171,20 +197,35 @@ export const GuestsPage = () => {
     return outcome;
   };
 
-  const findGuestByDoc = (doc: ScannedDoc): Guest | null => {
+  const findGuestByDoc = async (doc: ScannedDoc): Promise<Guest | null> => {
     const norm = (s?: string | null) =>
       (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     const pass = norm(doc.documentNumber);
     const personal = doc.pinflVerified ? norm(doc.personalNumber) : "";
-    for (const g of guests || []) {
+    const keys = [
+      ...(pass.length >= 5 ? [pass] : []),
+      ...(personal.length >= 8 ? [personal] : []),
+    ];
+    for (const key of keys) {
+      try {
+        const found = await searchGuests(key);
+        const match = found.find(
+          (g) => norm(g.passport_number) === key || norm(g.id_document_number) === key
+        );
+        if (match) return match;
+      } catch {
+        // Server javob bermasa — yuklangan ro'yxatdan izlaymiz
+      }
+    }
+    for (const g of guests) {
       if (pass.length >= 5 && norm(g.passport_number) === pass) return g;
       if (personal.length >= 8 && norm(g.id_document_number) === personal) return g;
     }
     return null;
   };
 
-  const handleSearchScan = (doc: ScannedDoc, images?: ScanImages) => {
-    const found = findGuestByDoc(doc);
+  const handleSearchScan = async (doc: ScannedDoc, images?: ScanImages) => {
+    const found = await findGuestByDoc(doc);
     if (found) {
       // Jadval filtri shu mehmonni ko'rsatadigan qiymatga qo'yiladi
       setSearch(found.passport_number || `${found.first_name} ${found.last_name}`.trim());
@@ -435,17 +476,6 @@ export const GuestsPage = () => {
     }
   };
 
-  const filtered = (guests || []).filter((g) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      g.first_name?.toLowerCase().includes(q) ||
-      g.last_name?.toLowerCase().includes(q) ||
-      g.phone?.includes(q) ||
-      (g.passport_number || g.id_document_number || "").toLowerCase().includes(q)
-    );
-  });
-
   const saving = createGuest.isPending || updateGuest.isPending || uploading;
 
   if (isLoading) {
@@ -461,7 +491,7 @@ export const GuestsPage = () => {
     );
   }
 
-  if (isError) {
+  if (isError && guests.length === 0) {
     return <div>{tr("Xatolik yuz berdi. Iltimos qayta urining.")}</div>;
   }
 
@@ -471,7 +501,9 @@ export const GuestsPage = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{tr("Mehmonlar")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {tr("Mehmonlar bazasi · jami {{count}} ta", { count: (guests || []).length })}
+            {tr("Mehmonlar bazasi · jami {{count}} ta", {
+              count: hasNextPage ? `${guests.length}+` : guests.length,
+            })}
           </p>
         </div>
         {canCreate && (
@@ -482,11 +514,17 @@ export const GuestsPage = () => {
         )}
       </div>
 
+      {isError && (
+        <p className="text-sm text-red-500">
+          {tr("Xatolik yuz berdi. Iltimos qayta urining.")}
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative max-w-sm flex-1 min-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            className="pl-9"
+            className="pl-9 pr-9"
             placeholder={tr("Ism, telefon yoki hujjat bo'yicha qidirish...")}
             value={search}
             onChange={(e) => {
@@ -494,6 +532,9 @@ export const GuestsPage = () => {
               setScanBanner(null);
             }}
           />
+          {isFetching && !isFetchingNextPage && (
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400" />
+          )}
         </div>
         {/* Hujjatni skanerlab mijozni topish */}
         <Button
@@ -582,8 +623,12 @@ export const GuestsPage = () => {
         title={tr("Qarzdor mehmonlar")}
         initialLimit={5}
         onGuestClick={(id) => {
-          const found = (guests || []).find((g) => g.id === id)
-          if (found) setHistoryGuest(found)
+          const found = guests.find((g) => g.id === id)
+          if (found) {
+            setHistoryGuest(found)
+            return
+          }
+          void fetchGuest(id).then(setHistoryGuest).catch(() => {})
         }}
       />
 
@@ -596,7 +641,7 @@ export const GuestsPage = () => {
 
       {/* MOBIL: mehmonlar karta ko'rinishida (jadval planshet/desktopda) */}
       <div className="space-y-2.5 md:hidden">
-        {filtered.length === 0 ? (
+        {guests.length === 0 ? (
           <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
             <div className="flex flex-col items-center gap-2">
               <Users className="h-8 w-8" />
@@ -608,7 +653,7 @@ export const GuestsPage = () => {
             </div>
           </div>
         ) : (
-          filtered.map((guest) => (
+          guests.map((guest) => (
             <div
               key={guest.id}
               role="button"
@@ -746,7 +791,7 @@ export const GuestsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+        {guests.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={canEdit ? 5 : 4} className="py-12">
                   <div className="flex flex-col items-center gap-2 text-gray-400">
@@ -760,7 +805,7 @@ export const GuestsPage = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((guest) => (
+          guests.map((guest) => (
                 <TableRow
                   key={guest.id}
                   title={tr("Turish tarixi")}
@@ -865,6 +910,19 @@ export const GuestsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {tr("Yana yuklash")}
+          </Button>
+        </div>
+      )}
 
       {/* Qora ro'yxat: qo'shish yoki chiqarish */}
       <BlacklistDialog
