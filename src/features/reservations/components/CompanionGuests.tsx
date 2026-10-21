@@ -3,10 +3,11 @@ import { ChevronDown, Clock, Search, ScanLine, UserPlus, Video, X, CheckCircle2,
 import { Input } from "@/components/ui/input"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
-import { useCreateGuest, uploadGuestFile } from "@/features/guests/api/guests"
+import { useCreateGuest, useGuest, useGuestSearch, searchGuests, uploadGuestFile } from "@/features/guests/api/guests"
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
 import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
+import { guestSearchRank } from "@/features/guests/lib/search"
 import {
   hasScanImages,
   linkScanToGuest,
@@ -64,7 +65,8 @@ interface Props {
   adults: number
   /** Asosiy mehmon — hamroh sifatida ikkinchi marta tanlanmaydi */
   mainGuestId?: string
-  guests: any[]
+  /** Allaqachon xonada turgan hamrohlar — qidiruvda chiqmaydi */
+  excludeGuestIds?: string[]
   value: Companion[]
   onChange: (next: Companion[]) => void
   /** Sozlamada majburiy qilinganmi — faqat ko'rsatish uchun */
@@ -93,7 +95,7 @@ const guestName = (g: any) =>
 export const CompanionGuests = ({
   adults,
   mainGuestId,
-  guests,
+  excludeGuestIds,
   value,
   onChange,
   required,
@@ -196,9 +198,18 @@ export const CompanionGuests = ({
   // Allaqachon tanlanganlar va asosiy mehmon ro'yxatda ko'rinmaydi —
   // bir odam ikki marta yozilmasligi kerak
   const takenIds = useMemo(
-    () => new Set([...(mainGuestId ? [mainGuestId] : []), ...value.map((c) => c.id)]),
-    [mainGuestId, value]
+    () =>
+      new Set([
+        ...(mainGuestId ? [mainGuestId] : []),
+        ...(excludeGuestIds || []),
+        ...value.map((c) => c.id),
+      ]),
+    [mainGuestId, excludeGuestIds, value]
   )
+
+  const { data: searchResults = [], isFetching: searchFetching } = useGuestSearch(search)
+  const expandedCompanion = expandedSlot != null ? value[expandedSlot] : undefined
+  const { data: liveGuest } = useGuest(expandedCompanion?.id)
 
   /* Qidiruv asosiy Mehmon bo'limi bilan BIR XIL: bo'sh qidiruvda hech
      kim ko'rsatilmaydi (butun baza ro'yxat bo'lib turmaydi), natija esa
@@ -207,32 +218,13 @@ export const CompanionGuests = ({
   const found = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return []
-    const rank = (g: any): number => {
-      const first = (g.first_name || "").toLowerCase()
-      const last = (g.last_name || "").toLowerCase()
-      const phone = g.phone || ""
-      const passport = (g.passport_number || "").toLowerCase()
-      if (
-        first.startsWith(q) ||
-        last.startsWith(q) ||
-        phone.startsWith(q) ||
-        passport.startsWith(q)
-      )
-        return 0
-      if (
-        first.includes(q) ||
-        last.includes(q) ||
-        phone.includes(q) ||
-        passport.includes(q)
-      )
-        return 1
-      return 2
-    }
-    return guests
+    const rank = (g: any): number =>
+      guestSearchRank(g, search, { passport: true })
+    return searchResults
       .filter((g) => !takenIds.has(g.id) && rank(g) < 2)
       .sort((a, b) => rank(a) - rank(b))
       .slice(0, 1)
-  }, [guests, search, takenIds])
+  }, [searchResults, search, takenIds])
 
   /* Telefondan kelgan skan birinchi BO'SH joyga tushadi: mehmon server
      yoki hujjat raqami bo'yicha bazadan topilsa darhol tanlanadi, aks
@@ -245,17 +237,14 @@ export const CompanionGuests = ({
     if (index >= slots) return
     const { doc, guestId } = incomingScan
     if (guestId && !takenIds.has(guestId)) {
-      const g = guests.find((x) => x.id === guestId)
       setAt(index, {
         id: guestId,
-        name: g
-          ? guestName(g)
-          : `${doc.firstName || ""} ${doc.lastName || ""}`.trim() || tr("Mehmon"),
+        name: `${doc.firstName || ""} ${doc.lastName || ""}`.trim() || tr("Mehmon"),
       })
       return
     }
     if (guestId) return // allaqachon asosiy mehmon yoki hamroh
-    handleScan(index, doc, { scanId: incomingScan.scanId })
+    void handleScan(index, doc, { scanId: incomingScan.scanId })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingScan])
 
@@ -281,16 +270,29 @@ export const CompanionGuests = ({
 
   // Skanerlangan hujjat bo'yicha bazadan qidirish; topilmasa yangi mehmon
   // formasi shu ma'lumot bilan to'ldiriladi
-  const handleScan = (index: number, doc: ScannedDoc, source?: ScanSource) => {
+  const handleScan = async (index: number, doc: ScannedDoc, source?: ScanSource) => {
     const norm = (s?: string | null) => (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
     const pass = norm(doc.documentNumber)
     const personal = doc.pinflVerified ? norm(doc.personalNumber) : ""
-    const match = guests.find(
-      (g) =>
-        !takenIds.has(g.id) &&
-        ((pass.length >= 5 && norm(g.passport_number) === pass) ||
-          (personal.length >= 8 && norm(g.id_document_number) === personal))
-    )
+    const keys = [
+      ...(pass.length >= 5 ? [pass] : []),
+      ...(personal.length >= 8 ? [personal] : []),
+    ]
+    let match: any = null
+    for (const key of keys) {
+      try {
+        const results = await searchGuests(key)
+        match =
+          results.find(
+            (g) =>
+              !takenIds.has(g.id) &&
+              (norm(g.passport_number) === key || norm(g.id_document_number) === key)
+          ) || null
+        if (match) break
+      } catch {
+        // Server javob bermasa — keyingi kalitni sinaymiz
+      }
+    }
     if (match) {
       pickExisting(index, match)
       // Bazadan topildi — skanerlangan hujjat surati uning kartasiga
@@ -408,7 +410,7 @@ export const CompanionGuests = ({
              joyida tahrirlash va filial kamerasidan yuz biriktirish.
              Ism bazadagi jonli yozuvdan olinadi: tahrirdan keyin
              qatordagi nom ham darhol yangilanadi. */
-          const live = guests.find((g) => g.id === picked.id)
+          const live = expandedSlot === index ? liveGuest : undefined
           const expanded = expandedSlot === index
           return (
             <div key={index} className="rounded-lg border border-gray-200 bg-white">
@@ -735,7 +737,14 @@ export const CompanionGuests = ({
                     ))}
                     {found.length === 0 && (
                       <p className="px-2.5 py-3 text-center text-xs text-gray-400">
-                        {tr("Mijoz topilmadi")}
+                        {searchFetching ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            {tr("Yuklanmoqda...")}
+                          </span>
+                        ) : (
+                          tr("Mijoz topilmadi")
+                        )}
                       </p>
                     )}
                   </div>
@@ -786,7 +795,7 @@ export const CompanionGuests = ({
         open={scanSlot !== null}
         onOpenChange={(open) => !open && setScanSlot(null)}
         onResult={(doc, images) => {
-          if (scanSlot !== null) handleScan(scanSlot, doc, { images })
+          if (scanSlot !== null) void handleScan(scanSlot, doc, { images })
           setScanSlot(null)
         }}
       />

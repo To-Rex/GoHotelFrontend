@@ -1855,7 +1855,6 @@ export function BookingPage() {
                     <ReservationCompanionsPanel
                       reservation={res}
                       mainGuestName={getGuestName(res)}
-                      guests={guests}
                       canManage={canUpdate && !isCleaner}
                       branchId={roomObj?.branch_id}
                       onUpdated={(updated) => setSelectedReservation(updated)}

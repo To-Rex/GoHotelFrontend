@@ -37,12 +37,15 @@ import {
   type BookingWindow,
 } from "@/features/rooms/lib/roomBookable"
 import {
-  useGuests,
   useCreateGuest,
+  useGuest,
+  useGuestSearch,
+  searchGuests,
   uploadGuestFile,
   GUEST_PHOTO_ACCEPT,
   GUEST_PHOTO_MAX_BYTES,
 } from "@/features/guests/api/guests"
+import type { Guest } from "@/types/api"
 import { NATIONALITIES, DEFAULT_NATIONALITY, MRZ_COUNTRY } from "@/features/guests/constants"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
@@ -73,6 +76,7 @@ import {
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
 import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
+import { guestSearchRank } from "@/features/guests/lib/search"
 import {
   extrasTotal,
   parseAmount,
@@ -228,7 +232,6 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     [roomsData]
   )
   const { data: reservations = [] } = useReservations()
-  const { data: guests = [] } = useGuests()
   const { data: roomTypesData = [] } = useRoomTypes()
   const { data: hkTasksData = [] } = useHousekeepingTasks()
   const { user } = useAuthStore()
@@ -289,6 +292,10 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
   const [facePickerOpen, setFacePickerOpen] = useState(false)
   const [pickedFace, setPickedFace] = useState<SightingGroup | null>(null)
   const [selectedGuestId, setSelectedGuestId] = useState<string>("")
+  const [selectedGuestSnapshot, setSelectedGuestSnapshot] = useState<Guest | null>(null)
+  const { data: fetchedSelectedGuest, isError: selectedGuestLoadFailed } =
+    useGuest(selectedGuestId)
+  const selectedGuestObj = fetchedSelectedGuest || selectedGuestSnapshot || null
   const [bookingType, setBookingType] = useState<"DAILY" | "HOURLY">("DAILY")
   // "Necha soat?" — avval 1..12; tugma bosilganda 24 soatgacha ko'rsatiladi
   const [allDurations, setAllDurations] = useState(false)
@@ -503,19 +510,30 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     }
   }
 
-  const handleGuestSearchScan = (doc: ScannedDoc, images?: ScanImages) => {
+  const handleGuestSearchScan = async (doc: ScannedDoc, images?: ScanImages) => {
     const norm = (s?: string | null) => (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
     const pass = norm(doc.documentNumber)
     const personal = doc.pinflVerified ? norm(doc.personalNumber) : ""
-    const found = (guests as any[]).find(
-      (g) =>
-        (pass.length >= 5 && norm(g.passport_number) === pass) ||
-        (personal.length >= 8 && norm(g.id_document_number) === personal)
-    )
+    const keys = [
+      ...(pass.length >= 5 ? [pass] : []),
+      ...(personal.length >= 8 ? [personal] : []),
+    ]
+    let found: Guest | null = null
+    for (const key of keys) {
+      try {
+        const results = await searchGuests(key)
+        found =
+          results.find(
+            (g) =>
+              norm(g.passport_number) === key || norm(g.id_document_number) === key
+          ) || null
+        if (found) break
+      } catch {
+        // Server javob bermasa — keyingi kalitni sinaymiz
+      }
+    }
     if (found) {
-      setValue("guest_id", found.id)
-      setSelectedGuestId(found.id)
-      setGuestSearch("")
+      chooseGuest(found)
       setGuestScanNotFound(null)
       setGuestScanNotFoundImages(null)
       // Mehmon topildi — skanerlangan hujjat surati uning kartasiga
@@ -558,31 +576,22 @@ export const NewBookingDialog = ({ request, onClose, onCreated, onError }: Props
     clearGuestPhoto()
   }
 
+  const { data: guestSearchResults = [], isFetching: guestSearchFetching } =
+    useGuestSearch(guestSearch)
   const filteredGuests = useMemo(() => {
     // Mehmonlar bazasi GLOBAL — mehmonxona bo'yicha filtrlash yo'q.
-    // Qidiruv BO'SH bo'lsa hech kim ko'rsatilmaydi: butun baza ro'yxat
-    // bo'lib turishi shart emas — mijoz faqat qidirilganda chiqadi.
-    //
-    // Natija BITTA — eng mos mijoz. Ro'yxat emas: xodim aniq odamni
-    // qidiradi, mos kelmasa yana bir-ikki harf yozadi va natija shunga
-    // qarab almashadi. Boshidan mos kelgani ichidan mos kelganidan
-    // ustun turadi ("ali" yozilganda "Alisher" "Xalil"dan oldin).
+    // Qidiruv BO'SH bo'lsa hech kim ko'rsatilmaydi; natija serverdan
+    // keladi, shuning uchun baza qanchalik katta bo'lsa ham ishlaydi.
+    // Natija BITTA — eng mos mijoz (avvalgi xatti-harakat).
     if (!guestSearch.trim()) return []
-    const q = guestSearch.toLowerCase()
-    const rank = (g: any): number => {
-      const first = (g.first_name || "").toLowerCase()
-      const last = (g.last_name || "").toLowerCase()
-      const phone = g.phone || ""
-      if (first.startsWith(q) || last.startsWith(q) || phone.startsWith(q))
-        return 0
-      if (first.includes(q) || last.includes(q) || phone.includes(q)) return 1
-      return 2
-    }
-    return guests
-      .filter((g) => rank(g) < 2)
-      .sort((a, b) => rank(a) - rank(b))
+    return guestSearchResults
+      .filter((g) => g.id !== selectedGuestId && guestSearchRank(g, guestSearch) < 2)
+      .sort(
+        (a, b) =>
+          guestSearchRank(a, guestSearch) - guestSearchRank(b, guestSearch)
+      )
       .slice(0, 1)
-  }, [guests, guestSearch])
+  }, [guestSearchResults, guestSearch, selectedGuestId])
 
   /* Bo'lim belgisi: dialog qabulxonachining ish tartibini takrorlaydi —
    joylashtirish, mehmon, to'lov. Yorliq shu bosqichni nomlaydi, ingichka
@@ -679,6 +688,7 @@ function SectionMark({
     setDiscountType("AMOUNT")
     setDiscountValue("")
     setSelectedGuestId(request.guestId || "")
+    setSelectedGuestSnapshot(null)
     setGuestSearch("")
     setShowNewGuest(false)
     setNationalityOther("")
@@ -754,6 +764,13 @@ function SectionMark({
   const watchNewPassport = watch("new_guest_passport_number")
   const watchNewPhone = watch("new_guest_phone")
 
+  const chooseGuest = (guest: Guest) => {
+    setValue("guest_id", guest.id)
+    setSelectedGuestId(guest.id)
+    setSelectedGuestSnapshot(guest)
+    setGuestSearch("")
+  }
+
   const hourCount = bookingType === "HOURLY" ? hourlyDuration(watchInTime, watchOutTime) : 0
 
   /* XONA HOLATI BO'YICHA TO'SIQ.
@@ -803,6 +820,7 @@ function SectionMark({
         if (scan.guest_id) {
           setValue("guest_id", scan.guest_id)
           setSelectedGuestId(scan.guest_id)
+          setSelectedGuestSnapshot(null)
           setGuestSearch("")
         } else {
           startNewGuestFromScan(scan.document, { scanId: scan.id })
@@ -837,28 +855,37 @@ function SectionMark({
   )
 
   // Yangi mehmon formasida passport/telefon terilishi bilan mavjud mehmonni
-  // jonli aniqlash — dublikat yaratmaslik va ishni tezlashtirish uchun
+  // serverdan jonli aniqlash — dublikat yaratmaslik va ishni tezlashtirish
+  const newGuestLookup = useMemo(() => {
+    const pass = (watchNewPassport || "").trim()
+    if (pass.length >= 5) return pass
+    const digits = (watchNewPhone || "").replace(/\D/g, "")
+    return digits.length >= 9 ? watchNewPhone || "" : ""
+  }, [watchNewPassport, watchNewPhone])
+  const { data: newGuestLookupResults = [] } = useGuestSearch(
+    newGuestLookup,
+    showNewGuest
+  )
   const existingGuestMatch = useMemo(() => {
     const passNorm = (s?: string | null) =>
       (s || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
     const digitsOf = (s?: string | null) => (s || "").replace(/\D/g, "")
     const pass = passNorm(watchNewPassport)
-    if (pass.length >= 5) {
-      const g = (guests as any[]).find(
-        (x) => passNorm(x.passport_number) && passNorm(x.passport_number) === pass
-      )
-      if (g) return g
-    }
     const digits = digitsOf(watchNewPhone)
-    if (digits.length >= 9) {
-      const tail = digits.slice(-9)
-      const g = (guests as any[]).find(
-        (x) => digitsOf(x.phone).length >= 9 && digitsOf(x.phone).slice(-9) === tail
-      )
-      if (g) return g
-    }
-    return null
-  }, [watchNewPassport, watchNewPhone, guests])
+    const tail = digits.slice(-9)
+    return (
+      newGuestLookupResults.find((g) => {
+        if (pass.length >= 5 && passNorm(g.passport_number) === pass) return true
+        if (
+          digits.length >= 9 &&
+          digitsOf(g.phone).length >= 9 &&
+          digitsOf(g.phone).slice(-9) === tail
+        )
+          return true
+        return false
+      }) || null
+    )
+  }, [newGuestLookupResults, watchNewPassport, watchNewPhone])
 
   const dialogBusyTimes = useMemo(() => {
     if (!open || bookingType !== "HOURLY") return []
@@ -1105,6 +1132,7 @@ function SectionMark({
       const hotelId = chosenRoom?.hotel_id || user?.hotel_id || undefined
 
       let guestId = values.guest_id
+      let createdGuest: Guest | null = null
 
       if (!guestId && values.new_guest_first_name) {
         const guest = await createGuestMutation.mutateAsync({
@@ -1125,6 +1153,7 @@ function SectionMark({
           hotelId,
         })
         guestId = guest.id
+        createdGuest = guest
 
         /* Skanerlangan hujjat surati — endi mehmon id'si bor. Bron
            BUZILMAYDI: saqlanmasa faqat ogohlantiriladi. */
@@ -1307,7 +1336,7 @@ function SectionMark({
          natija (yoki "qayta urinish") sahifa ustidagi xabarda ko'rinadi,
          chunki bu oyna hozir yopiladi. */
       if (finalReservation?.reservation_number) {
-        const pickedGuest = guestId ? guests.find((g: any) => g.id === guestId) : null
+        const pickedGuest = createdGuest || selectedGuestObj
         const guestName = pickedGuest
           ? `${pickedGuest.first_name || ""} ${pickedGuest.last_name || ""}`.trim()
           : `${values.new_guest_first_name || ""} ${values.new_guest_last_name || ""}`.trim()
@@ -1322,6 +1351,7 @@ function SectionMark({
 
       setShowNewGuest(false)
       setSelectedGuestId("")
+      setSelectedGuestSnapshot(null)
       setBookingType("DAILY")
       setPendingScan(null)
       clearGuestPhoto()
@@ -1680,9 +1710,14 @@ function SectionMark({
               // Tanlangan mehmon ALOHIDA karta bo'lib ko'rsatiladi —
               // kim tanlangani bir qarashda aniq; "O'zgartirish" bosilsa
               // qidiruv ro'yxati qaytadi (tanlov bekor bo'ladi)
-              const selectedGuestObj = selectedGuestId
-                ? (guests as any[]).find((g) => g.id === selectedGuestId)
-                : null
+              if (selectedGuestId && !selectedGuestObj && !selectedGuestLoadFailed) {
+                return (
+                  <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {tr("Yuklanmoqda...")}
+                  </div>
+                )
+              }
               if (selectedGuestObj) {
                 const initials = `${selectedGuestObj.first_name?.[0] ?? ""}${
                   selectedGuestObj.last_name?.[0] ?? ""
@@ -1711,6 +1746,7 @@ function SectionMark({
                       onClick={() => {
                         setValue("guest_id", "")
                         setSelectedGuestId("")
+                        setSelectedGuestSnapshot(null)
                         setGuestSearch("")
                       }}
                       className="flex-shrink-0 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
@@ -1833,11 +1869,7 @@ function SectionMark({
                       "w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors",
                       selectedGuestId === g.id && "bg-primary-50 text-primary-700"
                     )}
-                    onClick={() => {
-                      setValue("guest_id", g.id)
-                      setSelectedGuestId(g.id)
-                      setGuestSearch("")
-                    }}
+                    onClick={() => chooseGuest(g)}
                   >
                     <span className="font-medium">
                       {g.first_name} {g.last_name}
@@ -1849,7 +1881,14 @@ function SectionMark({
                 ))}
                 {filteredGuests.length === 0 && (
                   <p className="px-3 py-4 text-sm text-gray-400 text-center">
-                    {tr("Mijoz topilmadi")}
+                    {guestSearchFetching ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {tr("Yuklanmoqda...")}
+                      </span>
+                    ) : (
+                      tr("Mijoz topilmadi")
+                    )}
                   </p>
                 )}
               </div>
@@ -1928,8 +1967,7 @@ function SectionMark({
                     type="button"
                     onClick={() => {
                       backToGuestList()
-                      setValue("guest_id", existingGuestMatch.id)
-                      setSelectedGuestId(existingGuestMatch.id)
+                      chooseGuest(existingGuestMatch)
                     }}
                     className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
                   >
@@ -2143,7 +2181,6 @@ function SectionMark({
         <CompanionGuests
           adults={adultsCount - trimmedLate.length}
           mainGuestId={selectedGuestId || undefined}
-          guests={guests}
           value={trimmedCompanions}
           onChange={setCompanions}
           required={guestsRequired}

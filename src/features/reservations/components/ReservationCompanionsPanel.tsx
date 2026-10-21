@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Check, Clock, Loader2, LogIn, LogOut, RotateCcw, UserPlus, Users, X } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
@@ -58,8 +58,6 @@ type PanelReservation = CompanionReservationLike & {
 interface Props {
   reservation: PanelReservation
   mainGuestName: string
-  /** Mehmonlar bazasi — yangi hamrohni qidirish uchun */
-  guests: any[]
   /** Amallar (ketdi / qaytdi / qo'shish) — reservation.update ruxsati;
       farroshga faqat ro'yxat ko'rinadi */
   canManage: boolean
@@ -84,7 +82,6 @@ const ACTION_CLASS =
 export const ReservationCompanionsPanel = ({
   reservation: res,
   mainGuestName,
-  guests,
   canManage,
   branchId,
   onUpdated,
@@ -126,10 +123,7 @@ export const ReservationCompanionsPanel = ({
   /* Qidiruvda ichkaridagi hamrohlar chiqmaydi — bir odam ikki marta
      yozilmasin. Ketgani esa chiqadi: qaytib kelsa shu yo'l bilan ham
      kiritiladi (server yangi yozuv ochmaydi, "ketdi"ni bekor qiladi). */
-  const searchableGuests = useMemo(() => {
-    const present = new Set(companions.filter(isPresent).map((c) => c.guest_id))
-    return guests.filter((g) => !present.has(g.id))
-  }, [guests, companions])
+  const presentGuestIds = companions.filter(isPresent).map((c) => c.guest_id)
 
   // Bir kishilik bron, hamrohi yo'q, amal ham yo'q — ko'rsatadigan narsa yo'q
   if (capacity === 1 && companions.length === 0 && !(canManage && active)) return null
@@ -404,7 +398,7 @@ export const ReservationCompanionsPanel = ({
                   <CompanionGuests
                     adults={2}
                     mainGuestId={res.guest_id}
-                    guests={searchableGuests}
+                    excludeGuestIds={presentGuestIds}
                     value={[]}
                     onChange={(next) => handlePicked(next, e.id)}
                     required={false}
@@ -473,7 +467,7 @@ export const ReservationCompanionsPanel = ({
               <CompanionGuests
                 adults={2}
                 mainGuestId={res.guest_id}
-                guests={searchableGuests}
+                excludeGuestIds={presentGuestIds}
                 value={[]}
                 onChange={handlePicked}
                 required={false}

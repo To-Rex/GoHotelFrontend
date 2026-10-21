@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import type { Guest } from '@/types/api';
 
 export const useGuests = () => {
@@ -54,6 +55,23 @@ export const fetchGuest = async (id: string): Promise<Guest> => {
   const { data } = await api.get<Guest>(`/guests/${id}`);
   return data;
 };
+
+export const useGuestSearch = (query: string, enabled = true) => {
+  const q = useDebouncedValue(query.trim(), 250);
+  return useQuery({
+    queryKey: ["guests", "search", q],
+    queryFn: () => searchGuests(q),
+    enabled: enabled && q.length >= 2,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useGuest = (guestId?: string | null) =>
+  useQuery({
+    queryKey: ["guests", "detail", guestId],
+    queryFn: () => fetchGuest(guestId as string),
+    enabled: !!guestId,
+  });
 
 export const useCreateGuest = () => {
   const queryClient = useQueryClient();
