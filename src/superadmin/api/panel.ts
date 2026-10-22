@@ -821,11 +821,32 @@ export interface SystemStatus {
     version?: string
     size?: string
     connections?: number
+    active_connections?: number
+    max_connections?: number | null
     migration?: string
-    counts?: Record<string, number>
+    postmaster_started_at?: string | null
+    counts?: Record<string, number | null>
     open_shifts?: number
     live_sessions?: number
     error?: string
+  }
+  diagnostics?: {
+    checked_at?: string
+    conflicts?: Record<string, number | null>
+    capacity?: {
+      disk_total?: number | null
+      disk_used?: number | null
+      disk_free?: number | null
+      disk_percent?: number | null
+      load_1m?: number | null
+      load_5m?: number | null
+      load_15m?: number | null
+    }
+    runtime?: {
+      python?: string
+      platform?: string
+      pid?: number
+    }
   }
   storage: {
     ok: boolean
