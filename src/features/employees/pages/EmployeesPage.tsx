@@ -126,13 +126,17 @@ export const EmployeesPage = () => {
   const deleteMutation = useDeleteEmployee()
   const setPermsMutation = useSetUserPermissions()
 
-  // Rol shablonlari: menejer (admin emas) faqat "Farrosh" va "Texnik xizmat"
-  // rollarini bera oladi — backend ham xuddi shuni tekshiradi;
+  // Rol shablonlari: menejer (admin emas) faqat "Farrosh", "Texnik xizmat" va
+  // "Qabulxona xodimi" rollarini bera oladi — backend ham xuddi shuni tekshiradi;
   // ADMIN/SUPER_ADMIN istalgan rolni tanlashi mumkin.
   const roleOptions = useMemo(
     () =>
       PERMISSION_TEMPLATES.filter(
-        (t) => isAdmin || t.id === "housekeeper" || t.id === "maintenance"
+        (t) =>
+          isAdmin ||
+          t.id === "housekeeper" ||
+          t.id === "maintenance" ||
+          t.id === "receptionist"
       ),
     [isAdmin]
   )
@@ -287,7 +291,8 @@ export const EmployeesPage = () => {
     setWorkEnd("17:00")
     setWorkHours("8")
     setAllowOutside(false)
-    // Menejer uchun yagona variant — Farrosh; admin xohlasa keyin tanlaydi
+    // Menejer uchun standart — Farrosh; Qabulxona/Texnik xizmatni ham tanlashi
+    // mumkin, admin xohlasa keyin tanlaydi
     setRoleTemplateId(isAdmin ? "" : "housekeeper")
     handlePhoto(null)
     setErrorMsg(null)
@@ -367,7 +372,7 @@ export const EmployeesPage = () => {
         }
 
         // Rol almashtirilgan bo'lsa — shablon ruxsatlari TO'LIQ almashtiriladi.
-        // Menejer faqat Farrosh/Texnik xizmat doirasida — backend tekshiradi.
+        // Menejer Farrosh/Texnik xizmat/Qabulxona doirasida — backend tekshiradi.
         if (roleTemplateId && editing.user_type !== "ADMIN") {
           const template = PERMISSION_TEMPLATES.find((t) => t.id === roleTemplateId)
           const permissionIds = template
@@ -1079,7 +1084,7 @@ export const EmployeesPage = () => {
               )}
             </FormSection>
             {/* Rol — yaratishda biriktiriladi, tahrirlashda almashtiriladi.
-                Menejer faqat Farrosh va Texnik xizmatni tanlay oladi,
+                Menejer Farrosh, Texnik xizmat va Qabulxona xodimini tanlay oladi,
                 admin barcha rollarni (backend ham xuddi shuni tekshiradi) */}
             {!editing ? (
               <FormSection icon={ShieldCheck} title={tr("Rol{{v}}", { v: !isAdmin ? " *" : "" })}>
@@ -1122,7 +1127,7 @@ export const EmployeesPage = () => {
                   <p className="text-xs text-gray-400">
                     {tr("Yangi rol tanlansa, xodim ruxsatlari shu rol shabloni bilan TO'LIQ almashtiriladi.")}
                     {!isAdmin &&
-                      tr(" Menejer faqat Farrosh va Texnik xizmat rollarini biriktira oladi.")}
+                      tr(" Menejer faqat Farrosh, Texnik xizmat va Qabulxona xodimi rollarini biriktira oladi.")}
                   </p>
                 </FormSection>
               )

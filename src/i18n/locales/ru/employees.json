@@ -57,7 +57,7 @@
   "maxsus to'plam": "свой набор",
   "rolsiz": "без роли",
   "Yangi rol tanlansa, xodim ruxsatlari shu rol shabloni bilan TO'LIQ almashtiriladi.": "Если выбрать новую роль, разрешения сотрудника будут ПОЛНОСТЬЮ заменены шаблоном этой роли.",
-  " Menejer faqat Farrosh va Texnik xizmat rollarini biriktira oladi.": " Менеджер может назначать только роли «Горничная» и «Техническая служба».",
+  " Menejer faqat Farrosh, Texnik xizmat va Qabulxona xodimi rollarini biriktira oladi.": " Менеджер может назначать только роли «Горничная», «Техническая служба» и «Сотрудник ресепшена».",
   "Audit": "Аудит",
   "Murojaatlarni ko'rish": "Просмотр обращений",
   "Murojaat kiritish": "Добавление обращения",

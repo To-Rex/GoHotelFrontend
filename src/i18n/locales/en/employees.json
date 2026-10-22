@@ -50,7 +50,7 @@
   "maxsus to'plam": "custom set",
   "rolsiz": "no role",
   "Yangi rol tanlansa, xodim ruxsatlari shu rol shabloni bilan TO'LIQ almashtiriladi.": "If a new role is selected, the employee's permissions are FULLY replaced with that role's template.",
-  " Menejer faqat Farrosh va Texnik xizmat rollarini biriktira oladi.": " A manager can only assign the Housekeeper and Technician roles.",
+  " Menejer faqat Farrosh, Texnik xizmat va Qabulxona xodimi rollarini biriktira oladi.": " A manager can only assign the Housekeeper, Technician and Receptionist roles.",
   "Audit": "Audit",
   "Murojaatlarni ko'rish": "View feedback",
   "Murojaat kiritish": "Add feedback",
