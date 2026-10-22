@@ -3,6 +3,7 @@ import {
   Camera,
   Layers,
   Loader2,
+  Maximize2,
   RefreshCw,
   ShieldAlert,
   TriangleAlert,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { ImageLightbox } from "@/components/ui/image-lightbox"
 import {
   Dialog,
   DialogContent,
@@ -186,6 +188,91 @@ function GroupCard({
   )
 }
 
+/** Tanlangan yuzning kattaroq nusxasi — «aynan shu insonmi?» degan savolga
+ *  javob berish uchun. Rasm tanlanganda pastdagi kichik kartochkadan ko'ra
+ *  kattaroq ko'rinadi; «Kattalashtirish» butun ekranda ochadi. */
+function SelectedFacePreview({
+  group,
+  onZoom,
+}: {
+  group: SightingGroup
+  onZoom: (url: string) => void
+}) {
+  const [url, setUrl] = useState<string | null>(null)
+  const urlRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!group.has_thumbnail) return
+    fetchSightingImage(group.best_sighting_id)
+      .then((objectUrl) => {
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl)
+          return
+        }
+        urlRef.current = objectUrl
+        setUrl(objectUrl)
+      })
+      .catch(() => {
+        if (!cancelled) setUrl(null)
+      })
+    return () => {
+      cancelled = true
+      if (urlRef.current) {
+        URL.revokeObjectURL(urlRef.current)
+        urlRef.current = null
+      }
+    }
+  }, [group.best_sighting_id, group.has_thumbnail])
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-primary-200 bg-primary-50/40 p-2.5">
+      <button
+        type="button"
+        disabled={!url}
+        onClick={() => url && onZoom(url)}
+        title={tr("Kattalashtirish")}
+        className="relative h-40 w-32 shrink-0 overflow-hidden rounded-lg bg-gray-200 sm:h-52 sm:w-40"
+      >
+        {url ? (
+          <img
+            src={url}
+            alt={tr("{{v}} kamerasidan", { v: group.camera_name || group.camera_id })}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center text-gray-400">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </span>
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-gray-900">
+          {group.camera_name || group.camera_id}
+        </p>
+        <p className="text-[11px] text-gray-500">
+          {timeAgo(group.last_seen_at)}
+          {group.count > 1 && tr(" · {{count}} marta", { count: group.count })}
+        </p>
+        <p className="mt-1 text-xs text-gray-500">
+          {tr("Yuzni diqqat bilan tekshiring — keyin «Tanlash»ni bosing.")}
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="mt-2"
+          disabled={!url}
+          onClick={() => url && onZoom(url)}
+        >
+          <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
+          {tr("Kattalashtirish")}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function FacePickerDialog({
   open,
   onOpenChange,
@@ -195,6 +282,7 @@ export function FacePickerDialog({
   noBranchHint = tr("Suratlar filial bo'yicha ajratiladi, lekin bu mehmonxonada filial yaratilmagan. Avval filial qo'shing."),
 }: FacePickerDialogProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null)
   const currentBranch = useAuthStore((s) => s.user?.branch_id) || null
 
   /* Chaqiruvchi filialni bergan bo'lsa o'sha, bo'lmasa JORIY filial:
@@ -220,6 +308,10 @@ export function FacePickerDialog({
   const items = data?.items || []
   const selected = items.find((g) => g.best_sighting_id === selectedKey) || null
 
+  useEffect(() => {
+    setZoomUrl(null)
+  }, [selectedKey, selected?.best_sighting_id])
+
   const confirm = () => {
     if (!selected) return
     onSelect(selected)
@@ -228,7 +320,15 @@ export function FacePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="max-w-2xl"
+        onEscapeKeyDown={(event) => {
+          if (zoomUrl) {
+            event.preventDefault()
+            setZoomUrl(null)
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-4 w-4" />
@@ -294,16 +394,21 @@ export function FacePickerDialog({
                 </p>
               </div>
             ) : (
-              <div className="grid max-h-[22rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
-                {items.map((group) => (
-                  <GroupCard
-                    key={group.best_sighting_id}
-                    group={group}
-                    selected={group.best_sighting_id === selectedKey}
-                    onClick={() => setSelectedKey(group.best_sighting_id)}
-                  />
-                ))}
-              </div>
+              <>
+                {selected && (
+                  <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
+                )}
+                <div className="grid max-h-[22rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+                  {items.map((group) => (
+                    <GroupCard
+                      key={group.best_sighting_id}
+                      group={group}
+                      selected={group.best_sighting_id === selectedKey}
+                      onClick={() => setSelectedKey(group.best_sighting_id)}
+                    />
+                  ))}
+                </div>
+              </>
             )}
 
             {selected && selected.count > 1 && (
@@ -324,6 +429,23 @@ export function FacePickerDialog({
             {tr("Tanlash")}
           </Button>
         </DialogFooter>
+
+        <ImageLightbox
+          url={zoomUrl}
+          alt={
+            selected
+              ? tr("{{v}} kamerasidan", {
+                  v: selected.camera_name || selected.camera_id,
+                })
+              : undefined
+          }
+          caption={
+            selected
+              ? `${selected.camera_name || selected.camera_id} · ${timeAgo(selected.last_seen_at)}`
+              : undefined
+          }
+          onClose={() => setZoomUrl(null)}
+        />
       </DialogContent>
     </Dialog>
   )
