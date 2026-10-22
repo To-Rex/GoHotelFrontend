@@ -1,13 +1,25 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import {
+  Activity,
   ArrowLeft,
   BedDouble,
+  Building2,
+  Check,
+  Copy,
   KeyRound,
   Loader2,
+  LogIn,
+  Mail,
+  MapPin,
+  PauseCircle,
+  Phone,
+  PlayCircle,
   Plus,
+  ScrollText,
   Trash2,
   UserPlus,
+  Users,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -15,6 +27,7 @@ import { panelError } from "../api/client"
 import {
   useBranches,
   useCreateStaff,
+  useDeactivateHotel,
   useEnterHotel,
   useMoveStaffBranch,
   useDeleteBranch,
@@ -23,19 +36,25 @@ import {
   useHotels,
   useResetStaffPassword,
   useSaveBranch,
+  useSaveHotel,
   useSetStaffStatus,
   type HotelStaff,
   type PanelBranch,
+  type PanelHotel,
 } from "../api/panel"
+import { HotelPurgeDialog } from "../components/HotelPurgeDialog"
 import {
+  PanelBadge,
   PanelButton,
   PanelCard,
   PanelDialog,
   PanelEmpty,
-  PanelHeading,
   PanelInput,
   PanelNotice,
   PanelSelect,
+  PanelSection,
+  PanelStat,
+  PanelTabs,
 } from "../components/ui"
 import { tr } from "@/i18n"
 
@@ -64,60 +83,327 @@ const ROOM_STATUS: Record<string, string> = {
   OUT_OF_ORDER: tr("Ishlamaydi"),
 }
 
-/** Bitta mehmonxona: filiallari va xodimlari. */
+/** Bitta mehmonxona: umumiy ko'rinish, filiallar, xonalar va xodimlar. */
+type HotelTab = "overview" | "branches" | "rooms" | "staff"
+
+const LINK_BUTTON =
+  "inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.09] px-3.5 text-[13px] font-medium text-slate-300 transition-colors hover:bg-white/[0.04] hover:text-slate-100"
+
 export function HotelDetailPage() {
   const { hotelId = "" } = useParams()
-  const [tab, setTab] = useState<"branches" | "rooms" | "staff">("branches")
-
-  // Ro'yxat allaqachon yuklangan bo'lsa nom shundan olinadi — alohida
-  // so'rov yubormaymiz
+  const [tab, setTab] = useState<HotelTab>("overview")
   const { data: hotels = [] } = useHotels()
-  const hotel = hotels.find((h) => h.id === hotelId)
+  const hotel = hotels.find((h) => h.id === hotelId) || null
+  const enter = useEnterHotel()
+  const save = useSaveHotel()
+  const deactivate = useDeactivateHotel()
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [purging, setPurging] = useState<PanelHotel | null>(null)
+
+  const openFull = async () => {
+    if (!hotel) return
+    setError(null)
+    try {
+      await enter.mutateAsync({ hotelId: hotel.id })
+    } catch (e) {
+      setError(panelError(e))
+    }
+  }
+
+  const copyId = async () => {
+    if (!hotel) return
+    try {
+      await navigator.clipboard.writeText(hotel.id)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // clipboard ruxsati bo'lmasa — hech narsa
+    }
+  }
+
+  const stop = async () => {
+    if (!hotel) return
+    if (
+      !confirm(
+        tr("\"{{name}}\" to'xtatiladi.\n\n", { name: hotel.name }) +
+          tr("Xodimlar tizimga kira olmaydi — ular sabab yozilgan ekranni ") +
+          tr("ko'radi. Ochiq turgan sessiyalar ham darhol to'xtaydi.\n\n") +
+          tr("Barcha ma'lumot va tarix saqlanadi, xohlagan payt qayta ") +
+          tr("faollashtirasiz. Davom etasizmi?")
+      )
+    )
+      return
+    setError(null)
+    try {
+      await deactivate.mutateAsync(hotel.id)
+    } catch (e) {
+      setError(panelError(e))
+    }
+  }
+
+  const resume = async () => {
+    if (!hotel) return
+    setError(null)
+    try {
+      await save.mutateAsync({ id: hotel.id, status: "ACTIVE" })
+    } catch (e) {
+      setError(panelError(e))
+    }
+  }
+
+  const statusTone =
+    hotel?.status === "ACTIVE"
+      ? "success"
+      : hotel?.status === "SUSPENDED"
+        ? "warning"
+        : "danger"
 
   return (
     <div>
       <Link
         to="/panel/hotels"
-        className="mb-3 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200"
+        className="mb-3 inline-flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-200"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         {tr("Mehmonxonalar")}
       </Link>
 
-      <PanelHeading
-        title={hotel?.name || tr("Mehmonxona")}
-        subtitle={
-          hotel ? `${hotel.code}${hotel.city ? ` · ${hotel.city}` : ""}` : undefined
-        }
-      />
-
-      <div className="mb-4 flex gap-1 rounded-xl border border-white/5 bg-white/[0.03] p-1">
-        {(
-          [
-            ["branches", tr("Filiallar")],
-            ["rooms", tr("Xonalar")],
-            ["staff", tr("Xodimlar")],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={cn(
-              "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-              tab === key
-                ? "bg-emerald-500/15 text-emerald-300"
-                : "text-slate-400 hover:text-slate-200"
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-[22px] font-semibold tracking-tight text-slate-100">
+              {hotel?.name || tr("Mehmonxona")}
+            </h1>
+            {hotel && (
+              <PanelBadge tone={statusTone}>
+                {hotel.status === "ACTIVE"
+                  ? tr("Faol")
+                  : hotel.status === "SUSPENDED"
+                    ? tr("Vaqtincha to'xtatilgan")
+                    : tr("To'xtatilgan")}
+              </PanelBadge>
             )}
+          </div>
+          <p className="mt-0.5 text-[13px] text-slate-500">
+            {hotel
+              ? `${hotel.code}${hotel.city ? ` · ${hotel.city}` : ""} · ${hotel.stars}★`
+              : ""}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <PanelButton onClick={() => void openFull()} disabled={enter.isPending || !hotel}>
+            <LogIn className="h-4 w-4" />
+            {tr("To'liq boshqarish")}
+          </PanelButton>
+          <Link className={LINK_BUTTON} to={`/panel/api-logs?hotel_id=${hotelId}`}>
+            <Activity className="h-4 w-4" />
+            {tr("Jurnal")}
+          </Link>
+          <Link className={LINK_BUTTON} to={`/panel/audit?hotel_id=${hotelId}`}>
+            <ScrollText className="h-4 w-4" />
+            {tr("Tarix")}
+          </Link>
+          <PanelButton
+            variant="ghost"
+            onClick={() => void copyId()}
+            disabled={!hotel}
+            title={tr("Nusxalash")}
           >
-            {label}
-          </button>
-        ))}
+            {copied ? (
+              <Check className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </PanelButton>
+          {hotel &&
+            (hotel.status === "ACTIVE" ? (
+              <PanelButton
+                variant="danger"
+                onClick={() => void stop()}
+                disabled={deactivate.isPending}
+              >
+                <PauseCircle className="h-4 w-4" />
+                {tr("To'xtatish")}
+              </PanelButton>
+            ) : (
+              <PanelButton onClick={() => void resume()} disabled={save.isPending}>
+                <PlayCircle className="h-4 w-4" />
+                {tr("Faollashtirish")}
+              </PanelButton>
+            ))}
+          {hotel && (
+            <PanelButton
+              variant="danger"
+              onClick={() => setPurging(hotel)}
+              title={tr("Mehmonxonani butunlay o'chirish")}
+            >
+              <Trash2 className="h-4 w-4" />
+            </PanelButton>
+          )}
+        </div>
       </div>
 
+      {error && (
+        <div className="mb-4">
+          <PanelNotice>{error}</PanelNotice>
+        </div>
+      )}
+
+      <PanelTabs<HotelTab>
+        className="mb-4"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { key: "overview", label: tr("Umumiy") },
+          { key: "branches", label: tr("Filiallar"), count: hotel?.branch_count },
+          { key: "rooms", label: tr("Xonalar"), count: hotel?.room_count },
+          { key: "staff", label: tr("Xodimlar"), count: hotel?.user_count },
+        ]}
+      />
+
+      {tab === "overview" && (
+        <OverviewTab
+          hotel={hotel}
+          hotelId={hotelId}
+          onTab={setTab}
+          onEnter={openFull}
+          entering={enter.isPending}
+        />
+      )}
       {tab === "branches" && <BranchesTab hotelId={hotelId} />}
       {tab === "rooms" && <RoomsTab hotelId={hotelId} />}
       {tab === "staff" && <StaffTab hotelId={hotelId} />}
+
+      <HotelPurgeDialog hotel={purging} onClose={() => setPurging(null)} />
+    </div>
+  )
+}
+
+function OverviewTab({
+  hotel,
+  hotelId,
+  onTab,
+  onEnter,
+  entering,
+}: {
+  hotel: PanelHotel | null
+  hotelId: string
+  onTab: (tab: HotelTab) => void
+  onEnter: () => Promise<void>
+  entering: boolean
+}) {
+  if (!hotel) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+      </div>
+    )
+  }
+
+  const address = [hotel.address_line1, hotel.city, hotel.country]
+    .filter(Boolean)
+    .join(", ")
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <PanelStat label={tr("Filiallar")} value={hotel.branch_count} icon={MapPin} />
+        <PanelStat label={tr("Xonalar")} value={hotel.room_count} icon={BedDouble} />
+        <PanelStat label={tr("Xodimlar")} value={hotel.user_count} icon={Users} />
+        <PanelStat label={tr("Yulduz")} value={`${hotel.stars}★`} icon={Building2} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <PanelCard>
+          <PanelSection title={tr("Aloqa")}>
+            <div className="space-y-2">
+              <Info icon={Phone} label={tr("Telefon")} value={hotel.phone} />
+              <Info icon={Mail} label={tr("Pochta")} value={hotel.email} />
+              <Info icon={MapPin} label={tr("Manzil")} value={address} />
+            </div>
+            {hotel.description && (
+              <p className="mt-3 border-t border-white/[0.06] pt-3 text-[12px] leading-relaxed text-slate-500">
+                {hotel.description}
+              </p>
+            )}
+          </PanelSection>
+        </PanelCard>
+
+        <PanelCard>
+          <PanelSection title={tr("Tezkor amallar")}>
+            <div className="grid gap-1.5">
+              <PanelButton
+                variant="ghost"
+                className="justify-start"
+                onClick={() => onTab("branches")}
+              >
+                <MapPin className="h-4 w-4" />
+                {tr("Filiallar")} · {hotel.branch_count ?? 0}
+              </PanelButton>
+              <PanelButton
+                variant="ghost"
+                className="justify-start"
+                onClick={() => onTab("rooms")}
+              >
+                <BedDouble className="h-4 w-4" />
+                {tr("Xonalar")} · {hotel.room_count ?? 0}
+              </PanelButton>
+              <PanelButton
+                variant="ghost"
+                className="justify-start"
+                onClick={() => onTab("staff")}
+              >
+                <Users className="h-4 w-4" />
+                {tr("Xodimlar")} · {hotel.user_count ?? 0}
+              </PanelButton>
+              <PanelButton
+                className="mt-1 justify-start"
+                disabled={entering}
+                onClick={() => void onEnter()}
+              >
+                <LogIn className="h-4 w-4" />
+                {tr("To'liq boshqarish")}
+              </PanelButton>
+              <div className="mt-1 grid grid-cols-2 gap-1.5">
+                <Link
+                  className={cn(LINK_BUTTON, "justify-center px-2")}
+                  to={`/panel/api-logs?hotel_id=${hotelId}`}
+                >
+                  <Activity className="h-3.5 w-3.5" />
+                  {tr("Jurnal")}
+                </Link>
+                <Link
+                  className={cn(LINK_BUTTON, "justify-center px-2")}
+                  to={`/panel/audit?hotel_id=${hotelId}`}
+                >
+                  <ScrollText className="h-3.5 w-3.5" />
+                  {tr("Tarix")}
+                </Link>
+              </div>
+            </div>
+          </PanelSection>
+        </PanelCard>
+      </div>
+    </div>
+  )
+}
+
+function Info({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Phone
+  label: string
+  value?: string | null
+}) {
+  return (
+    <div className="flex items-start gap-2 text-[13px]">
+      <Icon className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-slate-600" />
+      <span className="w-20 flex-shrink-0 text-slate-500">{label}</span>
+      <span className="min-w-0 break-words text-slate-300">{value || "—"}</span>
     </div>
   )
 }
@@ -405,9 +691,9 @@ function StaffTab({ hotelId }: { hotelId: string }) {
       ) : staff.length === 0 ? (
         <PanelEmpty>{tr("Xodim yo'q")}</PanelEmpty>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/5">
+        <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#101216]">
           <table className="w-full text-sm">
-            <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
+            <thead className="bg-white/[0.02] text-left text-[11px] text-slate-500">
               <tr>
                 <th className="px-3 py-2 font-medium">{tr("Xodim")}</th>
                 <th className="px-3 py-2 font-medium">{tr("Login")}</th>
@@ -417,7 +703,7 @@ function StaffTab({ hotelId }: { hotelId: string }) {
                 <th className="px-3 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/[0.06]">
               {staff.map((person) => (
                 <tr key={person.id} className="hover:bg-white/[0.02]">
                   <td className="px-3 py-2 text-slate-200">
@@ -616,10 +902,10 @@ function RoomsTab({ hotelId }: { hotelId: string }) {
   if (rooms.length === 0) return <PanelEmpty>{tr("Xona yo'q")}</PanelEmpty>
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/5">
+    <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#101216]">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] text-sm">
-          <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
+          <thead className="bg-white/[0.02] text-left text-[11px] text-slate-500">
             <tr>
               <th className="px-3 py-2.5 font-medium">{tr("Xona")}</th>
               <th className="px-3 py-2.5 font-medium">{tr("Qavat")}</th>
@@ -629,7 +915,7 @@ function RoomsTab({ hotelId }: { hotelId: string }) {
               <th className="px-3 py-2.5 font-medium">{tr("Holat")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-white/[0.06]">
             {rooms.map((room) => (
               <tr key={room.id} className="hover:bg-white/[0.02]">
                 <td className="px-3 py-2.5 font-medium text-slate-200">

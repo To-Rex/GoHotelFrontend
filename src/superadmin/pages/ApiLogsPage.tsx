@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react"
+﻿import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import {
   ArrowDown,
   ArrowUp,
@@ -45,14 +46,27 @@ import { tr, trc } from "@/i18n"
  * tafsilotlar (request/response, user-agent, IP) shu yerga tayanadi.
  */
 export function ApiLogsPage() {
+  const [params, setParams] = useSearchParams()
   const [method, setMethod] = useState("")
   const [status, setStatus] = useState("")
-  const [hotelId, setHotelId] = useState("")
+  const [hotelId, setHotelId] = useState(params.get("hotel_id") || "")
   const [q, setQ] = useState("")
   const [sort, setSort] = useState<SortKey>("ts")
   const [order, setOrder] = useState<SortOrder>("desc")
   const [paused, setPaused] = useState(false)
   const [openId, setOpenId] = useState<number | null>(null)
+
+  useEffect(() => {
+    setHotelId(params.get("hotel_id") || "")
+  }, [params])
+
+  const changeHotel = (value: string) => {
+    setHotelId(value)
+    const next = new URLSearchParams(params)
+    if (value) next.set("hotel_id", value)
+    else next.delete("hotel_id")
+    setParams(next, { replace: true })
+  }
 
   const { data: hotels = [] } = useHotels()
   const { data, isLoading, isError, refetch, isFetching } = useApiLogs(
@@ -105,10 +119,10 @@ export function ApiLogsPage() {
   const resetFilters = () => {
     setMethod("")
     setStatus("")
-    setHotelId("")
     setQ("")
     setSort("ts")
     setOrder("desc")
+    changeHotel("")
   }
 
   return (
@@ -179,7 +193,7 @@ export function ApiLogsPage() {
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.2fr)_8rem_8rem_minmax(0,1fr)_auto]">
         <PanelSelect
           value={hotelId}
-          onChange={(e) => setHotelId(e.target.value)}
+          onChange={(e) => changeHotel(e.target.value)}
           aria-label={tr("Kompaniya")}
           title={tr("Kompaniya")}
         >
@@ -252,7 +266,7 @@ export function ApiLogsPage() {
               )}
         </PanelEmpty>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02]">
+        <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#101216]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1060px] text-sm">
               <thead className="sticky top-0 z-10 bg-slate-950/95 text-left text-xs text-slate-400 backdrop-blur">
@@ -299,7 +313,7 @@ export function ApiLogsPage() {
                   <th className="px-3 py-2.5 font-medium">IP</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/[0.06]">
                 {rows.map((row) => (
                   <LogRow
                     key={row.id}
@@ -524,7 +538,7 @@ function LogRow({
         onClick={onToggle}
         className={cn(
           "cursor-pointer transition-colors hover:bg-white/[0.02]",
-          open && "bg-white/[0.03]"
+          open && "bg-white/[0.02]"
         )}
       >
         <td

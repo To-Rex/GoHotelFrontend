@@ -1,14 +1,29 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 import { useHotels, usePanelAudit } from "../api/panel"
-import { PanelEmpty, PanelHeading, PanelSelect } from "../components/ui"
+import { PanelBadge, PanelEmpty, PanelHeading, PanelSelect } from "../components/ui"
 import { tr } from "@/i18n"
 
 /** Harakatlar tarixi — kim, nima qildi. Faqat o'qish uchun. */
 export function AuditPage() {
+  const [params, setParams] = useSearchParams()
   const { data: hotels = [] } = useHotels()
-  const [hotelId, setHotelId] = useState("")
+  const [hotelId, setHotelId] = useState(params.get("hotel_id") || "")
+
+  useEffect(() => {
+    setHotelId(params.get("hotel_id") || "")
+  }, [params])
+
+  const changeHotel = (value: string) => {
+    setHotelId(value)
+    const next = new URLSearchParams(params)
+    if (value) next.set("hotel_id", value)
+    else next.delete("hotel_id")
+    setParams(next, { replace: true })
+  }
+
   const { data: rows = [], isLoading } = usePanelAudit(hotelId)
 
   return (
@@ -21,7 +36,8 @@ export function AuditPage() {
       <div className="mb-4 max-w-xs">
         <PanelSelect
           value={hotelId}
-          onChange={(e) => setHotelId(e.target.value)}
+          onChange={(e) => changeHotel(e.target.value)}
+          aria-label={tr("Mehmonxona")}
         >
           <option value="">{tr("Barcha mehmonxonalar")}</option>
           {hotels.map((hotel) => (
@@ -39,10 +55,10 @@ export function AuditPage() {
       ) : rows.length === 0 ? (
         <PanelEmpty>{tr("Yozuv yo'q")}</PanelEmpty>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/5">
+        <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#101216]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
+              <thead className="border-b border-white/[0.06] bg-white/[0.02] text-left text-[11px] text-slate-500">
                 <tr>
                   <th className="px-3 py-2.5 font-medium">{tr("Vaqt")}</th>
                   <th className="px-3 py-2.5 font-medium">{tr("Xodim")}</th>
@@ -52,7 +68,7 @@ export function AuditPage() {
                   <th className="px-3 py-2.5 font-medium">IP</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/[0.06]">
                 {rows.map((row) => (
                   <tr key={row.id} className="hover:bg-white/[0.02]">
                     <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-400">
@@ -67,9 +83,7 @@ export function AuditPage() {
                       {row.hotel_name || "—"}
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-slate-300">
-                        {row.action}
-                      </span>
+                      <PanelBadge tone="info">{row.action}</PanelBadge>
                     </td>
                     <td className="px-3 py-2.5 text-slate-400">
                       {row.entity_type}

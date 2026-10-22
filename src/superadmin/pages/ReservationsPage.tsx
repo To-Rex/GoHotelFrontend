@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import { Loader2, Search } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -119,10 +119,10 @@ export function ReservationsPage() {
       ) : rows.length === 0 ? (
         <PanelEmpty>{tr("Bron topilmadi")}</PanelEmpty>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/5">
+        <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#101216]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-sm">
-              <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
+              <thead className="bg-white/[0.02] text-left text-[11px] text-slate-500">
                 <tr>
                   <th className="px-3 py-2.5 font-medium">{tr("Bron")}</th>
                   <th className="px-3 py-2.5 font-medium">{tr("Mehmonxona")}</th>
@@ -133,7 +133,7 @@ export function ReservationsPage() {
                   <th className="px-3 py-2.5 text-right font-medium">{tr("Summa")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/[0.06]">
                 {rows.map((r) => (
                   <tr key={r.id} className="hover:bg-white/[0.02]">
                     <td className="px-3 py-2.5 font-medium text-slate-200">
@@ -173,7 +173,7 @@ export function ReservationsPage() {
             </table>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/5 px-3 py-2 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] px-3 py-2 text-xs text-slate-400">
             <span className="tabular-nums">
               {(filters.skip ?? 0) + 1}–{(filters.skip ?? 0) + rows.length} / {total}
             </span>

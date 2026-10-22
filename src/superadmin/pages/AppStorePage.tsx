@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+﻿import { useRef, useState } from "react"
 import {
   Download,
   FileUp,
@@ -179,10 +179,10 @@ export function AppStorePage() {
           {tr("Do'kon bo'sh — \"Dastur yuklash\" bilan birinchi faylni qo'shing")}
         </PanelEmpty>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/5">
+        <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#101216]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-white/[0.03] text-left text-xs text-slate-400">
+              <thead className="bg-white/[0.02] text-left text-[11px] text-slate-500">
                 <tr>
                   <th className="px-3 py-2.5 font-medium">{tr("Dastur")}</th>
                   <th className="px-3 py-2.5 font-medium">{tr("Platforma")}</th>
@@ -194,7 +194,7 @@ export function AppStorePage() {
                   <th className="px-3 py-2.5" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/[0.06]">
                 {releases.map((release) => {
                   const meta = PLATFORM_META[release.platform]
                   return (
@@ -303,7 +303,7 @@ export function AppStorePage() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="mt-1 flex w-full items-center gap-2 rounded-lg border border-dashed border-white/15 px-3 py-3 text-left text-sm text-slate-300 transition-colors hover:border-emerald-500/50 hover:bg-white/[0.03]"
+              className="mt-1 flex w-full items-center gap-2 rounded-lg border border-dashed border-white/15 px-3 py-3 text-left text-sm text-slate-300 transition-colors hover:border-emerald-500/50 hover:bg-white/[0.02]"
             >
               <FileUp className="h-4 w-4 flex-shrink-0 text-slate-500" />
               {draft?.file ? (

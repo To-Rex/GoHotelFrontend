@@ -1,11 +1,10 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Loader2, Lock, ShieldCheck } from "lucide-react"
+import { Loader2, ShieldCheck } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { panelError } from "../api/client"
 import { panelLogin } from "../api/panel"
+import { PanelButton, PanelInput, PanelNotice } from "../components/ui"
 import { tr, trc } from "@/i18n"
 
 /**
@@ -17,7 +16,7 @@ import { tr, trc } from "@/i18n"
  *
  * Ko'rinishi mehmonxona kirish sahifasidan ATAYLAB farq qiladi — qora
  * fon: xodim tasodifan bu yerga tushib qolsa, boshqa joyda ekanini
- * darhol tushunsin.
+ * darhol tushunsin. Dizayn minimal: gradient yo'q, faqat tekis sirt.
  */
 export function PanelLoginPage() {
   const navigate = useNavigate()
@@ -41,72 +40,60 @@ export function PanelLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-sm space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-7 shadow-2xl"
-      >
-        <div className="space-y-1 text-center">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800">
-            <ShieldCheck className="h-6 w-6 text-emerald-400" />
+    <div className="flex min-h-screen items-center justify-center bg-[#0a0b0d] px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-6 flex flex-col items-center gap-3 text-center">
+          <span className="grid h-11 w-11 place-items-center rounded-xl border border-emerald-400/15 bg-emerald-400/10">
+            <ShieldCheck className="h-5 w-5 text-emerald-300" />
           </span>
-          <h1 className="pt-2 text-lg font-bold text-slate-100">
-            {tr("Boshqaruv paneli")}
-          </h1>
-          <p className="text-xs text-slate-400">
-            {tr("Tizim egasi uchun — barcha mehmonxonalar ustidan nazorat")}
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-400">{tr("Pochta")}</label>
-            <Input
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-600"
-              placeholder={tr("pochta@example.com")}
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-400">{tr("Parol")}</label>
-            <Input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border-slate-700 bg-slate-950 text-slate-100"
-              required
-            />
+          <div>
+            <h1 className="text-lg font-semibold text-slate-100">
+              {tr("Boshqaruv paneli")}
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              {tr("Tizim egasi uchun — barcha mehmonxonalar ustidan nazorat")}
+            </p>
           </div>
         </div>
 
-        {error && (
-          <p className="rounded-md border border-red-900 bg-red-950/60 px-3 py-2 text-xs text-red-300">
-            {error}
-          </p>
-        )}
-
-        <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Lock className="mr-2 h-4 w-4" />
-          )}
-          {trc("login", "Kirish")}
-        </Button>
-
-        <button
-          type="button"
-          onClick={() => navigate("/login")}
-          className="w-full text-center text-xs text-slate-500 hover:text-slate-300"
+        <form
+          onSubmit={submit}
+          className="space-y-4 rounded-xl border border-white/[0.07] bg-[#101216] p-6"
         >
-          {tr("Mehmonxona tizimiga qaytish")}
-        </button>
-      </form>
+          <PanelInput
+            label={tr("Pochta")}
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={tr("pochta@example.com")}
+            required
+          />
+          <PanelInput
+            label={tr("Parol")}
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          {error && <PanelNotice>{error}</PanelNotice>}
+
+          <PanelButton type="submit" className="w-full" disabled={busy}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            {trc("login", "Kirish")}
+          </PanelButton>
+
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            className="w-full text-center text-[11px] text-slate-600 transition-colors hover:text-slate-400"
+          >
+            {tr("Mehmonxona tizimiga qaytish")}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

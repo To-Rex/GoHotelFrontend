@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import { KeyRound, Loader2, Plus, SlidersHorizontal, Trash2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -141,7 +141,7 @@ export function ConfiguratorsPage() {
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-800">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-slate-900 text-left text-xs text-slate-400">
+            <thead className="bg-white/[0.02] text-left text-[11px] text-slate-500">
               <tr>
                 <th className="px-3 py-2 font-medium">{tr("Kim")}</th>
                 <th className="px-3 py-2 font-medium">{tr("Login")}</th>
@@ -151,7 +151,7 @@ export function ConfiguratorsPage() {
                 <th className="px-3 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 bg-slate-900/40">
+            <tbody className="divide-y divide-white/[0.06] bg-transparent">
               {people.map((person) => (
                 <tr key={person.id}>
                   <td className="px-3 py-2 text-slate-200">{fullName(person)}</td>

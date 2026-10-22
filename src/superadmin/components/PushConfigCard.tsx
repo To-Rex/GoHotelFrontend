@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import { BellRing, Loader2, Send, Trash2, UploadCloud } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -123,7 +123,7 @@ export function PushConfigCard() {
           </div>
         ) : (
           status && (
-            <div className="space-y-1 rounded-lg border border-white/5 bg-slate-950/40 px-3 py-2 text-xs text-slate-400">
+            <div className="space-y-1 rounded-lg border border-white/[0.06] bg-[#0b0d10] px-3 py-2 text-xs text-slate-400">
               <p>
                 {tr("Kalit manbai:")}{" "}
                 <span className="text-slate-200">
@@ -196,7 +196,7 @@ export function PushConfigCard() {
         </form>
 
         {/* Sinov: telefon konsolidagi FCM token bilan darhol tekshiriladi */}
-        <div className="border-t border-white/5 pt-3">
+        <div className="border-t border-white/[0.06] pt-3">
           <div className="flex gap-2">
             <input
               value={testToken}

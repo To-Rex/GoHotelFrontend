@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -183,7 +183,7 @@ export function HotelPurgeDialog({
             {KEY_TABLES.map(([table, label]) => (
               <div
                 key={table}
-                className="rounded-xl border border-white/5 bg-white/[0.03] px-2 py-2 text-center"
+                className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-2 text-center"
               >
                 <p className="text-sm font-bold tabular-nums text-slate-100">
                   {num(counts.get(table) ?? 0)}
@@ -193,7 +193,7 @@ export function HotelPurgeDialog({
             ))}
           </div>
 
-          <details className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-xs text-slate-400">
+          <details className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-slate-400">
             <summary className="cursor-pointer select-none text-slate-300">
               {tr("Jami {{rows}} ta yozuv, {{tables}} ta jadval, {{files}} ta fayl", {
                 rows: num(data.total_rows),
@@ -250,7 +250,7 @@ export function HotelPurgeDialog({
           )}
 
           {nulling.length > 0 && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-slate-400">
+            <div className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs text-slate-400">
               <Link2Off className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <div>
                 <p>{tr("Boshqa yozuvlardagi havolalar bo'shatiladi (yozuvlarning o'zi qoladi):")}</p>
@@ -308,7 +308,7 @@ export function HotelPurgeDialog({
           )}
 
           {data.can_purge && isRoot && (
-            <div className="space-y-3 border-t border-white/5 pt-4">
+            <div className="space-y-3 border-t border-white/[0.06] pt-4">
               <PanelInput
                 label={tr("Tasdiqlash uchun mehmonxona kodini yozing: {{code}}", {
                   code: data.hotel.code,
