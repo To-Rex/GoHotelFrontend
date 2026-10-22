@@ -892,6 +892,11 @@ export interface ApiLogEntry {
   ip?: string | null
   request_body?: string | null
   response_body?: string | null
+  hotel_id?: string | null
+  branch_id?: string | null
+  user_id?: string | null
+  user_type?: string | null
+  user_agent?: string | null
 }
 
 export interface ApiLogList {
@@ -900,10 +905,22 @@ export interface ApiLogList {
   max_entries: number
 }
 
+export interface ApiLogFilters {
+  method?: string
+  status?: string
+  q?: string
+  /** Mehmonxona (kompaniya) ID si */
+  hotel_id?: string
+  /** ts | duration_ms | status | method | path */
+  sort?: string
+  /** asc | desc */
+  order?: string
+}
+
 /** Jurnal — sahifa ochiq va pauza bosilmagan bo'lsa har 3 soniyada
     yangilanadi; oldingi natija almashinuv paytida ushlab turiladi. */
 export const useApiLogs = (
-  filters: { method?: string; status?: string; q?: string },
+  filters: ApiLogFilters,
   live: boolean
 ) =>
   useQuery({
@@ -914,6 +931,9 @@ export const useApiLogs = (
           method: filters.method || undefined,
           status: filters.status || undefined,
           q: filters.q?.trim() || undefined,
+          hotel_id: filters.hotel_id || undefined,
+          sort: filters.sort || undefined,
+          order: filters.order || undefined,
         },
       })
       return data
