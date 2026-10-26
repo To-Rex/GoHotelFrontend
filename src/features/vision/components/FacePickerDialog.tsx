@@ -135,11 +135,11 @@ function GroupCard({
       )}
     >
       {/* Yuz surati — baland (portret) nisbatda: kamera crop'i kvadrat
-          bo'lsa-da, katak balandroq bo'lib, object-cover markazni (yuzni)
-          kattaroq ko'rsatadi. Ilgari aspect-square edi — yuzlar mayda
-          ko'rinib, "aynan shu insonmi?" degan savolga javob berish qiyin
-          edi. */}
-      <div className="aspect-[4/5] w-full bg-gray-100">
+          bo'lsa-da, katak kengligidan balandroq bo'lib, object-cover
+          markazni (yuzni) VERTIKAL bo'ylab kattaroq ko'rsatadi. Yuzlar
+          bo'yi jihatdan mayda ko'rinmasligi uchun nisbat 2:3 — kenglik
+          o'zgarmaydi, faqat balandlik oshadi. */}
+      <div className="aspect-[2/3] w-full bg-gray-100">
         {url ? (
           <img
             src={url}
@@ -403,7 +403,7 @@ export function FacePickerDialog({
                 {selected && (
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
-                <div className="grid max-h-[26rem] grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3">
+                <div className="grid max-h-[30rem] grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3">
                   {items.map((group) => (
                     <GroupCard
                       key={group.best_sighting_id}
