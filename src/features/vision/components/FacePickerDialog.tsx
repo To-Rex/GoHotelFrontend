@@ -134,11 +134,14 @@ function GroupCard({
           : "border-gray-200 hover:border-primary-400"
       )}
     >
-      {/* Yuz surati — balandlik INLINE uslubda (qat'iy 360px): hech qanday
-          CSS sinfi yig'ilishiga bog'liq emas, shuning uchun guruh kartalari
-          bo'yi har qanday deployda katta bo'ladi; object-cover markazdagi
-          yuzni to'ldiradi. */}
-      <div className="w-full bg-gray-100" style={{ height: 360 }}>
+      {/* Yuz surati — balandlik EKRANGA MOS: clamp(240px, 36vh, 420px).
+          Kichik displeyda 240px, katta monitorlarda 420px gacha o'sadi.
+          To'liq inline uslubda — CSS yig'ilishiga umuman bog'liq emas;
+          object-cover (ham inline) markazdagi yuzni to'ldiradi. */}
+      <div
+        className="w-full bg-gray-100"
+        style={{ height: "clamp(240px, 36vh, 420px)" }}
+      >
         {url ? (
           <img
             src={url}
@@ -403,13 +406,20 @@ export function FacePickerDialog({
                 {selected && (
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
-                {/* Grid balandligi ham inline: sig'magan itemlar uchun shu
-                    yerda vertical scroll ishlaydi (kartalar 360px bo'lgani
-                    uchun taxminan bir yarim qator ko'rinib, qolgani
-                    aylantiriladi). */}
+                {/* Grid to'liq inline uslubda: ustunlar ekranga qarab
+                    avtomatik joylashadi (kamida 200px), balandlik ham ekranga
+                    mos (clamp). Sig'magan itemlar uchun shu yerda vertical
+                    SCROLL ishlaydi — itemlar ko'paysa ham dialog
+                    yiqilmaydi. */}
                 <div
-                  className="grid grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3"
-                  style={{ maxHeight: 480 }}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                    gap: 10,
+                    maxHeight: "clamp(320px, 56vh, 640px)",
+                    overflowY: "auto",
+                    paddingRight: 4,
+                  }}
                 >
                   {items.map((group) => (
                     <GroupCard
