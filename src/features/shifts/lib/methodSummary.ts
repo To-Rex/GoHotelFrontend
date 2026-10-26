@@ -44,3 +44,46 @@ export const nonCashBuckets = (rows?: ShiftMethodRow[] | null): NonCashBucket[] 
  *  uchun — 0 larni u yerda ko'rsatish shart emas). */
 export const hasNonCashIncome = (rows?: ShiftMethodRow[] | null): boolean =>
   nonCashBuckets(rows).some((b) => b.amount > 0)
+
+/* Bir necha sessiya bo'yicha to'lov usullari yig'indisi — tarix sahifasidagi
+   umumiy "To'lov usullari bo'yicha tushum" hisoboti uchun.
+
+   Har sessiya faqat o'z oynasidagi (xodim + vaqt) to'lovlarni o'z ichiga
+   oladi, shuning uchun sessiyalar yig'indisi takrorlanmaydi. Naqd qatorda
+   xarajatlar ham yig'iladi (kassadan faqat naqd chiqadi); naqdsiz turlarda
+   xarajat e'tiborga olinmaydi — NonCashMethods bilan bir xil qoida. */
+export interface MethodTotals {
+  CASH: number
+  CARD: number
+  ONLINE: number
+  BANK_TRANSFER: number
+  OTHER: number
+  /** Naqd xarajatlar (kassadan chiqqan) — tushumga kirmaydi, alohida ko'rsatiladi */
+  cashExpenses: number
+}
+
+export const methodTotals = (
+  sessions: Array<{ methods?: ShiftMethodRow[] | null }>
+): MethodTotals => {
+  const t: MethodTotals = {
+    CASH: 0,
+    CARD: 0,
+    ONLINE: 0,
+    BANK_TRANSFER: 0,
+    OTHER: 0,
+    cashExpenses: 0,
+  }
+  for (const s of sessions) {
+    for (const row of s.methods || []) {
+      const canonical = canonicalMethod(row.method)
+      const income = Number(row.payments || 0) + Number(row.shop || 0)
+      if (canonical === "CASH") {
+        t.CASH += income
+        t.cashExpenses += Number(row.expenses || 0)
+      } else {
+        t[canonical] += income
+      }
+    }
+  }
+  return t
+}

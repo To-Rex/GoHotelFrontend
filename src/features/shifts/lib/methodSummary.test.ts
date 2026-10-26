@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { hasNonCashIncome, nonCashBuckets } from "./methodSummary"
+import { hasNonCashIncome, methodTotals, nonCashBuckets } from "./methodSummary"
+import type { ShiftMethodRow } from "../api/shifts"
 
 /* Naqdsiz to'lovlar sessiya ko'rsatkichi: usul bo'yicha yig'indi, eski
    kodlarni kanonik usulga birlashtirish va "har smenada 0 dan boshlanadi"
@@ -60,5 +61,74 @@ describe("nonCashBuckets", () => {
   it("ma'lumot kelmasa ham (eski javob) 0 to'plam qaytaradi", () => {
     expect(nonCashBuckets(undefined).map((b) => b.amount)).toEqual([0, 0, 0])
     expect(nonCashBuckets(null).map((b) => b.amount)).toEqual([0, 0, 0])
+  })
+})
+
+/* Bir necha sessiya bo'yicha to'lov usullari yig'indisi — tarix sahifasidagi
+   "To'lov usullari bo'yicha tushum" hisoboti uchun. */
+
+const fullRow = (over: Partial<ShiftMethodRow> = {}): ShiftMethodRow => ({
+  method: "CASH",
+  payments: 0,
+  shop: 0,
+  expenses: 0,
+  income: 0,
+  ...over,
+})
+
+const session = (methods: ShiftMethodRow[]) => ({ methods })
+
+describe("methodTotals", () => {
+  it("naqd va naqdsiz tushumlarni alohida yig'adi", () => {
+    const t = methodTotals([
+      session([
+        fullRow({ method: "CASH", payments: 1_000_000, expenses: 200_000 }),
+        fullRow({ method: "ONLINE", payments: 500_000 }),
+        fullRow({ method: "CARD", shop: 300_000 }),
+      ]),
+      session([
+        fullRow({ method: "CASH", payments: 400_000 }),
+        fullRow({ method: "BANK_TRANSFER", payments: 150_000 }),
+      ]),
+    ])
+    expect(t.CASH).toBe(1_400_000)
+    expect(t.cashExpenses).toBe(200_000)
+    expect(t.ONLINE).toBe(500_000)
+    expect(t.CARD).toBe(300_000)
+    expect(t.BANK_TRANSFER).toBe(150_000)
+    expect(t.OTHER).toBe(0)
+  })
+
+  it("eski kodlarni kanonik usulga yig'adi", () => {
+    const t = methodTotals([
+      session([
+        fullRow({ method: "CREDIT_CARD", payments: 100_000 }),
+        fullRow({ method: "MOBILE_PAYMENT", payments: 50_000 }),
+        fullRow({ method: "TRANSFER", payments: 25_000 }),
+      ]),
+    ])
+    expect(t.CARD).toBe(100_000)
+    expect(t.ONLINE).toBe(50_000)
+    expect(t.BANK_TRANSFER).toBe(25_000)
+  })
+
+  it("bo'sh sessiya ro'yxati va methodsiz sessiyalar — hammasi 0", () => {
+    const t = methodTotals([session([]), { methods: null }, { methods: undefined }])
+    expect(t).toEqual({
+      CASH: 0,
+      CARD: 0,
+      ONLINE: 0,
+      BANK_TRANSFER: 0,
+      OTHER: 0,
+      cashExpenses: 0,
+    })
+  })
+
+  it("naqdsiz xarajat kassadan chiqmaydi — cashExpenses'ga kirmaydi", () => {
+    const t = methodTotals([
+      session([fullRow({ method: "CARD", payments: 100_000, expenses: 90_000 })]),
+    ])
+    expect(t.CARD).toBe(100_000)
+    expect(t.cashExpenses).toBe(0)
   })
 })

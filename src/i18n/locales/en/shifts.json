@@ -203,5 +203,8 @@
   "Smena tugallangan — kassa admin/menejer tasdig'ini kutmoqda. Tasdiqlangach sessiya yopiladi va (xodim davom etsa) yangi kassa 0 so'mdan ochiladi.": "The shift is over — the drawer is waiting for admin/manager approval. Once approved, the session closes and (if the employee continues) a new drawer opens at 0.",
   "Kassani tasdiqlash": "Approve handover",
   "Tasdiqlangach sessiya yopiladi va (xodim ishda davom etsa) yangi kassa 0 so'mdan ochiladi.": "After approval the session closes and (if the employee keeps working) a new drawer opens at 0.",
-  "Admin yoki menejer tasdig'i kutilmoqda — tasdiqlangach sessiya yopiladi va yangi kassa 0 so'mdan ochiladi. Bu vaqtda ishlash mumkin emas.": "Waiting for admin or manager approval — once approved the session closes and a new drawer opens at 0. You cannot work meanwhile."
+  "Admin yoki menejer tasdig'i kutilmoqda — tasdiqlangach sessiya yopiladi va yangi kassa 0 so'mdan ochiladi. Bu vaqtda ishlash mumkin emas.": "Waiting for admin or manager approval — once approved the session closes and a new drawer opens at 0. You cannot work meanwhile.",
+  "To'lov usullari bo'yicha tushum": "Revenue by payment method",
+  "yopilgan smenalar bo'yicha — filtr va xodim tanloviga mos": "across closed shifts — respects filters and the employee selection",
+  "xarajat: {{v}} so'm": "expenses: {{v}} UZS"
 }

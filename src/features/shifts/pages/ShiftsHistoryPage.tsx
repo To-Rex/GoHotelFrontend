@@ -18,6 +18,9 @@ import {
   ShieldAlert,
   Filter,
   X,
+  CreditCard,
+  Globe,
+  Landmark,
 } from "lucide-react"
 import {
   useShiftHistory,
@@ -29,7 +32,8 @@ import { usePermissions } from "@/lib/permissions"
 import { CashNowCard } from "../components/CashNowCard"
 import { HandoversSection } from "../components/HandoversSection"
 import { NonCashMethods } from "../components/NonCashMethods"
-import { hasNonCashIncome } from "../lib/methodSummary"
+import { hasNonCashIncome, methodTotals } from "../lib/methodSummary"
+import { paymentMethodLabel } from "@/lib/paymentMethods"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -277,6 +281,57 @@ export const ShiftsHistoryPage = () => {
     closedF.length > 0
       ? Math.round(closedF.reduce((sum, s) => sum + durationMins(s), 0) / closedF.length)
       : 0
+
+  // To'lov usullari bo'yicha yig'indi (yopilgan sessiyalar) — naqd ham,
+  // naqdsiz ham (karta/online/o'tkazma). Filtr va xodim tanloviga mos keladi.
+  const methodSummary = useMemo(() => methodTotals(closedF), [closedF])
+  const methodTiles = [
+    {
+      key: "CASH",
+      label: paymentMethodLabel("CASH"),
+      icon: Wallet,
+      accent: "bg-emerald-50 text-emerald-600",
+      amount: methodSummary.CASH,
+      sub:
+        methodSummary.cashExpenses > 0
+          ? tr("xarajat: {{v}} so'm", { v: fmt(methodSummary.cashExpenses) })
+          : null,
+    },
+    {
+      key: "CARD",
+      label: paymentMethodLabel("CARD"),
+      icon: CreditCard,
+      accent: "bg-blue-50 text-blue-600",
+      amount: methodSummary.CARD,
+      sub: null,
+    },
+    {
+      key: "ONLINE",
+      label: paymentMethodLabel("ONLINE"),
+      icon: Globe,
+      accent: "bg-violet-50 text-violet-600",
+      amount: methodSummary.ONLINE,
+      sub: null,
+    },
+    {
+      key: "BANK_TRANSFER",
+      label: paymentMethodLabel("BANK_TRANSFER"),
+      icon: Landmark,
+      accent: "bg-amber-50 text-amber-600",
+      amount: methodSummary.BANK_TRANSFER,
+      sub: null,
+    },
+  ]
+  if (methodSummary.OTHER > 0) {
+    methodTiles.push({
+      key: "OTHER",
+      label: tr("Boshqa usul"),
+      icon: ArrowRightLeft,
+      accent: "bg-gray-50 text-gray-500",
+      amount: methodSummary.OTHER,
+      sub: null,
+    })
+  }
 
   // Xodimlar kesimi: har xodim bo'yicha jami sessiya, sanalgan, kamomad/ortiqcha.
   // filteredBase'dan quriladi — bitta xodim tanlanganda ham hammasi ko'rinib,
@@ -548,6 +603,48 @@ export const ShiftsHistoryPage = () => {
           </div>
         ))}
       </div>
+
+      {/* TO'LOV USULLARI BO'YICHA TUSHUM — yopilgan smenalardagi naqd va
+          naqdsiz (karta/online/o'tkazma) tushum yig'indisi. Filtr va xodim
+          tanloviga mos keladi; sessiya oynalari (xodim + vaqt) bo'yicha
+          hisoblangani uchun summalar takrorlanmaydi. */}
+      {closedF.length > 0 && (
+        <section className="rounded-2xl border bg-white p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              {tr("To'lov usullari bo'yicha tushum")}
+            </p>
+            <p className="text-[11px] text-gray-400">
+              {tr("yopilgan smenalar bo'yicha — filtr va xodim tanloviga mos")}
+            </p>
+          </div>
+          <div className="mt-2.5 grid gap-3 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
+            {methodTiles.map((m) => (
+              <div key={m.key} className="rounded-xl border bg-gray-50/50 p-3">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg",
+                      m.accent
+                    )}
+                  >
+                    <m.icon className="h-3.5 w-3.5" />
+                  </span>
+                  <p className="truncate text-xs font-medium text-gray-500">
+                    {m.label}
+                  </p>
+                </div>
+                <p className="mt-1.5 truncate text-base font-bold tabular-nums text-gray-900">
+                  {tr("{{v}} so'm", { v: fmt(m.amount) })}
+                </p>
+                {m.sub && (
+                  <p className="mt-0.5 truncate text-[11px] text-gray-400">{m.sub}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Filtrlar paneli */}
       <div className="rounded-2xl border bg-white overflow-hidden">
