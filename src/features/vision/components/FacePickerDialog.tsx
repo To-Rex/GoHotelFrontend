@@ -134,11 +134,11 @@ function GroupCard({
           : "border-gray-200 hover:border-primary-400"
       )}
     >
-      {/* Yuz surati — balandlik INLINE uslubda (qat'iy 280px): hech qanday
+      {/* Yuz surati — balandlik INLINE uslubda (qat'iy 360px): hech qanday
           CSS sinfi yig'ilishiga bog'liq emas, shuning uchun guruh kartalari
           bo'yi har qanday deployda katta bo'ladi; object-cover markazdagi
           yuzni to'ldiradi. */}
-      <div className="w-full bg-gray-100" style={{ height: 280 }}>
+      <div className="w-full bg-gray-100" style={{ height: 360 }}>
         {url ? (
           <img
             src={url}
@@ -403,7 +403,14 @@ export function FacePickerDialog({
                 {selected && (
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
-                <div className="grid max-h-[28rem] grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3">
+                {/* Grid balandligi ham inline: sig'magan itemlar uchun shu
+                    yerda vertical scroll ishlaydi (kartalar 360px bo'lgani
+                    uchun taxminan bir yarim qator ko'rinib, qolgani
+                    aylantiriladi). */}
+                <div
+                  className="grid grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3"
+                  style={{ maxHeight: 480 }}
+                >
                   {items.map((group) => (
                     <GroupCard
                       key={group.best_sighting_id}
