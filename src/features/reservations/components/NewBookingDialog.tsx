@@ -1163,7 +1163,12 @@ function SectionMark({
             scanImagesFailed = (await saveScanImages(guestId, pendingScan.images)) === "failed"
             setPhotoUploading(false)
           }
-          if (pendingScan.scanId) await linkScanToGuest(pendingScan.scanId, guestId)
+          // Skan-bog'lash ham bronni BUZMAYDI: bog'lanmasa oxirida
+          // "hujjat surati saqlanmadi" ogohlantiruvi chiqadi — suratni
+          // keyin mehmon kartasidan qayta biriktirish mumkin.
+          if (pendingScan.scanId && !(await linkScanToGuest(pendingScan.scanId, guestId))) {
+            scanImagesFailed = true
+          }
         }
 
         // Surat tanlangan bo'lsa — mehmon yaratilgandan keyin yuklaymiz.
