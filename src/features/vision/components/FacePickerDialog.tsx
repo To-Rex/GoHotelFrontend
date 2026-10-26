@@ -134,13 +134,12 @@ function GroupCard({
           : "border-gray-200 hover:border-primary-400"
       )}
     >
-      {/* Yuz surati — balandlik EKRANGA MOS: clamp(240px, 36vh, 420px).
-          Kichik displeyda 240px, katta monitorlarda 420px gacha o'sadi.
-          To'liq inline uslubda — CSS yig'ilishiga umuman bog'liq emas;
-          object-cover (ham inline) markazdagi yuzni to'ldiradi. */}
+      {/* Yuz surati — balandlik ODDIY PIXSELDA (280px): CSS clamp()/vh
+          funksiyalari eski brauzerlarda tushib qolib, suratlar ~40px bo'lib
+          siqilgan edi. Oddiy px har qanday brauzerda ishlaydi. */}
       <div
         className="w-full bg-gray-100"
-        style={{ height: "clamp(240px, 36vh, 420px)" }}
+        style={{ height: "280px" }}
       >
         {url ? (
           <img
@@ -406,17 +405,17 @@ export function FacePickerDialog({
                 {selected && (
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
-                {/* Grid to'liq inline uslubda: ustunlar ekranga qarab
-                    avtomatik joylashadi (kamida 200px), balandlik ham ekranga
-                    mos (clamp). Sig'magan itemlar uchun shu yerda vertical
-                    SCROLL ishlaydi — itemlar ko'paysa ham dialog
-                    yiqilmaydi. */}
+                {/* Grid to'liq inline: ustunlar ekranga qarab avtomatik
+                    joylashadi (kamida 200px). Balandlik chegarasi oddiy
+                    pikselda (440px) — clamp() eski brauzerlarda tushib,
+                    scroll ham yo'qolgan edi. Sig'magan itemlar uchun shu
+                    yerda vertical scroll ishlaydi. */}
                 <div
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
                     gap: 10,
-                    maxHeight: "clamp(320px, 56vh, 640px)",
+                    maxHeight: "440px",
                     overflowY: "auto",
                     paddingRight: 4,
                   }}
