@@ -134,15 +134,17 @@ function GroupCard({
           : "border-gray-200 hover:border-primary-400"
       )}
     >
-      {/* Yuz surati — QAT'IY balandlik (kenglikka bog'liq emas): guruh
-          kartalari bo'yi har doim yetarli katta bo'ladi, object-cover esa
-          markazdagi yuzni to'ldiradi. Mobil 208px, keng ekran 288px. */}
-      <div className="h-52 w-full bg-gray-100 sm:h-72">
+      {/* Yuz surati — balandlik INLINE uslubda (qat'iy 280px): hech qanday
+          CSS sinfi yig'ilishiga bog'liq emas, shuning uchun guruh kartalari
+          bo'yi har qanday deployda katta bo'ladi; object-cover markazdagi
+          yuzni to'ldiradi. */}
+      <div className="w-full bg-gray-100" style={{ height: 280 }}>
         {url ? (
           <img
             src={url}
             alt={tr("{{v}} kamerasidan", { v: group.camera_name || group.camera_id })}
-            className="h-full w-full object-cover"
+            className="h-full w-full"
+            style={{ objectFit: "cover" }}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-gray-300">
@@ -401,7 +403,7 @@ export function FacePickerDialog({
                 {selected && (
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
-                <div className="grid max-h-[22rem] grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3">
+                <div className="grid max-h-[28rem] grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3">
                   {items.map((group) => (
                     <GroupCard
                       key={group.best_sighting_id}
