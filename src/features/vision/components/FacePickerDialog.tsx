@@ -134,11 +134,10 @@ function GroupCard({
           : "border-gray-200 hover:border-primary-400"
       )}
     >
-      {/* Yuz surati — baland (portret) nisbatda: kamera crop'i kvadrat
-          bo'lsa-da, katak kengligidan ancha balandroq bo'lib, object-cover
-          markazni (yuzni) VERTIKAL bo'ylab kattaroq ko'rsatadi. Nisbat 9:16
-          — kenglik o'zgarmaydi, faqat balandlik oshadi. */}
-      <div className="aspect-[9/16] w-full bg-gray-100">
+      {/* Yuz surati — QAT'IY balandlik (kenglikka bog'liq emas): guruh
+          kartalari bo'yi har doim yetarli katta bo'ladi, object-cover esa
+          markazdagi yuzni to'ldiradi. Mobil 208px, keng ekran 288px. */}
+      <div className="h-52 w-full bg-gray-100 sm:h-72">
         {url ? (
           <img
             src={url}
@@ -402,7 +401,7 @@ export function FacePickerDialog({
                 {selected && (
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
-                <div className="grid max-h-[34rem] grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3">
+                <div className="grid max-h-[22rem] grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3">
                   {items.map((group) => (
                     <GroupCard
                       key={group.best_sighting_id}
