@@ -406,17 +406,17 @@ export function FacePickerDialog({
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
                 {/* Grid to'liq inline: ustunlar ekranga qarab avtomatik
-                    joylashadi (kamida 200px). Balandlik chegarasi oddiy
-                    pikselda (440px) — clamp() eski brauzerlarda tushib,
-                    scroll ham yo'qolgan edi. Sig'magan itemlar uchun shu
-                    yerda vertical scroll ishlaydi. */}
+                    joylashadi (kamida 200px). Balandlik chegarasi 440px va
+                    overflowY: scroll — scroll chizig'i DOIM ko'rinadi
+                    (itemlar ko'paysa aylantiriladi, oz bo'lsa bo'sh joy
+                    qoladi — lekin "scroll yo'q" taassuroti bo'lmaydi). */}
                 <div
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
                     gap: 10,
                     maxHeight: "440px",
-                    overflowY: "auto",
+                    overflowY: "scroll",
                     paddingRight: 4,
                   }}
                 >
