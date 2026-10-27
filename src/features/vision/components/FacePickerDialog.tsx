@@ -134,22 +134,20 @@ function GroupCard({
           : "border-gray-200 hover:border-primary-400"
       )}
     >
-      {/* Yuz surati — balandlik ODDIY PIXSELDA (280px): CSS clamp()/vh
-          funksiyalari eski brauzerlarda tushib qolib, suratlar ~40px bo'lib
-          siqilgan edi. Oddiy px har qanday brauzerda ishlaydi. */}
-      <div
-        className="w-full bg-gray-100"
-        style={{ height: "280px" }}
-      >
+      {/* Yuz surati — o'lcham TO'G'RIDAN-TO'G'RI rasm elementida (inline):
+          kenglik 100%, balandlik 280px, object-fit cover. Hech qanday
+          konteyner zanjiri yoki CSS sinfiga bog'liq emas — har qanday
+          brauzerda standart o'lcham kafolatlanadi. */}
+      <div className="w-full bg-gray-100" style={{ height: "280px" }}>
         {url ? (
           <img
             src={url}
             alt={tr("{{v}} kamerasidan", { v: group.camera_name || group.camera_id })}
-            className="h-full w-full"
-            style={{ objectFit: "cover" }}
+            className="block"
+            style={{ width: "100%", height: "280px", objectFit: "cover" }}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-gray-300">
+          <div className="flex items-center justify-center text-gray-300" style={{ height: "280px" }}>
             {failed || !group.has_thumbnail ? (
               <Camera className="h-6 w-6" />
             ) : (
@@ -405,17 +403,16 @@ export function FacePickerDialog({
                 {selected && (
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
-                {/* Grid to'liq inline: ustunlar ekranga qarab avtomatik
-                    joylashadi (kamida 200px). Balandlik chegarasi 440px va
-                    overflowY: scroll — scroll chizig'i DOIM ko'rinadi
-                    (itemlar ko'paysa aylantiriladi, oz bo'lsa bo'sh joy
-                    qoladi — lekin "scroll yo'q" taassuroti bo'lmaydi). */}
+                {/* Grid to'liq inline, QAT'IY balandlik (440px) + doimiy
+                    scroll: sig'magan itemlar shu yerda aylantiriladi, scroll
+                    chizig'i har doim ko'rinadi. Ustunlar ekran kengligiga
+                    qarab avtomatik (kamida 200px). */}
                 <div
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
                     gap: 10,
-                    maxHeight: "440px",
+                    height: "440px",
                     overflowY: "scroll",
                     paddingRight: 4,
                   }}
