@@ -134,20 +134,19 @@ function GroupCard({
           : "border-gray-200 hover:border-primary-400"
       )}
     >
-      {/* Yuz surati — o'lcham TO'G'RIDAN-TO'G'RI rasm elementida (inline):
-          kenglik 100%, balandlik 280px, object-fit cover. Hech qanday
-          konteyner zanjiri yoki CSS sinfiga bog'liq emas — har qanday
-          brauzerda standart o'lcham kafolatlanadi. */}
-      <div className="w-full bg-gray-100" style={{ height: "280px" }}>
+      {/* Kamera agenti yuzni KVADRAT qilib kesib yuboradi, shuning uchun
+          karta ham kvadrat — surat kesilmaydi va cho'zilmaydi. O'lcham
+          ustun kengligidan kelib chiqadi (pastdagi grid): telefonda
+          kichikroq, kompyuterda kattaroq. */}
+      <div className="aspect-square w-full bg-gray-100">
         {url ? (
           <img
             src={url}
             alt={tr("{{v}} kamerasidan", { v: group.camera_name || group.camera_id })}
-            className="block"
-            style={{ width: "100%", height: "280px", objectFit: "cover" }}
+            className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex items-center justify-center text-gray-300" style={{ height: "280px" }}>
+          <div className="flex h-full w-full items-center justify-center text-gray-300">
             {failed || !group.has_thumbnail ? (
               <Camera className="h-6 w-6" />
             ) : (
@@ -325,8 +324,12 @@ export function FacePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* `sm:` SHART: DialogContent'ning o'zida `sm:max-w-lg` bor, oddiy
+          `max-w-2xl` uni yengmaydi (boshqa variant) — dialog 512px bo'lib
+          qolardi. `flex flex-col` — ekranga sig'maganda butun dialog emas,
+          faqat suratlar ro'yxati aylanishi uchun (pastga qarang). */}
       <DialogContent
-        className="max-w-2xl"
+        className="flex flex-col sm:max-w-3xl"
         onEscapeKeyDown={(event) => {
           if (zoomUrl) {
             event.preventDefault()
@@ -403,20 +406,23 @@ export function FacePickerDialog({
                 {selected && (
                   <SelectedFacePreview group={selected} onZoom={setZoomUrl} />
                 )}
-                {/* Grid to'liq inline, QAT'IY balandlik (440px) + doimiy
-                    scroll: sig'magan itemlar shu yerda aylantiriladi, scroll
-                    chizig'i har doim ko'rinadi. Ustunlar ekran kengligiga
-                    qarab avtomatik (kamida 200px). */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                    gap: 10,
-                    height: "440px",
-                    overflowY: "scroll",
-                    paddingRight: 4,
-                  }}
-                >
+                {/* `auto-rows-max` — kartalar MAYDA bo'lib qolishining asl
+                    sababi shu yerda edi. Kartada `overflow-hidden` bor, CSS
+                    Grid esa bunday elementning minimal balandligini 0 deb
+                    oladi. Qatorlar `auto` bo'lib, konteyner balandligi
+                    cheklangan ekan, brauzer HAMMA qatorni shu balandlikka
+                    sig'dirib qisardi: kartalar ~65px, scroll esa umuman
+                    chiqmasdi (sig'ib turgandek). Surat o'lchamini qanday
+                    yozish — sinf, inline, px, clamp — buni o'zgartirmaydi.
+                    `max-content` qatorni kartaning to'liq balandligida
+                    saqlaydi, sig'maganlar shu grid ichida aylantiriladi.
+
+                    Balandlik qat'iy emas: dialog flex-ustun, grid esa
+                    `min-h-40` gacha qisqara oladi — ekran past bo'lsa ham
+                    (768px li noutbuk, yuz tanlangan holda) «Tanlash» tugmasi
+                    ko'rinib turadi va faqat ro'yxat aylanadi, dialogning
+                    o'zi emas. Ustunlar: telefonda 2, kattaroq ekranda 3. */}
+                <div className="grid min-h-40 auto-rows-max grid-cols-2 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-3">
                   {items.map((group) => (
                     <GroupCard
                       key={group.best_sighting_id}
