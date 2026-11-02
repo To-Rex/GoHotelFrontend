@@ -1,20 +1,22 @@
 import { useState } from "react"
 import { Popover as PopoverPrimitive } from "radix-ui"
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { addMonths, format, isSameMonth, startOfMonth, subMonths } from "date-fns"
 import { enUS, ru, uz } from "date-fns/locale"
 
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { getLang, monthYear, tr } from "@/i18n"
 import type { DatePreset } from "@/lib/datePresets"
 import {
   fromIso,
   highlightRange,
   monthGrid,
-  pickDay,
+  pickDayFor,
+  rangeDays,
   rangeLabel,
   toIso,
   type RangeDraft,
+  type RangeField,
 } from "@/lib/dateRange"
 import { cn } from "@/lib/utils"
 
@@ -23,14 +25,15 @@ import { cn } from "@/lib/utils"
  *
  * Hisobot sahifalarida "Sanadan / Sanagacha" ikkita alohida maydon edi:
  * davrni tanlash uchun ikki marta brauzer kalendarini ochish kerak bo'lardi.
- * Endi bitta tugma oraliqni ko'rsatadi, bosilsa kalendar ochiladi:
- * boshlanish kuni, keyin tugash kuni bosiladi — tanlov shu zahoti
- * qo'llanadi va kalendar yopiladi. Oraliq sichqoncha yurganda ko'rinib
- * turadi, teskari tartibda bosilsa o'rni almashadi.
+ * Endi bitta tugma oraliqni ko'rsatadi, bosilsa kalendar ochiladi.
  *
- * Avvalgi imkoniyatlar saqlangan: tez tugmalar (Bugun, Kecha, …) kalendar
- * ichida ham bor, aniq sanani qo'lda kiritish uchun pastda ikkala maydon
- * turibdi, "Barcha davr" — oraliqni tozalaydi.
+ * Tanlash ko'rinib turadi: tepada ikkita katak — "Sanadan" va "Sanagacha".
+ * Qaysi biri navbatda bo'lsa o'sha yoritilgan; kalendarda bosilgan kun shu
+ * katakka tushadi va navbat ikkinchisiga o'tadi. Kataklarga sanani qo'lda
+ * ham yozish mumkin, bosib navbatni almashtirish ham. Oraliq sichqoncha
+ * yurganda ko'rinib turadi, teskari bosilsa o'rni almashadi, kunlar soni
+ * yonida. Tanlov «Qo'llash» bilan tasdiqlanadi («Bekor qilish» yoki
+ * tashqariga bosish — o'zgarmaydi); tez tugmalar esa darhol qo'llanadi.
  *
  * Kompyuterda ikki oy yonma-yon (o'tgan va joriy — hisobotlar orqaga
  * qaraydi), telefonda bitta oy. Hafta dushanbadan.
@@ -58,6 +61,7 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<RangeDraft>(value)
+  const [field, setField] = useState<RangeField>("from")
   const [hover, setHover] = useState<string | null>(null)
   // O'ng (telefonda — yagona) oy: tanlangan davrning oxiri, bo'lmasa bugun
   const [anchor, setAnchor] = useState<Date>(() => anchorFor(value))
@@ -65,12 +69,13 @@ export function DateRangePicker({
   const locale = LOCALES[getLang()]
   const today = toIso(new Date())
   const label = rangeLabel(value.from, value.to, tr("Barcha davr"))
-  const selecting = Boolean(draft.from) && !draft.to
+  const days = rangeDays(draft.from, draft.to)
 
   const handleOpen = (next: boolean) => {
     if (next) {
-      // Tez tugmalar yoki qo'lda kiritish bilan o'zgargan bo'lishi mumkin
+      // Tez tugmalar bilan o'zgargan bo'lishi mumkin — har ochilishda qiymatdan
       setDraft(value)
+      setField(value.from && !value.to ? "to" : "from")
       setHover(null)
       setAnchor(anchorFor(value))
     }
@@ -78,17 +83,15 @@ export function DateRangePicker({
   }
 
   const select = (day: string) => {
-    const { draft: next, done } = pickDay(draft, day)
-    setDraft(next)
-    if (done) {
-      onChange(next)
-      setOpen(false)
-    }
+    const next = pickDayFor(draft, field, day)
+    setDraft(next.draft)
+    setField(next.field)
+    setHover(null)
   }
 
-  const applyManual = (next: RangeDraft) => {
-    setDraft(next)
-    onChange(next)
+  const apply = () => {
+    onChange(draft)
+    setOpen(false)
   }
 
   const choosePreset = (preset: DatePreset) => {
@@ -96,8 +99,13 @@ export function DateRangePicker({
     setOpen(false)
   }
 
-  const range = highlightRange(draft, hover)
+  const range = highlightRange(draft, hover, field)
   const months = [subMonths(anchor, 1), anchor]
+  const hint = !draft.from
+    ? tr("Boshlanish kunini tanlang")
+    : !draft.to
+      ? tr("Tugash kunini tanlang")
+      : `${rangeLabel(draft.from, draft.to, "")} · ${tr("{{count}} kun", { count: days })}`
 
   return (
     <PopoverPrimitive.Root open={open} onOpenChange={handleOpen}>
@@ -148,7 +156,38 @@ export function DateRangePicker({
               </div>
             )}
 
-            <div>
+            <div className="min-w-0">
+              {/* Chegaralar: qaysi biri navbatda — yoritilgan. Kataklar sanani
+                  qo'lda kiritish maydoni ham */}
+              <div className="mb-3 flex items-center gap-2">
+                <RangeEdge
+                  label={tr("Sanadan")}
+                  value={draft.from}
+                  active={field === "from"}
+                  max={draft.to || undefined}
+                  onFocus={() => setField("from")}
+                  onChange={(v) => setDraft({ from: v, to: draft.to })}
+                />
+                <ArrowRight className="h-4 w-4 shrink-0 text-gray-400" />
+                <RangeEdge
+                  // `key`: boshlanish o'zgarganda maydon qayta yaratiladi —
+                  // Safari bo'shatilgan sana maydonida eski qiymatni ko'rsatib
+                  // turishi mumkin
+                  key={`to-${draft.from}`}
+                  label={tr("Sanagacha")}
+                  value={draft.to}
+                  active={field === "to"}
+                  min={draft.from || undefined}
+                  onFocus={() => setField("to")}
+                  onChange={(v) => setDraft({ from: draft.from, to: v })}
+                />
+                {days != null && (
+                  <span className="hidden shrink-0 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-primary-700 sm:inline-block">
+                    {tr("{{count}} kun", { count: days })}
+                  </span>
+                )}
+              </div>
+
               {/* Oylar: o'tgan oy faqat keng ekranda. Oldinga/orqaga tugmalari
                   butun kalendar burchaklarida — oylar soni o'zgarsa ham joyida */}
               <div className="relative">
@@ -180,7 +219,6 @@ export function DateRangePicker({
                         locale={locale}
                         today={today}
                         range={range}
-                        selecting={selecting}
                         onPick={select}
                         onHover={setHover}
                       />
@@ -189,35 +227,18 @@ export function DateRangePicker({
                 </div>
               </div>
 
-              {/* Aniq sana qo'lda: avvalgi ikki maydon shu yerda qoldi */}
-              <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-medium text-gray-500">{tr("Sanadan")}</label>
-                  <Input
-                    type="date"
-                    className="h-8 w-36 text-xs tabular-nums"
-                    value={draft.from}
-                    max={draft.to || undefined}
-                    onChange={(e) => applyManual({ from: e.target.value, to: draft.to })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-medium text-gray-500">{tr("Sanagacha")}</label>
-                  {/* `key`: yangi boshlanish tanlanganda maydon qayta yaratiladi —
-                      Safari bo'shatilgan sana maydonida eski qiymatni ko'rsatib
-                      turishi mumkin */}
-                  <Input
-                    key={`to-${draft.from}`}
-                    type="date"
-                    className="h-8 w-36 text-xs tabular-nums"
-                    value={draft.to}
-                    min={draft.from || undefined}
-                    onChange={(e) => applyManual({ from: draft.from, to: e.target.value })}
-                  />
-                </div>
-                <p className="ml-auto self-center text-[11px] text-gray-400" aria-live="polite">
-                  {selecting ? tr("Tugash kunini tanlang") : tr("Boshlanish kunini tanlang")}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
+                <p className="text-xs text-gray-500 tabular-nums" aria-live="polite">
+                  {hint}
                 </p>
+                <div className="ml-auto flex gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+                    {tr("Bekor qilish")}
+                  </Button>
+                  <Button type="button" size="sm" onClick={apply}>
+                    {tr("Qo'llash")}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -231,12 +252,55 @@ function anchorFor(value: RangeDraft): Date {
   return startOfMonth(fromIso(value.to) ?? fromIso(value.from) ?? new Date())
 }
 
+/** "Sanadan" / "Sanagacha" katagi: yozuv, sana (qo'lda ham kiritiladi) va
+ *  navbat belgisi. Bosilsa yoki maydonga kirilsa navbat shu chegaraga o'tadi. */
+function RangeEdge({
+  label,
+  value,
+  active,
+  min,
+  max,
+  onFocus,
+  onChange,
+}: {
+  label: string
+  value: string
+  active: boolean
+  min?: string
+  max?: string
+  onFocus: () => void
+  onChange: (value: string) => void
+}) {
+  return (
+    <label
+      className={cn(
+        "flex min-w-0 flex-1 cursor-text flex-col rounded-lg border px-3 py-1.5 transition-colors",
+        active
+          ? "border-primary-500 bg-primary-50/40 ring-2 ring-primary-100"
+          : "border-gray-200 hover:border-gray-300"
+      )}
+    >
+      <span className={cn("text-[11px] font-medium", active ? "text-primary-700" : "text-gray-500")}>
+        {label}
+      </span>
+      <input
+        type="date"
+        value={value}
+        min={min}
+        max={max}
+        onFocus={onFocus}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full min-w-0 bg-transparent text-sm font-semibold tabular-nums text-gray-900 outline-none"
+      />
+    </label>
+  )
+}
+
 function MonthGrid({
   month,
   locale,
   today,
   range,
-  selecting,
   onPick,
   onHover,
 }: {
@@ -244,18 +308,13 @@ function MonthGrid({
   locale: (typeof LOCALES)[keyof typeof LOCALES]
   today: string
   range: [string, string] | null
-  selecting: boolean
   onPick: (day: string) => void
   onHover: (day: string | null) => void
 }) {
   const days = monthGrid(month)
 
   return (
-    <div
-      className="grid w-[16rem] grid-cols-7"
-      role="grid"
-      onMouseLeave={() => onHover(null)}
-    >
+    <div className="grid w-[16rem] grid-cols-7" role="grid" onMouseLeave={() => onHover(null)}>
       {days.slice(0, 7).map((d) => (
         <div
           key={`h-${toIso(d)}`}
@@ -267,8 +326,7 @@ function MonthGrid({
       {days.map((d) => {
         const iso = toIso(d)
         // Qo'shni oy kunlari bo'sh katak: ikki oy yonma-yon turganda bir kun
-        // ikki joyda (oktabr oxirida va noyabr boshida) tanlangan bo'lib
-        // ko'rinmasin
+        // ikki joyda tanlangan bo'lib ko'rinmasin
         if (!isSameMonth(d, month)) {
           return <div key={iso} role="gridcell" aria-hidden="true" className="h-9" />
         }
@@ -284,8 +342,8 @@ function MonthGrid({
             aria-selected={inRange}
             aria-label={format(d, "d MMMM yyyy", { locale })}
             onClick={() => onPick(iso)}
-            onMouseEnter={() => selecting && onHover(iso)}
-            onFocus={() => selecting && onHover(iso)}
+            onMouseEnter={() => onHover(iso)}
+            onFocus={() => onHover(iso)}
             className={cn(
               "relative h-9 w-full text-sm tabular-nums transition-colors",
               // Oraliq — yaxlit chiziq: o'rtadagi kunlar burchaksiz, chetlari yumaloq

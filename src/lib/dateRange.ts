@@ -1,4 +1,12 @@
-import { addDays, format, isValid, parseISO, startOfMonth, startOfWeek } from "date-fns"
+import {
+  addDays,
+  differenceInCalendarDays,
+  format,
+  isValid,
+  parseISO,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns"
 
 /**
  * Sana oralig'i kalendarining sof mantiqi (komponentdan ajratilgan —
@@ -24,29 +32,75 @@ export interface RangeDraft {
   to: string
 }
 
+/** Kalendarda hozir qaysi chegara tanlanmoqda. */
+export type RangeField = "from" | "to"
+
 /**
  * Oy ko'rinishi: 6 hafta × 7 kun, DUSHANBADAN boshlab (O'zbekistonda hafta
  * dushanbadan). Har doim 42 katak — oylar almashganda kalendar balandligi
- * sakramaydi, qo'shni oy kunlari xira ko'rsatiladi.
+ * sakramaydi.
  */
 export function monthGrid(month: Date): Date[] {
   const first = startOfWeek(startOfMonth(month), { weekStartsOn: 1 })
   return Array.from({ length: 42 }, (_, i) => addDays(first, i))
 }
 
+const ordered = (a: string, b: string): [string, string] => (a <= b ? [a, b] : [b, a])
+
 /**
- * Kalendarda kun bosilganda tanlov qanday o'zgaradi.
+ * Kalendarda kun bosilganda tanlov qanday o'zgaradi — qaysi chegara
+ * (`field`) tanlanayotganiga qarab:
  *
- *  - hech narsa tanlanmagan yoki ikkalasi ham tanlangan → yangi BOSHLANISH
- *    (tugash tozalanadi, foydalanuvchi ikkinchi kunni tanlaydi);
- *  - faqat boshlanish bor → TUGASH va tanlov tugallanadi (`done`); ikkinchi
- *    kun birinchisidan oldin bo'lsa o'rni almashadi — teskari oraliq
- *    chiqmaydi. Bir kunni ikki marta bosish — bitta kunlik davr.
+ *  - "from": boshlanish shu kun; tugash undan oldin qolsa tozalanadi,
+ *    aks holda saqlanadi (faqat boshlanishni surish mumkin). Navbat tugashga.
+ *  - "to": tugash shu kun. Boshlanish hali yo'q bo'lsa avval u qo'yiladi
+ *    (navbat tugashda qoladi). Kun boshlanishdan OLDIN bo'lsa o'rni
+ *    almashadi — teskari oraliq chiqmaydi. Tugallangach navbat boshlanishga.
+ *
+ * Bir kunni ikki marta bosish — bitta kunlik davr.
  */
-export function pickDay(draft: RangeDraft, day: string): { draft: RangeDraft; done: boolean } {
-  if (!draft.from || draft.to) return { draft: { from: day, to: "" }, done: false }
-  const [from, to] = day < draft.from ? [day, draft.from] : [draft.from, day]
-  return { draft: { from, to }, done: true }
+export function pickDayFor(
+  draft: RangeDraft,
+  field: RangeField,
+  day: string
+): { draft: RangeDraft; field: RangeField } {
+  if (field === "from") {
+    const to = draft.to && draft.to >= day ? draft.to : ""
+    return { draft: { from: day, to }, field: "to" }
+  }
+  if (!draft.from) return { draft: { from: day, to: "" }, field: "to" }
+  const [from, to] = ordered(draft.from, day)
+  return { draft: { from, to }, field: "from" }
+}
+
+/**
+ * Kalendarda bo'yaladigan oraliq — tanlangan kunlar va sichqoncha turgan
+ * kungacha ko'rib tanlash (`hover`). Doim [kichik, katta] tartibda.
+ */
+export function highlightRange(
+  draft: RangeDraft,
+  hover: string | null,
+  field: RangeField
+): [string, string] | null {
+  if (field === "to") {
+    if (!draft.from) return hover ? [hover, hover] : null
+    return ordered(draft.from, draft.to || hover || draft.from)
+  }
+  if (hover) {
+    // Boshlanish suriladi: tugash saqlansa ungacha, aks holda bitta kun
+    const end = draft.to && draft.to >= hover ? draft.to : hover
+    return [hover, end]
+  }
+  if (!draft.from) return null
+  return ordered(draft.from, draft.to || draft.from)
+}
+
+/** Oraliqdagi kunlar soni (ikkala chegara ham bo'lsa), bir kun — 1. */
+export function rangeDays(from: string, to: string): number | null {
+  const a = fromIso(from)
+  const b = fromIso(to)
+  if (!a || !b) return null
+  return Math.abs(differenceInCalendarDays(b, a)) + 1
 }
 
 /** Ko'rsatish uchun sana: 02.11.2026 */
@@ -64,14 +118,4 @@ export function rangeLabel(from: string, to: string, allLabel: string): string {
   if (!from && !to) return allLabel
   if (from && to && from === to) return displayDate(from)
   return `${from ? displayDate(from) : "…"} — ${to ? displayDate(to) : "…"}`
-}
-
-/**
- * Kalendarda bo'yaladigan oraliq: tanlov tugallanmagan bo'lsa sichqoncha
- * turgan kungacha (ko'rib tanlash). Doim [kichik, katta] tartibda.
- */
-export function highlightRange(draft: RangeDraft, hover: string | null): [string, string] | null {
-  if (!draft.from) return null
-  const end = draft.to || hover || draft.from
-  return draft.from <= end ? [draft.from, end] : [end, draft.from]
 }

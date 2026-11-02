@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { highlightRange, monthGrid, pickDay, rangeLabel, toIso } from "./dateRange"
+import { highlightRange, monthGrid, pickDayFor, rangeDays, rangeLabel, toIso } from "./dateRange"
 
 describe("monthGrid", () => {
   it("6 hafta, dushanbadan boshlanadi, butun oyni qamraydi", () => {
@@ -20,69 +20,103 @@ describe("monthGrid", () => {
   })
 })
 
-describe("pickDay", () => {
+describe("pickDayFor", () => {
   const empty = { from: "", to: "" }
 
-  it("birinchi bosish — boshlanish, tanlov tugallanmagan", () => {
-    expect(pickDay(empty, "2026-11-05")).toEqual({
+  it("boshlanish tanlanadi, navbat tugashga", () => {
+    expect(pickDayFor(empty, "from", "2026-11-05")).toEqual({
       draft: { from: "2026-11-05", to: "" },
-      done: false,
+      field: "to",
     })
   })
 
-  it("ikkinchi bosish — tugash, tanlov tugallanadi", () => {
-    expect(pickDay({ from: "2026-11-05", to: "" }, "2026-11-09")).toEqual({
+  it("tugash tanlanadi, tanlov tugallanadi — navbat boshlanishga", () => {
+    expect(pickDayFor({ from: "2026-11-05", to: "" }, "to", "2026-11-09")).toEqual({
       draft: { from: "2026-11-05", to: "2026-11-09" },
-      done: true,
+      field: "from",
     })
   })
 
-  it("teskari tartibda bosilsa o'rni almashadi", () => {
-    expect(pickDay({ from: "2026-11-09", to: "" }, "2026-11-05").draft).toEqual({
+  it("tugash uchun boshlanishdan oldingi kun bosilsa o'rni almashadi", () => {
+    expect(pickDayFor({ from: "2026-11-09", to: "" }, "to", "2026-11-05").draft).toEqual({
       from: "2026-11-05",
       to: "2026-11-09",
     })
   })
 
   it("bir kun ikki marta — bitta kunlik davr", () => {
-    expect(pickDay({ from: "2026-11-05", to: "" }, "2026-11-05")).toEqual({
+    expect(pickDayFor({ from: "2026-11-05", to: "" }, "to", "2026-11-05")).toEqual({
       draft: { from: "2026-11-05", to: "2026-11-05" },
-      done: true,
+      field: "from",
     })
   })
 
-  it("tugallangan tanlovdan keyin bosish — yangi boshlanish", () => {
-    expect(pickDay({ from: "2026-11-01", to: "2026-11-09" }, "2026-11-20")).toEqual({
+  it("tugash navbatida boshlanish bo'lmasa avval u qo'yiladi", () => {
+    expect(pickDayFor(empty, "to", "2026-11-05")).toEqual({
+      draft: { from: "2026-11-05", to: "" },
+      field: "to",
+    })
+  })
+
+  it("boshlanishni surish: tugash undan keyin qolsa saqlanadi, oldin qolsa tozalanadi", () => {
+    const full = { from: "2026-11-01", to: "2026-11-09" }
+    expect(pickDayFor(full, "from", "2026-11-03")).toEqual({
+      draft: { from: "2026-11-03", to: "2026-11-09" },
+      field: "to",
+    })
+    expect(pickDayFor(full, "from", "2026-11-20")).toEqual({
       draft: { from: "2026-11-20", to: "" },
-      done: false,
+      field: "to",
     })
   })
 })
 
-describe("rangeLabel", () => {
+describe("highlightRange", () => {
+  it("tugash tanlanmoqda — boshlanishdan sichqoncha turgan kungacha, tartiblangan", () => {
+    expect(highlightRange({ from: "2026-11-10", to: "" }, "2026-11-03", "to")).toEqual([
+      "2026-11-03",
+      "2026-11-10",
+    ])
+    expect(highlightRange({ from: "2026-11-10", to: "" }, null, "to")).toEqual([
+      "2026-11-10",
+      "2026-11-10",
+    ])
+    expect(highlightRange({ from: "", to: "" }, "2026-11-25", "to")).toEqual([
+      "2026-11-25",
+      "2026-11-25",
+    ])
+  })
+
+  it("boshlanish tanlanmoqda — sichqoncha turgan kundan tugashgacha (yoki bitta kun)", () => {
+    expect(highlightRange({ from: "2026-11-01", to: "2026-11-09" }, "2026-11-04", "from")).toEqual([
+      "2026-11-04",
+      "2026-11-09",
+    ])
+    expect(highlightRange({ from: "2026-11-01", to: "2026-11-09" }, "2026-11-20", "from")).toEqual([
+      "2026-11-20",
+      "2026-11-20",
+    ])
+    expect(highlightRange({ from: "2026-11-01", to: "2026-11-09" }, null, "from")).toEqual([
+      "2026-11-01",
+      "2026-11-09",
+    ])
+    expect(highlightRange({ from: "", to: "" }, null, "from")).toBeNull()
+  })
+})
+
+describe("rangeDays / rangeLabel", () => {
+  it("kunlar soni — ikkala chegara bo'lsa, bir kun 1", () => {
+    expect(rangeDays("2026-11-05", "2026-11-12")).toBe(8)
+    expect(rangeDays("2026-11-05", "2026-11-05")).toBe(1)
+    expect(rangeDays("2026-11-05", "")).toBeNull()
+    expect(rangeDays("", "")).toBeNull()
+  })
+
   it("to'liq, bir kunlik, ochiq va bo'sh oraliqlar", () => {
     expect(rangeLabel("2026-10-01", "2026-10-31", "Barcha davr")).toBe("01.10.2026 — 31.10.2026")
     expect(rangeLabel("2026-11-02", "2026-11-02", "Barcha davr")).toBe("02.11.2026")
     expect(rangeLabel("2026-10-01", "", "Barcha davr")).toBe("01.10.2026 — …")
     expect(rangeLabel("", "2026-10-31", "Barcha davr")).toBe("… — 31.10.2026")
     expect(rangeLabel("", "", "Barcha davr")).toBe("Barcha davr")
-  })
-})
-
-describe("highlightRange", () => {
-  it("tanlov tugallanmagan — sichqoncha turgan kungacha, tartiblangan", () => {
-    expect(highlightRange({ from: "2026-11-10", to: "" }, "2026-11-03")).toEqual([
-      "2026-11-03",
-      "2026-11-10",
-    ])
-    expect(highlightRange({ from: "2026-11-10", to: "" }, null)).toEqual(["2026-11-10", "2026-11-10"])
-  })
-
-  it("tugallangan tanlovda sichqoncha ta'sir qilmaydi", () => {
-    expect(highlightRange({ from: "2026-11-01", to: "2026-11-09" }, "2026-11-25")).toEqual([
-      "2026-11-01",
-      "2026-11-09",
-    ])
-    expect(highlightRange({ from: "", to: "" }, "2026-11-25")).toBeNull()
   })
 })
