@@ -15,7 +15,7 @@ import {
   Gavel,
 } from "lucide-react"
 import { useFinanceSummary } from "../api/finance"
-import { Input } from "@/components/ui/input"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { buildDatePresets, resolveDateRange } from "@/lib/datePresets"
@@ -409,36 +409,17 @@ export const FinancePage = () => {
             </button>
           ))}
         </div>
-        {/* Yozuv (label) `block` — maydon USTIDA turadi. Aks holda label
-            inline bo'lib, tor (w-40) input bilan bir qatorga sig'ib qoladi
-            va "Sanadan" yozuvi sana maydoniga yopishib chiqadi (boshqa
-            formalarda input w-full bo'lgani uchun bu sezilmaydi).
-            Maydon biroz kengroq (sm:w-44): sana bilan kalendar belgisi orasida
-            joy qolsin; telefonda w-40 — ikkalasi yonma-yon sig'adi. Juftlik
-            o'zi bo'linmaydi (flex-wrap yo'q), aks holda tez tugmalar yonidagi
-            tor joyga tiqilib ustma-ust tushardi. */}
-        <div className="flex items-end gap-2">
-          <div className="space-y-1">
-            <label className="block text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
-            <Input
-              type="date"
-              className="w-40 tabular-nums sm:w-44"
-              value={dateFrom}
-              max={dateTo || undefined}
-              onChange={(e) => editRange({ from: e.target.value, to: dateTo })}
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
-            <Input
-              type="date"
-              className="w-40 tabular-nums sm:w-44"
-              value={dateTo}
-              min={dateFrom || undefined}
-              onChange={(e) => editRange({ from: dateFrom, to: e.target.value })}
-            />
-          </div>
-        </div>
+        {/* Bitta kalendar: oraliq ikki bosishda tanlanadi (boshlanish, tugash);
+            tez tugmalar kalendar ichida ham bor, aniq sana qo'lda — pastdagi
+            maydonlarda. Tanlov qo'lda o'zgartirilsa tez tugma tanlovi
+            yechiladi (editRange) */}
+        <DateRangePicker
+          value={{ from: dateFrom, to: dateTo }}
+          onChange={editRange}
+          presets={presets}
+          presetKey={presetKey}
+          onPreset={selectPreset}
+        />
       </div>
 
       {/* BO'LIM MENYUSI va tanlangan bo'lim. Faqat ochilgani chiziladi va

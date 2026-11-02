@@ -29,7 +29,7 @@ import {
 } from "@/lib/tableState"
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
-import { Input } from "@/components/ui/input"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -488,32 +488,16 @@ export const MyReportsPage = () => {
             </button>
           ))}
         </div>
-        {/* Yozuv `block` — maydon USTIDA (aks holda tor input bilan bir
-            qatorga tushib, unga yopishib qolardi); maydon moliya
-            sahifasidagi bilan bir xil o'lchamda */}
+        {/* Bitta kalendar — moliya sahifasidagi bilan bir xil: oraliq ikki
+            bosishda, tez tugmalar ichida, aniq sana qo'lda pastdagi maydonlarda */}
         {fullRangeAccess && (
-          <div className="flex items-end gap-2">
-            <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
-              <Input
-                type="date"
-                className="w-40 tabular-nums sm:w-44"
-                value={dateFrom}
-                max={dateTo || undefined}
-                onChange={(e) => editRange({ from: e.target.value, to: dateTo })}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
-              <Input
-                type="date"
-                className="w-40 tabular-nums sm:w-44"
-                value={dateTo}
-                min={dateFrom || undefined}
-                onChange={(e) => editRange({ from: dateFrom, to: e.target.value })}
-              />
-            </div>
-          </div>
+          <DateRangePicker
+            value={{ from: dateFrom, to: dateTo }}
+            onChange={editRange}
+            presets={presets}
+            presetKey={activeKey}
+            onPreset={selectPreset}
+          />
         )}
       </div>
 

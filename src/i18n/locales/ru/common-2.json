@@ -238,5 +238,8 @@
   "Qoldiq mehmon chiqishida olinadi": "Остаток оплачивается при выезде гостя",
   "Qarz bilan chiqarilgan": "Выписан с долгом",
   "Shu to'lov:": "Этот платёж:",
-  "To'lov turi:": "Способ оплаты:"
+  "To'lov turi:": "Способ оплаты:",
+  "Sana oralig'i": "Период дат",
+  "Boshlanish kunini tanlang": "Выберите день начала",
+  "Tugash kunini tanlang": "Выберите день окончания"
 }
