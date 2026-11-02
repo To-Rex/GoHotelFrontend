@@ -142,5 +142,10 @@
   "Qoladi: {{amount}} So'm — avvalgi turda": "Remaining: {{amount}} so'm — in the previous method",
   "{{new}} usulida yangi to'lov qatori yaratiladi": "A new payment will be created with “{{new}}”",
   "Summaning bir qismi yangi turga o'tadi (masalan, 100 000 dan 50 000)": "Part of the amount moves to the new method (e.g. 50 000 out of 100 000)",
-  "qisman": "partial"
+  "qisman": "partial",
+  "{{count}} ta jarima · to'langani {{paid}} So'm": {
+    "one": "{{count}} penalty · {{paid}} UZS paid",
+    "other": "{{count}} penalties · {{paid}} UZS paid"
+  },
+  "shu jumladan jarimalar {{paid}}": "including penalties {{paid}}"
 }

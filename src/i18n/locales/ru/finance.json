@@ -158,5 +158,12 @@
   "Qoladi: {{amount}} So'm — avvalgi turda": "Останется: {{amount}} сум — в прежнем способе",
   "{{new}} usulida yangi to'lov qatori yaratiladi": "Будет создан новый платёж способом «{{new}}»",
   "Summaning bir qismi yangi turga o'tadi (masalan, 100 000 dan 50 000)": "Часть суммы переходит в новый способ (например, из 100 000 — 50 000)",
-  "qisman": "частично"
+  "qisman": "частично",
+  "{{count}} ta jarima · to'langani {{paid}} So'm": {
+    "one": "{{count}} штраф · оплачено {{paid}} сум",
+    "few": "{{count}} штрафа · оплачено {{paid}} сум",
+    "many": "{{count}} штрафов · оплачено {{paid}} сум",
+    "other": "{{count}} штрафа · оплачено {{paid}} сум"
+  },
+  "shu jumladan jarimalar {{paid}}": "в том числе штрафы {{paid}}"
 }

@@ -284,6 +284,11 @@ export const FinancePage = () => {
      edi. */
   const netResult = summary.income + summary.shop_revenue - expensesTotal
   const netPositive = netResult >= 0
+  /* Davrda jarima uchun OLINGAN pul. U "Tushum" ichida allaqachon bor —
+     bron to'lovi bo'lib yoziladi, shuning uchun sof natijaga qo'shilmaydi,
+     faqat "shu jumladan" deb ajratib ko'rsatiladi (eski server bu maydonni
+     yubormasa — 0, ko'rinmaydi). */
+  const penaltyPaid = Number(summary.penalty_paid || 0)
 
   const cards = [
     {
@@ -350,13 +355,20 @@ export const FinancePage = () => {
         ]
       : []),
     // Jarimalar — davrda yozilganlari (bekor qilinganlarsiz). Pul bron
-    // qarziga qo'shiladi, to'langanda "Tushum" ga kiradi
-    ...(Number(summary.penalty_count || 0) > 0
+    // qarziga qo'shiladi, to'langanda "Tushum" ga kiradi; davrda jarima
+    // uchun qancha olingani (`penalty_paid`) pastda ko'rsatiladi
+    ...(Number(summary.penalty_count || 0) > 0 || penaltyPaid > 0
       ? [
           {
             label: tr("Jarimalar"),
             value: tr("{{penalty_total}} So'm", { penalty_total: fmt(Number(summary.penalty_total || 0)) }),
-            sub: tr("{{count}} ta jarima", { count: Number(summary.penalty_count || 0) }),
+            sub:
+              penaltyPaid > 0
+                ? tr("{{count}} ta jarima · to'langani {{paid}} So'm", {
+                    count: Number(summary.penalty_count || 0),
+                    paid: fmt(penaltyPaid),
+                  })
+                : tr("{{count}} ta jarima", { count: Number(summary.penalty_count || 0) }),
             icon: Gavel,
             accent: "bg-rose-50 text-rose-600",
           },
@@ -533,6 +545,12 @@ export const FinancePage = () => {
                           {fmt(summary.income)}
                         </b>
                       </span>
+                      {/* Jarima puli tushum ICHIDA — qo'shiluvchi emas, izoh */}
+                      {penaltyPaid > 0 && (
+                        <span className="whitespace-nowrap rounded-full bg-rose-50 px-2 py-0.5 text-[11px] text-rose-700">
+                          {tr("shu jumladan jarimalar {{paid}}", { paid: fmt(penaltyPaid) })}
+                        </span>
+                      )}
                       <span className="text-gray-300">+</span>
                       <span className="whitespace-nowrap">
                         {tr("Do'kon")}{" "}

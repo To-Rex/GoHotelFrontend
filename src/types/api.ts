@@ -354,6 +354,9 @@ export interface FinanceSummary {
       javobida bo'lmasligi mumkin */
   penalty_total?: number;
   penalty_count?: number;
+  /** Davrda jarima uchun OLINGAN pul — `income` ichida allaqachon bor,
+      faqat ajratib ko'rsatish uchun. Eski serverda bo'lmasligi mumkin */
+  penalty_paid?: number;
 }
 
 // To'lov yozuvi (GET /finance/payments)
