@@ -409,22 +409,30 @@ export const FinancePage = () => {
             </button>
           ))}
         </div>
+        {/* Yozuv (label) `block` — maydon USTIDA turadi. Aks holda label
+            inline bo'lib, tor (w-40) input bilan bir qatorga sig'ib qoladi
+            va "Sanadan" yozuvi sana maydoniga yopishib chiqadi (boshqa
+            formalarda input w-full bo'lgani uchun bu sezilmaydi).
+            Maydon biroz kengroq (sm:w-44): sana bilan kalendar belgisi orasida
+            joy qolsin; telefonda w-40 — ikkalasi yonma-yon sig'adi. Juftlik
+            o'zi bo'linmaydi (flex-wrap yo'q), aks holda tez tugmalar yonidagi
+            tor joyga tiqilib ustma-ust tushardi. */}
         <div className="flex items-end gap-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
+            <label className="block text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
             <Input
               type="date"
-              className="w-40"
+              className="w-40 tabular-nums sm:w-44"
               value={dateFrom}
               max={dateTo || undefined}
               onChange={(e) => editRange({ from: e.target.value, to: dateTo })}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
+            <label className="block text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
             <Input
               type="date"
-              className="w-40"
+              className="w-40 tabular-nums sm:w-44"
               value={dateTo}
               min={dateFrom || undefined}
               onChange={(e) => editRange({ from: dateFrom, to: e.target.value })}

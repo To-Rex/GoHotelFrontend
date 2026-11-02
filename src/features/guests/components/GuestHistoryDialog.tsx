@@ -344,7 +344,9 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
               <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50/60 p-2.5">
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-gray-500">
+                    {/* `block` — yozuv maydon ustida; aks holda tor input
+                        bilan bir qatorga tushib, unga yopishib qolardi */}
+                    <label className="block text-[11px] font-medium text-gray-500">
                       {tr("Sanadan")}
                     </label>
                     <Input
@@ -358,7 +360,7 @@ export const GuestHistoryDialog = ({ guest, onClose }: Props) => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-gray-500">
+                    <label className="block text-[11px] font-medium text-gray-500">
                       {tr("Sanagacha")}
                     </label>
                     <Input

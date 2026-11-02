@@ -123,7 +123,9 @@ export function CleaningReportDialog({ open, onOpenChange }: Props) {
         {/* Davr tanlash — moliya va xarajatlar sahifalaridagi bilan bir xil */}
         <div className="flex flex-wrap items-end gap-2">
           <div className="space-y-1">
-            <label className="text-[11px] font-medium text-gray-500">{tr("Sanadan")}</label>
+            {/* `block` — yozuv maydon ustida; aks holda tor input bilan bir
+                qatorga tushib, unga yopishib qolardi */}
+            <label className="block text-[11px] font-medium text-gray-500">{tr("Sanadan")}</label>
             <Input
               type="date"
               className="h-8 w-[140px] text-xs"
@@ -133,7 +135,7 @@ export function CleaningReportDialog({ open, onOpenChange }: Props) {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] font-medium text-gray-500">{tr("Sanagacha")}</label>
+            <label className="block text-[11px] font-medium text-gray-500">{tr("Sanagacha")}</label>
             <Input
               type="date"
               className="h-8 w-[140px] text-xs"

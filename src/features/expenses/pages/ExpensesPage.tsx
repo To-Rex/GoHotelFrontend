@@ -248,22 +248,25 @@ export const ExpensesPage = () => {
             </button>
           ))}
         </div>
+        {/* Yozuv `block` — maydon USTIDA (aks holda tor input bilan bir
+            qatorga tushib, unga yopishib qolardi); maydon moliya
+            sahifasidagi bilan bir xil o'lchamda */}
         <div className="flex items-end gap-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
+            <label className="block text-xs font-medium text-gray-500">{tr("Sanadan")}</label>
             <Input
               type="date"
-              className="w-40"
+              className="w-40 tabular-nums sm:w-44"
               value={dateFrom}
               max={dateTo || undefined}
               onChange={(e) => editRange({ from: e.target.value, to: dateTo })}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
+            <label className="block text-xs font-medium text-gray-500">{tr("Sanagacha")}</label>
             <Input
               type="date"
-              className="w-40"
+              className="w-40 tabular-nums sm:w-44"
               value={dateTo}
               min={dateFrom || undefined}
               onChange={(e) => editRange({ from: dateFrom, to: e.target.value })}

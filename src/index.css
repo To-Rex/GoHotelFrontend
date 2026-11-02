@@ -252,6 +252,22 @@
   body {
     @apply bg-background text-foreground antialiased min-h-screen font-sans;
   }
+
+  /* Sana/vaqt maydonlari (type="date" va h.k.): Safari'da matn qismi
+     cho'zilmaydi, shuning uchun kalendar belgisi "31.10.2026" ga yopishib
+     turardi va maydonning o'ng tomoni bo'sh qolardi. Matn chapda, belgi
+     o'ng chetda, orasi ochiq — Chrome'da ham, Safari'da ham bir xil. */
+  input[type="date"]::-webkit-datetime-edit,
+  input[type="time"]::-webkit-datetime-edit,
+  input[type="datetime-local"]::-webkit-datetime-edit {
+    flex: 1;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    margin-inline-start: 0.5rem;
+    cursor: pointer;
+  }
 }
 
 /* ============================================================
