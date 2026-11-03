@@ -62,7 +62,7 @@
     "other": "{{shop_debt_count}} unpaid sales"
   },
   "Naqd qoldiq": "Cash balance",
-  "naqd tushum − naqd xarajat": "cash revenue − cash expenses",
+  "naqd tushum {{income}} − naqd xarajat {{expense}}": "cash revenue {{income}} − cash expenses {{expense}}",
   "tushumdan allaqachon ayirilgan": "already deducted from revenue",
   "{{expense_count}} ta chiqim": {
     "one": "{{expense_count}} expense",

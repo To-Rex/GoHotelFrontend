@@ -251,11 +251,14 @@ export const FinancePage = () => {
     [methodRows]
   )
 
-  // Kassadagi naqd qoldiq: naqd tushum − naqd xarajat
-  const cashOnHand = useMemo(
-    () => methodRows.find((r) => r.key === "CASH")?.net ?? 0,
-    [methodRows]
-  )
+  // Kassadagi naqd: tushum (to'lovlar + do'kon), xarajat va qoldiq. Kartada
+  // qoldiq bilan birga xarajat ayirilmagan tushum ham ko'rinadi — kassir
+  // kun davomida qancha naqd qabul qilgani alohida savol
+  const cash = useMemo(() => {
+    const row = methodRows.find((r) => r.key === "CASH")
+    return { income: row?.income ?? 0, expense: row?.expense ?? 0, net: row?.net ?? 0 }
+  }, [methodRows])
+  const cashOnHand = cash.net
 
   const activeSection = SECTIONS.find((s) => s.key === section) ?? SECTIONS[0]
 
@@ -339,7 +342,10 @@ export const FinancePage = () => {
     {
       label: tr("Naqd qoldiq"),
       value: tr("{{cashOnHand}} So'm", { cashOnHand: fmt(cashOnHand) }),
-      sub: tr("naqd tushum − naqd xarajat"),
+      sub: tr("naqd tushum {{income}} − naqd xarajat {{expense}}", {
+        income: fmt(cash.income),
+        expense: fmt(cash.expense),
+      }),
       icon: Banknote,
       accent: "bg-emerald-50 text-emerald-600",
     },

@@ -74,7 +74,7 @@
     "other": "{{shop_debt_count}} неоплаченной продажи"
   },
   "Naqd qoldiq": "Остаток наличных",
-  "naqd tushum − naqd xarajat": "выручка наличными − расходы наличными",
+  "naqd tushum {{income}} − naqd xarajat {{expense}}": "выручка наличными {{income}} − расходы наличными {{expense}}",
   "tushumdan allaqachon ayirilgan": "уже вычтено из выручки",
   "{{expense_count}} ta chiqim": {
     "one": "{{expense_count}} расход",
