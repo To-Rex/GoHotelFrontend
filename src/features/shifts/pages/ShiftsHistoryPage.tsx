@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { format, subDays } from "date-fns"
+import { format } from "date-fns"
 import {
   History,
   Search,
@@ -36,6 +36,8 @@ import { hasNonCashIncome, methodTotals } from "../lib/methodSummary"
 import { paymentMethodLabel } from "@/lib/paymentMethods"
 import { apiErrorMessage } from "@/lib/apiError"
 import { Input } from "@/components/ui/input"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
+import { buildDatePresets, resolveDateRange, type DatePreset } from "@/lib/datePresets"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -111,8 +113,11 @@ export const ShiftsHistoryPage = () => {
 
   // --- Filtrlar ---
   const [search, setSearch] = useState("")
-  const [dateFrom, setDateFrom] = useState("") // bo'sh — chegara yo'q
-  const [dateTo, setDateTo] = useState("")
+  /* Davr: tanlov KALIT sifatida saqlanadi, sanalarga qarab topilmaydi (izoh
+     `lib/datePresets.ts` da). Standart — "Barcha davr", ya'ni chegara yo'q.
+     Kalendardan tanlansa kalit yechiladi va qo'lda tanlangan oraliq ishlaydi. */
+  const [presetKey, setPresetKey] = useState<string | null>("all")
+  const [customRange, setCustomRange] = useState({ from: "", to: "" })
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL")
   const [onlyDiff, setOnlyDiff] = useState(false)
   const [onlyForced, setOnlyForced] = useState(false)
@@ -145,6 +150,28 @@ export const ShiftsHistoryPage = () => {
     }
   }, [employees, employeeFilter])
 
+  // Tez tanlovlar: bugun, kecha, oxirgi 7 va 30 kun, barcha davr. Smenalar
+  // oy chegarasiga bog'liq emas — "Shu oy" o'rniga oxirgi 30 kun
+  const presets = buildDatePresets(new Date(), {
+    withYesterday: true,
+    rollingMonth: true,
+  })
+  const { from: dateFrom, to: dateTo } = resolveDateRange(
+    presets,
+    presetKey,
+    customRange
+  )
+
+  const selectPreset = (p: DatePreset) => {
+    setPresetKey(p.key)
+    setCustomRange({ from: p.from, to: p.to })
+  }
+
+  const editRange = (next: { from: string; to: string }) => {
+    setCustomRange(next)
+    setPresetKey(null)
+  }
+
   const hasFilters =
     employeeFilter !== "ALL" ||
     !!dateFrom ||
@@ -157,32 +184,14 @@ export const ShiftsHistoryPage = () => {
 
   const clearFilters = () => {
     setSearch("")
-    setDateFrom("")
-    setDateTo("")
+    setPresetKey("all")
+    setCustomRange({ from: "", to: "" })
     setStatusFilter("ALL")
     setOnlyDiff(false)
     setOnlyForced(false)
     setOnlyCorrected(false)
     setEmployeeFilter("ALL")
   }
-
-  const todayStr = format(new Date(), "yyyy-MM-dd")
-  const presets = [
-    { key: "today", label: tr("Bugun"), from: todayStr, to: todayStr },
-    {
-      key: "week",
-      label: tr("7 kun"),
-      from: format(subDays(new Date(), 6), "yyyy-MM-dd"),
-      to: todayStr,
-    },
-    {
-      key: "month",
-      label: tr("30 kun"),
-      from: format(subDays(new Date(), 29), "yyyy-MM-dd"),
-      to: todayStr,
-    },
-    { key: "all", label: tr("Hammasi"), from: "", to: "" },
-  ]
 
   // --- Saralash ---
   const [sortKey, setSortKey] = useState<SortKey>("started_at")
@@ -689,40 +698,35 @@ export const ShiftsHistoryPage = () => {
 
           <span className="mx-1 hidden h-4 w-px bg-gray-200 sm:block" />
 
-          {/* Sana presetlari */}
-          {presets.map((p) => {
-            const active = dateFrom === p.from && dateTo === p.to
-            return (
-              <button
-                key={p.key}
-                type="button"
-                onClick={() => {
-                  setDateFrom(p.from)
-                  setDateTo(p.to)
-                }}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                  active
-                    ? "border-primary-600 bg-primary-600 text-white"
-                    : "border-gray-200 text-gray-600 hover:border-primary-200 hover:bg-primary-50"
-                )}
-              >
-                {p.label}
-              </button>
-            )
-          })}
-          <Input
-            type="date"
-            className="h-8 w-36 text-xs"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-          />
-          <span className="text-xs text-gray-400">—</span>
-          <Input
-            type="date"
-            className="h-8 w-36 text-xs"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
+          {/* Davr: tez tugmalar + bitta kalendar (oraliq ikki bosishda
+              tanlanadi). Kalendardan tanlansa tez tugma tanlovi yechiladi
+              (editRange) va kalendar tugmasi o'zi yoritiladi */}
+          {presets.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => selectPreset(p)}
+              aria-pressed={presetKey === p.key}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                presetKey === p.key
+                  ? "border-primary-600 bg-primary-600 text-white"
+                  : "border-gray-200 text-gray-600 hover:border-primary-200 hover:bg-primary-50"
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+          <DateRangePicker
+            value={{ from: dateFrom, to: dateTo }}
+            onChange={editRange}
+            presets={presets}
+            presetKey={presetKey}
+            onPreset={selectPreset}
+            className={cn(
+              "h-8 rounded-full text-xs",
+              presetKey === null && "border-primary-400 ring-1 ring-primary-200"
+            )}
           />
         </div>
 

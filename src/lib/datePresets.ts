@@ -34,6 +34,10 @@ const iso = (d: Date) => format(d, "yyyy-MM-dd")
 export interface DatePresetOptions {
   /** Moliya sahifasida "Kecha" ham bor, xarajatlarda yo'q. */
   withYesterday?: boolean
+  /** "Shu oy" o'rniga "Oxirgi 30 kun" — smenalar tarixida. Smenalar oy
+   *  chegarasiga bog'liq emas: oyning 2-kunida "Shu oy" bor-yo'g'i ikki
+   *  kunni ko'rsatardi, 30 kunlik oyna esa har doim bir xil uzunlikda. */
+  rollingMonth?: boolean
 }
 
 export function buildDatePresets(
@@ -61,12 +65,19 @@ export function buildDatePresets(
       from: iso(subDays(today, 6)),
       to: todayStr,
     },
-    {
-      key: "month",
-      label: tr("Shu oy"),
-      from: iso(startOfMonth(today)),
-      to: todayStr,
-    },
+    options.rollingMonth
+      ? {
+          key: "days30",
+          label: tr("Oxirgi 30 kun"),
+          from: iso(subDays(today, 29)),
+          to: todayStr,
+        }
+      : {
+          key: "month",
+          label: tr("Shu oy"),
+          from: iso(startOfMonth(today)),
+          to: todayStr,
+        },
     // Bo'sh sanalar = serverga date_from/date_to yuborilmaydi
     { key: "all", label: tr("Barcha davr"), from: "", to: "" },
   ]

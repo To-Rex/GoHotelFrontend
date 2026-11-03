@@ -57,6 +57,22 @@ describe("buildDatePresets", () => {
     expect(get(with_, "yesterday").to).toBe("2026-09-14")
   })
 
+  it("'Oxirgi 30 kun' so'ralsa 'Shu oy' o'rnini egallaydi (smenalar tarixi)", () => {
+    const presets = buildDatePresets(new Date(2026, 8, 2), { rollingMonth: true })
+    expect(presets.some(key("month"))).toBe(false)
+    // 2-sentabrda "Shu oy" ikki kun bo'lardi; 30 kunlik oyna avgustga kiradi
+    expect(get(presets, "days30").from).toBe("2026-08-04")
+    expect(get(presets, "days30").to).toBe("2026-09-02")
+  })
+
+  it("smenalar tarixi to'plami: bugun, kecha, 7 kun, 30 kun, barcha davr", () => {
+    const keys = buildDatePresets(new Date(2026, 8, 15), {
+      withYesterday: true,
+      rollingMonth: true,
+    }).map((p) => p.key)
+    expect(keys).toEqual(["today", "yesterday", "week", "days30", "all"])
+  })
+
   it("oy boshidan oldingi kunga o'tganda oldingi oyni oladi", () => {
     // 1-sentabrda "Oxirgi 7 kun" avgustdan boshlanadi
     const presets = buildDatePresets(new Date(2026, 8, 1))
