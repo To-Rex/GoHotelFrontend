@@ -16,6 +16,7 @@ import { apiErrorMessage } from "@/lib/apiError"
 import { PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from "@/lib/paymentMethods"
 import { cn } from "@/lib/utils"
 import { tr } from "@/i18n"
+import { formatMoment, humanNote, paymentMoment, purposeTitle } from "../lib/paymentPurpose"
 import type { PaymentRecord } from "@/types/api"
 import { useUpdatePaymentMethod } from "../api/finance"
 import { parsePartialAmount } from "../lib/paymentEdit"
@@ -94,7 +95,11 @@ export function PaymentMethodEditDialog({
             <div>
               <p className="font-semibold text-gray-900">{payment.payment_number}</p>
               <p className="mt-0.5 text-[11px] text-gray-400">
-                {[payment.payment_date, payment.notes || payment.reference]
+                {[
+                  formatMoment(paymentMoment(payment)),
+                  payment.room_number || payment.guest_name ? purposeTitle(payment) : null,
+                  humanNote(payment.notes) || payment.reference,
+                ]
                   .filter(Boolean)
                   .join(" · ")}
               </p>

@@ -76,6 +76,11 @@ interface PagedOptions {
   enabled?: boolean;
 }
 
+interface PaymentsPageOptions extends PagedOptions {
+  /** Do'kon to'lovlari ham ro'yxatda (mahsulotlari bilan) — Moliya → To'lovlar */
+  includeShop?: boolean;
+}
+
 /**
  * To'lovlar jadvalining bitta sahifasi.
  *
@@ -89,15 +94,17 @@ export const usePaymentsPage = ({
   state,
   pageSize = PAGE_SIZE,
   enabled = true,
-}: PagedOptions) => {
+  includeShop = false,
+}: PaymentsPageOptions) => {
   const params = queryParams(state, pageSize);
   return useQuery({
-    queryKey: ['paymentsPage', dateFrom, dateTo, params],
+    queryKey: ['paymentsPage', dateFrom, dateTo, params, includeShop],
     queryFn: async () => {
       const response = await api.get<PaymentRecord[]>('/finance/payments', {
         params: {
           date_from: dateFrom || undefined,
           date_to: dateTo || undefined,
+          include_shop: includeShop || undefined,
           ...params,
         },
       });

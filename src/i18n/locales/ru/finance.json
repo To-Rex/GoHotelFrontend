@@ -31,7 +31,6 @@
   "{{remaining}} So'm": "{{remaining}} сум",
   "Raqami": "Номер",
   "Muddati": "Срок оплаты",
-  "Raqam yoki izoh bo'yicha...": "Поиск по номеру или примечанию...",
   "Qidiruv bo'yicha to'lov topilmadi": "По запросу оплаты не найдены",
   "Tanlangan davrda to'lovlar yo'q": "За выбранный период оплат нет",
   "Do'kon qarzlari (bronga yozilgan)": "Долги магазина (записанные на бронь)",
@@ -165,5 +164,20 @@
     "many": "{{count}} штрафов · оплачено {{paid}} сум",
     "other": "{{count}} штрафа · оплачено {{paid}} сум"
   },
-  "shu jumladan jarimalar {{paid}}": "в том числе штрафы {{paid}}"
+  "shu jumladan jarimalar {{paid}}": "в том числе штрафы {{paid}}",
+  "hisobot: {{date}}": "отчёт: {{date}}",
+  "Bron to'lovlari (xona, jarima, qarz) va do'kon to'lovlari — qabul qilingan vaqti bilan": "Оплаты по броням (номер, штраф, долг) и оплаты магазина — со временем приёма",
+  "Raqam, xona, mehmon, mahsulot yoki izoh...": "Номер, комната, гость, товар или примечание...",
+  "qabul qildi: {{name}}": "принял: {{name}}",
+  "Qabul qildi": "Принял",
+  "Qaytarim": "Возврат",
+  "Qarz to'lovi": "Оплата долга",
+  "Mehmon chiqib ketgandan keyin to'langan": "Оплачено после выезда гостя",
+  "Do'kon: {{items}}": "Магазин: {{items}}",
+  "Do'kon savdosi": "Продажа магазина",
+  "Bron to'lovi": "Оплата брони",
+  "{{stay}} (soatlik)": "{{stay}} (почасово)",
+  "Bron qilinganda to'langan": "Оплачено при бронировании",
+  "Qo'shimcha to'lov, bo'lib to'lash {{i}}/{{n}}": "Доплата, частями {{i}}/{{n}}",
+  "Qo'shimcha to'lov": "Доплата"
 }

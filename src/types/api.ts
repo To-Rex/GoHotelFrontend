@@ -376,11 +376,20 @@ export interface PaymentMethodChange {
   new_payment_number?: string | null;
 }
 
+/** To'lovning bir qismi nima uchun: ROOM / PENALTY / SERVICE / EXTRA / REFUND / SHOP */
+export interface PaymentPurposePart {
+  kind: string;
+  amount: number;
+  /** Jarima turi ("Jarima: Kech chiqish") yoki do'konda mahsulotlar */
+  label?: string | null;
+}
+
 export interface PaymentRecord {
   id: string;
   hotel_id: string;
-  invoice_id: string;
-  payment_number: string;
+  /** Do'kon to'lovida (`source: "SHOP"`) bo'sh */
+  invoice_id?: string | null;
+  payment_number?: string | null;
   amount: number;
   payment_method: string;
   payment_date: string;
@@ -389,6 +398,31 @@ export interface PaymentRecord {
   created_at: string;
   /** Faqat to'lov turi tahrirlari (summa tegilmaydi) — audit tarixi */
   method_changes?: PaymentMethodChange[] | null;
+
+  /* --- To'lov nima uchun (GET /finance/payments; eski server bermaydi) --- */
+  /** RESERVATION — bron to'lovi, SHOP — do'kon to'lovi */
+  source?: 'RESERVATION' | 'SHOP' | null;
+  /** Asosiy tur: ROOM / PENALTY / SERVICE / MIXED / REFUND / SHOP / EXTRA */
+  kind?: string | null;
+  parts?: PaymentPurposePart[] | null;
+  /** Qarz to'lovi — mehmon chiqib ketgandan keyingi kunlarda olingan */
+  after_checkout?: boolean | null;
+  /** Pulni qabul qilgan xodim */
+  created_by_name?: string | null;
+  reservation_id?: string | null;
+  reservation_number?: string | null;
+  reservation_status?: string | null;
+  booking_type?: string | null;
+  check_in_date?: string | null;
+  check_out_date?: string | null;
+  /** Soatlik bronda aniq soatlar */
+  check_in_datetime?: string | null;
+  check_out_datetime?: string | null;
+  room_number?: string | null;
+  guest_name?: string | null;
+  sale_id?: string | null;
+  /** Do'kon to'lovida — chekdagi mahsulotlar */
+  items?: Array<{ product_name: string; quantity: number }> | null;
 }
 
 export interface Invoice {

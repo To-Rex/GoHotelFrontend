@@ -27,7 +27,6 @@
   "{{remaining}} So'm": "{{remaining}} UZS",
   "Raqami": "Number",
   "Muddati": "Due date",
-  "Raqam yoki izoh bo'yicha...": "Search by number or note...",
   "Qidiruv bo'yicha to'lov topilmadi": "No payments match your search",
   "Tanlangan davrda to'lovlar yo'q": "No payments in the selected period",
   "Do'kon qarzlari (bronga yozilgan)": "Shop debts (charged to bookings)",
@@ -147,5 +146,20 @@
     "one": "{{count}} penalty · {{paid}} UZS paid",
     "other": "{{count}} penalties · {{paid}} UZS paid"
   },
-  "shu jumladan jarimalar {{paid}}": "including penalties {{paid}}"
+  "shu jumladan jarimalar {{paid}}": "including penalties {{paid}}",
+  "hisobot: {{date}}": "report: {{date}}",
+  "Bron to'lovlari (xona, jarima, qarz) va do'kon to'lovlari — qabul qilingan vaqti bilan": "Booking payments (room, penalty, debt) and shop payments, with the time received",
+  "Raqam, xona, mehmon, mahsulot yoki izoh...": "Number, room, guest, product or note...",
+  "qabul qildi: {{name}}": "received by: {{name}}",
+  "Qabul qildi": "Received by",
+  "Qaytarim": "Refund",
+  "Qarz to'lovi": "Debt payment",
+  "Mehmon chiqib ketgandan keyin to'langan": "Paid after the guest checked out",
+  "Do'kon: {{items}}": "Shop: {{items}}",
+  "Do'kon savdosi": "Shop sale",
+  "Bron to'lovi": "Booking payment",
+  "{{stay}} (soatlik)": "{{stay}} (hourly)",
+  "Bron qilinganda to'langan": "Paid at booking",
+  "Qo'shimcha to'lov, bo'lib to'lash {{i}}/{{n}}": "Additional payment, split {{i}}/{{n}}",
+  "Qo'shimcha to'lov": "Additional payment"
 }
