@@ -134,6 +134,13 @@ export function stayText(p: Pick<PaymentRecord, "booking_type" | "check_in_date"
   return p.booking_type === "HOURLY" ? tr("{{stay}} (soatlik)", { stay }) : stay
 }
 
+/** Jadvaldagi qisqa sarlavha: belgi allaqachon "Do'kon" deyilgan, shuning
+ *  uchun do'kon qatorida faqat mahsulotlar; qolganida — purposeTitle. */
+export function compactTitle(p: PaymentRecord): string {
+  if (isShopPayment(p)) return shopItemsText(p.items) || tr("Do'kon savdosi")
+  return purposeTitle(p)
+}
+
 /** Ikkinchi qator: bron raqami va muddati (do'konda — bronga yozilgan bo'lsa). */
 export function purposeDetail(p: PaymentRecord): string {
   const bits: string[] = []
@@ -147,6 +154,11 @@ export function purposeDetail(p: PaymentRecord): string {
   const stay = stayText(p)
   if (stay) bits.push(stay)
   return bits.join(" · ")
+}
+
+/** Sarlavha ostidagi bitta xira qator: bron raqami · muddati · izoh. */
+export function purposeSubline(p: PaymentRecord): string {
+  return [purposeDetail(p), humanNote(p.notes) || p.reference || ""].filter(Boolean).join(" · ")
 }
 
 /** Hisobot sanasi (`payment_date`) — ekranda kun.oy.yil. */

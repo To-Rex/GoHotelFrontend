@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest"
 import type { PaymentRecord } from "@/types/api"
 import {
   bookingLink,
+  compactTitle,
   formatReportDate,
   humanNote,
   purposeBadges,
   purposeDetail,
+  purposeSubline,
   purposeTitle,
   reportDateDiffers,
   shopItemsText,
@@ -144,5 +146,30 @@ describe("bookingLink", () => {
     expect(bookingLink(base)).toBe("/booking?reservation=r1")
     expect(bookingLink({ ...base, reservation_status: "CHECKED_OUT" })).toBeNull()
     expect(bookingLink({ ...base, reservation_id: null })).toBeNull()
+  })
+})
+
+describe("compactTitle / purposeSubline (ixcham qator)", () => {
+  it("bron to'lovi — sarlavha xona · mehmon, ostida raqam · muddat · izoh", () => {
+    const p = { ...base, notes: "Payment at reservation creation", check_in_datetime: "2026-11-03T15:00:00Z", check_out_datetime: "2026-11-03T18:00:00Z" }
+    expect(compactTitle(p)).toBe("Xona 12 · Ali Valiyev")
+    expect(purposeSubline(p)).toBe("RES-77 · 03.11 20:00–23:00 (soatlik) · Bron qilinganda to'langan")
+  })
+
+  it("do'kon — belgi 'Do'kon' bo'lgani uchun sarlavhada faqat mahsulotlar", () => {
+    const p: PaymentRecord = {
+      ...base, source: "SHOP", invoice_id: null, payment_number: null, notes: null, reference: null,
+      reservation_id: null, reservation_number: null, room_number: null, guest_name: null,
+      items: [{ product_name: "Coca-Cola", quantity: 2 }, { product_name: "Suv", quantity: 1 }],
+    }
+    expect(compactTitle(p)).toBe("Coca-Cola ×2, Suv")
+    expect(purposeSubline(p)).toBe("")
+    expect(compactTitle({ ...p, items: [] })).toBe("Do'kon savdosi")
+  })
+
+  it("izoh bo'lmasa reference, u ham bo'lmasa faqat bron qismi", () => {
+    const p = { ...base, booking_type: "DAILY", notes: null, reference: "chek 7" }
+    expect(purposeSubline(p)).toBe("RES-77 · 03.11–04.11 · chek 7")
+    expect(purposeSubline({ ...p, reference: null })).toBe("RES-77 · 03.11–04.11")
   })
 })

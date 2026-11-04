@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { format } from "date-fns"
 import { ExternalLink, Pencil } from "lucide-react"
 import { Link } from "react-router-dom"
 
@@ -19,14 +20,12 @@ import { usePaymentsPage } from "../api/finance"
 import { canEditPaymentMethod } from "../lib/paymentEdit"
 import {
   bookingLink,
-  formatMoment,
+  compactTitle,
   formatReportDate,
-  humanNote,
   isShopPayment,
   paymentMoment,
   purposeBadges,
-  purposeDetail,
-  purposeTitle,
+  purposeSubline,
   reportDateDiffers,
   type PurposeTone,
 } from "../lib/paymentPurpose"
@@ -46,12 +45,16 @@ import type { PaymentRecord } from "@/types/api"
 /**
  * To'lovlar jadvali — sahifalab, qidirib va saralab.
  *
- * Har qator NIMA UCHUN olinganini ko'rsatadi: xona va mehmon (bron
- * raqami, muddati), haqlar belgisi — xona / jarima / xizmat, qarz to'lovi
- * (mehmon chiqib ketgandan keyin), qaytarim; do'kon to'lovida — chekdagi
- * mahsulotlar. Vaqt — pul qabul qilingan daqiqa, yonida qabul qilgan
- * xodim. Taqsimot serverda hisoblanadi (`payment_purpose`), bu yerda
- * faqat ko'rsatiladi.
+ * Har qator ikki satr: belgi (xona / jarima / qarz to'lovi / qaytarim /
+ * do'kon) va sarlavha — xona · mehmon yoki chekdagi mahsulotlar; ostida
+ * xira bitta satrda bron raqami · muddati · izoh. Vaqt — pul qabul
+ * qilingan daqiqa, yonida qabul qilgan xodim. Taqsimot serverda
+ * hisoblanadi (`payment_purpose`), bu yerda faqat ko'rsatiladi.
+ *
+ * Ixchamlik ataylab: kunlik hisobotda 30–50 qator bir ekranga sig'ishi
+ * kerak, shuning uchun har ma'lumot o'z o'rnida, qator balandligi ikki
+ * satrdan oshmaydi, uzun matn qisqartirilib to'lig'i ustiga borganda
+ * ko'rinadi. Mobilda alohida kartalar o'rniga zich ro'yxat.
  *
  * Ilgari davrning barcha to'lovlari bir vaqtda chizilardi. Kunlik
  * hisobotda bu sezilmasdi, lekin "Shu oy" yoki "Barcha davr" tanlanganda
@@ -77,33 +80,35 @@ function PurposeTags({ payment }: { payment: PaymentRecord }) {
   const badges = purposeBadges(payment)
   if (badges.length === 0) return null
   return (
-    <div className="flex flex-wrap gap-1">
+    <>
       {badges.map((b) => (
         <span
           key={b.key}
           title={b.title}
           className={cn(
-            "inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-tight ring-1 ring-inset",
+            "inline-flex flex-shrink-0 items-center rounded px-1.5 py-px text-[11px] font-semibold leading-4 ring-1 ring-inset",
             TONE_CLASS[b.tone]
           )}
         >
           {b.label}
         </span>
       ))}
-    </div>
+    </>
   )
 }
 
-/** Nima uchun: belgilar, xona · mehmon, bron raqami va muddati, izoh. */
-function PurposeCell({ payment }: { payment: PaymentRecord }) {
-  const detail = purposeDetail(payment)
-  const note = humanNote(payment.notes) || payment.reference || ""
+/** Birinchi satr: belgilar + sarlavha (+ bronga havola). */
+function PurposeHead({ payment, wrap = false }: { payment: PaymentRecord; wrap?: boolean }) {
   const link = bookingLink(payment)
   return (
-    <div className="min-w-0 space-y-0.5">
+    <div className={cn("flex min-w-0 items-center gap-1.5", wrap ? "flex-wrap gap-y-1" : "overflow-hidden")}>
       <PurposeTags payment={payment} />
-      <p className="flex items-center gap-1 font-medium leading-tight text-gray-900">
-        <span className="truncate">{purposeTitle(payment)}</span>
+      {/* Sarlavha va havola bitta guruh — mobilda qatorga sig'masa
+          birga ko'chadi */}
+      <span className="inline-flex min-w-0 items-center gap-1">
+        <span className={cn("text-[13px] font-medium leading-5 text-gray-900", !wrap && "truncate")}>
+          {compactTitle(payment)}
+        </span>
         {link && (
           <Link
             to={link}
@@ -113,21 +118,45 @@ function PurposeCell({ payment }: { payment: PaymentRecord }) {
             <ExternalLink className="h-3.5 w-3.5" />
           </Link>
         )}
-      </p>
-      {detail && <p className="text-[11px] leading-tight text-gray-500">{detail}</p>}
-      {note && <p className="truncate text-[11px] leading-tight text-gray-400">{note}</p>}
+      </span>
     </div>
   )
 }
 
-/** Qabul qilingan vaqt; hisobot sanasi boshqa kun bo'lsa — u ham. */
-function MomentCell({ payment }: { payment: PaymentRecord }) {
-  const moment = paymentMoment(payment)
+/** Nima uchun (jadval): sarlavha, ostida xira satr — to'lig'i ustiga borganda. */
+function PurposeCell({ payment }: { payment: PaymentRecord }) {
+  const sub = purposeSubline(payment)
   return (
-    <div className="whitespace-nowrap tabular-nums">
-      <p className="text-gray-900">{formatMoment(moment)}</p>
+    <div className="min-w-0">
+      <PurposeHead payment={payment} />
+      {sub && (
+        <p className="truncate text-[11px] leading-4 text-gray-500" title={sub}>
+          {sub}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Qabul qilingan vaqt: sana xira, soat aniq. */
+function Moment({ payment, className }: { payment: PaymentRecord; className?: string }) {
+  const d = paymentMoment(payment)
+  if (!d) return <span className={className}>-</span>
+  return (
+    <span className={cn("whitespace-nowrap tabular-nums", className)}>
+      <span className="text-gray-500">{format(d, "dd.MM.yyyy")}</span>{" "}
+      <span className="font-medium text-gray-900">{format(d, "HH:mm")}</span>
+    </span>
+  )
+}
+
+/** Jadval ustuni: vaqt; hisobot sanasi boshqa kun bo'lsa — u ham. */
+function MomentCell({ payment }: { payment: PaymentRecord }) {
+  return (
+    <div className="leading-5">
+      <Moment payment={payment} className="text-[13px]" />
       {reportDateDiffers(payment) && (
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] leading-4 text-gray-400">
           {tr("hisobot: {{date}}", { date: formatReportDate(payment.payment_date) })}
         </p>
       )}
@@ -136,20 +165,42 @@ function MomentCell({ payment }: { payment: PaymentRecord }) {
 }
 
 const MethodPill = ({ method }: { method: string }) => (
-  <span className="whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+  <span className="inline-flex whitespace-nowrap rounded-full bg-gray-100 px-2 py-px text-[11px] font-medium leading-4 text-gray-600">
     {PAYMENT_METHOD_LABELS[method] || method}
   </span>
 )
 
-const Amount = ({ amount }: { amount: number }) => (
+const Amount = ({ amount, className }: { amount: number; className?: string }) => (
   <span
     className={cn(
       "whitespace-nowrap font-semibold tabular-nums",
-      Number(amount) < 0 ? "text-rose-600" : "text-green-600"
+      Number(amount) < 0 ? "text-rose-600" : "text-green-600",
+      className
     )}
   >
     {tr("{{amount}} So'm", { amount: fmt(amount) })}
   </span>
+)
+
+const EditButton = ({
+  onClick,
+  disabled,
+  title,
+}: {
+  onClick: () => void
+  disabled: boolean
+  title: string
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    title={title}
+    aria-label={title}
+    className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+  >
+    <Pencil className="h-3.5 w-3.5" />
+  </button>
 )
 
 export function PaymentsSection({
@@ -177,6 +228,14 @@ export function PaymentsSection({
         : tr("Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi")
       : ""
   const showEdit = (p: PaymentRecord) => canEdit && !isShopPayment(p)
+  const editButton = (p: PaymentRecord) =>
+    showEdit(p) ? (
+      <EditButton
+        onClick={() => setEditTarget(p)}
+        disabled={!methodEditable(p)}
+        title={editTitle(p)}
+      />
+    ) : null
 
   // Davr o'zgarsa birinchi sahifaga qaytiladi: 7-sahifada turib boshqa
   // oyga o'tgan odam bo'sh ekran ko'rmasligi kerak
@@ -207,7 +266,7 @@ export function PaymentsSection({
   const pages = pageCount(total)
   const sort = (column: string) => setState((s) => toggleSort(s, column))
 
-  // Bir xil sahifalagich ikki joyda: jadval ostida (desktop) va kartalar
+  // Bir xil sahifalagich ikki joyda: jadval ostida (desktop) va ro'yxat
   // ostida (mobil) — ikkalasi bir xil holatni boshqaradi
   const pager = (
     <TablePager
@@ -224,6 +283,8 @@ export function PaymentsSection({
   const emptyText = state.search
     ? tr("Qidiruv bo'yicha to'lov topilmadi")
     : tr("Tanlangan davrda to'lovlar yo'q")
+
+  const rowKey = (p: PaymentRecord) => `${p.source || "RESERVATION"}-${p.id}`
 
   return (
     <div className="space-y-2">
@@ -249,52 +310,51 @@ export function PaymentsSection({
         </div>
       ) : (
         <>
-          {/* MOBIL: to'lovlar karta ko'rinishida (jadval planshet/desktopda) */}
-          <div className="space-y-2.5 md:hidden">
+          {/* MOBIL: zich ro'yxat (jadval planshet/desktopda) */}
+          <div className="overflow-hidden rounded-xl border bg-white md:hidden">
             {rows.length === 0 ? (
-              <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-gray-400">
-                {emptyText}
-              </div>
+              <div className="py-10 text-center text-sm text-gray-400">{emptyText}</div>
             ) : (
-              rows.map((p) => (
-                <div key={`${p.source || "RESERVATION"}-${p.id}`} className="rounded-2xl border bg-white p-3.5">
-                  <div className="flex items-start justify-between gap-3">
-                    <PurposeCell payment={p} />
-                    <div className="flex-shrink-0 text-right">
-                      <Amount amount={p.amount} />
-                      <p className="mt-0.5 text-[11px] tabular-nums text-gray-400">
-                        {formatMoment(paymentMoment(p))}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-500">
-                      <MethodPill method={p.payment_method} />
-                      {p.created_by_name && (
-                        <span className="truncate">
-                          {tr("qabul qildi: {{name}}", { name: p.created_by_name })}
-                        </span>
-                      )}
-                      {p.payment_number && (
-                        <span className="text-gray-400">{p.payment_number}</span>
-                      )}
-                    </div>
-                    {showEdit(p) && (
-                      <button
-                        type="button"
-                        onClick={() => setEditTarget(p)}
-                        disabled={!methodEditable(p)}
-                        title={editTitle(p)}
-                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                        {tr("Tahrirlash")}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
+              <ul className="divide-y divide-gray-100">
+                {rows.map((p) => {
+                  const sub = purposeSubline(p)
+                  return (
+                    <li key={rowKey(p)} className="px-3 py-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <PurposeHead payment={p} wrap />
+                          {sub && (
+                            <p className="mt-0.5 text-[11px] leading-4 text-gray-500">{sub}</p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0 text-right leading-4">
+                          <Amount amount={p.amount} className="text-[13px] leading-5" />
+                          <p className="text-[11px]">
+                            <Moment payment={p} />
+                          </p>
+                          {reportDateDiffers(p) && (
+                            <p className="text-[10px] text-gray-400">
+                              {tr("hisobot: {{date}}", { date: formatReportDate(p.payment_date) })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-4 text-gray-500">
+                          <MethodPill method={p.payment_method} />
+                          {p.created_by_name && <span>{p.created_by_name}</span>}
+                          {p.payment_number && (
+                            <span className="tabular-nums text-gray-400">{p.payment_number}</span>
+                          )}
+                        </div>
+                        {editButton(p)}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
             )}
+            {pager}
           </div>
 
           {/* DESKTOP/PLANSHET: jadval ko'rinishi */}
@@ -310,7 +370,7 @@ export function PaymentsSection({
                   >
                     {tr("Vaqt")}
                   </SortableHead>
-                  <TableHead>{tr("Nima uchun")}</TableHead>
+                  <TableHead className="w-full">{tr("Nima uchun")}</TableHead>
                   <SortableHead
                     column="payment_method"
                     active={state.sortBy}
@@ -320,11 +380,14 @@ export function PaymentsSection({
                     {tr("To'lov turi")}
                   </SortableHead>
                   <TableHead>{tr("Qabul qildi")}</TableHead>
+                  {/* Tor planshetda raqam alohida ustun emas — xodim nomi
+                      ostida; aks holda Summa ustuni ekrandan chiqib ketardi */}
                   <SortableHead
                     column="payment_number"
                     active={state.sortBy}
                     dir={state.sortDir}
                     onSort={sort}
+                    className="hidden lg:table-cell"
                   >
                     {tr("Raqami")}
                   </SortableHead>
@@ -337,50 +400,50 @@ export function PaymentsSection({
                   >
                     {tr("Summa")}
                   </SortableHead>
-                  <TableHead className="w-12" />
+                  <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-6 text-gray-400">
+                    <TableCell colSpan={7} className="py-6 text-center text-gray-400">
                       {emptyText}
                     </TableCell>
                   </TableRow>
                 ) : (
                   rows.map((p) => (
-                    <TableRow key={`${p.source || "RESERVATION"}-${p.id}`}>
-                      <TableCell className="align-top">
+                    <TableRow key={rowKey(p)}>
+                      <TableCell className="py-1.5">
                         <MomentCell payment={p} />
                       </TableCell>
-                      <TableCell className="max-w-[360px] align-top">
+                      {/* w-full + max-w-0: ustun qolgan joyni oladi, uzun
+                          matn ustunni cho'zmay qisqaradi; min-w — tor
+                          planshetda ustun yo'qolib ketmasin (jadval
+                          gorizontal aylanadi) */}
+                      <TableCell className="w-full min-w-[200px] max-w-0 py-1.5 lg:min-w-[260px]">
                         <PurposeCell payment={p} />
                       </TableCell>
-                      <TableCell className="align-top">
+                      <TableCell className="py-1.5">
                         <MethodPill method={p.payment_method} />
                       </TableCell>
-                      <TableCell className="max-w-[160px] truncate align-top text-gray-600">
+                      <TableCell
+                        className="max-w-[110px] truncate py-1.5 text-[13px] leading-5 text-gray-600 lg:max-w-[150px]"
+                        title={p.created_by_name || undefined}
+                      >
                         {p.created_by_name || "-"}
-                      </TableCell>
-                      <TableCell className="align-top text-xs text-gray-500">
-                        {p.payment_number || "—"}
-                      </TableCell>
-                      <TableCell className="text-right align-top">
-                        <Amount amount={p.amount} />
-                      </TableCell>
-                      <TableCell className="text-right align-top">
-                        {showEdit(p) && (
-                          <button
-                            type="button"
-                            onClick={() => setEditTarget(p)}
-                            disabled={!methodEditable(p)}
-                            title={editTitle(p)}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
+                        {p.payment_number && (
+                          <p className="truncate text-[10px] leading-4 tabular-nums text-gray-400 lg:hidden">
+                            {p.payment_number}
+                          </p>
                         )}
                       </TableCell>
+                      <TableCell className="hidden py-1.5 text-[11px] tabular-nums text-gray-500 lg:table-cell">
+                        {p.payment_number || "—"}
+                      </TableCell>
+                      <TableCell className="py-1.5 text-right">
+                        <Amount amount={p.amount} className="text-[13px]" />
+                      </TableCell>
+                      <TableCell className="py-1.5 pl-0 text-right">{editButton(p)}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -388,9 +451,6 @@ export function PaymentsSection({
             </Table>
             {pager}
           </div>
-
-          {/* MOBIL: sahifalagich jadval kartalari ostida */}
-          <div className="overflow-hidden rounded-2xl border md:hidden">{pager}</div>
         </>
       )}
 
