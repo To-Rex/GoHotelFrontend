@@ -43,6 +43,21 @@ api.interceptors.request.use(
 // xato: refresh urinilmaydi va sahifa qayta yuklanmaydi (xato formada ko'rinadi)
 const AUTH_PATHS = ["/auth/login", "/auth/refresh", "/auth/face/"];
 
+/* BAZA ZIDDIYATI (409 DB_CONFLICT) — AVTOMATIK QAYTA URINISH.
+
+   Server bu kodni faqat tranzaksiya BUTUNLAY bekor qilinganda qaytaradi
+   (deadlock, ketma-ketlik, qulf yoki so'rov vaqti): hech narsa saqlanmagan,
+   shuning uchun o'sha so'rovni aynan qaytarish xavfsiz — bron ikki marta
+   yaratilmaydi, to'lov ikki marta yozilmaydi. Xodim "qaytadan urinib
+   ko'ring" oynasini ko'rmaydi: so'rov qisqa tanaffusdan keyin o'zi qaytadan
+   ketadi; urinishlar tugasa xato avvalgidek ko'rsatiladi. Boshqa 409 lar
+   (masalan, "xona band") — haqiqiy javob, qaytarilmaydi. */
+export const DB_CONFLICT_CODE = "DB_CONFLICT";
+export const dbConflictRetry = { attempts: 2, delayMs: 400 };
+export const isDbConflictResponse = (status?: number, code?: unknown): boolean =>
+  status === 409 && code === DB_CONFLICT_CODE;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -135,6 +150,18 @@ api.interceptors.response.use(
       rememberWorkHoursBlockMessage(error.response?.data?.detail);
       redirectToOffHours();
       return Promise.reject(error);
+    }
+
+    if (
+      originalRequest &&
+      isDbConflictResponse(error.response?.status, error.response?.data?.error_code)
+    ) {
+      const attempt = originalRequest._conflictRetries ?? 0;
+      if (attempt < dbConflictRetry.attempts) {
+        originalRequest._conflictRetries = attempt + 1;
+        await sleep(dbConflictRetry.delayMs * (attempt + 1));
+        return api(originalRequest);
+      }
     }
 
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthPath) {
