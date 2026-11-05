@@ -6,6 +6,7 @@ import {
   Check,
   ChevronsUpDown,
   Copy,
+  Database,
   Loader2,
   Pause,
   Play,
@@ -35,11 +36,15 @@ import { tr, trc } from "@/i18n"
 /**
  * So'rovlar jurnali — backendga kelayotgan so'rovlar jonli ko'rinishda.
  *
- * Jurnal serverda FAQAT XOTIRADA turadi (oxirgi 500 ta): diskka
- * yozilmaydi, server qayta ko'tarilsa bo'shaydi. Sahifa ochiq turganda
- * har 3 soniyada yangilanadi — pauza tugmasi bilan to'xtatib, qatorni
- * bemalol o'rganish mumkin. Sir maydonlar (parol, token) serverda
- * niqoblanadi va bu yerga *** bo'lib keladi.
+ * Jonli jurnal serverda XOTIRADA turadi (oxirgi 500 ta): server qayta
+ * ko'tarilsa bo'shaydi. Xatolar (4xx/5xx) esa bazada 3 kun saqlanadi va
+ * shu ro'yxatda jonli yozuvlar bilan birga keladi (`stored` belgisi) —
+ * "bron qilishda server xatosi chiqdi" degan muammo ertasiga ham, deploy
+ * dan keyin ham ochib ko'riladi; ishlov berilmagan xatoning traceback'i
+ * ham bor. Sahifa ochiq turganda har 3 soniyada yangilanadi — pauza
+ * tugmasi bilan to'xtatib, qatorni bemalol o'rganish mumkin. Sir
+ * maydonlar (parol, token) serverda niqoblanadi va bu yerga *** bo'lib
+ * keladi.
  *
  * Har bir yozuvda mehmonxona/filial/foydalanuvchi konteksti ham bor:
  * kompaniya bo'yicha filtr, ustunlar bo'yicha saralash va to'liq
@@ -54,7 +59,7 @@ export function ApiLogsPage() {
   const [sort, setSort] = useState<SortKey>("ts")
   const [order, setOrder] = useState<SortOrder>("desc")
   const [paused, setPaused] = useState(false)
-  const [openId, setOpenId] = useState<number | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   useEffect(() => {
     setHotelId(params.get("hotel_id") || "")
@@ -84,6 +89,7 @@ export function ApiLogsPage() {
     () => rows.filter((row) => row.status >= 400).length,
     [rows]
   )
+  const retentionDays = data?.retention_days ?? 3
   const avgDuration = rows.length
     ? Math.round(
         rows.reduce((sum, row) => sum + row.duration_ms, 0) / rows.length
@@ -131,8 +137,8 @@ export function ApiLogsPage() {
         <PanelHeading
           title={tr("So'rovlar jurnali")}
           subtitle={tr(
-            "Backendga kelgan oxirgi {{v}} ta so'rov — faqat xotirada, diskka yozilmaydi",
-            { v: data?.max_entries ?? 500 }
+            "Jonli jurnal — xotiradagi oxirgi so'rovlar ({{v}} tagacha); xatolar (4xx/5xx) bazada {{d}} kun saqlanadi",
+            { v: data?.max_entries ?? 500, d: retentionDays }
           )}
         />
         <div className="flex items-center gap-2">
@@ -168,7 +174,7 @@ export function ApiLogsPage() {
             variant="ghost"
             onClick={() => clearLogs.mutate()}
             disabled={clearLogs.isPending}
-            title={tr("Jurnalni tozalash (faqat xotiradagi yozuvlar)")}
+            title={tr("Jonli jurnalni tozalash (bazada saqlangan xatolar {{d}} kungacha qoladi)", { d: retentionDays })}
           >
             <Trash2 className="h-4 w-4" />
             {trc("clear", "Tozalash")}
@@ -176,13 +182,18 @@ export function ApiLogsPage() {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label={tr("Jami")} value={data?.captured_total ?? 0} />
         <Stat label={tr("Ko'rsatilgan")} value={rows.length} />
         <Stat
           label={tr("Xatolar")}
           value={errors}
           tone={errors ? "text-rose-300" : "text-slate-100"}
+        />
+        <Stat
+          label={tr("Saqlangan xatolar ({{d}} kun)", { d: retentionDays })}
+          value={data?.stored_errors ?? 0}
+          tone={data?.stored_errors ? "text-amber-200" : "text-slate-100"}
         />
         <Stat
           label={tr("O'rtacha davomiylik")}
@@ -319,6 +330,7 @@ export function ApiLogsPage() {
                     key={row.id}
                     row={row}
                     company={companyOf(row)}
+                    retentionDays={retentionDays}
                     maxDuration={maxDuration}
                     open={openId === row.id}
                     onToggle={() =>
@@ -512,12 +524,14 @@ function BodyBlock({
 function LogRow({
   row,
   company,
+  retentionDays,
   maxDuration,
   open,
   onToggle,
 }: {
   row: ApiLogEntry
   company: string
+  retentionDays: number
   maxDuration: number
   open: boolean
   onToggle: () => void
@@ -572,7 +586,7 @@ function LogRow({
         >
           {row.path}
         </td>
-        <td className="px-3 py-2">
+        <td className="whitespace-nowrap px-3 py-2">
           <span
             className={cn(
               "rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold",
@@ -581,6 +595,15 @@ function LogRow({
           >
             {row.status}
           </span>
+          {row.stored && (
+            <span
+              className="ml-1.5 inline-flex items-center gap-0.5 rounded-md bg-white/5 px-1 py-0.5 text-[10px] text-slate-400"
+              title={tr("Bazada saqlangan xato — {{d}} kungacha turadi", { d: retentionDays })}
+            >
+              <Database className="h-3 w-3" />
+              {tr("saqlangan")}
+            </span>
+          )}
         </td>
         <td className="px-3 py-2">
           <p className={cn("text-xs tabular-nums", durationTone)}>
@@ -635,6 +658,11 @@ function LogRow({
             <div className="mt-3 grid gap-3 lg:grid-cols-2">
               <BodyBlock title={tr("So'rov tanasi")} text={row.request_body} />
               <BodyBlock title={tr("Javob")} text={row.response_body} />
+              {row.error && (
+                <div className="lg:col-span-2">
+                  <BodyBlock title={tr("Xato (traceback)")} text={row.error} />
+                </div>
+              )}
             </div>
           </td>
         </tr>

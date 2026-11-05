@@ -904,7 +904,8 @@ export const useBroadcast = () =>
 /* --- So'rovlar jurnali (oxirgi 500 ta, faqat server xotirasida) ------ */
 
 export interface ApiLogEntry {
-  id: number
+  /** Yozuv kaliti (uuid) — xotiradagi va bazadagi nusxa bir xil */
+  id: string
   ts: string
   method: string
   path: string
@@ -918,12 +919,20 @@ export interface ApiLogEntry {
   user_id?: string | null
   user_type?: string | null
   user_agent?: string | null
+  /** Ishlov berilmagan xatoning traceback'i (500/503/409) */
+  error?: string | null
+  /** true — bazada saqlangan xato (jonli jurnaldan emas) */
+  stored?: boolean
 }
 
 export interface ApiLogList {
   items: ApiLogEntry[]
   captured_total: number
   max_entries: number
+  /** Bazadan o'qilgan (saqlash muddati ichidagi) xatolar soni */
+  stored_errors: number
+  /** Xatolar bazada necha kun turadi */
+  retention_days: number
 }
 
 export interface ApiLogFilters {

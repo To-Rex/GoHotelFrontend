@@ -24,16 +24,11 @@
   "Sinov uchun FCM token...": "FCM token for testing...",
   "Sinov": "Test",
   "So'rovlar jurnali": "Request log",
-  "Backendga kelgan oxirgi {{v}} ta so'rov — faqat xotirada, diskka yozilmaydi": {
-    "one": "Last {{v}} request to the backend — kept in memory only, not written to disk",
-    "other": "Last {{v}} requests to the backend — kept in memory only, not written to disk"
-  },
   "Jonli yangilanishni davom ettirish": "Resume live updates",
   "Yangilanishni to'xtatib turish": "Pause updates",
   "Davom ettirish": "Resume",
   "Pauza": "Pause",
   "Hozir yangilash": "Refresh now",
-  "Jurnalni tozalash (faqat xotiradagi yozuvlar)": "Clear the log (in-memory entries only)",
   "Barcha metodlar": "All methods",
   "Kompaniya": "Company",
   "Barcha kompaniyalar": "All companies",
@@ -344,5 +339,11 @@
   "Baza ishga tushgan": "Database started",
   "Resurslar": "Resources",
   "Bo'sh joy": "Free space",
-  "Yuklama (load average)": "Load average"
+  "Yuklama (load average)": "Load average",
+  "Jonli jurnal — xotiradagi oxirgi so'rovlar ({{v}} tagacha); xatolar (4xx/5xx) bazada {{d}} kun saqlanadi": "Live log — latest requests in memory (up to {{v}}); errors (4xx/5xx) are kept in the database for {{d}} days",
+  "Jonli jurnalni tozalash (bazada saqlangan xatolar {{d}} kungacha qoladi)": "Clear the live log (errors stored in the database stay for up to {{d}} days)",
+  "Saqlangan xatolar ({{d}} kun)": "Stored errors ({{d}} days)",
+  "Bazada saqlangan xato — {{d}} kungacha turadi": "Error stored in the database — kept for up to {{d}} days",
+  "saqlangan": "stored",
+  "Xato (traceback)": "Error (traceback)"
 }

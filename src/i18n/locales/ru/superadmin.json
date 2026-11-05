@@ -24,18 +24,11 @@
   "Sinov uchun FCM token...": "FCM-токен для теста...",
   "Sinov": "Тест",
   "So'rovlar jurnali": "Журнал запросов",
-  "Backendga kelgan oxirgi {{v}} ta so'rov — faqat xotirada, diskka yozilmaydi": {
-    "one": "Последний {{v}} запрос к бэкенду — только в памяти, на диск не сохраняется",
-    "few": "Последние {{v}} запроса к бэкенду — только в памяти, на диск не сохраняются",
-    "many": "Последние {{v}} запросов к бэкенду — только в памяти, на диск не сохраняются",
-    "other": "Последние {{v}} запроса к бэкенду — только в памяти, на диск не сохраняются"
-  },
   "Jonli yangilanishni davom ettirish": "Возобновить автообновление",
   "Yangilanishni to'xtatib turish": "Приостановить обновление",
   "Davom ettirish": "Возобновить",
   "Pauza": "Пауза",
   "Hozir yangilash": "Обновить сейчас",
-  "Jurnalni tozalash (faqat xotiradagi yozuvlar)": "Очистить журнал (только записи в памяти)",
   "Barcha metodlar": "Все методы",
   "Kompaniya": "Компания",
   "Barcha kompaniyalar": "Все компании",
@@ -359,5 +352,11 @@
   "Baza ishga tushgan": "База запущена",
   "Resurslar": "Ресурсы",
   "Bo'sh joy": "Свободно",
-  "Yuklama (load average)": "Средняя нагрузка"
+  "Yuklama (load average)": "Средняя нагрузка",
+  "Jonli jurnal — xotiradagi oxirgi so'rovlar ({{v}} tagacha); xatolar (4xx/5xx) bazada {{d}} kun saqlanadi": "Живой журнал — последние запросы в памяти (до {{v}}); ошибки (4xx/5xx) хранятся в базе {{d}} дн.",
+  "Jonli jurnalni tozalash (bazada saqlangan xatolar {{d}} kungacha qoladi)": "Очистить живой журнал (сохранённые в базе ошибки остаются до {{d}} дн.)",
+  "Saqlangan xatolar ({{d}} kun)": "Сохранённые ошибки ({{d}} дн.)",
+  "Bazada saqlangan xato — {{d}} kungacha turadi": "Ошибка сохранена в базе — хранится до {{d}} дн.",
+  "saqlangan": "сохранено",
+  "Xato (traceback)": "Ошибка (traceback)"
 }
