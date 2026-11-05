@@ -1,6 +1,7 @@
 import { format } from "date-fns"
 
 import { tr } from "@/i18n"
+import { wallClock } from "@/lib/hotelTime"
 import type { PaymentPurposePart, PaymentRecord } from "@/types/api"
 
 /* To'lov NIMA UCHUN olingani — Moliya → To'lovlar jadvalidagi har qator.
@@ -109,23 +110,18 @@ const shortDate = (iso?: string | null) => {
   return Number.isNaN(d.getTime()) ? iso : format(d, "dd.MM")
 }
 
-const parseMoment = (iso?: string | null): Date | null => {
-  if (!iso) return null
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? null : d
-}
-
 /** Yashash muddati: kunlik — "01.11–03.11"; soatlik — aniq soatlar bilan
- *  ("03.11 14:00–17:00", kun almashsa "03.11 22:00–04.11 02:00"). */
+ *  ("03.11 14:00–17:00", kun almashsa "03.11 22:00–04.11 02:00").
+ *  Soatlik vaqt — devor soati, matndan (serverdagi "+00:00" yolg'on,
+ *  `new Date()` 5 soat qo'shib yuborardi). */
 export function stayText(p: Pick<PaymentRecord, "booking_type" | "check_in_date" | "check_out_date" | "check_in_datetime" | "check_out_datetime">): string {
   if (p.booking_type === "HOURLY") {
-    const from = parseMoment(p.check_in_datetime)
-    const to = parseMoment(p.check_out_datetime)
-    if (from && to) {
-      const sameDay = format(from, "yyyy-MM-dd") === format(to, "yyyy-MM-dd")
-      const stay = sameDay
-        ? `${format(from, "dd.MM HH:mm")}–${format(to, "HH:mm")}`
-        : `${format(from, "dd.MM HH:mm")}–${format(to, "dd.MM HH:mm")}`
+    const from = wallClock(p.check_in_datetime)
+    const to = wallClock(p.check_out_datetime)
+    if (from?.time && to?.time) {
+      const stay = from.ymd === to.ymd
+        ? `${from.short} ${from.time}–${to.time}`
+        : `${from.short} ${from.time}–${to.short} ${to.time}`
       return tr("{{stay}} (soatlik)", { stay })
     }
   }

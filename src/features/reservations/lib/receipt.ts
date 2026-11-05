@@ -1,5 +1,6 @@
-import { differenceInCalendarDays, differenceInHours, format } from "date-fns"
+import { differenceInCalendarDays, differenceInHours } from "date-fns"
 
+import { formatWallClock } from "@/lib/hotelTime"
 import { canonicalMethod, PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 import type { ReservationReceiptData } from "@/lib/tprints"
 
@@ -57,11 +58,13 @@ export interface ReceiptExtras {
   paymentsNow?: boolean
 }
 
+/** Kirish/chiqish — DEVOR SOATI: soatlik bron vaqti bazada qanday yozilgan
+ *  bo'lsa shunday (serverdagi "+00:00" belgisi yolg'on — `new Date()` bilan
+ *  o'tkazilsa chekda 5 soat qo'shilib ketadi, ilova ekranlari esa to'g'ri
+ *  ko'rsatadi). */
 export const fmtReceiptDate = (value?: string | null, withTime = false) => {
   if (!value) return "—"
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return format(date, withTime ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy")
+  return formatWallClock(value, withTime) || String(value)
 }
 
 /** Soatlik bronda soat, kunlikda sutka; aniqlab bo'lmasa `null` */

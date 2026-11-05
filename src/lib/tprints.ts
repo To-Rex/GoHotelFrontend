@@ -2,7 +2,6 @@
 // Kassa kompyuterida TPrints dasturi ishlab turadi (odatda http://127.0.0.1:9100)
 // va HTTP JSON qabul qilib chekni termal printerga chiqaradi. Manzil har bir
 // kompyuter uchun localStorage'da saqlanadi (kassa qurilmasiga bog'liq sozlama).
-import { format } from "date-fns"
 import {
   DEFAULT_RECEIPT_SETTINGS,
   salePaid,
@@ -11,8 +10,15 @@ import {
   type ShopSale,
 } from "@/features/shop/api/shop"
 import { tr } from "@/i18n"
+import { formatHotelMoment } from "@/lib/hotelTime"
 
 const URL_KEY = "tprints_url"
+
+/** Chekdagi "Sana:" — doim mehmonxona vaqtida (+05:00). Kassa kompyuterining
+ *  vaqt zonasi noto'g'ri bo'lsa ham chek to'g'ri chiqadi; vaqt belgisi
+ *  bo'lmasa — hozir. */
+const receiptStamp = (iso?: string | null): string =>
+  formatHotelMoment(iso) || formatHotelMoment(new Date())
 const AUTO_KEY = "tprints_auto_print"
 export const DEFAULT_TPRINTS_URL = "http://127.0.0.1:9100"
 
@@ -172,14 +178,14 @@ const METHOD_LABELS: Record<string, string> = {
   MIXED: tr("Aralash"),
 }
 
-/** Chek elementlari — mehmonxonaning saqlangan dizayni bo'yicha quriladi */
-const buildReceiptElements = (
+/** Chek elementlari — mehmonxonaning saqlangan dizayni bo'yicha quriladi
+ *  (eksport — test uchun) */
+export const buildReceiptElements = (
   sale: ShopSale,
   hotelName: string,
   guestName: string | null | undefined,
   design: ReceiptSettings
 ): any[] => {
-  const when = sale.created_at ? new Date(sale.created_at) : new Date()
   const elements: any[] = [
     { type: "title", value: design.title.trim() || hotelName || "GoHotel", size: 2 },
   ]
@@ -191,7 +197,7 @@ const buildReceiptElements = (
   }
   elements.push(
     { type: "line" },
-    { type: "row", left: tr("Sana:"), right: format(when, "dd.MM.yyyy HH:mm") }
+    { type: "row", left: tr("Sana:"), right: receiptStamp(sale.created_at) }
   )
   if (design.show_check_no) {
     elements.push({ type: "row", left: tr("Chek:"), right: `#${sale.id.slice(0, 8).toUpperCase()}` })
@@ -387,7 +393,6 @@ export const buildReservationElements = (
   hotelName: string,
   design: ReceiptSettings
 ): any[] => {
-  const when = data.created_at ? new Date(data.created_at) : new Date()
   const elements: any[] = [
     { type: "title", value: design.title.trim() || hotelName || "GoHotel", size: 2 },
   ]
@@ -399,7 +404,7 @@ export const buildReservationElements = (
   }
   elements.push(
     { type: "line" },
-    { type: "row", left: tr("Sana:"), right: format(when, "dd.MM.yyyy HH:mm") },
+    { type: "row", left: tr("Sana:"), right: receiptStamp(data.created_at) },
     { type: "row", left: tr("Bron:"), right: data.reservation_number }
   )
   if (design.show_seller && data.created_by_name) {

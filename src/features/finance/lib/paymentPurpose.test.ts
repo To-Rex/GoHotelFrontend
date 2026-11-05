@@ -86,11 +86,12 @@ describe("purposeTitle / purposeDetail", () => {
   })
 
   it("soatlik bron aniq soatlar bilan — bir kunda va kun almashganda", () => {
-    const from = new Date(2026, 10, 3, 14, 0).toISOString()
-    expect(stayText({ ...base, check_in_datetime: from, check_out_datetime: new Date(2026, 10, 3, 17, 0).toISOString() })).toBe(
+    // Server soatlik vaqtni "+00:00" bilan qaytaradi, lekin bu devor soati —
+    // o'tkazilmaydi (kompyuter zonasidan qat'i nazar bir xil)
+    expect(stayText({ ...base, check_in_datetime: "2026-11-03T14:00:00+00:00", check_out_datetime: "2026-11-03T17:00:00+00:00" })).toBe(
       "03.11 14:00–17:00 (soatlik)"
     )
-    expect(stayText({ ...base, check_in_datetime: new Date(2026, 10, 3, 22, 0).toISOString(), check_out_datetime: new Date(2026, 10, 4, 2, 0).toISOString() })).toBe(
+    expect(stayText({ ...base, check_in_datetime: "2026-11-03T22:00:00Z", check_out_datetime: "2026-11-04T02:00:00Z" })).toBe(
       "03.11 22:00–04.11 02:00 (soatlik)"
     )
     expect(formatReportDate("2026-11-03")).toBe("03.11.2026")
@@ -153,7 +154,7 @@ describe("compactTitle / purposeSubline (ixcham qator)", () => {
   it("bron to'lovi — sarlavha xona · mehmon, ostida raqam · muddat · izoh", () => {
     const p = { ...base, notes: "Payment at reservation creation", check_in_datetime: "2026-11-03T15:00:00Z", check_out_datetime: "2026-11-03T18:00:00Z" }
     expect(compactTitle(p)).toBe("Xona 12 · Ali Valiyev")
-    expect(purposeSubline(p)).toBe("RES-77 · 03.11 20:00–23:00 (soatlik) · Bron qilinganda to'langan")
+    expect(purposeSubline(p)).toBe("RES-77 · 03.11 15:00–18:00 (soatlik) · Bron qilinganda to'langan")
   })
 
   it("do'kon — belgi 'Do'kon' bo'lgani uchun sarlavhada faqat mahsulotlar", () => {

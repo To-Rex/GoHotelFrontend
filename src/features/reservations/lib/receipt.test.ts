@@ -76,10 +76,31 @@ describe("buildReservationReceiptData", () => {
     expect(data.payments).toBeUndefined()
     expect(data.payments_now).toBeUndefined()
   })
+
+  it("soatlik bron — kirish/chiqish devor soati, serverdagi '+00:00' 5 soat qo'shmaydi", () => {
+    const data = buildReservationReceiptData({
+      ...base,
+      booking_type: "HOURLY",
+      check_in_datetime: "2026-10-10T14:00:00+00:00",
+      check_out_datetime: "2026-10-10T17:00:00+00:00",
+    })
+    expect(data.check_in).toBe("10.10.2026 14:00")
+    expect(data.check_out).toBe("10.10.2026 17:00")
+    expect(data.nights).toBe(3)
+  })
 })
 
 describe("chek elementlari", () => {
   const rows = (els: any[]) => els.filter((e) => e.type === "row").map((e) => [e.left, e.right])
+
+  it("'Sana' — yaratilgan UTC daqiqa mehmonxona vaqtida (+05:00), kompyuter zonasiga bog'liq emas", () => {
+    const els = buildReservationElements(
+      buildReservationReceiptData({ ...base, created_at: "2026-10-10T09:00:00Z" }),
+      "Grand",
+      DEFAULT_RECEIPT_SETTINGS
+    )
+    expect(rows(els)).toContainEqual(["Sana:", "10.10.2026 14:00"])
+  })
 
   it("bitta to'lov — 'To'lov turi' qatori", () => {
     const els = buildReservationElements(
