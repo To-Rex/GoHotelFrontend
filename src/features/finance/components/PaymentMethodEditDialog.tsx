@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { format } from "date-fns"
 import { Loader2, Pencil } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -20,15 +19,19 @@ import { formatMoment, humanNote, paymentMoment, purposeTitle } from "../lib/pay
 import type { PaymentRecord } from "@/types/api"
 import { useUpdatePaymentMethod } from "../api/finance"
 import { parsePartialAmount } from "../lib/paymentEdit"
+import { paymentEdits } from "../lib/paymentEdits"
+import { PaymentEditList } from "./PaymentEditHistory"
 
 /* To'lov turini tahrirlash oynasi — BUTUN summa yoki QISMAN.
 
    Qisman: summaning bir qismi yangi to'lov qatori bo'lib boshqa turga
    o'tadi (masalan 100 000 naqd → 50 000 naqd + 50 000 online), qolgani
-   avvalgi turda qoladi. Summa yig'indisi o'zgarmaydi. Har tahrir
-   `method_changes` tarixida (nimadan nimaga, qancha, kim, qachon, izoh)
-   va audit jurnalida qoladi. Huquq va 2 kunlik menejer oynasi serverda
-   qayta tekshiriladi. */
+   avvalgi turda qoladi. Summa yig'indisi o'zgarmaydi. Pul olingan vaqt
+   va sana ham o'zgarmaydi — yangi qator asl to'lov vaqtida turadi
+   (bugungi smenaga o'tib qolmaydi). Har tahrir `method_changes`
+   tarixida (nimadan nimaga, qancha, kim, qachon, izoh) va audit
+   jurnalida qoladi. Huquq va 2 kunlik menejer oynasi serverda qayta
+   tekshiriladi. */
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 
@@ -62,7 +65,7 @@ export function PaymentMethodEditDialog({
   const parsed = partial && total > 0 ? parsePartialAmount(total, amountStr) : { amount: null, error: null }
   const partialReady = !partial || parsed.error === null
   const canSave = changed && partialReady && !mutation.isPending
-  const history = payment.method_changes ?? []
+  const history = paymentEdits(payment)
 
   const save = async () => {
     if (!canSave) return
@@ -171,7 +174,9 @@ export function PaymentMethodEditDialog({
                       ·{" "}
                       {tr("{{new}} usulida yangi to'lov qatori yaratiladi", {
                         new: PAYMENT_METHOD_LABELS[method] || method,
-                      })}
+                      })}{" "}
+                      ·{" "}
+                      {tr("u ham shu to'lov vaqtida turadi")}
                     </p>
                   ) : (
                     <p className="text-[11px] text-gray-400">
@@ -199,34 +204,9 @@ export function PaymentMethodEditDialog({
               <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700/80">
                 {tr("Tahrir tarixi")}
               </p>
-              <ul className="mt-1 space-y-1 text-xs text-gray-600">
-                {history.map((h, i) => (
-                  <li key={i} className="flex flex-wrap items-center gap-x-1.5">
-                    <b className="font-medium">
-                      {tr("{{old}} → {{new}}", {
-                        old: PAYMENT_METHOD_LABELS[h.old || ""] || h.old || "—",
-                        new: PAYMENT_METHOD_LABELS[h.new] || h.new,
-                      })}
-                    </b>
-                    {h.amount ? (
-                      <span className="font-medium">
-                        · {tr("{{amount}} So'm", { amount: fmt(h.amount) })}
-                      </span>
-                    ) : null}
-                    {h.kind === "partial" && (
-                      <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                        {tr("qisman")}
-                      </span>
-                    )}
-                    <span className="text-gray-400">
-                      {h.by_name || ""}
-                      {h.by_name && h.at ? " · " : ""}
-                      {h.at ? format(new Date(h.at), "dd.MM HH:mm") : ""}
-                    </span>
-                    {h.note && <span className="text-gray-400">· {h.note}</span>}
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-1.5">
+                <PaymentEditList edits={history} />
+              </div>
             </div>
           )}
 

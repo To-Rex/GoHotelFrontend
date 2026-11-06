@@ -170,6 +170,10 @@ const AUTO_NOTES: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
   [/^Payment at reservation creation$/i, () => tr("Bron qilinganda to'langan")],
   [/^Qo'shimcha to'lov \(bron balansi bo'yicha\)(?: — bo'lib to'lash (\d+)\/(\d+))?$/, (m) =>
     m[1] ? tr("Qo'shimcha to'lov, bo'lib to'lash {{i}}/{{n}}", { i: m[1], n: m[2] }) : tr("Qo'shimcha to'lov")],
+  // To'lov turi qisman tahrirlanganda ajralgan qator izohi. Summa va
+  // turlar tahrir belgisida (`paymentEdits`) — bu yerda faqat manba
+  [/^Qisman o'tkazildi: (\S+) dan \d+(?:[.,]\d+)? So'm \(\S+ → \S+\)$/, (m) =>
+    tr("{{number}} to'lovidan ajratilgan", { number: m[1] })],
 ]
 
 /** Izoh — avtomatik yozuvlar qisqa shaklda, qolgani aynan. */

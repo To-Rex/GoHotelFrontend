@@ -131,6 +131,14 @@ describe("humanNote", () => {
     expect(humanNote("  Mehmon kechikdi ")).toBe("Mehmon kechikdi")
     expect(humanNote(null)).toBe("")
   })
+
+  it("qisman tahrirda ajralgan qator izohi — qisqa (tafsilot tahrir belgisida)", () => {
+    expect(humanNote("Qisman o'tkazildi: PAY-TST-20261103-AAAA dan 50000 So'm (CASH → ONLINE)")).toBe(
+      "PAY-TST-20261103-AAAA to'lovidan ajratilgan"
+    )
+    // Naqsh to'liq mos kelmasa — o'z holicha
+    expect(humanNote("Qisman o'tkazildi: keyin aytaman")).toBe("Qisman o'tkazildi: keyin aytaman")
+  })
 })
 
 describe("reportDateDiffers", () => {

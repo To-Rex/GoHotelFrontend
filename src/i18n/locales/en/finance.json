@@ -132,7 +132,6 @@
   "Yangi to'lov turi": "New payment method",
   "Masalan: xato bosilgan": "For example: pressed by mistake",
   "Tahrir tarixi": "Change history",
-  "{{old}} → {{new}}": "{{old}} → {{new}}",
   "Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "A manager can edit only payments from the last 2 days",
   "Har tahrir (nimadan nimaga, qancha, kim, qachon) saqlanadi — hech narsa o'chirilmaydi.": "Every change (from → to, how much, who, when) is kept — nothing is deleted.",
   "Qisman o'tkazish": "Partial move",
@@ -160,5 +159,17 @@
   "{{stay}} (soatlik)": "{{stay}} (hourly)",
   "Bron qilinganda to'langan": "Paid at booking",
   "Qo'shimcha to'lov, bo'lib to'lash {{i}}/{{n}}": "Additional payment, split {{i}}/{{n}}",
-  "Qo'shimcha to'lov": "Additional payment"
+  "Qo'shimcha to'lov": "Additional payment",
+  "Online": "Online",
+  "{{before}} So'm {{old}} → {{after}} So'm {{old}} + {{moved}} So'm {{new}}": "{{before}} UZS {{old}} → {{after}} UZS {{old}} + {{moved}} UZS {{new}}",
+  "{{number}} to'lovidan ajratildi: {{moved}} So'm, {{old}} → {{new}}": "Split from payment {{number}}: {{moved}} UZS, {{old}} → {{new}}",
+  "Boshqa to'lovdan ajratildi: {{moved}} So'm, {{old}} → {{new}}": "Split from another payment: {{moved}} UZS, {{old}} → {{new}}",
+  "{{amount}} So'm: {{old}} → {{new}}": "{{amount}} UZS: {{old}} → {{new}}",
+  "Ajralgan qism — {{number}} to'lovi": "Split part — payment {{number}}",
+  "Asl to'lov {{amount}} So'm edi": "The original payment was {{amount}} UZS",
+  "{{number}} to'lovidan ajratilgan": "split from payment {{number}}",
+  "To'lov tahrirlangan": "Payment edited",
+  "Bu to'lov tahrirlanmagan": "This payment has not been edited",
+  "Pul qabul qilingan vaqt va sana tahrirda o'zgarmaydi — to'lov o'z kunida qoladi.": "The time and date the money was received do not change when editing — the payment stays on its own day.",
+  "u ham shu to'lov vaqtida turadi": "it also keeps this payment's time"
 }

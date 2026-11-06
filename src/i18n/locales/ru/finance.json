@@ -148,7 +148,6 @@
   "Yangi to'lov turi": "Новый способ оплаты",
   "Masalan: xato bosilgan": "Например: нажали по ошибке",
   "Tahrir tarixi": "История изменений",
-  "{{old}} → {{new}}": "{{old}} → {{new}}",
   "Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "Менеджер может изменить только платежи за последние 2 дня",
   "Har tahrir (nimadan nimaga, qancha, kim, qachon) saqlanadi — hech narsa o'chirilmaydi.": "Каждое изменение (с чего на что, сколько, кто, когда) сохраняется — ничего не удаляется.",
   "Qisman o'tkazish": "Частичный перенос",
@@ -178,5 +177,17 @@
   "{{stay}} (soatlik)": "{{stay}} (почасово)",
   "Bron qilinganda to'langan": "Оплачено при бронировании",
   "Qo'shimcha to'lov, bo'lib to'lash {{i}}/{{n}}": "Доплата, частями {{i}}/{{n}}",
-  "Qo'shimcha to'lov": "Доплата"
+  "Qo'shimcha to'lov": "Доплата",
+  "Online": "Онлайн",
+  "{{before}} So'm {{old}} → {{after}} So'm {{old}} + {{moved}} So'm {{new}}": "{{before}} сум {{old}} → {{after}} сум {{old}} + {{moved}} сум {{new}}",
+  "{{number}} to'lovidan ajratildi: {{moved}} So'm, {{old}} → {{new}}": "Выделено из платежа {{number}}: {{moved}} сум, {{old}} → {{new}}",
+  "Boshqa to'lovdan ajratildi: {{moved}} So'm, {{old}} → {{new}}": "Выделено из другого платежа: {{moved}} сум, {{old}} → {{new}}",
+  "{{amount}} So'm: {{old}} → {{new}}": "{{amount}} сум: {{old}} → {{new}}",
+  "Ajralgan qism — {{number}} to'lovi": "Выделенная часть — платёж {{number}}",
+  "Asl to'lov {{amount}} So'm edi": "Исходный платёж был {{amount}} сум",
+  "{{number}} to'lovidan ajratilgan": "выделено из платежа {{number}}",
+  "To'lov tahrirlangan": "Платёж изменён",
+  "Bu to'lov tahrirlanmagan": "Этот платёж не изменялся",
+  "Pul qabul qilingan vaqt va sana tahrirda o'zgarmaydi — to'lov o'z kunida qoladi.": "Время и дата приёма денег при изменении не меняются — платёж остаётся в своём дне.",
+  "u ham shu to'lov vaqtida turadi": "она тоже остаётся во времени этого платежа"
 }

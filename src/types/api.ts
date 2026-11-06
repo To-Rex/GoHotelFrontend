@@ -368,12 +368,21 @@ export interface PaymentMethodChange {
   by_name?: string | null;
   at: string;
   note?: string | null;
-  /** "full" — butun summa almashdi; "partial" — qismi yangi qatorga o'tdi */
-  kind?: "full" | "partial" | null;
-  /** Qisman o'tkazilgan summa (kind="partial" bo'lsa) */
+  /** "full" — butun summa almashdi; "partial" — qismi yangi qatorga o'tdi
+      (asl qatordagi yozuv); "split_from" — shu qator boshqa to'lovdan
+      ajralgan (ajralgan qatordagi yozuv) */
+  kind?: "full" | "partial" | "split_from" | null;
+  /** Boshqa turga o'tgan summa (kind="partial" / "split_from") */
   amount?: number | null;
   /** Qisman o'tkazishda yaratilgan yangi to'lov raqami */
   new_payment_number?: string | null;
+  /** Shu qator summasi tahrirdan oldin / keyin. Eski yozuvlarda yo'q —
+      hozirgi summadan hisoblab olinadi (`paymentEdits`) */
+  total_before?: number | null;
+  total_after?: number | null;
+  /** split_from: qaysi to'lovdan ajralgan va u tahrirdan oldin qancha edi */
+  from_payment_number?: string | null;
+  from_total?: number | null;
 }
 
 /** To'lovning bir qismi nima uchun: ROOM / PENALTY / SERVICE / EXTRA / REFUND / SHOP */
@@ -396,7 +405,8 @@ export interface PaymentRecord {
   reference?: string | null;
   notes?: string | null;
   created_at: string;
-  /** Faqat to'lov turi tahrirlari (summa tegilmaydi) — audit tarixi */
+  /** To'lov turi tahrirlari tarixi (butun yoki qisman). Tahrir pul
+      olingan vaqtni (`created_at`) va sanani o'zgartirmaydi */
   method_changes?: PaymentMethodChange[] | null;
 
   /* --- To'lov nima uchun (GET /finance/payments; eski server bermaydi) --- */

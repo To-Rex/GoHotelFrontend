@@ -29,6 +29,7 @@ import {
   reportDateDiffers,
   type PurposeTone,
 } from "../lib/paymentPurpose"
+import { EditedMark, PaymentEditHistoryDialog } from "./PaymentEditHistory"
 import { PaymentMethodEditDialog } from "./PaymentMethodEditDialog"
 import {
   PAGE_SIZE,
@@ -50,6 +51,11 @@ import type { PaymentRecord } from "@/types/api"
  * xira bitta satrda bron raqami · muddati · izoh. Vaqt — pul qabul
  * qilingan daqiqa, yonida qabul qilgan xodim. Taqsimot serverda
  * hisoblanadi (`payment_purpose`), bu yerda faqat ko'rsatiladi.
+ *
+ * Tahrirlangan to'lov (turi butunlay yoki qisman o'zgartirilgan) to'lov
+ * turi ostida sariq belgi bilan turadi: "100,000 → 50,000" yoki
+ * "Naqd → Online"; bosilsa to'liq tarix ochiladi (kim, qachon, qancha).
+ * Tahrir vaqtni o'zgartirmaydi — qator pul olingan daqiqada qoladi.
  *
  * Ixchamlik ataylab: kunlik hisobotda 30–50 qator bir ekranga sig'ishi
  * kerak, shuning uchun har ma'lumot o'z o'rnida, qator balandligi ikki
@@ -219,6 +225,8 @@ export function PaymentsSection({
   const { isAdmin, can } = usePermissions()
   const canEdit = isAdmin || can("shift.force_close")
   const [editTarget, setEditTarget] = useState<PaymentRecord | null>(null)
+  // Tahrir tarixi — hammaga ochiq (faqat ko'rish), jadvaldagi belgidan
+  const [historyTarget, setHistoryTarget] = useState<PaymentRecord | null>(null)
   const methodEditable = (p: PaymentRecord) =>
     canEditPaymentMethod({ payment: p, isAdmin, canForceClose: canEdit })
   const editTitle = (p: PaymentRecord) =>
@@ -342,6 +350,7 @@ export function PaymentsSection({
                       <div className="mt-1 flex items-center gap-2">
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-4 text-gray-500">
                           <MethodPill method={p.payment_method} />
+                          <EditedMark payment={p} onOpen={() => setHistoryTarget(p)} />
                           {p.created_by_name && <span>{p.created_by_name}</span>}
                           {p.payment_number && (
                             <span className="tabular-nums text-gray-400">{p.payment_number}</span>
@@ -424,7 +433,10 @@ export function PaymentsSection({
                         <PurposeCell payment={p} />
                       </TableCell>
                       <TableCell className="py-1.5">
-                        <MethodPill method={p.payment_method} />
+                        <div className="flex flex-col items-start gap-0.5">
+                          <MethodPill method={p.payment_method} />
+                          <EditedMark payment={p} onOpen={() => setHistoryTarget(p)} />
+                        </div>
                       </TableCell>
                       <TableCell
                         className="max-w-[110px] truncate py-1.5 text-[13px] leading-5 text-gray-600 lg:max-w-[150px]"
@@ -457,6 +469,10 @@ export function PaymentsSection({
       <PaymentMethodEditDialog
         payment={editTarget}
         onClose={() => setEditTarget(null)}
+      />
+      <PaymentEditHistoryDialog
+        payment={historyTarget}
+        onClose={() => setHistoryTarget(null)}
       />
     </div>
   )
