@@ -30,6 +30,7 @@ import { CategoryChip } from "../components/CategoryChip"
 import { ExpenseCategoriesDialog } from "../components/ExpenseCategoriesDialog"
 import { ExpenseFormDialog } from "../components/ExpenseFormDialog"
 import { categoryVisual, nameKey } from "../lib/categoryStyle"
+import { groupExpenses, partsLabel, type ExpenseGroup } from "../lib/expenseGroups"
 
 /* Xarajatlar sahifasi.
 
@@ -122,18 +123,21 @@ export const ExpensesPage = () => {
   // Toifasiz xarajat hisobotdagidek "Boshqa" ga yig'iladi (server ham shunday)
   const categoryOf = (e: Expense) => e.category || /* i18n:skip */ "Boshqa"
 
+  // Qisman to'lov bo'laklari (bir `split_group`) — ro'yxatda BITTA xarajat
+  const groups = useMemo(() => groupExpenses(inRange), [inRange])
+
   // Toifa filtri — chip bosilganda; davr almashsa ham turadi
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const filtered = useMemo(
     () =>
       categoryFilter
-        ? inRange.filter((e) => nameKey(categoryOf(e)) === nameKey(categoryFilter))
-        : inRange,
-    [inRange, categoryFilter]
+        ? groups.filter((g) => nameKey(categoryOf(g.main)) === nameKey(categoryFilter))
+        : groups,
+    [groups, categoryFilter]
   )
 
   const total = inRange.reduce((s, e) => s + Number(e.amount || 0), 0)
-  const filteredTotal = filtered.reduce((s, e) => s + Number(e.amount || 0), 0)
+  const filteredTotal = filtered.reduce((s, g) => s + g.amount, 0)
 
   // Kategoriyalar bo'yicha taqsimot — davrdagi hamma xarajat (filtrsiz),
   // aks holda filtr bosilgach qolgan chiplar yo'qolib qolardi
@@ -150,9 +154,17 @@ export const ExpensesPage = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [categoriesOpen, setCategoriesOpen] = useState(false)
 
-  const onDelete = async (e: Expense) => {
-    if (!confirm(tr("\"{{title}}\" xarajatini o'chirasizmi?", { title: e.title }))) return
+  const onDelete = async (g: ExpenseGroup<Expense>) => {
+    const e = g.main
+    const question = g.isSplit
+      ? tr("\"{{title}}\" xarajatini o'chirasizmi? Uning {{count}} ta to'lov bo'lagi birga o'chadi.", {
+          title: e.title,
+          count: g.parts.length,
+        })
+      : tr("\"{{title}}\" xarajatini o'chirasizmi?", { title: e.title })
+    if (!confirm(question)) return
     try {
+      // Bo'lak o'chirilsa server butun xarajatni (barcha bo'laklarini) o'chiradi
       await deleteMutation.mutateAsync({ id: e.id, hotelId: user?.hotel_id })
     } catch (err) {
       alert(apiErrorMessage(err))
@@ -310,8 +322,10 @@ export const ExpensesPage = () => {
               : tr("Tanlangan davrda xarajatlar yo'q")}
           </div>
         ) : (
-          filtered.map((e) => (
-            <div key={e.id} className="rounded-2xl border bg-white p-3.5">
+          filtered.map((g) => {
+            const e = g.main
+            return (
+            <div key={g.key} className="rounded-2xl border bg-white p-3.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-medium text-gray-900 leading-tight">{e.title}</p>
@@ -321,12 +335,12 @@ export const ExpensesPage = () => {
                     </p>
                   )}
                   <p className="mt-0.5 text-[11px] leading-tight text-gray-400">
-                    {e.expense_date} · {METHOD_LABELS[e.payment_method] || e.payment_method}
+                    {e.expense_date} · {g.isSplit ? partsLabel(g) : METHOD_LABELS[e.payment_method] || e.payment_method}
                   </p>
                 </div>
                 <div className="flex flex-shrink-0 flex-col items-end gap-1">
                   <span className="font-semibold text-red-600">
-                    −{fmt(e.amount)}{" "}
+                    −{fmt(g.amount)}{" "}
                     <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
                   </span>
                   {e.category ? (
@@ -352,7 +366,7 @@ export const ExpensesPage = () => {
                   <button
                     type="button"
                     title={tr("O'chirish")}
-                    onClick={() => onDelete(e)}
+                    onClick={() => onDelete(g)}
                     className="ml-auto p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -360,7 +374,8 @@ export const ExpensesPage = () => {
                 )}
               </div>
             </div>
-          ))
+            )
+          })
         )}
       </div>
 
@@ -393,8 +408,10 @@ export const ExpensesPage = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((e) => (
-                <TableRow key={e.id}>
+              filtered.map((g) => {
+                const e = g.main
+                return (
+                <TableRow key={g.key}>
                   <TableCell className="text-gray-600">{e.expense_date}</TableCell>
                   <TableCell>
                     <p className="font-medium text-gray-900 leading-tight">{e.title}</p>
@@ -412,7 +429,19 @@ export const ExpensesPage = () => {
                     )}
                   </TableCell>
                   <TableCell className="text-gray-600">
-                    {METHOD_LABELS[e.payment_method] || e.payment_method}
+                    {g.isSplit ? (
+                      // Qisman to'lov: har bo'lak o'z qatorida, katta summadan kichikka
+                      <div className="flex flex-col gap-0.5">
+                        {g.parts.map((p) => (
+                          <span key={p.id} className="text-xs whitespace-nowrap">
+                            <span className="text-gray-500">{METHOD_LABELS[p.payment_method] || p.payment_method}</span>{" "}
+                            <span className="font-medium tabular-nums text-gray-800">{fmt(p.amount)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      METHOD_LABELS[e.payment_method] || e.payment_method
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -429,7 +458,7 @@ export const ExpensesPage = () => {
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-semibold text-red-600">
-                    −{fmt(e.amount)}{" "}
+                    −{fmt(g.amount)}{" "}
                     <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
                   </TableCell>
                   {canDelete && (
@@ -437,7 +466,7 @@ export const ExpensesPage = () => {
                       <button
                         type="button"
                         title={tr("O'chirish")}
-                        onClick={() => onDelete(e)}
+                        onClick={() => onDelete(g)}
                         className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -445,7 +474,8 @@ export const ExpensesPage = () => {
                     </TableCell>
                   )}
                 </TableRow>
-              ))
+                )
+              })
             )}
           </TableBody>
         </Table>

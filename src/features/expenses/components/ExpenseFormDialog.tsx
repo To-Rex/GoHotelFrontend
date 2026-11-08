@@ -8,6 +8,7 @@ import {
   Plus,
   Settings2,
   Smartphone,
+  Split,
   TrendingDown,
 } from "lucide-react"
 
@@ -27,7 +28,7 @@ import { PAYMENT_METHODS } from "@/lib/paymentMethods"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth"
 import { tr } from "@/i18n"
-import { useCreateExpense } from "../api/expenses"
+import { useCreateExpense, type ExpensePaymentPart } from "../api/expenses"
 import { useCreateExpenseCategory, type ExpenseCategory } from "../api/expenseCategories"
 import {
   DEFAULT_CATEGORY_NAMES,
@@ -50,7 +51,13 @@ import {
 
    Toifalar ro'yxati serverdan; uni boshqara oladigan xodim shu yerdan
    yangi toifa qo'sha oladi (oynadan chiqmasdan). Eski server (toifalar
-   yo'q) bilan ham ishlaydi: oddiy matn maydoni va namunalar ro'yxati. */
+   yo'q) bilan ham ishlaydi: oddiy matn maydoni va namunalar ro'yxati.
+
+   QISMAN TO'LOV: summa bir necha to'lov turiga bo'linadi (60 000 naqd +
+   40 000 online). Har tur uchun bitta maydon, "qolgani" tugmasi qoldiqni
+   shu turga yozadi; yig'indi summaga teng bo'lmaguncha saqlanmaydi.
+   Server har bo'lakni alohida qator qilib yozadi — kassadan faqat naqd
+   bo'lak chiqadi, ro'yxatda esa bitta xarajat ko'rinadi. */
 
 const METHOD_ICONS: Record<string, typeof Banknote> = {
   CASH: Banknote,
@@ -96,6 +103,9 @@ export function ExpenseFormDialog({
   const [error, setError] = useState<string | null>(null)
   const [newCatOpen, setNewCatOpen] = useState(false)
   const [newCatName, setNewCatName] = useState("")
+  // Qisman to'lov: to'lov turi → kiritilgan summa (formatlangan satr)
+  const [splitOn, setSplitOn] = useState(false)
+  const [partAmounts, setPartAmounts] = useState<Record<string, string>>({})
   const amountRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -109,6 +119,8 @@ export function ExpenseFormDialog({
     setError(null)
     setNewCatOpen(false)
     setNewCatName("")
+    setSplitOn(false)
+    setPartAmounts({})
     // Oyna ochilishi bilan summa yoziladi
     const t = window.setTimeout(() => amountRef.current?.focus(), 50)
     return () => window.clearTimeout(t)
@@ -122,8 +134,38 @@ export function ExpenseFormDialog({
   const amount = parseAmountInput(amountStr)
   const selected = findCategory(categoryName, categories)
   const effectiveTitle = title.trim() || (categoryName ? tr(categoryName) : "")
-  const canSave = amount !== null && effectiveTitle.length > 0 && !createExpense.isPending
-  const methodLabel = PAYMENT_METHODS.find((m) => m.value === method)?.label || method
+
+  // Qisman to'lov bo'laklari (bo'sh maydonlar tashlanadi)
+  const parts: ExpensePaymentPart[] = splitOn
+    ? PAYMENT_METHODS.flatMap((m) => {
+        const value = parseAmountInput(partAmounts[m.value] || "")
+        return value === null ? [] : [{ payment_method: m.value, amount: value }]
+      })
+    : []
+  const partsSum = parts.reduce((s, p) => s + p.amount, 0)
+  const remainder = (amount ?? 0) - partsSum
+  // Bo'lingan: yig'indi summaga teng va kamida bitta bo'lak bor
+  const splitReady = !splitOn || (amount !== null && remainder === 0 && parts.length > 0)
+  const canSave = amount !== null && effectiveTitle.length > 0 && splitReady && !createExpense.isPending
+  const methodLabelOf = (code: string) => PAYMENT_METHODS.find((m) => m.value === code)?.label || code
+  const methodLabel =
+    splitOn && parts.length > 1
+      ? parts.map((p) => `${methodLabelOf(p.payment_method)} ${fmt(p.amount)}`).join(" + ")
+      : methodLabelOf(splitOn && parts.length === 1 ? parts[0].payment_method : method)
+
+  const setPart = (code: string, raw: string) =>
+    setPartAmounts((prev) => ({ ...prev, [code]: formatAmountInput(raw) }))
+
+  const toggleSplit = () => {
+    if (splitOn) {
+      setSplitOn(false)
+      setPartAmounts({})
+      return
+    }
+    // Tanlangan tur butun summani oladi — xodim faqat ikkinchisini yozadi
+    setPartAmounts(amount !== null ? { [method]: formatAmountInput(String(amount)) } : {})
+    setSplitOn(true)
+  }
 
   const addQuick = (value: number) => {
     setAmountStr(formatAmountInput(String((amount || 0) + value)))
@@ -139,14 +181,25 @@ export function ExpenseFormDialog({
       setError(tr("Xarajat nomini kiriting yoki toifa tanlang"))
       return
     }
+    if (splitOn && (parts.length === 0 || remainder !== 0)) {
+      setError(
+        remainder > 0
+          ? tr("Qisman to'lov to'liq taqsimlanmagan: {{amount}} So'm qoldi", { amount: fmt(remainder) })
+          : tr("Bo'laklar yig'indisi summadan {{amount}} So'm ortiq", { amount: fmt(-remainder) })
+      )
+      return
+    }
     setError(null)
+    // Bitta bo'lak qolsa — oddiy xarajat o'sha tur bilan
+    const singleMethod = splitOn && parts.length === 1 ? parts[0].payment_method : method
     try {
       await createExpense.mutateAsync({
         // Nom bo'sh qolsa toifa nomi (bazadagi o'zbekcha yozilishi) yoziladi
         title: title.trim() || categoryName,
         amount,
         category: categoryName.trim() || undefined,
-        payment_method: method,
+        payment_method: singleMethod,
+        payments: splitOn && parts.length > 1 ? parts : undefined,
         expense_date: expenseDate || undefined,
         notes: notes.trim() || undefined,
         hotelId: user?.hotel_id,
@@ -192,7 +245,9 @@ export function ExpenseFormDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="gap-0 p-0 sm:max-w-[540px]">
-        <DialogHeader className="border-b border-gray-100 px-5 pt-5 pb-4 text-left">
+        {/* Grid bo'laklarida `min-w-0`: ichidagi maydonlar (qisman to'lov
+            qatorlari, uzun yig'ma satr) tor ekranda oynani kengaytirmasin */}
+        <DialogHeader className="min-w-0 border-b border-gray-100 px-5 pt-5 pb-4 text-left">
           <DialogTitle className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
               <TrendingDown className="h-4 w-4" />
@@ -204,7 +259,7 @@ export function ExpenseFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="min-w-0 space-y-4 px-5 py-4">
           {/* SUMMA */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-gray-600" htmlFor="expense-amount">
@@ -415,35 +470,123 @@ export function ExpenseFormDialog({
             />
           </div>
 
-          {/* TO'LOV TURI */}
+          {/* TO'LOV TURI — bitta yoki qisman (bir necha tur) */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">
-              {tr("To'lov turi")}
-            </label>
-            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-              {PAYMENT_METHODS.map((m) => {
-                const Icon = METHOD_ICONS[m.value] || Banknote
-                const isSel = method === m.value
-                return (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => setMethod(m.value)}
-                    aria-pressed={isSel}
-                    title={m.label}
-                    className={cn(
-                      "flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-xs font-medium transition-colors",
-                      isSel
-                        ? "border-primary-400 bg-primary-50 text-primary-700"
-                        : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">{m.label}</span>
-                  </button>
-                )
-              })}
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label className="text-xs font-medium text-gray-600">{tr("To'lov turi")}</label>
+              <button
+                type="button"
+                onClick={toggleSplit}
+                aria-pressed={splitOn}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+                  splitOn
+                    ? "bg-primary-100 text-primary-700"
+                    : "text-primary-600 hover:bg-primary-50 hover:text-primary-700"
+                )}
+              >
+                <Split className="h-3 w-3" />
+                {splitOn ? tr("Bitta to'lov turi") : tr("Qisman to'lov")}
+              </button>
             </div>
+
+            {!splitOn ? (
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                {PAYMENT_METHODS.map((m) => {
+                  const Icon = METHOD_ICONS[m.value] || Banknote
+                  const isSel = method === m.value
+                  return (
+                    <button
+                      key={m.value}
+                      type="button"
+                      onClick={() => setMethod(m.value)}
+                      aria-pressed={isSel}
+                      title={m.label}
+                      className={cn(
+                        "flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-xs font-medium transition-colors",
+                        isSel
+                          ? "border-primary-400 bg-primary-50 text-primary-700"
+                          : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="truncate">{m.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="space-y-1.5 rounded-xl border border-primary-200 bg-primary-50/30 p-2">
+                {PAYMENT_METHODS.map((m) => {
+                  const Icon = METHOD_ICONS[m.value] || Banknote
+                  const raw = partAmounts[m.value] || ""
+                  const value = parseAmountInput(raw)
+                  return (
+                    <div key={m.value} className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "flex w-[128px] flex-shrink-0 items-center gap-1.5 text-xs font-medium sm:w-[150px]",
+                          value !== null ? "text-gray-900" : "text-gray-500"
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="truncate">{m.label}</span>
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        aria-label={m.label}
+                        value={raw}
+                        onChange={(e) => setPart(m.value, e.target.value)}
+                        onKeyDown={onEnter}
+                        placeholder="0"
+                        className={cn(
+                          "h-9 w-0 min-w-0 flex-1 rounded-lg border bg-white px-2.5 text-sm font-semibold tabular-nums outline-none transition-colors",
+                          "placeholder:font-normal placeholder:text-gray-300 focus:border-primary-400 focus:ring-2 focus:ring-primary-100",
+                          value !== null ? "border-primary-300 text-gray-900" : "border-gray-200"
+                        )}
+                      />
+                      {remainder > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setPart(m.value, String((value ?? 0) + remainder))}
+                          title={tr("Qolgan summani shu turga yozish")}
+                          className="flex-shrink-0 rounded-md px-1.5 py-1 text-[11px] font-medium text-primary-600 hover:bg-primary-100"
+                        >
+                          +{fmt(remainder)}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+                <p
+                  className={cn(
+                    "pt-0.5 text-[11px] font-medium",
+                    amount === null
+                      ? "text-gray-400"
+                      : remainder === 0 && parts.length > 1
+                        ? "text-emerald-700"
+                        : remainder === 0
+                          ? "text-gray-500"
+                          : remainder > 0
+                            ? "text-amber-700"
+                            : "text-red-600"
+                  )}
+                  aria-live="polite"
+                >
+                  {amount === null
+                    ? tr("Avval summani kiriting, keyin uni turlarga bo'ling")
+                    : remainder === 0 && parts.length > 1
+                      ? tr("Taqsimlandi: {{parts}}", { parts: methodLabel })
+                      : remainder === 0
+                        ? tr("Hammasi bitta turda — oddiy xarajat sifatida saqlanadi")
+                        : remainder > 0
+                          ? tr("Qoldi: {{amount}} So'm", { amount: fmt(remainder) })
+                          : tr("Ortiqcha: {{amount}} So'm", { amount: fmt(-remainder) })}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* SANA */}
@@ -505,8 +648,10 @@ export function ExpenseFormDialog({
           )}
         </div>
 
-        <DialogFooter className="flex-col gap-3 border-t border-gray-100 bg-gray-50/60 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="min-w-0 truncate text-xs text-gray-500">
+        {/* `min-w-0`: yig'ma satr uzun bo'lsa ham (qisman to'lov) oynani
+            kengaytirmaydi — grid elementi o'z matniga qarab cho'zilmasin */}
+        <DialogFooter className="min-w-0 flex-col gap-3 border-t border-gray-100 bg-gray-50/60 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="min-w-0 truncate text-xs text-gray-500" title={amount !== null ? methodLabel : undefined}>
             {amount !== null ? (
               <>
                 <span className="font-semibold text-gray-900 tabular-nums">

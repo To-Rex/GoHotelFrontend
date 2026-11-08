@@ -71,5 +71,16 @@
   "Faqat shu toifani ko'rsatish": "Show only this category",
   "Filtr: {{name}} — {{count}} ta, {{total}} So'm": "Filter: {{name}} — {{count}} items, {{total}} UZS",
   "Bu toifada tanlangan davrda xarajat yo'q": "No expenses in this category for the selected period",
-  "Boshqa sana tanlangan": "Another date selected"
+  "Boshqa sana tanlangan": "Another date selected",
+  "Qisman to'lov to'liq taqsimlanmagan: {{amount}} So'm qoldi": "Split payment is not fully allocated: {{amount}} UZS left",
+  "Bo'laklar yig'indisi summadan {{amount}} So'm ortiq": "Parts exceed the total by {{amount}} UZS",
+  "Bitta to'lov turi": "Single payment method",
+  "Qisman to'lov": "Split payment",
+  "Qolgan summani shu turga yozish": "Put the remainder on this method",
+  "Avval summani kiriting, keyin uni turlarga bo'ling": "Enter the amount first, then split it across methods",
+  "Taqsimlandi: {{parts}}": "Allocated: {{parts}}",
+  "Hammasi bitta turda — oddiy xarajat sifatida saqlanadi": "All on one method — saved as an ordinary expense",
+  "Qoldi: {{amount}} So'm": "Remaining: {{amount}} UZS",
+  "Ortiqcha: {{amount}} So'm": "Over by: {{amount}} UZS",
+  "\"{{title}}\" xarajatini o'chirasizmi? Uning {{count}} ta to'lov bo'lagi birga o'chadi.": "Delete expense \"{{title}}\"? Its {{count}} payment parts are deleted with it."
 }

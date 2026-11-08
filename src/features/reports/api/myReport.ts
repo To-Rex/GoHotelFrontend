@@ -85,6 +85,8 @@ export interface MyReportExpenseRow {
   amount: number
   payment_method: string | null
   expense_date: string | null
+  /** Qisman to'lov bo'laklarini bog'laydigan kalit (eski serverda yo'q) */
+  split_group?: string | null
 }
 
 export interface MyReportSummary {

@@ -365,7 +365,7 @@ export function ExpenseCategoriesDialog({ open, onClose }: { open: boolean; onCl
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="gap-0 p-0 sm:max-w-[560px]">
-        <DialogHeader className="border-b border-gray-100 px-5 pt-5 pb-4 text-left">
+        <DialogHeader className="min-w-0 border-b border-gray-100 px-5 pt-5 pb-4 text-left">
           <DialogTitle className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
               <Tags className="h-4 w-4" />
@@ -377,7 +377,7 @@ export function ExpenseCategoriesDialog({ open, onClose }: { open: boolean; onCl
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="min-w-0 space-y-4 px-5 py-4">
           {/* Yangi toifa */}
           <div className="rounded-xl border border-dashed border-gray-300 p-3">
             <div className="flex items-center gap-2">

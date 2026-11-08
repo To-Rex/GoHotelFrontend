@@ -310,6 +310,9 @@ export interface Expense {
   created_by: string;
   created_by_name?: string | null;
   created_at?: string | null;
+  /** Qisman (aralash) to'lov: bir xarajatning bo'laklari shu kalit bilan
+   *  bog'langan — har bo'lak alohida qator, o'z to'lov turi bilan */
+  split_group?: string | null;
 }
 
 /** To'lov usuli bo'yicha bir qator (GET /finance/summary) */

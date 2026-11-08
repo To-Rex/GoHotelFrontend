@@ -32,6 +32,7 @@ import { apiErrorMessage } from "@/lib/apiError"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { CategoryChip } from "@/features/expenses/components/CategoryChip"
 import { useExpenseCategories } from "@/features/expenses/api/expenseCategories"
+import { groupExpenses } from "@/features/expenses/lib/expenseGroups"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -299,7 +300,14 @@ export const MyReportsPage = () => {
   }, [shopSales, user?.id])
 
   const myReservations = report?.reservations.items ?? []
-  const myExpenses = report?.expenses.items ?? []
+  // Qisman to'lov bo'laklari bitta xarajat: summa — yig'indi, usul — "Aralash"
+  const myExpenses = useMemo(
+    () =>
+      groupExpenses(report?.expenses.items ?? []).map((g) =>
+        g.isSplit ? { ...g.main, amount: g.amount, payment_method: "MIXED" } : g.main
+      ),
+    [report]
+  )
 
   const resCount = report?.reservations.count ?? 0
   const cancelledCount = report?.reservations.cancelled_count ?? 0

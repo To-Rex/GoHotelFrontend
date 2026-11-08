@@ -42,11 +42,20 @@ export const useExpenses = (
   });
 };
 
+export interface ExpensePaymentPart {
+  payment_method: string;
+  amount: number;
+}
+
 interface ExpenseCreatePayload {
   title: string;
   amount: number;
   category?: string;
   payment_method?: string;
+  /** Qisman to'lov: summa bir necha to'lov turiga bo'linadi (yig'indisi
+   *  `amount`). Berilsa `payment_method` o'rniga ishlatiladi; server har
+   *  bo'lakni alohida qator qilib yozadi (`split_group`). */
+  payments?: ExpensePaymentPart[];
   expense_date?: string;
   notes?: string;
   hotelId?: string;

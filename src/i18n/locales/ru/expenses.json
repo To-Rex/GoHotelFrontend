@@ -71,5 +71,16 @@
   "Faqat shu toifani ko'rsatish": "Показать только эту категорию",
   "Filtr: {{name}} — {{count}} ta, {{total}} So'm": "Фильтр: {{name}} — {{count}} шт., {{total}} сум",
   "Bu toifada tanlangan davrda xarajat yo'q": "В этой категории за выбранный период расходов нет",
-  "Boshqa sana tanlangan": "Выбрана другая дата"
+  "Boshqa sana tanlangan": "Выбрана другая дата",
+  "Qisman to'lov to'liq taqsimlanmagan: {{amount}} So'm qoldi": "Частичная оплата распределена не полностью: осталось {{amount}} сум",
+  "Bo'laklar yig'indisi summadan {{amount}} So'm ortiq": "Сумма частей больше общей на {{amount}} сум",
+  "Bitta to'lov turi": "Один способ оплаты",
+  "Qisman to'lov": "Частичная оплата",
+  "Qolgan summani shu turga yozish": "Записать остаток на этот способ",
+  "Avval summani kiriting, keyin uni turlarga bo'ling": "Сначала введите сумму, затем разделите её по способам",
+  "Taqsimlandi: {{parts}}": "Распределено: {{parts}}",
+  "Hammasi bitta turda — oddiy xarajat sifatida saqlanadi": "Всё одним способом — сохранится как обычный расход",
+  "Qoldi: {{amount}} So'm": "Осталось: {{amount}} сум",
+  "Ortiqcha: {{amount}} So'm": "Лишнее: {{amount}} сум",
+  "\"{{title}}\" xarajatini o'chirasizmi? Uning {{count}} ta to'lov bo'lagi birga o'chadi.": "Удалить расход «{{title}}»? Вместе с ним удалятся {{count}} части оплаты."
 }
