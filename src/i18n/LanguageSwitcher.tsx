@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Check, Globe } from "lucide-react"
 
+import { switchLanguageWithReveal } from "@/lib/langReveal"
 import { cn } from "@/lib/utils"
 import { LANGUAGES, getLang, setLang, tr } from "./index"
 
@@ -22,13 +23,23 @@ const ITEM: Record<Scene, string> = {
   day: "hover:bg-zinc-100",
   night: "hover:bg-white/10",
 }
+/* Til almashinuvi pardasining rangi: landing/login sahnasi o'z fonida
+   (LandingPage/LoginPage: bg-[#fdf6e3] / bg-zinc-950), ilova ichida —
+   sahifa foni (mavzuga qarab) */
+const COVER_COLOR: Record<Scene, string | undefined> = {
+  app: undefined,
+  day: "#fdf6e3",
+  night: "#09090b",
+}
 
 /**
  * Til tanlagich: globus va joriy til kodi; bosilganda uch til ro'yxati.
  *
  * Til nomlari har doim o'z tilida yoziladi ("Русский", "English") —
  * interfeys tilini tushunmagan odam ham o'zinikini topadi. Tanlanganda
- * sahifa qayta yuklanadi (sababi: i18n/index.ts).
+ * sahifa qayta yuklanadi (sababi: i18n/index.ts) — mavzu almashinuvidagi
+ * kabi doira animatsiyasi bilan: globus tugmasidan doira ochilib sahifani
+ * qoplaydi, yangi tildagi sahifa o'sha nuqtadan ochiladi (lib/langReveal.ts).
  */
 export function LanguageSwitcher({
   scene = "app",
@@ -39,6 +50,7 @@ export function LanguageSwitcher({
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const current = getLang()
   const short = LANGUAGES.find((l) => l.code === current)?.short ?? "UZ"
 
@@ -61,6 +73,7 @@ export function LanguageSwitcher({
   return (
     <div ref={ref} className={cn("relative", className)}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         title={tr("Til")}
@@ -93,7 +106,14 @@ export function LanguageSwitcher({
               lang={l.code}
               onClick={() => {
                 setOpen(false)
-                setLang(l.code)
+                // O'sha til — hech narsa o'zgarmaydi (parda ham qo'yilmaydi)
+                if (l.code === current) return
+                const rect = triggerRef.current?.getBoundingClientRect()
+                void switchLanguageWithReveal(
+                  () => setLang(l.code),
+                  rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : undefined,
+                  COVER_COLOR[scene]
+                )
               }}
               className={cn(
                 "flex w-full items-center gap-2.5 px-3.5 py-2 text-sm font-medium transition-colors",
