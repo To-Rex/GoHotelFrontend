@@ -28,6 +28,7 @@ import {
 } from "@/features/reservations/components/NewBookingDialog";
 import { addDaysStr, todayStr } from "@/features/reservations/lib/booking";
 import { cn } from "@/lib/utils";
+import { switchTheme, type Theme } from "@/lib/theme";
 import { tr, trc } from "@/i18n";
 import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 import { ContextSwitcher } from "@/features/auth/components/ContextSwitcher";
@@ -120,17 +121,21 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
     }
   }, [refreshing, isFetching]);
 
-  // Kun/tun mavzusi — tanlov brauzerda saqlanadi (standart: kun)
+  // Kun/tun mavzusi — tanlov brauzerda saqlanadi (standart: kun).
+  // Almashinuv animatsiyali: yangi mavzu bosilgan tugma markazidan doira
+  // bo'lib ochiladi (lib/theme.ts; View Transitions yo'q brauzerda ranglar
+  // yumshoq o'tadi, "harakatni kamaytirish" yoqilganda — darhol).
   const [dark, setDark] = useState(() =>
     document.documentElement.classList.contains("dark")
   );
-  const toggleTheme = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    try {
-      localStorage.setItem("theme", next ? "dark" : "light");
-    } catch {}
+  const toggleTheme = (event: React.MouseEvent<HTMLElement>) => {
+    const next: Theme = dark ? "light" : "dark";
+    const rect = event.currentTarget.getBoundingClientRect();
+    void switchTheme(next, {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    });
+    setDark(next === "dark");
   };
 
   // Har 30 soniyada yangilanadigan "hozir" — ish vaqti hisoblagichi uchun
@@ -243,11 +248,14 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
           onClick={toggleTheme}
           title={dark ? tr("Kun mavzusiga o'tish") : tr("Tun mavzusiga o'tish")}
         >
-          {dark ? (
-            <Sun size={18} className="text-muted-foreground hover:text-foreground" />
-          ) : (
-            <Moon size={18} className="text-muted-foreground hover:text-foreground" />
-          )}
+          {/* `key` almashganda belgi qayta o'rnatiladi va burilib chiqadi */}
+          <span key={dark ? "sun" : "moon"} className="theme-icon-pop">
+            {dark ? (
+              <Sun size={18} className="text-muted-foreground hover:text-foreground" />
+            ) : (
+              <Moon size={18} className="text-muted-foreground hover:text-foreground" />
+            )}
+          </span>
         </Button>
         {/* Kamera tanigan mehmonlar — xodimning o'z filiali bo'yicha */}
         {/* Qarzlar — sababi bilan, doimiy eslatma (qarz bor ekan qizil) */}

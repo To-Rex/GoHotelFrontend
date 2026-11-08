@@ -245,6 +245,63 @@
 /* Tailwind v4 uchun sinf-asosli dark variant (.dark html elementiga qo'yiladi) */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* --- Kun/tun ANIMATSIYALI almashinuvi (src/lib/theme.ts) ---------------
+   1) View Transitions: brauzer eski va yangi holat suratini oladi, yangi
+      surat bosilgan nuqtadan doira bo'lib ochiladi (clip-path animatsiyasi
+      JS da, `::view-transition-new(root)` ustida). Standart "crossfade"
+      o'chiriladi — aks holda doira bilan birga xira o'tish ham bo'lardi.
+   2) View Transitions yo'q brauzerda (Firefox) `theme-fade` sinfi 420 ms
+      davomida rang xususiyatlariga yumshoq o'tish beradi. */
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html.theme-reveal::view-transition-old(root) {
+  z-index: 1;
+}
+html.theme-reveal::view-transition-new(root) {
+  z-index: 2;
+}
+html.theme-fade,
+html.theme-fade *,
+html.theme-fade *::before,
+html.theme-fade *::after {
+  transition:
+    background-color 0.42s ease,
+    color 0.42s ease,
+    border-color 0.42s ease,
+    fill 0.42s ease,
+    stroke 0.42s ease,
+    box-shadow 0.42s ease !important;
+}
+/* Quyosh/oy belgisi almashganda burilib paydo bo'ladi */
+@keyframes theme-icon-pop {
+  from {
+    transform: rotate(-90deg) scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.theme-icon-pop {
+  display: inline-flex;
+  animation: theme-icon-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-icon-pop {
+    animation: none;
+  }
+  html.theme-fade,
+  html.theme-fade *,
+  html.theme-fade *::before,
+  html.theme-fade *::after {
+    transition: none !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
