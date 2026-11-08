@@ -30,6 +30,8 @@ import {
 import { useAuthStore } from "@/store/auth"
 import { apiErrorMessage } from "@/lib/apiError"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
+import { CategoryChip } from "@/features/expenses/components/CategoryChip"
+import { useExpenseCategories } from "@/features/expenses/api/expenseCategories"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -289,6 +291,8 @@ export const MyReportsPage = () => {
   // (hali to'lanmagan) sotuvlar ham ro'yxatda ko'rinishi kerak. Kartochkadagi
   // PUL esa serverdan keladi va u to'langan vaqt bo'yicha hisoblanadi.
   const { data: shopSales = [], error: shopError } = useShopSales(dateFrom, dateTo)
+  // Xarajat toifalarining belgisi va rangi (ro'yxat yo'q bo'lsa chip oddiy)
+  const expenseCategories = useExpenseCategories(false, true).data?.items ?? []
   const myShopSales = useMemo(() => {
     if (!user?.id) return [] as ShopSale[]
     return (shopSales as ShopSale[]).filter((s) => s.created_by === user.id)
@@ -1115,9 +1119,7 @@ export const MyReportsPage = () => {
                               </p>
                             </div>
                             {e.category && (
-                              <Badge variant="secondary" className="mt-2 text-[11px]">
-                                {tr(e.category)}
-                              </Badge>
+                              <CategoryChip name={e.category} categories={expenseCategories} className="mt-2" />
                             )}
                           </div>
                         ))}
@@ -1148,9 +1150,7 @@ export const MyReportsPage = () => {
                                 </TableCell>
                                 <TableCell>
                                   {e.category ? (
-                                    <Badge variant="secondary" className="text-[11px]">
-                                      {tr(e.category)}
-                                    </Badge>
+                                    <CategoryChip name={e.category} categories={expenseCategories} />
                                   ) : (
                                     <span className="text-sm text-muted-foreground">
                                       —
