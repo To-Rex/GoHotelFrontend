@@ -134,16 +134,52 @@ export interface MyReportSummary {
   }
   /** Kassaga tushgan sof naqd: naqd to'lovlar + do'kon naqdi − naqd xarajatlar */
   net_cash: number
+  /** Kimning hisoboti (eski serverda kelmaydi) */
+  user?: ReportUserBrief
+  /** So'rovchining o'z hisoboti */
+  is_self?: boolean
 }
 
-export const useMyReport = (dateFrom: string, dateTo: string) =>
+/** Kimning hisoboti (javobdagi `user`, xodimlar ro'yxatidagi qator) */
+export interface ReportUserBrief {
+  id: string
+  first_name: string
+  last_name: string
+  name: string
+  user_type: string
+  status?: string
+  is_me?: boolean
+}
+
+/**
+ * Shaxsiy hisobot. `userId` bo'sh — so'rovchining o'zi. Boshqa xodim —
+ * faqat administrator va menejer (server tekshiradi, 403
+ * STAFF_REPORT_FORBIDDEN); xodim shu mehmonxonadan bo'lishi kerak.
+ */
+export const useMyReport = (dateFrom: string, dateTo: string, userId?: string | null) =>
   useQuery({
-    queryKey: ["myReport", dateFrom, dateTo],
+    queryKey: ["myReport", dateFrom, dateTo, userId || ""],
     queryFn: async () => {
       const { data } = await api.get<MyReportSummary>("/reports/my-summary", {
-        params: { date_from: dateFrom, date_to: dateTo },
+        params: { date_from: dateFrom, date_to: dateTo, user_id: userId || undefined },
       })
       return data
     },
     enabled: Boolean(dateFrom && dateTo),
+  })
+
+/**
+ * Hisobotini ko'rish mumkin bo'lgan xodimlar — tanlagich uchun.
+ * So'rovchi birinchi, keyin faollar, keyin qolganlar. Ruxsati yo'q
+ * xodim uchun umuman so'ralmaydi (`enabled`).
+ */
+export const useReportStaff = (enabled: boolean) =>
+  useQuery({
+    queryKey: ["reportStaff"],
+    queryFn: async () => {
+      const { data } = await api.get<ReportUserBrief[]>("/reports/staff")
+      return Array.isArray(data) ? data : []
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
   })

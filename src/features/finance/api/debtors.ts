@@ -106,6 +106,9 @@ export interface DebtorsParams {
   dateTo?: string
   /** Faqat so'rovchi xodim ochgan bronlar — shaxsiy hisobot uchun */
   mine?: boolean
+  /** Boshqa xodim ochgan bronlar (shaxsiy hisobotda xodim tanlanganda) —
+   *  faqat administrator va menejerga, server tekshiradi */
+  createdBy?: string
   guestId?: string
   enabled?: boolean
   /** Davriy yangilash (ms) — qarzlar ko'z oldida turishi uchun */
@@ -119,9 +122,9 @@ export const invalidateDebts = (queryClient: QueryClient) => {
 }
 
 export const useDebtors = (params: DebtorsParams = {}) => {
-  const { dateFrom, dateTo, mine, guestId, enabled = true, refetchMs } = params
+  const { dateFrom, dateTo, mine, createdBy, guestId, enabled = true, refetchMs } = params
   return useQuery({
-    queryKey: ["debtors", dateFrom || "", dateTo || "", !!mine, guestId || ""],
+    queryKey: ["debtors", dateFrom || "", dateTo || "", !!mine, createdBy || "", guestId || ""],
     enabled,
     refetchInterval: refetchMs && refetchMs > 0 ? refetchMs : false,
     queryFn: async () => {
@@ -130,6 +133,7 @@ export const useDebtors = (params: DebtorsParams = {}) => {
           date_from: dateFrom || undefined,
           date_to: dateTo || undefined,
           mine: mine || undefined,
+          created_by: createdBy || undefined,
           guest_id: guestId || undefined,
         },
       })

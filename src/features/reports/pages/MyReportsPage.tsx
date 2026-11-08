@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { format } from "date-fns"
 import {
   FileBarChart,
@@ -10,11 +11,13 @@ import {
   Store,
   AlertCircle,
   LayoutDashboard,
+  Users,
 } from "lucide-react"
 import { useShopSales, type ShopSale } from "@/features/shop/api/shop"
 import { DebtorsPanel } from "@/features/finance/components/DebtorsPanel"
 import {
   useMyReport,
+  useReportStaff,
   METHOD_COLUMNS,
   METHOD_LABEL,
   paymentMethodsLabel,
@@ -88,28 +91,36 @@ const SECTIONS = [
   {
     key: "overview",
     label: tr("Umumiy"),
+    labelOther: tr("Umumiy"),
     desc: tr("Davr yakuni, qarzdorlarim va pul harakati usullar bo'yicha"),
+    descOther: tr("Davr yakuni, qarzdorlari va pul harakati usullar bo'yicha"),
     icon: LayoutDashboard,
     iconClass: "bg-primary-50 text-primary-600",
   },
   {
     key: "reservations",
     label: tr("Bronlarim"),
+    labelOther: tr("Bronlari"),
     desc: tr("Tanlangan davrda siz yaratgan bronlar"),
+    descOther: tr("Tanlangan davrda xodim yaratgan bronlar"),
     icon: CalendarCheck,
     iconClass: "bg-blue-50 text-blue-600",
   },
   {
     key: "shop",
     label: tr("Do'kon sotuvlarim"),
+    labelOther: tr("Do'kon sotuvlari"),
     desc: tr("Siz qayd etgan do'kon savdolari — to'langan va brondagilar"),
+    descOther: tr("Xodim qayd etgan do'kon savdolari — to'langan va brondagilar"),
     icon: Store,
     iconClass: "bg-violet-50 text-violet-600",
   },
   {
     key: "expenses",
     label: tr("Xarajatlarim"),
+    labelOther: tr("Xarajatlari"),
     desc: tr("Siz kiritgan chiqimlar"),
+    descOther: tr("Xodim kiritgan chiqimlar"),
     icon: TrendingDown,
     iconClass: "bg-red-50 text-red-600",
   },
@@ -128,10 +139,13 @@ function ReportNav({
   active,
   onSelect,
   counts,
+  isSelf,
 }: {
   active: SectionKey
   onSelect: (key: SectionKey) => void
   counts: Partial<Record<SectionKey, number>>
+  /** O'z hisoboti ("Bronlarim") yoki boshqa xodimniki ("Bronlari") */
+  isSelf: boolean
 }) {
   return (
     <nav className="flex gap-1.5 overflow-x-auto pb-1 lg:sticky lg:top-4 lg:w-60 lg:flex-shrink-0 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -160,7 +174,7 @@ function ReportNav({
               <s.icon className="h-4 w-4" />
             </span>
             <span className="whitespace-nowrap text-sm font-medium lg:whitespace-normal">
-              {s.label}
+              {isSelf ? s.label : s.labelOther}
             </span>
             {count !== undefined && (
               <span
@@ -281,12 +295,42 @@ export const MyReportsPage = () => {
     setPresetKey(null)
   }
 
+  /* Xodim tanlash — administrator va menejer uchun (server bilan bir xil
+     doira: finance.view / shift.force_close / report.view, ya'ni
+     `/finance/by-staff` ni ko'ra oladiganlar). Oddiy xodim faqat o'zini
+     ko'radi — tanlagich chiqmaydi, URL'dagi `?user=` e'tiborga olinmaydi.
+     Tanlov URL'da turadi: sahifa yangilansa ham qoladi, havola bilan
+     ulashsa bo'ladi. */
+  const canPickStaff =
+    isAdmin || can("finance.view") || can("shift.force_close") || can("report.view")
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedUser = canPickStaff ? searchParams.get("user") : null
+  const isSelf = !requestedUser || requestedUser === user?.id
+  const selectedUserId = isSelf ? (user?.id ?? null) : requestedUser
+  const { data: staff = [] } = useReportStaff(canPickStaff)
+  const selectUser = (id: string) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (!id || id === user?.id) next.delete("user")
+        else next.set("user", id)
+        return next
+      },
+      { replace: true }
+    )
+
   // Barcha ko'rsatkichlar shu bitta so'rovdan — serverda hisoblangan
   const {
     data: report,
     isLoading,
     error: reportError,
-  } = useMyReport(dateFrom, dateTo)
+  } = useMyReport(dateFrom, dateTo, isSelf ? undefined : selectedUserId)
+
+  // Kimning hisoboti — javobdan, kelmaguncha ro'yxatdan
+  const viewed = report?.user ?? staff.find((s) => s.id === selectedUserId)
+  const viewedName = isSelf
+    ? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()
+    : viewed?.name ?? "…"
 
   // Do'kon jadvali: sotuv QAYD ETILGAN vaqt bo'yicha, chunki bronga yozilgan
   // (hali to'lanmagan) sotuvlar ham ro'yxatda ko'rinishi kerak. Kartochkadagi
@@ -295,9 +339,9 @@ export const MyReportsPage = () => {
   // Xarajat toifalarining belgisi va rangi (ro'yxat yo'q bo'lsa chip oddiy)
   const expenseCategories = useExpenseCategories(false, true).data?.items ?? []
   const myShopSales = useMemo(() => {
-    if (!user?.id) return [] as ShopSale[]
-    return (shopSales as ShopSale[]).filter((s) => s.created_by === user.id)
-  }, [shopSales, user?.id])
+    if (!selectedUserId) return [] as ShopSale[]
+    return (shopSales as ShopSale[]).filter((s) => s.created_by === selectedUserId)
+  }, [shopSales, selectedUserId])
 
   const myReservations = report?.reservations.items ?? []
   // Qisman to'lov bo'laklari bitta xarajat: summa — yig'indi, usul — "Aralash"
@@ -409,7 +453,7 @@ export const MyReportsPage = () => {
      shuning uchun pastda to'liq kenglikdagi alohida panelda. */
   const cards = [
     {
-      label: tr("Yaratgan bronlarim"),
+      label: isSelf ? tr("Yaratgan bronlarim") : tr("Yaratgan bronlari"),
       value: tr("{{resCount}} ta", { resCount: count(resCount) }),
       sub:
         cancelledCount > 0
@@ -426,7 +470,7 @@ export const MyReportsPage = () => {
       accent: "bg-sky-50 text-sky-600",
     },
     {
-      label: tr("Qabul qilgan to'lovlarim"),
+      label: isSelf ? tr("Qabul qilgan to'lovlarim") : tr("Qabul qilgan to'lovlari"),
       value: tr("{{collected}} So'm", { collected: stat(collected) }),
       sub:
         tr("naqd {{collectedCash}}", { collectedCash: fmt(collectedCash) }) +
@@ -435,7 +479,7 @@ export const MyReportsPage = () => {
       accent: "bg-emerald-50 text-emerald-600",
     },
     {
-      label: tr("Do'kon sotuvlarim"),
+      label: isSelf ? tr("Do'kon sotuvlarim") : tr("Do'kon sotuvlari"),
       value: tr("{{shopTotal}} So'm", { shopTotal: stat(shopTotal) }),
       sub:
         tr("{{shopCount}} ta to'langan", { shopCount }) +
@@ -446,7 +490,7 @@ export const MyReportsPage = () => {
       accent: "bg-violet-50 text-violet-600",
     },
     {
-      label: tr("Xarajatlarim"),
+      label: isSelf ? tr("Xarajatlarim") : tr("Xarajatlari"),
       value: tr("{{expTotal}} So'm", { expTotal: stat(expTotal) }),
       sub: tr("{{expCount}} ta yozuv", { expCount }),
       icon: TrendingDown,
@@ -470,12 +514,44 @@ export const MyReportsPage = () => {
             <FileBarChart className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">{tr("Mening hisobotim")}</h1>
+            <h1 className="text-xl font-bold tracking-tight">
+              {isSelf ? tr("Mening hisobotim") : tr("Xodim hisoboti")}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              {user?.first_name} {user?.last_name}{" "}{tr("— shaxsiy bronlar va xarajatlar")}
+              {viewedName}{" "}
+              {isSelf
+                ? tr("— shaxsiy bronlar va xarajatlar")
+                : tr("— bronlari, to'lovlari va xarajatlari")}
             </p>
           </div>
         </div>
+        {/* Xodim tanlagichi — faqat administrator va menejerga; oddiy xodim
+            o'zinikini ko'radi, tanlagich yo'q */}
+        {canPickStaff && staff.length > 0 && (
+          <label className="flex min-w-0 items-center gap-2">
+            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+              <Users className="h-4 w-4" />
+            </span>
+            <span className="sr-only">{tr("Xodimni tanlash")}</span>
+            <select
+              className="h-9 min-w-0 max-w-[260px] rounded-md border border-input bg-white px-2.5 text-sm text-gray-800 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              value={selectedUserId ?? ""}
+              onChange={(e) => selectUser(e.target.value)}
+              aria-label={tr("Xodimni tanlash")}
+            >
+              {!isSelf && !staff.some((s) => s.id === selectedUserId) && (
+                <option value={selectedUserId ?? ""}>{viewedName}</option>
+              )}
+              {staff.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                  {s.is_me ? tr(" (men)") : ""}
+                  {s.status && s.status !== "ACTIVE" ? tr(" · faol emas") : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       {/* Davr tanlash: tez tugmalar + "dan / gacha" sanalar.
@@ -524,6 +600,7 @@ export const MyReportsPage = () => {
       {/* BO'LIM MENYUSI va tanlangan bo'lim — faqat ochilgani chiziladi */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <ReportNav
+          isSelf={isSelf}
           active={section}
           onSelect={setSection}
           counts={{
@@ -537,9 +614,9 @@ export const MyReportsPage = () => {
           {/* Bo'lim sarlavhasi — nima ko'rsatilayotgani bir qatorda */}
           <div>
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
-              {activeSection.label}
+              {isSelf ? activeSection.label : activeSection.labelOther}
             </h2>
-            <p className="mt-0.5 text-sm text-gray-500">{activeSection.desc}</p>
+            <p className="mt-0.5 text-sm text-gray-500">{isSelf ? activeSection.desc : activeSection.descOther}</p>
           </div>
 
           {section === "overview" && (
@@ -637,7 +714,12 @@ export const MyReportsPage = () => {
                   Shaxsiy hisobotda savol "men kimdan pul olishim kerak",
                   shuning uchun boshqa xodimlarning bronlari bu yerga
                   kirmaydi. */}
-              <DebtorsPanel mine title={tr("Qarzdorlarim")} initialLimit={5} />
+              <DebtorsPanel
+                mine={isSelf}
+                createdBy={isSelf ? undefined : (selectedUserId ?? undefined)}
+                title={isSelf ? tr("Qarzdorlarim") : tr("Qarzdorlari")}
+                initialLimit={5}
+              />
 
               {/* To'lov turlari bo'yicha to'liq tafsilot */}
               <div className="overflow-hidden rounded-lg border bg-white">
@@ -770,7 +852,7 @@ export const MyReportsPage = () => {
               {section === "reservations" && (
                 <div className="rounded-lg border bg-white">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-                    <h3 className="text-sm font-semibold">{tr("Mening bronlarim")}</h3>
+                    <h3 className="text-sm font-semibold">{isSelf ? tr("Mening bronlarim") : tr("Xodim bronlari")}</h3>
                     <div className="flex flex-1 items-center justify-end gap-3">
                       <span className="text-xs text-gray-400">{tr("{{resCount}} ta", { resCount })}</span>
                       {myReservations.length > 0 && (
@@ -787,7 +869,9 @@ export const MyReportsPage = () => {
                     <p className="px-4 py-8 text-center text-sm text-gray-400">
                       {resTable.search
                         ? tr("Qidiruv bo'yicha bron topilmadi")
-                        : tr("Tanlangan davrda siz yaratgan bron yo'q")}
+                        : isSelf
+                          ? tr("Tanlangan davrda siz yaratgan bron yo'q")
+                          : tr("Tanlangan davrda xodim yaratgan bron yo'q")}
                     </p>
                   ) : (
                     <>
@@ -953,7 +1037,7 @@ export const MyReportsPage = () => {
                 <div className="rounded-lg border bg-white">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
                     <h3 className="text-sm font-semibold">
-                      {tr("Mening do'kon sotuvlarim")}
+                      {isSelf ? tr("Mening do'kon sotuvlarim") : tr("Xodim do'kon sotuvlari")}
                     </h3>
                     <div className="flex flex-1 items-center justify-end gap-3">
                       <span className="text-xs text-gray-400">
@@ -973,7 +1057,9 @@ export const MyReportsPage = () => {
                     <p className="px-4 py-8 text-center text-sm text-gray-400">
                       {shopTable.search
                         ? tr("Qidiruv bo'yicha sotuv topilmadi")
-                        : tr("Tanlangan davrda siz qilgan do'kon sotuvi yo'q")}
+                        : isSelf
+                          ? tr("Tanlangan davrda siz qilgan do'kon sotuvi yo'q")
+                          : tr("Tanlangan davrda xodim qilgan do'kon sotuvi yo'q")}
                     </p>
                   ) : (
                     <>
@@ -1085,7 +1171,7 @@ export const MyReportsPage = () => {
               {section === "expenses" && (
                 <div className="rounded-lg border bg-white">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-                    <h3 className="text-sm font-semibold">{tr("Mening xarajatlarim")}</h3>
+                    <h3 className="text-sm font-semibold">{isSelf ? tr("Mening xarajatlarim") : tr("Xodim xarajatlari")}</h3>
                     <div className="flex flex-1 items-center justify-end gap-3">
                       <span className="text-xs text-gray-400">{tr("{{expCount}} ta", { expCount })}</span>
                       {myExpenses.length > 0 && (
@@ -1102,7 +1188,9 @@ export const MyReportsPage = () => {
                     <p className="px-4 py-8 text-center text-sm text-gray-400">
                       {expTable.search
                         ? tr("Qidiruv bo'yicha xarajat topilmadi")
-                        : tr("Tanlangan davrda siz kiritgan xarajat yo'q")}
+                        : isSelf
+                          ? tr("Tanlangan davrda siz kiritgan xarajat yo'q")
+                          : tr("Tanlangan davrda xodim kiritgan xarajat yo'q")}
                     </p>
                   ) : (
                     <>
