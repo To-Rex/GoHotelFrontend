@@ -26,6 +26,8 @@ export interface PaymentEdit {
   /** Tahrir payti (eski ajralgan qatorda noma'lum bo'lishi mumkin) */
   at: string | null
   byName: string | null
+  /** Qaysi vazifada tahrirlagan (ADMIN / SUPER_ADMIN / MANAGER / RECEPTION; eski yozuvda null) */
+  byRole: string | null
   note: string | null
   oldMethod: string | null
   newMethod: string
@@ -78,6 +80,7 @@ export function paymentEdits(
     const base = {
       at: e.at || null,
       byName: (e.by_name || "").trim() || null,
+      byRole: (e.by_role || "").trim() || null,
       note: (e.note || "").trim() || null,
       oldMethod: e.old ?? null,
       newMethod: e.new,
@@ -123,6 +126,7 @@ export function paymentEdits(
         kind: "split_from",
         at: null,
         byName: null,
+        byRole: null,
         note: null,
         oldMethod: legacy.old,
         newMethod: legacy.new,
@@ -220,8 +224,26 @@ export function editMoment(edit: Pick<PaymentEdit, "at">): string {
 }
 
 /** Kim · qachon · izoh. */
+/** Vazifa nomi — tarixda "Dilnoza Karimova (Qabulxona)" */
+export function roleLabel(role: string | null | undefined): string | null {
+  switch ((role || "").toUpperCase()) {
+    case "ADMIN":
+      return tr("Administrator")
+    case "SUPER_ADMIN":
+      return tr("Tizim ma'muri")
+    case "MANAGER":
+      return tr("Menejer")
+    case "RECEPTION":
+      return tr("Qabulxona")
+    default:
+      return null
+  }
+}
+
 export function editMeta(edit: PaymentEdit): string {
-  return [edit.byName, editMoment(edit), edit.note].filter(Boolean).join(" · ")
+  const role = roleLabel(edit.byRole)
+  const who = edit.byName ? (role ? `${edit.byName} (${role})` : edit.byName) : role
+  return [who, editMoment(edit), edit.note].filter(Boolean).join(" · ")
 }
 
 /** Belgi ustiga borganda: barcha tahrirlar, har biri alohida satrda. */

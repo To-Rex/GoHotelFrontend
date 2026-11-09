@@ -283,5 +283,14 @@
   "Shu vaqt ichida hech kim «Boshlash»ni bosmasa, vazifa navbat qoidasi bo'yicha farroshga biriktiriladi — egasiz qolmaydi. 0 — o'chirilgan (faqat farroshlar o'zi oladi).": "Если за это время никто не нажмёт «Начать», задача будет назначена уборщику по очереди — без исполнителя не останется. 0 — выключено (уборщики берут сами).",
   "Kassani topshirishda admin tasdig'i talab qilinsin": "Требовать подтверждение админа при сдаче кассы",
   "Xodim kassani topshirgach sessiya tasdiq kutadi: faqat admin yoki menejer tasdiqlagach yopiladi va (xodim ishda davom etsa) yangi kassa 0 so'mdan ochiladi. Tasdiq kutilganda qabul tugmasi (keyingi xodim paroli) ishlamaydi.": "После сдачи кассы сессия ждёт подтверждения: она закроется только после подтверждения админа или менеджера, и (если сотрудник продолжает) новая касса откроется с 0. Пока ждёт подтверждения, кнопка приёма (пароль следующего сотрудника) не работает.",
-  "O'chiq — hozirgi oqim: topshirilgan kassani keyingi xodim o'z paroli bilan qabul qiladi. Yoqilsa, topshirilgan kassa faqat admin/menejer tasdig'idan keyin yopiladi.": "Выключено — текущий порядок: сданную кассу принимает следующий сотрудник своим паролем. При включении сданная касса закрывается только после подтверждения админа/менеджера."
+  "O'chiq — hozirgi oqim: topshirilgan kassani keyingi xodim o'z paroli bilan qabul qiladi. Yoqilsa, topshirilgan kassa faqat admin/menejer tasdig'idan keyin yopiladi.": "Выключено — текущий порядок: сданную кассу принимает следующий сотрудник своим паролем. При включении сданная касса закрывается только после подтверждения админа/менеджера.",
+  "Yoqiq": "Включено",
+  "Qabulxona xodimi oxirgi 2 kunlik to'lovning turini tahrirlay oladi — bitta to'lovni ko'pi bilan quyida tanlangan marta. Har tahrir tarixda qoladi.": "Сотрудник ресепшена может изменить способ оплаты платежа за последние 2 дня — один платёж не больше выбранного ниже числа раз. Каждое изменение остаётся в истории.",
+  "O'chiq (standart)": "Выключено (по умолчанию)",
+  "Qabulxona to'lovni tahrirlay olmaydi. To'lov turini faqat administrator va menejer o'zgartiradi.": "Ресепшен не может изменять платежи. Способ оплаты меняют только администратор и менеджер.",
+  "Bitta to'lovni necha marta tahrirlash mumkin": "Сколько раз можно изменить один платёж",
+  "{{n}} marta": "{{n}} раз(а)",
+  "Sanoqqa to'lovdagi barcha tahrirlar kiradi (kim qilganidan qat'i nazar). Chegaraga yetgan to'lovni faqat administrator yoki menejer tahrirlaydi.": "Считаются все изменения платежа (кем бы они ни были сделаны). Платёж, достигший лимита, меняют только администратор или менеджер.",
+  "Qabulxona to'lovni tahrirlashi": "Изменение платежей ресепшеном",
+  "Qabulxona xodimi xato kiritilgan to'lov turini (naqd, karta, online) o'zi tuzata oladimi. Administrator va menejer doim tahrirlaydi; bu sozlama faqat qabulxona uchun. Har tahrir tarixda ko'rinadi.": "Может ли сотрудник ресепшена сам исправить ошибочный способ оплаты (наличные, карта, онлайн). Администратор и менеджер меняют всегда; эта настройка только для ресепшена. Каждое изменение видно в истории."
 }

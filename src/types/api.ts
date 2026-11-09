@@ -369,6 +369,9 @@ export interface PaymentMethodChange {
   new: string;
   by?: string | null;
   by_name?: string | null;
+  /** Qaysi vazifada tahrirlagan: ADMIN / SUPER_ADMIN / MANAGER / RECEPTION
+      (2026-11-09 dan oldingi yozuvlarda yo'q) */
+  by_role?: string | null;
   at: string;
   note?: string | null;
   /** "full" — butun summa almashdi; "partial" — qismi yangi qatorga o'tdi

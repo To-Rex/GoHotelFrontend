@@ -38,9 +38,12 @@ const fmt = (n: number) => Number(n || 0).toLocaleString()
 export function PaymentMethodEditDialog({
   payment,
   onClose,
+  remainingEdits = null,
 }: {
   payment: PaymentRecord | null
   onClose: () => void
+  /** Qabulxonaga qolgan tahrir imkoniyati (admin/menejerda null — chegara yo'q) */
+  remainingEdits?: number | null
 }) {
   const mutation = useUpdatePaymentMethod()
   const [method, setMethod] = useState("")
@@ -115,6 +118,18 @@ export function PaymentMethodEditDialog({
           <p className="text-xs leading-relaxed text-gray-500">
             {tr("Har tahrir (nimadan nimaga, qancha, kim, qachon) saqlanadi — hech narsa o'chirilmaydi.")}
           </p>
+          {remainingEdits !== null && (
+            <p
+              className={cn(
+                "rounded-lg px-3 py-2 text-xs font-medium",
+                remainingEdits <= 1 ? "bg-amber-50 text-amber-700" : "bg-primary-50/60 text-primary-700"
+              )}
+            >
+              {remainingEdits === 1
+                ? tr("Bu to'lovni yana 1 marta tahrirlash mumkin — shu oxirgisi.")
+                : tr("Bu to'lovni yana {{count}} marta tahrirlash mumkin.", { count: remainingEdits })}
+            </p>
+          )}
 
           <div>
             <p className="mb-1.5 text-xs font-medium text-gray-600">

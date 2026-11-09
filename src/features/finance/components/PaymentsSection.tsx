@@ -17,7 +17,8 @@ import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { usePaymentsPage } from "../api/finance"
-import { canEditPaymentMethod } from "../lib/paymentEdit"
+import { paymentEditBlock, remainingEdits, type EditBlock } from "../lib/paymentEdit"
+import { usePaymentEditSettings } from "@/features/settings/api/paymentEditSettings"
 import {
   bookingLink,
   compactTitle,
@@ -220,21 +221,49 @@ export function PaymentsSection({
   const [state, setState] = useState(() => initialTableState("created_at"))
 
   // To'lov turini tahrirlash: admin cheklovsiz, menejer faqat oxirgi
-  // 2 kunlik to'lovlarda (server ham xuddi shunday tekshiradi). Do'kon
-  // to'lovi bu yerda tahrirlanmaydi — u Do'kon sahifasida qabul qilinadi
+  // 2 kunlik to'lovlarda; qabulxona — mehmonxona sozlamasi yoqilgan
+  // bo'lsa, o'sha oyna va bitta to'lovga chegara (server ham xuddi shunday
+  // tekshiradi: payment_edit_settings). Do'kon to'lovi bu yerda
+  // tahrirlanmaydi — u Do'kon sahifasida qabul qilinadi
   const { isAdmin, can } = usePermissions()
-  const canEdit = isAdmin || can("shift.force_close")
+  const canForceClose = can("shift.force_close")
+  const isReception = !isAdmin && !canForceClose && can("finance.payment.create")
+  // Sozlama faqat qabulxonaga kerak — boshqalarga so'ralmaydi
+  const { data: editSettings } = usePaymentEditSettings(isReception)
+  const reception = editSettings
+    ? { enabled: editSettings.reception_enabled, maxEdits: editSettings.reception_max_edits }
+    : null
+  const canEdit = isAdmin || canForceClose || (isReception && !!reception?.enabled)
   const [editTarget, setEditTarget] = useState<PaymentRecord | null>(null)
   // Tahrir tarixi — hammaga ochiq (faqat ko'rish), jadvaldagi belgidan
   const [historyTarget, setHistoryTarget] = useState<PaymentRecord | null>(null)
-  const methodEditable = (p: PaymentRecord) =>
-    canEditPaymentMethod({ payment: p, isAdmin, canForceClose: canEdit })
-  const editTitle = (p: PaymentRecord) =>
-    canEdit
-      ? methodEditable(p)
-        ? tr("To'lov turini tahrirlash")
-        : tr("Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi")
-      : ""
+  const blockOf = (p: PaymentRecord): EditBlock | null =>
+    paymentEditBlock({
+      payment: p,
+      isAdmin,
+      canForceClose,
+      canTakePayments: can("finance.payment.create"),
+      reception,
+    })
+  const methodEditable = (p: PaymentRecord) => blockOf(p) === null
+  const editTitle = (p: PaymentRecord) => {
+    if (!canEdit) return ""
+    switch (blockOf(p)) {
+      case null:
+        return tr("To'lov turini tahrirlash")
+      case "limit":
+        return tr("Bu to'lov allaqachon {{count}} marta tahrirlangan — qabulxona uchun chegara {{max}} marta", {
+          count: p.method_changes?.filter((e) => e && e.kind !== "split_from").length ?? 0,
+          max: reception?.maxEdits ?? 2,
+        })
+      case "window":
+        return isReception
+          ? tr("Qabulxona faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi")
+          : tr("Menejer faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi")
+      default:
+        return tr("Tahrirlash mumkin emas")
+    }
+  }
   const showEdit = (p: PaymentRecord) => canEdit && !isShopPayment(p)
   const editButton = (p: PaymentRecord) =>
     showEdit(p) ? (
@@ -469,6 +498,7 @@ export function PaymentsSection({
       <PaymentMethodEditDialog
         payment={editTarget}
         onClose={() => setEditTarget(null)}
+        remainingEdits={editTarget ? remainingEdits(editTarget, reception, isReception) : null}
       />
       <PaymentEditHistoryDialog
         payment={historyTarget}

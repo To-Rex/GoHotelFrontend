@@ -60,6 +60,7 @@ describe("paymentEdits — necha puldan necha pulga", () => {
       kind: "partial",
       at: AT,
       byName: "Aziz Karimov",
+      byRole: null,
       note: "Yarmi online",
       oldMethod: "CASH",
       newMethod: "ONLINE",

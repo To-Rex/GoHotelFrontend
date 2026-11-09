@@ -37,6 +37,7 @@ import {
   ArrowRightLeft,
   Gavel,
   BellRing,
+  PenLine,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -46,6 +47,7 @@ import { DiscountRulesCard } from "../components/DiscountRulesCard"
 import { MoveDiscountCard } from "../components/MoveDiscountCard"
 import { PenaltySettingsCard } from "../components/PenaltySettingsCard"
 import { DebtReminderCard } from "../components/DebtReminderCard"
+import { PaymentEditSettingsCard } from "../components/PaymentEditSettingsCard"
 import { SmsKeysCard } from "../components/SmsKeysCard"
 import {
   useBookingDefaults,
@@ -1034,6 +1036,17 @@ export const SettingsPage = () => {
                 desc={tr("Mehmon qarzlari ko'rinib tursin va unutilmasin: qanchalik tez-tez eslatilishini tanlang. Har qarzning sababi ko'rsatiladi.")}
               >
                 <DebtReminderCard />
+              </SettingCard>
+
+              {/* Qabulxona to'lov turini tahrirlay oladimi */}
+              <SettingCard
+                id="payment-edit"
+                icon={PenLine}
+                iconClass="bg-amber-50 text-amber-600"
+                title={tr("Qabulxona to'lovni tahrirlashi")}
+                desc={tr("Qabulxona xodimi xato kiritilgan to'lov turini (naqd, karta, online) o'zi tuzata oladimi. Administrator va menejer doim tahrirlaydi; bu sozlama faqat qabulxona uchun. Har tahrir tarixda ko'rinadi.")}
+              >
+                <PaymentEditSettingsCard />
               </SettingCard>
 
               {/* Qora ro'yxat qoidasi */}

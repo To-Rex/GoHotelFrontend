@@ -189,5 +189,11 @@
   "To'lov tahrirlangan": "Платёж изменён",
   "Bu to'lov tahrirlanmagan": "Этот платёж не изменялся",
   "Pul qabul qilingan vaqt va sana tahrirda o'zgarmaydi — to'lov o'z kunida qoladi.": "Время и дата приёма денег при изменении не меняются — платёж остаётся в своём дне.",
-  "u ham shu to'lov vaqtida turadi": "она тоже остаётся во времени этого платежа"
+  "u ham shu to'lov vaqtida turadi": "она тоже остаётся во времени этого платежа",
+  "Bu to'lovni yana 1 marta tahrirlash mumkin — shu oxirgisi.": "Этот платёж можно изменить ещё 1 раз — последний.",
+  "Bu to'lovni yana {{count}} marta tahrirlash mumkin.": "Этот платёж можно изменить ещё {{count}} раз(а).",
+  "Bu to'lov allaqachon {{count}} marta tahrirlangan — qabulxona uchun chegara {{max}} marta": "Этот платёж уже изменяли {{count}} раз(а) — лимит для ресепшена {{max}}",
+  "Qabulxona faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "Ресепшен может изменять только платежи за последние 2 дня",
+  "Tahrirlash mumkin emas": "Изменить нельзя",
+  "Tizim ma'muri": "Системный администратор"
 }

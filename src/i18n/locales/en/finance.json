@@ -171,5 +171,11 @@
   "To'lov tahrirlangan": "Payment edited",
   "Bu to'lov tahrirlanmagan": "This payment has not been edited",
   "Pul qabul qilingan vaqt va sana tahrirda o'zgarmaydi — to'lov o'z kunida qoladi.": "The time and date the money was received do not change when editing — the payment stays on its own day.",
-  "u ham shu to'lov vaqtida turadi": "it also keeps this payment's time"
+  "u ham shu to'lov vaqtida turadi": "it also keeps this payment's time",
+  "Bu to'lovni yana 1 marta tahrirlash mumkin — shu oxirgisi.": "This payment can be edited 1 more time — the last one.",
+  "Bu to'lovni yana {{count}} marta tahrirlash mumkin.": "This payment can be edited {{count}} more times.",
+  "Bu to'lov allaqachon {{count}} marta tahrirlangan — qabulxona uchun chegara {{max}} marta": "This payment has already been edited {{count}} times — the reception limit is {{max}}",
+  "Qabulxona faqat oxirgi 2 kunlik to'lovlarni tahrirlay oladi": "Reception may edit only payments from the last 2 days",
+  "Tahrirlash mumkin emas": "Cannot be edited",
+  "Tizim ma'muri": "System administrator"
 }

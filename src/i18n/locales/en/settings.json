@@ -281,5 +281,14 @@
   "Shu vaqt ichida hech kim «Boshlash»ni bosmasa, vazifa navbat qoidasi bo'yicha farroshga biriktiriladi — egasiz qolmaydi. 0 — o'chirilgan (faqat farroshlar o'zi oladi).": "If nobody taps “Start” within this time, the task is assigned to a cleaner by the queue rule — it never stays unassigned. 0 — off (cleaners claim it themselves).",
   "Kassani topshirishda admin tasdig'i talab qilinsin": "Require admin approval for cash handover",
   "Xodim kassani topshirgach sessiya tasdiq kutadi: faqat admin yoki menejer tasdiqlagach yopiladi va (xodim ishda davom etsa) yangi kassa 0 so'mdan ochiladi. Tasdiq kutilganda qabul tugmasi (keyingi xodim paroli) ishlamaydi.": "Once the cashier hands over, the session waits for approval: it closes only after an admin or manager confirms, and (if the employee keeps working) a new drawer opens at 0. While waiting, the accept button (next employee's password) is disabled.",
-  "O'chiq — hozirgi oqim: topshirilgan kassani keyingi xodim o'z paroli bilan qabul qiladi. Yoqilsa, topshirilgan kassa faqat admin/menejer tasdig'idan keyin yopiladi.": "Off — current flow: the next employee accepts the handed-over cash with their password. When on, the handed-over session closes only after admin/manager confirmation."
+  "O'chiq — hozirgi oqim: topshirilgan kassani keyingi xodim o'z paroli bilan qabul qiladi. Yoqilsa, topshirilgan kassa faqat admin/menejer tasdig'idan keyin yopiladi.": "Off — current flow: the next employee accepts the handed-over cash with their password. When on, the handed-over session closes only after admin/manager confirmation.",
+  "Yoqiq": "Enabled",
+  "Qabulxona xodimi oxirgi 2 kunlik to'lovning turini tahrirlay oladi — bitta to'lovni ko'pi bilan quyida tanlangan marta. Har tahrir tarixda qoladi.": "A receptionist may change the payment method of payments from the last 2 days — one payment at most the number of times chosen below. Every edit stays in the history.",
+  "O'chiq (standart)": "Disabled (default)",
+  "Qabulxona to'lovni tahrirlay olmaydi. To'lov turini faqat administrator va menejer o'zgartiradi.": "Reception cannot edit payments. Only administrators and managers change the payment method.",
+  "Bitta to'lovni necha marta tahrirlash mumkin": "How many times one payment may be edited",
+  "{{n}} marta": "{{n}} times",
+  "Sanoqqa to'lovdagi barcha tahrirlar kiradi (kim qilganidan qat'i nazar). Chegaraga yetgan to'lovni faqat administrator yoki menejer tahrirlaydi.": "Every edit of the payment counts, whoever made it. A payment at the limit can be edited only by an administrator or manager.",
+  "Qabulxona to'lovni tahrirlashi": "Payment editing by reception",
+  "Qabulxona xodimi xato kiritilgan to'lov turini (naqd, karta, online) o'zi tuzata oladimi. Administrator va menejer doim tahrirlaydi; bu sozlama faqat qabulxona uchun. Har tahrir tarixda ko'rinadi.": "Whether a receptionist may fix a wrongly entered payment method (cash, card, online) themselves. Administrators and managers always can; this setting is for reception only. Every edit is visible in the history."
 }
