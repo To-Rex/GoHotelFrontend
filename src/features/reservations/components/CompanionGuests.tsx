@@ -3,7 +3,8 @@ import { ChevronDown, Clock, Search, ScanLine, UserPlus, Video, X, CheckCircle2,
 import { Input } from "@/components/ui/input"
 import { DocumentScanner, type ScannedDoc } from "@/features/guests/components/DocumentScanner"
 import { BirthDateSelect } from "@/features/guests/components/BirthDateSelect"
-import { useCreateGuest, useGuest, useGuestSearch, searchGuests, uploadGuestFile } from "@/features/guests/api/guests"
+import { useCreateGuest, useGuest, useGuestMatches, useGuestSearch, searchGuests, uploadGuestFile } from "@/features/guests/api/guests"
+import { ExistingGuestNotice } from "@/features/guests/components/ExistingGuestNotice"
 import { FacePickerDialog } from "@/features/vision/components/FacePickerDialog"
 import { GuestFaceRow } from "@/features/vision/components/GuestFaceRow"
 import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
@@ -208,6 +209,12 @@ export const CompanionGuests = ({
   )
 
   const { data: searchResults = [], isFetching: searchFetching } = useGuestSearch(search)
+  // Yangi hamroh formasi: passport/telefon bo'yicha bazadagi mos mehmonlar
+  const { data: newGuestMatches = [] } = useGuestMatches(
+    newGuest?.passport_number,
+    newGuest?.phone,
+    !!newGuest
+  )
   const expandedCompanion = expandedSlot != null ? value[expandedSlot] : undefined
   const { data: liveGuest } = useGuest(expandedCompanion?.id)
 
@@ -567,6 +574,15 @@ export const CompanionGuests = ({
                     }
                   />
                 </div>
+                {/* Bazada shunday mehmon bor — hamroh sifatida shuni tanlash */}
+                <ExistingGuestNotice
+                  compact
+                  matches={newGuestMatches.filter((g) => !takenIds.has(g.id))}
+                  onSelect={(g) => {
+                    pickExisting(index, g)
+                    setNewGuest(null)
+                  }}
+                />
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="mb-0.5 block text-[11px] font-medium text-gray-500">

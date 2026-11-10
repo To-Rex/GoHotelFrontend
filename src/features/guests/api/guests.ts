@@ -66,6 +66,58 @@ export const useGuestSearch = (query: string, enabled = true) => {
   });
 };
 
+/* Yangi mehmon formasi: passport/telefon terilishi bilan bazada shunday
+   mehmon bor-yo'qligi jonli tekshiriladi (GET /guests/lookup — server
+   formatga chidamli taqqoslaydi: passport harf-raqamlari, telefon oxirgi
+   9 raqami). Topilsa forma ostida "bazada bor — tanlang" chiqadi: xodim
+   qayta yaratmaydi, server ham dublikat qilmaydi. */
+
+export type GuestMatch = Guest & { matched_by: "passport" | "phone" }
+
+export const normalizePassportKey = (value?: string | null) =>
+  (value || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase()
+export const normalizePhoneKey = (value?: string | null) => (value || "").replace(/\D/g, "")
+
+/** Qidirishga arziydimi: passport 5 belgidan, telefon 7 raqamdan */
+export const guestLookupKey = (passport?: string | null, phone?: string | null): string => {
+  const pass = normalizePassportKey(passport)
+  const digits = normalizePhoneKey(phone)
+  return `${pass.length >= 5 ? pass : ""}|${digits.length >= 7 ? digits : ""}`
+}
+
+export const lookupGuestMatches = async (
+  passport?: string | null,
+  phone?: string | null
+): Promise<GuestMatch[]> => {
+  const pass = normalizePassportKey(passport)
+  const digits = normalizePhoneKey(phone)
+  if (pass.length < 5 && digits.length < 7) return []
+  const { data } = await api.get<{ matches: GuestMatch[] }>("/guests/lookup", {
+    params: {
+      passport_number: pass.length >= 5 ? pass : undefined,
+      phone: digits.length >= 7 ? digits : undefined,
+    },
+  })
+  return Array.isArray(data?.matches) ? data.matches : []
+}
+
+export const useGuestMatches = (
+  passport: string | null | undefined,
+  phone: string | null | undefined,
+  enabled = true
+) => {
+  const key = useDebouncedValue(guestLookupKey(passport, phone), 300)
+  const [pass, digits] = key.split("|")
+  return useQuery({
+    queryKey: ["guests", "lookup", key],
+    queryFn: () => lookupGuestMatches(pass, digits),
+    enabled: enabled && key !== "|",
+    placeholderData: keepPreviousData,
+    // Eski serverda endpoint yo'q — xato ko'rsatilmaydi, shunchaki bo'sh
+    retry: false,
+  })
+}
+
 export const useGuest = (guestId?: string | null) =>
   useQuery({
     queryKey: ["guests", "detail", guestId],

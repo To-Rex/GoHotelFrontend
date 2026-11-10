@@ -206,5 +206,10 @@
   "Mehmon saqlandi, lekin hujjat surati saqlanmadi.": "The guest was saved, but the document image was not.",
   "· hujjat surati kartasiga saqlandi": "· document image saved to the card",
   "Bu mehmonning qarzlari": "This guest's debts",
-  "Yana yuklash": "Load more"
+  "Yana yuklash": "Load more",
+  "Bu mehmon bazada bor — qayta yaratish shart emas": "This guest is already in the database — no need to create them again",
+  "Bazada shunday {{count}} ta mehmon bor": "{{count}} matching guests are in the database",
+  "passport bo'yicha": "by passport",
+  "telefon bo'yicha": "by phone",
+  "Bu mehmon bazada bor edi — yangisi yaratilmadi, mavjud kartasi to'ldirildi: {{name}}": "This guest was already in the database — no new one created, the existing card was completed: {{name}}"
 }

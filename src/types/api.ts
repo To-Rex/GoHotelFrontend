@@ -3,6 +3,11 @@ export interface Guest {
   hotel_id: string;
   first_name: string;
   last_name: string;
+  /** POST /guests: passport/telefon bo'yicha MAVJUD mehmon qaytarildi
+   *  (yangisi yaratilmadi) */
+  existing?: boolean;
+  /** GET /guests/lookup: nima bo'yicha mos kelgani */
+  matched_by?: "passport" | "phone" | null;
   email?: string;
   phone?: string;
   // Backend maydon nomlari (app/application/dto/guest.py)

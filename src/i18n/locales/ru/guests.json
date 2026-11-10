@@ -215,5 +215,10 @@
   "Mehmon saqlandi, lekin hujjat surati saqlanmadi.": "Гость сохранён, но фото документа не сохранилось.",
   "· hujjat surati kartasiga saqlandi": "· фото документа сохранено в карточке",
   "Bu mehmonning qarzlari": "Долги этого гостя",
-  "Yana yuklash": "Показать ещё"
+  "Yana yuklash": "Показать ещё",
+  "Bu mehmon bazada bor — qayta yaratish shart emas": "Этот гость уже есть в базе — создавать заново не нужно",
+  "Bazada shunday {{count}} ta mehmon bor": "В базе есть таких гостей: {{count}}",
+  "passport bo'yicha": "по паспорту",
+  "telefon bo'yicha": "по телефону",
+  "Bu mehmon bazada bor edi — yangisi yaratilmadi, mavjud kartasi to'ldirildi: {{name}}": "Этот гость уже был в базе — новый не создан, дополнена существующая карточка: {{name}}"
 }

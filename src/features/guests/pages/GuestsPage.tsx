@@ -6,6 +6,7 @@ import {
   searchGuests,
   useGuestList,
   useCreateGuest,
+  useGuestMatches,
   useUpdateGuest,
   uploadGuestFile,
   GUEST_PHOTO_ACCEPT,
@@ -19,6 +20,7 @@ import {
 } from "../constants";
 import { BirthDateSelect } from "../components/BirthDateSelect";
 import { DocumentScanner, type ScannedDoc } from "../components/DocumentScanner";
+import { ExistingGuestNotice } from "../components/ExistingGuestNotice";
 import {
   guestDocumentImagesKey,
   hasScanImages,
@@ -184,8 +186,18 @@ export const GuestsPage = () => {
   const [scanBanner, setScanBanner] = useState<
     | { type: "found"; guest: Guest; imagesSaved?: boolean }
     | { type: "notfound"; doc: ScannedDoc; images?: ScanImages }
+    // Yangi mehmon yuborildi, lekin bazada bor edi — server mavjudini qaytardi
+    | { type: "existing"; guest: Guest }
     | null
   >(null);
+
+  /* Yangi mehmon formasi: passport/telefon terilishi bilan bazadagi mos
+     mehmonlar jonli ko'rsatiladi — xodim qayta yaratmasdan tanlaydi */
+  const { data: guestMatches = [] } = useGuestMatches(
+    form.passport_number,
+    form.phone,
+    modalOpen && !editing
+  );
 
   /* Surat saqlangach mehmonning suratlar ro'yxati yangilanadi */
   const storeImagesFor = async (guestId: string, images?: ScanImages | null) => {
@@ -437,6 +449,12 @@ export const GuestsPage = () => {
           address: form.address || undefined,
           hotelId: user?.hotel_id,
         } as any);
+        // Server mavjud mehmonni qaytargan bo'lsa (passport/telefon bo'yicha)
+        // — xodim buni bilsin: yangi karta ochilmadi, eskisi to'ldirildi
+        if (guest?.existing) {
+          setScanBanner({ type: "existing", guest });
+          setSearch(guest.passport_number || `${guest.first_name} ${guest.last_name}`.trim());
+        }
 
         if (photo && guest?.id) {
           try {
@@ -585,6 +603,37 @@ export const GuestsPage = () => {
           </div>
         </div>
       )}
+      {scanBanner?.type === "existing" && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5">
+          <p className="text-sm font-medium text-amber-800">
+            {tr("Bu mehmon bazada bor edi — yangisi yaratilmadi, mavjud kartasi to'ldirildi: {{name}}", {
+              name: `${scanBanner.guest.first_name} ${scanBanner.guest.last_name}`.trim(),
+            })}
+          </p>
+          <div className="flex shrink-0 gap-2">
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  openEdit(scanBanner.guest);
+                  setScanBanner(null);
+                }}
+                className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+              >
+                {tr("Ochish")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setScanBanner(null)}
+              className="rounded-md px-2 py-1.5 text-xs text-amber-700 hover:bg-amber-100"
+            >
+              {tr("Yopish")}
+            </button>
+          </div>
+        </div>
+      )}
+
       {scanBanner?.type === "notfound" && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5">
           <p className="text-sm font-medium text-amber-800">
@@ -974,6 +1023,19 @@ export const GuestsPage = () => {
               <label className="text-sm font-medium">{tr("Telefon")}</label>
               <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998..." />
             </div>
+
+            {/* Bazada shunday mehmon bor — kartasini ochish, qayta yaratmaslik */}
+            {!editing && (
+              <ExistingGuestNotice
+                matches={guestMatches}
+                selectLabel={tr("Ochish")}
+                onSelect={(g) => {
+                  setModalOpen(false);
+                  openEdit(g);
+                  setScanBanner({ type: "found", guest: g });
+                }}
+              />
+            )}
 
             <div className="space-y-1">
               <label className="text-sm font-medium">{tr("Tug'ilgan sana")}</label>
