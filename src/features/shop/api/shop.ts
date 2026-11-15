@@ -82,6 +82,8 @@ export interface ShopSalesOptions {
   status?: 'PAID' | 'PENDING';
   /** Kerak bo'lmaganda so'rov umuman yuborilmasin (masalan sana hali ma'lum emas) */
   enabled?: boolean;
+  /** Moliya filtrlari (`saleFilterParams`): to'lov turi, bron/bronsiz, summa */
+  filters?: Record<string, string | number | boolean | undefined>;
 }
 
 export const useShopProducts = (includeInactive = false) => {
@@ -140,6 +142,10 @@ export const useShopSalesPage = ({
   pageSize?: number;
 }) => {
   const params = queryParams(state, pageSize);
+  // Bo'sh filtrlar so'rov kalitida ham, parametrda ham turmaydi
+  const extra = Object.fromEntries(
+    Object.entries(opts.filters ?? {}).filter(([, v]) => v !== undefined && v !== '')
+  );
   return useQuery({
     queryKey: [
       'shopSalesPage',
@@ -148,6 +154,7 @@ export const useShopSalesPage = ({
       opts.dateBy,
       opts.status,
       params,
+      extra,
     ],
     queryFn: async () => {
       const response = await api.get<ShopSale[]>('/shop/sales', {
@@ -157,16 +164,25 @@ export const useShopSalesPage = ({
           date_by: opts.dateBy || undefined,
           status: opts.status || undefined,
           ...params,
+          ...extra,
         },
       });
       const rows = Array.isArray(response.data) ? response.data : [];
       // Sarlavha yo'q bo'lsa (eski backend yoki CORS ochmagan bo'lsa)
       // kelgan qatorlar soni ishlatiladi
       const raw = Number(response.headers?.['x-total-count']);
+      const num = (name: string) => {
+        const value = response.headers?.[name];
+        const n = value === undefined || value === null || value === '' ? NaN : Number(value);
+        return Number.isFinite(n) ? n : null;
+      };
       return {
         rows,
         total:
           Number.isFinite(raw) && raw >= 0 ? raw : params.skip + rows.length,
+        /** Filtrdan o'tgan barcha savdolar summasi va qoldig'i (eski serverda null) */
+        amount: num('x-total-amount'),
+        remaining: num('x-total-remaining'),
       };
     },
     enabled,

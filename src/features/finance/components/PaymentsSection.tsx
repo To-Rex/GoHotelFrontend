@@ -16,7 +16,7 @@ import { SortableHead, TablePager, TableSearch } from "@/components/ui/table-too
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
 import { usePermissions } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
-import { usePaymentsPage } from "../api/finance"
+import { usePaymentStaff, usePaymentsPage } from "../api/finance"
 import { paymentEditBlock, remainingEdits, type EditBlock } from "../lib/paymentEdit"
 import { usePaymentEditSettings } from "@/features/settings/api/paymentEditSettings"
 import {
@@ -32,6 +32,27 @@ import {
 } from "../lib/paymentPurpose"
 import { EditedMark, PaymentEditHistoryDialog } from "./PaymentEditHistory"
 import { PaymentMethodEditDialog } from "./PaymentMethodEditDialog"
+import {
+  AllChip,
+  AmountRange,
+  FilterChip,
+  FoundLine,
+  OptionSelect,
+  ResetFilters,
+  SortSelect,
+  ToggleFilter,
+} from "./FilterControls"
+import {
+  EMPTY_PAYMENT_FILTERS,
+  METHOD_OPTIONS,
+  PAYMENT_KIND_OPTIONS,
+  PAYMENT_SORT_OPTIONS,
+  isFilterKind,
+  paymentFilterCount,
+  paymentFilterParams,
+  toggleValue,
+  type PaymentFilters,
+} from "../lib/financeFilters"
 import {
   PAGE_SIZE,
   clampPage,
@@ -67,9 +88,19 @@ import type { PaymentRecord } from "@/types/api"
  * hisobotda bu sezilmasdi, lekin "Shu oy" yoki "Barcha davr" tanlanganda
  * jadval bir necha ming qatorga cho'zilib ketardi va sahifadan
  * foydalanib bo'lmasdi.
+ *
+ * Filtrlar (serverda — sahifalash bilan birga): "Turi" chiplari (bron /
+ * do'kon / xona / jarima / xizmat / qarz to'lovi / ortiqcha / qaytarim —
+ * bir nechtasi birga, "yoki"), to'lov turi (yoki "Naqdsiz"), qabul qilgan
+ * xodim, summa oralig'i, faqat tahrirlanganlar. Qatordagi belgi yoki
+ * xodim nomi bosilsa ham filtr qo'yiladi. "Topildi" satrida butun natija
+ * soni va summasi. Saralash: vaqt, xona, to'lov turi, xodim, raqam, summa.
  */
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
+
+/** Birinchi bosishda o'sish tartibida saralanadigan ustunlar */
+const TEXT_SORTS = new Set(["room_number", "created_by_name"])
 
 const TONE_CLASS: Record<PurposeTone, string> = {
   room: "bg-blue-50 text-blue-700 ring-blue-100",
@@ -82,34 +113,65 @@ const TONE_CLASS: Record<PurposeTone, string> = {
   other: "bg-gray-100 text-gray-600 ring-gray-200",
 }
 
-/** Haq belgilari: Xona / Jarima / Qarz to'lovi / Do'kon ... */
-function PurposeTags({ payment }: { payment: PaymentRecord }) {
+/** Belgi bosilganda "Turi" filtri (tanlangan bo'lsa — olib tashlanadi) */
+interface KindPick {
+  active: readonly string[]
+  onPick: (kind: string) => void
+}
+
+/** Haq belgilari: Xona / Jarima / Qarz to'lovi / Do'kon ... Bosilsa —
+ *  faqat shu turdagi to'lovlar (filtr). */
+function PurposeTags({ payment, pick }: { payment: PaymentRecord; pick?: KindPick }) {
   const badges = purposeBadges(payment)
   if (badges.length === 0) return null
   return (
     <>
-      {badges.map((b) => (
-        <span
-          key={b.key}
-          title={b.title}
-          className={cn(
-            "inline-flex flex-shrink-0 items-center rounded px-1.5 py-px text-[11px] font-semibold leading-4 ring-1 ring-inset",
-            TONE_CLASS[b.tone]
-          )}
-        >
-          {b.label}
-        </span>
-      ))}
+      {badges.map((b) => {
+        const className = cn(
+          "inline-flex flex-shrink-0 items-center rounded px-1.5 py-px text-[11px] font-semibold leading-4 ring-1 ring-inset",
+          TONE_CLASS[b.tone]
+        )
+        if (!pick || !isFilterKind(b.key)) {
+          return (
+            <span key={b.key} title={b.title} className={className}>
+              {b.label}
+            </span>
+          )
+        }
+        const active = pick.active.includes(b.key)
+        return (
+          <button
+            key={b.key}
+            type="button"
+            onClick={() => pick.onPick(b.key)}
+            aria-pressed={active}
+            title={[b.title, active ? tr("Filtrni olib tashlash") : tr("Faqat shu turdagi to'lovlar")]
+              .filter(Boolean)
+              .join(" — ")}
+            className={cn(className, "transition-shadow hover:ring-2", active && "ring-2 ring-gray-900/30")}
+          >
+            {b.label}
+          </button>
+        )
+      })}
     </>
   )
 }
 
 /** Birinchi satr: belgilar + sarlavha (+ bronga havola). */
-function PurposeHead({ payment, wrap = false }: { payment: PaymentRecord; wrap?: boolean }) {
+function PurposeHead({
+  payment,
+  wrap = false,
+  pick,
+}: {
+  payment: PaymentRecord
+  wrap?: boolean
+  pick?: KindPick
+}) {
   const link = bookingLink(payment)
   return (
     <div className={cn("flex min-w-0 items-center gap-1.5", wrap ? "flex-wrap gap-y-1" : "overflow-hidden")}>
-      <PurposeTags payment={payment} />
+      <PurposeTags payment={payment} pick={pick} />
       {/* Sarlavha va havola bitta guruh — mobilda qatorga sig'masa
           birga ko'chadi */}
       <span className="inline-flex min-w-0 items-center gap-1">
@@ -131,11 +193,11 @@ function PurposeHead({ payment, wrap = false }: { payment: PaymentRecord; wrap?:
 }
 
 /** Nima uchun (jadval): sarlavha, ostida xira satr — to'lig'i ustiga borganda. */
-function PurposeCell({ payment }: { payment: PaymentRecord }) {
+function PurposeCell({ payment, pick }: { payment: PaymentRecord; pick?: KindPick }) {
   const sub = purposeSubline(payment)
   return (
     <div className="min-w-0">
-      <PurposeHead payment={payment} />
+      <PurposeHead payment={payment} pick={pick} />
       {sub && (
         <p className="truncate text-[11px] leading-4 text-gray-500" title={sub}>
           {sub}
@@ -220,6 +282,36 @@ export function PaymentsSection({
   // Standart tartib — qabul qilingan vaqt bo'yicha (eng yangisi tepada)
   const [state, setState] = useState(() => initialTableState("created_at"))
 
+  /* Filtrlar davr almashganda turadi; o'zgarsa — birinchi sahifa */
+  const [filters, setFiltersState] = useState<PaymentFilters>(EMPTY_PAYMENT_FILTERS)
+  const setFilters = (update: (f: PaymentFilters) => PaymentFilters) => {
+    setFiltersState(update)
+    setState((s) => (s.page === 0 ? s : { ...s, page: 0 }))
+  }
+  const resetFilters = () => {
+    setFiltersState(EMPTY_PAYMENT_FILTERS)
+    setState((s) => setSearch(s, ""))
+  }
+  const filterCount = paymentFilterCount(filters) + (state.search.trim() ? 1 : 0)
+  const filtering = filterCount > 0
+  const pickKind = (kind: string) => setFilters((f) => ({ ...f, kinds: toggleValue(f.kinds, kind) }))
+  const kindPick: KindPick = { active: filters.kinds, onPick: pickKind }
+  const toggleUser = (id?: string | null) => {
+    if (!id) return
+    setFilters((f) => ({ ...f, user: f.user === id ? null : id }))
+  }
+
+  // Davrda pul qabul qilgan xodimlar — filtr tanlagichi uchun
+  const { data: staff = [] } = usePaymentStaff(dateFrom, dateTo, true)
+  const staffOptions = staff.map((u) => ({
+    value: u.id,
+    label: `${u.name || tr("Noma'lum")} (${u.count})`,
+  }))
+  // Tanlangan xodim bu davrda to'lov olmagan bo'lsa ham ro'yxatda tursin
+  if (filters.user && !staffOptions.some((o) => o.value === filters.user)) {
+    staffOptions.push({ value: filters.user, label: tr("Tanlangan xodim (0)") })
+  }
+
   // To'lov turini tahrirlash: admin cheklovsiz, menejer faqat oxirgi
   // 2 kunlik to'lovlarda; qabulxona — mehmonxona sozlamasi yoqilgan
   // bo'lsa, o'sha oyna va bitta to'lovga chegara (server ham xuddi shunday
@@ -285,6 +377,7 @@ export function PaymentsSection({
     dateTo,
     state,
     includeShop: true,
+    filters: paymentFilterParams(filters),
   })
 
   const rows = data?.rows ?? []
@@ -301,7 +394,9 @@ export function PaymentsSection({
   }, [total])
 
   const pages = pageCount(total)
-  const sort = (column: string) => setState((s) => toggleSort(s, column))
+  // Matnli ustunlar (xona, xodim) birinchi bosishda A dan Z gacha
+  const sort = (column: string) =>
+    setState((s) => toggleSort(s, column, TEXT_SORTS.has(column) ? "asc" : "desc"))
 
   // Bir xil sahifalagich ikki joyda: jadval ostida (desktop) va ro'yxat
   // ostida (mobil) — ikkalasi bir xil holatni boshqaradi
@@ -317,9 +412,31 @@ export function PaymentsSection({
     />
   )
 
-  const emptyText = state.search
-    ? tr("Qidiruv bo'yicha to'lov topilmadi")
+  const emptyText = filtering
+    ? tr("Filtr bo'yicha to'lov topilmadi")
     : tr("Tanlangan davrda to'lovlar yo'q")
+
+  /* Qabul qilgan xodim — bosilsa faqat shu xodim olgan to'lovlar */
+  const staffButton = (p: PaymentRecord, className?: string) => {
+    if (!p.created_by_name) return <span className={className}>-</span>
+    if (!p.created_by) return <span className={className}>{p.created_by_name}</span>
+    const active = filters.user === p.created_by
+    return (
+      <button
+        type="button"
+        onClick={() => toggleUser(p.created_by)}
+        aria-pressed={active}
+        title={active ? tr("Filtrni olib tashlash") : tr("Faqat shu xodim qabul qilganlari")}
+        className={cn(
+          "block max-w-full truncate rounded px-1 -mx-1 text-left transition-colors hover:bg-gray-100 hover:text-gray-900",
+          active && "bg-primary-50 text-primary-800 ring-1 ring-primary-200",
+          className
+        )}
+      >
+        {p.created_by_name}
+      </button>
+    )
+  }
 
   const rowKey = (p: PaymentRecord) => `${p.source || "RESERVATION"}-${p.id}`
 
@@ -337,6 +454,74 @@ export function PaymentsSection({
           onChange={(value) => setState((s) => setSearch(s, value))}
           placeholder={tr("Raqam, xona, mehmon, mahsulot yoki izoh...")}
         />
+      </div>
+
+      {/* FILTRLAR. "Turi" — bir nechtasi birga ("yoki"): masalan Do'kon +
+          Jarima. Qolganlari "va": tur + xodim + summa birga toraytiradi */}
+      <div className="space-y-2 rounded-xl border bg-gray-50/60 p-2.5">
+        {/* Chiplar har doim ko'rinsin (mobilda ham qatorga o'raladi) — tanlangan
+            tur ekrandan tashqarida qolib ketmasin */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-0.5 flex-shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            {tr("Turi")}
+          </span>
+          <AllChip
+            active={filters.kinds.length === 0}
+            onClick={() => setFilters((f) => ({ ...f, kinds: [] }))}
+          />
+          {PAYMENT_KIND_OPTIONS.map((k, i) => (
+            <span key={k.value} className="contents">
+              {/* Manba (bron / do'kon) va haq turlari orasida ajratgich */}
+              {i === 2 && <span className="mx-0.5 hidden h-4 w-px flex-shrink-0 bg-gray-200 sm:block" aria-hidden />}
+              <FilterChip
+                tone={k.tone}
+                active={filters.kinds.includes(k.value)}
+                onClick={() => pickKind(k.value)}
+              >
+                {k.label}
+              </FilterChip>
+            </span>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <OptionSelect
+            label={tr("To'lov turi")}
+            allLabel={tr("Barcha to'lov turlari")}
+            options={METHOD_OPTIONS}
+            value={filters.method ?? ""}
+            onChange={(v) => setFilters((f) => ({ ...f, method: v || null }))}
+          />
+          {staffOptions.length > 0 && (
+            <OptionSelect
+              label={tr("Qabul qildi")}
+              allLabel={tr("Barcha xodimlar")}
+              options={staffOptions}
+              value={filters.user ?? ""}
+              onChange={(v) => setFilters((f) => ({ ...f, user: v || null }))}
+            />
+          )}
+          <AmountRange
+            min={filters.minAmount}
+            max={filters.maxAmount}
+            onChange={({ min, max }) => setFilters((f) => ({ ...f, minAmount: min, maxAmount: max }))}
+          />
+          <ToggleFilter
+            checked={filters.edited}
+            onChange={(edited) => setFilters((f) => ({ ...f, edited }))}
+          >
+            {tr("Tahrirlanganlar")}
+          </ToggleFilter>
+          <SortSelect
+            sortBy={state.sortBy}
+            sortDir={state.sortDir}
+            options={PAYMENT_SORT_OPTIONS}
+            onChange={({ sortBy, sortDir }) => setState((s) => ({ ...s, sortBy, sortDir, page: 0 }))}
+          />
+          <ResetFilters count={filterCount} onReset={resetFilters} />
+        </div>
+        {filtering && !isLoading && (
+          <FoundLine count={total} amount={data?.amount} busy={isFetching} />
+        )}
       </div>
 
       {isLoading ? (
@@ -359,7 +544,7 @@ export function PaymentsSection({
                     <li key={rowKey(p)} className="px-3 py-2">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <PurposeHead payment={p} wrap />
+                          <PurposeHead payment={p} wrap pick={kindPick} />
                           {sub && (
                             <p className="mt-0.5 text-[11px] leading-4 text-gray-500">{sub}</p>
                           )}
@@ -380,7 +565,7 @@ export function PaymentsSection({
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-4 text-gray-500">
                           <MethodPill method={p.payment_method} />
                           <EditedMark payment={p} onOpen={() => setHistoryTarget(p)} />
-                          {p.created_by_name && <span>{p.created_by_name}</span>}
+                          {p.created_by_name && staffButton(p)}
                           {p.payment_number && (
                             <span className="tabular-nums text-gray-400">{p.payment_number}</span>
                           )}
@@ -408,7 +593,16 @@ export function PaymentsSection({
                   >
                     {tr("Vaqt")}
                   </SortableHead>
-                  <TableHead className="w-full">{tr("Nima uchun")}</TableHead>
+                  {/* "Nima uchun" — xona raqami bo'yicha saralanadi */}
+                  <SortableHead
+                    column="room_number"
+                    active={state.sortBy}
+                    dir={state.sortDir}
+                    onSort={sort}
+                    className="w-full"
+                  >
+                    {tr("Nima uchun")}
+                  </SortableHead>
                   <SortableHead
                     column="payment_method"
                     active={state.sortBy}
@@ -417,7 +611,14 @@ export function PaymentsSection({
                   >
                     {tr("To'lov turi")}
                   </SortableHead>
-                  <TableHead>{tr("Qabul qildi")}</TableHead>
+                  <SortableHead
+                    column="created_by_name"
+                    active={state.sortBy}
+                    dir={state.sortDir}
+                    onSort={sort}
+                  >
+                    {tr("Qabul qildi")}
+                  </SortableHead>
                   {/* Tor planshetda raqam alohida ustun emas — xodim nomi
                       ostida; aks holda Summa ustuni ekrandan chiqib ketardi */}
                   <SortableHead
@@ -459,7 +660,7 @@ export function PaymentsSection({
                           planshetda ustun yo'qolib ketmasin (jadval
                           gorizontal aylanadi) */}
                       <TableCell className="w-full min-w-[200px] max-w-0 py-1.5 lg:min-w-[260px]">
-                        <PurposeCell payment={p} />
+                        <PurposeCell payment={p} pick={kindPick} />
                       </TableCell>
                       <TableCell className="py-1.5">
                         <div className="flex flex-col items-start gap-0.5">
@@ -471,7 +672,7 @@ export function PaymentsSection({
                         className="max-w-[110px] truncate py-1.5 text-[13px] leading-5 text-gray-600 lg:max-w-[150px]"
                         title={p.created_by_name || undefined}
                       >
-                        {p.created_by_name || "-"}
+                        {staffButton(p)}
                         {p.payment_number && (
                           <p className="truncate text-[10px] leading-4 tabular-nums text-gray-400 lg:hidden">
                             {p.payment_number}

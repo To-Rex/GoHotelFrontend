@@ -138,7 +138,8 @@ export interface ViewOptions<T> {
 const isEmpty = (value: unknown) =>
   value === null || value === undefined || value === ""
 
-function compare(a: unknown, b: unknown): number {
+/** Ikki qiymatni solishtirish: sonlar — son bo'yicha, qolgani o'zbekcha alifbo */
+export function compare(a: unknown, b: unknown): number {
   if (typeof a === "number" && typeof b === "number") return a - b
   return String(a).localeCompare(String(b), "uz")
 }

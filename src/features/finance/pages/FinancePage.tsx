@@ -13,6 +13,9 @@ import {
   Banknote,
   Undo2,
   Gavel,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
 } from "lucide-react"
 import { useFinanceSummary } from "../api/finance"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
@@ -26,6 +29,8 @@ import { ShopSection } from "../components/ShopSection"
 import { PenaltiesSection } from "../components/PenaltiesSection"
 import { CashNowCard } from "@/features/shifts/components/CashNowCard"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
+import type { SortDir } from "@/lib/tableState"
+import { sortMethodRows } from "../lib/financeFilters"
 import { tr } from "@/i18n"
 
 /**
@@ -95,6 +100,41 @@ const SECTIONS = [
 ] as const
 
 type SectionKey = (typeof SECTIONS)[number]["key"]
+
+/** "To'lov usullari bo'yicha" jadvali sarlavhasi — bosilsa saralanadi.
+ *  Uchinchi bosishda tanish tartibga (naqd, karta, ...) qaytadi. */
+function MethodHead({
+  column,
+  sort,
+  onSort,
+  align = "right",
+  children,
+}: {
+  column: string
+  sort: { by: string; dir: SortDir }
+  onSort: (column: string) => void
+  align?: "left" | "right"
+  children: React.ReactNode
+}) {
+  const active = sort.by === column
+  const Icon = !active ? ChevronsUpDown : sort.dir === "asc" ? ChevronUp : ChevronDown
+  return (
+    <th className={cn("px-4 py-2", align === "right" && "text-right")}>
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
+        className={cn(
+          "inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider transition-colors hover:text-primary-700",
+          active ? "text-primary-700" : "text-gray-400"
+        )}
+      >
+        {children}
+        <Icon className={cn("h-3 w-3", active ? "opacity-100" : "opacity-40")} />
+      </button>
+    </th>
+  )
+}
 
 /**
  * Bo'lim menyusi: keng ekranda chapda ustun, tor ekranda tepada qator.
@@ -172,6 +212,15 @@ export const FinancePage = () => {
   const [custom, setCustom] = useState({ from: todayStr, to: todayStr })
   const [statusFilter, setStatusFilter] = useState("")
   const [section, setSection] = useState<SectionKey>("overview")
+  // Usullar jadvali tartibi: bo'sh — tanish tartib (naqd, karta, online, ...)
+  const [methodSort, setMethodSort] = useState<{ by: string; dir: SortDir }>({ by: "", dir: "desc" })
+  const sortMethods = (column: string) =>
+    setMethodSort((s) => {
+      if (s.by !== column) return { by: column, dir: column === "label" ? "asc" : "desc" }
+      const first: SortDir = column === "label" ? "asc" : "desc"
+      // Ikkinchi bosish — teskari, uchinchisi — tanish tartib
+      return s.dir === first ? { by: column, dir: first === "asc" ? "desc" : "asc" } : { by: "", dir: "desc" }
+    })
 
   // Tez tanlovlar: bugungi/kechagi kun, 7 kun, shu oy, barcha davr.
   // Kun almashsa sanalar ham yangilanadi.
@@ -254,6 +303,11 @@ export const FinancePage = () => {
   // Kassadagi naqd: tushum (to'lovlar + do'kon), xarajat va qoldiq. Kartada
   // qoldiq bilan birga xarajat ayirilmagan tushum ham ko'rinadi — kassir
   // kun davomida qancha naqd qabul qilgani alohida savol
+  const sortedMethodRows = useMemo(
+    () => sortMethodRows(methodRows, methodSort.by, methodSort.dir),
+    [methodRows, methodSort]
+  )
+
   const cash = useMemo(() => {
     const row = methodRows.find((r) => r.key === "CASH")
     return { income: row?.income ?? 0, expense: row?.expense ?? 0, net: row?.net ?? 0 }
@@ -601,24 +655,24 @@ export const FinancePage = () => {
                   <table className="w-full min-w-[600px] text-sm">
                     <thead>
                       <tr className="border-b bg-gray-50/80 text-left">
-                        <th className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        <MethodHead column="label" sort={methodSort} onSort={sortMethods} align="left">
                           {tr("Usul")}
-                        </th>
-                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        </MethodHead>
+                        <MethodHead column="pay" sort={methodSort} onSort={sortMethods}>
                           {tr("Bron to'lovlari")}
-                        </th>
-                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        </MethodHead>
+                        <MethodHead column="shop" sort={methodSort} onSort={sortMethods}>
                           {tr("Do'kon")}
-                        </th>
-                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        </MethodHead>
+                        <MethodHead column="income" sort={methodSort} onSort={sortMethods}>
                           {tr("Jami tushum")}
-                        </th>
-                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        </MethodHead>
+                        <MethodHead column="expense" sort={methodSort} onSort={sortMethods}>
                           {tr("Xarajat")}
-                        </th>
-                        <th className="px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        </MethodHead>
+                        <MethodHead column="net" sort={methodSort} onSort={sortMethods}>
                           {tr("Sof")}
-                        </th>
+                        </MethodHead>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -632,7 +686,7 @@ export const FinancePage = () => {
                           </td>
                         </tr>
                       ) : (
-                        methodRows.map((row) => (
+                        sortedMethodRows.map((row) => (
                           <tr key={row.key}>
                             <td className="px-4 py-2 font-medium text-gray-800">
                               {row.label}

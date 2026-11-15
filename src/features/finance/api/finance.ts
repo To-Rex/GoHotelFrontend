@@ -48,6 +48,22 @@ export interface Page<T> {
   rows: T[];
   /** Serverdagi jami qatorlar — sarlavhadan olinadi */
   total: number;
+  /** Filtrdan o'tgan BARCHA qatorlar summasi (`X-Total-Amount`); eski
+   *  server yubormasa — null (ekranda ko'rsatilmaydi) */
+  amount: number | null;
+  /** Hisob-fakturalar: qoldiq yig'indisi (`X-Total-Remaining`) */
+  remaining: number | null;
+}
+
+/** Sarlavhadagi son; yo'q yoki buzuq bo'lsa null */
+export function headerNumber(
+  headers: AxiosResponse['headers'] | undefined,
+  name: string
+): number | null {
+  const value = headers?.[name];
+  if (value === undefined || value === null || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
@@ -64,7 +80,16 @@ function pageOf<T>(response: AxiosResponse<T[]>, skip: number): Page<T> {
   return {
     rows,
     total: Number.isFinite(raw) && raw >= 0 ? raw : skip + rows.length,
+    amount: headerNumber(response.headers, 'x-total-amount'),
+    remaining: headerNumber(response.headers, 'x-total-remaining'),
   };
+}
+
+/** Bo'sh qiymatlar so'rov kalitida ham, parametrda ham turmasin */
+function compact<T extends Record<string, unknown>>(params: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  ) as Partial<T>;
 }
 
 interface PagedOptions {
@@ -79,6 +104,8 @@ interface PagedOptions {
 interface PaymentsPageOptions extends PagedOptions {
   /** Do'kon to'lovlari ham ro'yxatda (mahsulotlari bilan) — Moliya → To'lovlar */
   includeShop?: boolean;
+  /** Filtrlar — `paymentFilterParams` (turi, to'lov turi, xodim, summa, tahrir) */
+  filters?: Record<string, string | number | boolean | undefined>;
 }
 
 /**
@@ -95,10 +122,12 @@ export const usePaymentsPage = ({
   pageSize = PAGE_SIZE,
   enabled = true,
   includeShop = false,
+  filters,
 }: PaymentsPageOptions) => {
   const params = queryParams(state, pageSize);
+  const extra = compact(filters ?? {});
   return useQuery({
-    queryKey: ['paymentsPage', dateFrom, dateTo, params, includeShop],
+    queryKey: ['paymentsPage', dateFrom, dateTo, params, includeShop, extra],
     queryFn: async () => {
       const response = await api.get<PaymentRecord[]>('/finance/payments', {
         params: {
@@ -106,6 +135,7 @@ export const usePaymentsPage = ({
           date_to: dateTo || undefined,
           include_shop: includeShop || undefined,
           ...params,
+          ...extra,
         },
       });
       return pageOf(response, params.skip);
@@ -114,6 +144,37 @@ export const usePaymentsPage = ({
     placeholderData: keepPreviousData,
   });
 };
+
+/** Davrda pul qabul qilgan xodim — To'lovlar filtri ro'yxati uchun */
+export interface PaymentStaff {
+  id: string;
+  name: string | null;
+  count: number;
+  total: number;
+}
+
+/** Davrda pul qabul qilgan xodimlar (ism bo'yicha). Eski server bu
+ *  endpointni bilmasa — bo'sh ro'yxat: filtr tanlagichi ko'rinmaydi. */
+export const usePaymentStaff = (dateFrom?: string, dateTo?: string, includeShop = true) =>
+  useQuery({
+    queryKey: ['paymentStaff', dateFrom, dateTo, includeShop],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get<PaymentStaff[]>('/finance/payments/staff', {
+          params: {
+            date_from: dateFrom || undefined,
+            date_to: dateTo || undefined,
+            include_shop: includeShop || undefined,
+          },
+        });
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [] as PaymentStaff[];
+      }
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
 
 /** To'lov TURINI tahrirlash (summa tegilmaydi).
  *
@@ -146,6 +207,7 @@ export const useUpdatePaymentMethod = () => {
       for (const queryKey of [
         ['payments'],
         ['paymentsPage'],
+        ['paymentStaff'],
         ['invoices'],
         ['invoicesPage'],
         ['financeSummary'],
@@ -167,10 +229,16 @@ export const useInvoicesPage = ({
   state,
   pageSize = PAGE_SIZE,
   enabled = true,
-}: PagedOptions & { status?: string }) => {
+  filters,
+}: PagedOptions & {
+  status?: string;
+  /** `invoiceFilterParams` — qarzi bor, chegirmali, summa oralig'i */
+  filters?: Record<string, string | number | boolean | undefined>;
+}) => {
   const params = queryParams(state, pageSize);
+  const extra = compact(filters ?? {});
   return useQuery({
-    queryKey: ['invoicesPage', status, dateFrom, dateTo, params],
+    queryKey: ['invoicesPage', status, dateFrom, dateTo, params, extra],
     queryFn: async () => {
       const response = await api.get<Invoice[]>('/finance/invoices', {
         params: {
@@ -178,6 +246,7 @@ export const useInvoicesPage = ({
           date_from: dateFrom || undefined,
           date_to: dateTo || undefined,
           ...params,
+          ...extra,
         },
       });
       return pageOf(response, params.skip);

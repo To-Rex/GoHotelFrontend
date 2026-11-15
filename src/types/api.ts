@@ -428,7 +428,8 @@ export interface PaymentRecord {
   parts?: PaymentPurposePart[] | null;
   /** Qarz to'lovi — mehmon chiqib ketgandan keyingi kunlarda olingan */
   after_checkout?: boolean | null;
-  /** Pulni qabul qilgan xodim */
+  /** Pulni qabul qilgan xodim (id — filtr uchun; eski serverda yo'q) */
+  created_by?: string | null;
   created_by_name?: string | null;
   reservation_id?: string | null;
   reservation_number?: string | null;
@@ -463,6 +464,10 @@ export interface Invoice {
   notes?: string;
   created_at: string;
   updated_at: string;
+  /** Qaysi bron / mehmon / xona (ro'yxatda; eski serverda yo'q) */
+  reservation_number?: string | null;
+  guest_name?: string | null;
+  room_number?: string | null;
 }
 
 // --- Talab, taklif va shikoyatlar (GET /feedback/) ---
