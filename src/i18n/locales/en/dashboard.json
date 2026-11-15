@@ -54,5 +54,20 @@
   "{{shopTodayRevenue}} So'm": "{{shopTodayRevenue}} UZS",
   "{{v}}M": "{{v}}M",
   "{{v}}K": "{{v}}K",
-  "Qarzdorlar — undirilishi kerak": "Debtors — to be collected"
+  "Qarzdorlar — undirilishi kerak": "Debtors — to be collected",
+  "Hali ochiq": "Still open",
+  "Tozalash hisoboti": "Cleaning report",
+  "Davr": "Period",
+  "Bu davrda mehmon chiqmagan — solishtirish uchun ma'lumot yo'q": "No check-outs in this period — nothing to compare",
+  "Farrosh tasdiqlagan tozalashlar": "Cleanings confirmed by housekeeping",
+  "{{checkouts}} ta chiqishdan {{cleaned}} tasini farrosh o'zi tozalab yakunlagan.": "Of {{checkouts}} check-outs, housekeeping completed the cleaning of {{cleaned}} themselves.",
+  "{{count}} tasi vaqt o'tgani uchun avtomatik yopilgan — tozalanganini hech kim tasdiqlamagan.": "{{count}} were closed automatically after the time limit — nobody confirmed the cleaning.",
+  "{{count}} ta chiqishda tozalash vazifasi umuman ochilmagan.": "{{count}} check-outs never got a cleaning task.",
+  "O'rtacha vaqt": "Average time",
+  "Kutish": "Waiting",
+  "Farroshlar": "Housekeepers",
+  "Vazifalar farroshga biriktirilmagan": "Tasks are not assigned to housekeepers",
+  "Hammasi joyida": "All good",
+  "vazifasiz: {{n}}": "no task: {{n}}",
+  "avto: {{n}}": "auto: {{n}}"
 }

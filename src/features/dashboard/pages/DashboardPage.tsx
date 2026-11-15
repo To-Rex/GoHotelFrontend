@@ -39,6 +39,7 @@ import { useExpenses } from "@/features/expenses/api/expenses"
 import { saleRemaining, useShopSales } from "@/features/shop/api/shop"
 import { DebtorsPanel } from "@/features/finance/components/DebtorsPanel"
 import { useHousekeepingTasks } from "@/features/housekeeping/api/housekeeping"
+import { CleaningReportCard } from "../components/CleaningReportCard"
 import { useShiftSettings, useShiftHistory } from "@/features/shifts/api/shifts"
 import { useEmployees } from "@/features/employees/api/employees"
 import { useAuthStore } from "@/store/auth"
@@ -923,6 +924,10 @@ export const DashboardPage = () => {
           </div>
         </div>
       )}
+
+      {/* TOZALASH HISOBOTI — chiqishlar va tozalashlar solishtiruvi
+          (Xo'jalik ishlaridagi hisobotning qisqasi, "Batafsil" — to'liq) */}
+      <CleaningReportCard delay={200} />
 
       {/* Bugungi kirish/chiqishlar, so'nggi bandlovlar va xo'jalik — wrap uslubida */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">

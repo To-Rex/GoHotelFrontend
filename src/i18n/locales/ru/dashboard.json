@@ -58,5 +58,20 @@
   "{{shopTodayRevenue}} So'm": "{{shopTodayRevenue}} сум",
   "{{v}}M": "{{v}} млн",
   "{{v}}K": "{{v}} тыс.",
-  "Qarzdorlar — undirilishi kerak": "Должники — нужно взыскать"
+  "Qarzdorlar — undirilishi kerak": "Должники — нужно взыскать",
+  "Hali ochiq": "Ещё открыто",
+  "Tozalash hisoboti": "Отчёт по уборке",
+  "Davr": "Период",
+  "Bu davrda mehmon chiqmagan — solishtirish uchun ma'lumot yo'q": "За этот период выездов не было — сравнивать нечего",
+  "Farrosh tasdiqlagan tozalashlar": "Уборки, подтверждённые горничной",
+  "{{checkouts}} ta chiqishdan {{cleaned}} tasini farrosh o'zi tozalab yakunlagan.": "Из {{checkouts}} выездов горничная сама завершила уборку в {{cleaned}}.",
+  "{{count}} tasi vaqt o'tgani uchun avtomatik yopilgan — tozalanganini hech kim tasdiqlamagan.": "{{count}} закрыты автоматически по истечении времени — уборку никто не подтвердил.",
+  "{{count}} ta chiqishda tozalash vazifasi umuman ochilmagan.": "Для {{count}} выездов задача уборки не создавалась вовсе.",
+  "O'rtacha vaqt": "Среднее время",
+  "Kutish": "Ожидание",
+  "Farroshlar": "Горничные",
+  "Vazifalar farroshga biriktirilmagan": "Задачи не назначены горничным",
+  "Hammasi joyida": "Всё в порядке",
+  "vazifasiz: {{n}}": "без задачи: {{n}}",
+  "avto: {{n}}": "авто: {{n}}"
 }

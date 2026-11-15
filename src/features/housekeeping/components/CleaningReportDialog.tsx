@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useEffect, useMemo, useState } from "react"
 import {
   AlertTriangle,
   BedDouble,
@@ -20,11 +19,11 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { api } from "@/lib/api"
 import { apiErrorMessage } from "@/lib/apiError"
 import { buildDatePresets } from "@/lib/datePresets"
 import { cn } from "@/lib/utils"
 import { tr } from "@/i18n"
+import { formatMinutes as minutes, useCleaningReport } from "../api/cleaningReport"
 
 /**
  * Chiqishlar va tozalashlarni solishtirish.
@@ -38,73 +37,29 @@ import { tr } from "@/i18n"
  * "tozalandi" deb belgilangan-u, buni hech kim tasdiqlamagan.
  */
 
-interface CleanerRow {
-  user_id: string | null
-  name: string | null
-  total: number
-  by_person: number
-  auto: number
-  avg_minutes: number | null
-}
-
-interface RoomRow {
-  room_number: string
-  checkouts: number
-  auto: number
-  no_task: number
-  avg_minutes: number | null
-}
-
-interface CleaningReport {
-  date_from: string
-  date_to: string
-  summary: {
-    checkouts: number
-    with_task: number
-    cleaned_by_person: number
-    auto_closed: number
-    still_open: number
-    cancelled: number
-    no_task: number
-    avg_wait_minutes: number | null
-    avg_work_minutes: number | null
-    verified_percent: number | null
-  }
-  cleaners: CleanerRow[]
-  rooms: RoomRow[]
-}
-
-const minutes = (v: number | null): string => {
-  if (v === null || v === undefined) return "—"
-  if (v < 60) return tr("{{v}} daq", { v })
-  const h = Math.floor(v / 60)
-  const m = Math.round(v % 60)
-  return m ? tr("{{h}} soat {{m}} daq", { h, m }) : tr("{{h}} soat", { h })
-}
-
 interface Props {
   open: boolean
   onOpenChange: (v: boolean) => void
+  /** Ochilganda shu davr tanlanadi (Boshqaruv kartasidan "Batafsil") */
+  initialFrom?: string
+  initialTo?: string
 }
 
-export function CleaningReportDialog({ open, onOpenChange }: Props) {
+export function CleaningReportDialog({ open, onOpenChange, initialFrom, initialTo }: Props) {
   const presets = useMemo(() => buildDatePresets(new Date()), [])
   // Standart — shu oy: bir kunlik ma'lumot xulosa chiqarish uchun kam
   const monthPreset = presets.find((p) => p.key === "month")
-  const [from, setFrom] = useState(monthPreset?.from || "")
-  const [to, setTo] = useState(monthPreset?.to || "")
+  const [from, setFrom] = useState(initialFrom || monthPreset?.from || "")
+  const [to, setTo] = useState(initialTo || monthPreset?.to || "")
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["cleaningReport", from, to],
-    enabled: open && !!from && !!to,
-    queryFn: async () => {
-      const { data } = await api.get<CleaningReport>(
-        "/housekeeping/cleaning-report",
-        { params: { date_from: from, date_to: to } }
-      )
-      return data
-    },
-  })
+  // Kartadan ochilganda — kartadagi davr
+  useEffect(() => {
+    if (!open || !initialFrom || !initialTo) return
+    setFrom(initialFrom)
+    setTo(initialTo)
+  }, [open, initialFrom, initialTo])
+
+  const { data, isLoading, error } = useCleaningReport(from, to, open)
 
   const s = data?.summary
 
