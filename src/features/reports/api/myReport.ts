@@ -134,6 +134,9 @@ export interface MyReportSummary {
   }
   /** Kassaga tushgan sof naqd: naqd to'lovlar + do'kon naqdi − naqd xarajatlar */
   net_cash: number
+  /** Soat bilan torayttirilgan bo'lsa "HH:MM" (eski serverda kelmaydi) */
+  time_from?: string | null
+  time_to?: string | null
   /** Kimning hisoboti (eski serverda kelmaydi) */
   user?: ReportUserBrief
   /** So'rovchining o'z hisoboti */
@@ -156,16 +159,28 @@ export interface ReportUserBrief {
  * faqat administrator va menejer (server tekshiradi, 403
  * STAFF_REPORT_FORBIDDEN); xodim shu mehmonxonadan bo'lishi kerak.
  */
-export const useMyReport = (dateFrom: string, dateTo: string, userId?: string | null) =>
+export const useMyReport = (
+  dateFrom: string,
+  dateTo: string,
+  userId?: string | null,
+  /** Ixtiyoriy soatlar ("HH:MM") — davrni toraytiradi (lib/reportTime) */
+  hours?: { timeFrom?: string; timeTo?: string; enabled?: boolean }
+) =>
   useQuery({
-    queryKey: ["myReport", dateFrom, dateTo, userId || ""],
+    queryKey: ["myReport", dateFrom, dateTo, userId || "", hours?.timeFrom || "", hours?.timeTo || ""],
     queryFn: async () => {
       const { data } = await api.get<MyReportSummary>("/reports/my-summary", {
-        params: { date_from: dateFrom, date_to: dateTo, user_id: userId || undefined },
+        params: {
+          date_from: dateFrom,
+          date_to: dateTo,
+          user_id: userId || undefined,
+          time_from: hours?.timeFrom || undefined,
+          time_to: hours?.timeTo || undefined,
+        },
       })
       return data
     },
-    enabled: Boolean(dateFrom && dateTo),
+    enabled: Boolean(dateFrom && dateTo) && hours?.enabled !== false,
   })
 
 /**
