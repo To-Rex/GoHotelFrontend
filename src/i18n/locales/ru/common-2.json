@@ -243,5 +243,7 @@
   "Boshlanish kunini tanlang": "Выберите день начала",
   "Tugash kunini tanlang": "Выберите день окончания",
   "Qo'llash": "Применить",
-  "Oxirgi 30 kun": "Последние 30 дней"
+  "Oxirgi 30 kun": "Последние 30 дней",
+  "Soatni tozalash": "Очистить время",
+  "ertasi kun: {{date}}": "следующий день: {{date}}"
 }

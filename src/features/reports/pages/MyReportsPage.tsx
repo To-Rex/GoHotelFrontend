@@ -12,8 +12,6 @@ import {
   AlertCircle,
   LayoutDashboard,
   Users,
-  Clock,
-  X,
 } from "lucide-react"
 import { useShopSales, type ShopSale } from "@/features/shop/api/shop"
 import { DebtorsPanel } from "@/features/finance/components/DebtorsPanel"
@@ -52,7 +50,7 @@ import { cn } from "@/lib/utils"
 import { buildDatePresets, resolveDateRange } from "@/lib/datePresets"
 import { usePermissions } from "@/lib/permissions"
 import { effectivePresetKey, visiblePresets } from "../lib/reportPeriod"
-import { HOUR_PRESETS, EMPTY_HOURS, hasHours, inWindow, resolveReportWindow, type ReportHours } from "../lib/reportTime"
+import { HOUR_PRESETS, EMPTY_HOURS, inWindow, resolveReportWindow, type ReportHours } from "../lib/reportTime"
 import { HOTEL_UTC_OFFSET_MINUTES } from "@/lib/hotelTime"
 import { tr } from "@/i18n"
 
@@ -289,20 +287,15 @@ export const MyReportsPage = () => {
     custom
   )
 
-  /* Ixtiyoriy SOAT: davr ichida "dan / gacha" (masalan smena 08:00–20:00).
-     Bitta kunda "gacha" "dan"dan kichik bo'lsa — tungi smena, tugash ertasi
-     kunga o'tadi (lib/reportTime). Bo'sh — butun kun, avvalgidek. */
+  /* Ixtiyoriy SOAT: kalendar menyusida "Sanadan / Sanagacha" ichida
+     (masalan smena 08:00–20:00). Bitta kunda "gacha" "dan"dan kichik
+     bo'lsa — tungi smena, tugash ertasi kunga o'tadi (lib/reportTime).
+     Bo'sh — butun kun, avvalgidek. */
   const [hours, setHours] = useState<ReportHours>(EMPTY_HOURS)
-  const [hoursOpen, setHoursOpen] = useState(false)
-  const timed = hasHours(hours)
   const reportWindow = useMemo(
     () => resolveReportWindow(dateFrom, dateTo, hours),
     [dateFrom, dateTo, hours]
   )
-  const clearHours = () => {
-    setHours(EMPTY_HOURS)
-    setHoursOpen(false)
-  }
 
   const selectPreset = (p: { key: string; from: string; to: string }) => {
     setPresetKey(p.key)
@@ -586,9 +579,9 @@ export const MyReportsPage = () => {
         )}
       </div>
 
-      {/* Davr tanlash: tez tugmalar + "dan / gacha" sanalar.
+      {/* Davr tanlash: tez tugmalar + kalendar (sana va ixtiyoriy soat).
           Qabulxona va boshqa xodimlarga faqat "Bugun" va "Kecha" ko'rinadi;
-          sana maydonlari — administrator va menejerga. */}
+          kalendardan sana tanlash — administrator va menejerga, soat — hammaga. */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-wrap gap-1.5">
           {presets.map((p) => (
@@ -610,107 +603,21 @@ export const MyReportsPage = () => {
         </div>
         {/* Bitta kalendar — moliya sahifasidagi bilan bir xil: oraliq ikki
             bosishda, tez tugmalar ichida, aniq sana qo'lda pastdagi maydonlarda */}
-        {fullRangeAccess && (
-          <DateRangePicker
-            value={{ from: dateFrom, to: dateTo }}
-            onChange={editRange}
-            presets={presets}
-            presetKey={activeKey}
-            onPreset={selectPreset}
-          />
-        )}
-        {!hoursOpen && !timed && (
-          <button
-            type="button"
-            onClick={() => setHoursOpen(true)}
-            className="inline-flex h-[30px] items-center gap-1.5 rounded-md border border-dashed border-gray-300 px-3 text-xs font-medium text-gray-600 transition-colors hover:border-primary-300 hover:bg-primary-50/40 hover:text-primary-700"
-          >
-            <Clock className="h-3.5 w-3.5" />
-            {tr("Soat belgilash")}
-          </button>
-        )}
+        {/* Kalendar menyusida soat ham belgilanadi. Davri cheklangan
+            xodimda sana kalendardan tanlanmaydi (faqat Bugun/Kecha), soat
+            esa ochiq — o'z smenasini ko'rishi uchun */}
+        <DateRangePicker
+          value={{ from: dateFrom, to: dateTo }}
+          onChange={editRange}
+          presets={presets}
+          presetKey={activeKey}
+          onPreset={selectPreset}
+          hours={hours}
+          onHoursChange={setHours}
+          hourPresets={HOUR_PRESETS}
+          datesLocked={!fullRangeAccess}
+        />
       </div>
-
-      {/* Soat bilan toraytirish — ixtiyoriy (smena, kunning bir qismi) */}
-      {(hoursOpen || timed) && (
-        <div className="space-y-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700">
-              <Clock className="h-3.5 w-3.5 text-primary-600" />
-              {tr("Soat")}
-            </span>
-            <label className="flex items-center gap-1.5 text-xs text-gray-500">
-              {tr("dan")}
-              <input
-                type="time"
-                value={hours.from}
-                onChange={(e) => setHours((h) => ({ ...h, from: e.target.value }))}
-                aria-label={tr("Soatdan")}
-                className="h-8 rounded-md border border-input bg-white px-2 text-sm tabular-nums text-gray-900 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              />
-            </label>
-            <label className="flex items-center gap-1.5 text-xs text-gray-500">
-              {tr("gacha")}
-              <input
-                type="time"
-                value={hours.to}
-                onChange={(e) => setHours((h) => ({ ...h, to: e.target.value }))}
-                aria-label={tr("Soatgacha")}
-                className="h-8 rounded-md border border-input bg-white px-2 text-sm tabular-nums text-gray-900 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              />
-            </label>
-            <div className="flex flex-wrap gap-1">
-              {HOUR_PRESETS.map((p) => {
-                const active = hours.from === p.from && hours.to === p.to
-                return (
-                  <button
-                    key={`${p.from}-${p.to}`}
-                    type="button"
-                    onClick={() => setHours(p)}
-                    aria-pressed={active}
-                    className={cn(
-                      "rounded-md border px-2 py-1 text-[11px] font-medium tabular-nums transition-colors",
-                      active
-                        ? "border-primary-600 bg-primary-50 text-primary-700"
-                        : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    {p.from}–{p.to}
-                  </button>
-                )
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={clearHours}
-              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-            >
-              <X className="h-3 w-3" />
-              {tr("Butun kun")}
-            </button>
-          </div>
-          {timed && (
-            <p
-              className={cn(
-                "text-[11px]",
-                reportWindow.invalid ? "font-medium text-amber-700" : "text-gray-500"
-              )}
-            >
-              {reportWindow.invalid
-                ? tr("Boshlanish vaqti tugash vaqtidan keyin — soatlarni yoki sanalarni tekshiring.")
-                : tr("Hisobot: {{from}} dan {{to}} gacha", {
-                    from: `${reportWindow.dateFrom} ${reportWindow.timeFrom ?? "00:00"}`,
-                    to: `${reportWindow.dateTo} ${reportWindow.timeTo ?? "23:59"}`,
-                  })}
-              {reportWindow.overnight && !reportWindow.invalid && (
-                <span className="ml-1.5 rounded bg-indigo-50 px-1.5 py-0.5 font-medium text-indigo-700">
-                  {tr("tungi smena — ertasi kungacha")}
-                </span>
-              )}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Ma'lumot kelmasa — nol emas, sabab ko'rsatiladi */}
       {loadError && (

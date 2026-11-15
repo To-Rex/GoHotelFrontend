@@ -119,3 +119,46 @@ export function rangeLabel(from: string, to: string, allLabel: string): string {
   if (from && to && from === to) return displayDate(from)
   return `${from ? displayDate(from) : "…"} — ${to ? displayDate(to) : "…"}`
 }
+
+/* --- Ixtiyoriy soat (kalendar menyusida "Sanadan / Sanagacha" ichida) --- */
+
+/** Soat oralig'i: "HH:MM" yoki bo'sh (kun boshi / oxiri) */
+export interface TimeRange {
+  from: string
+  to: string
+}
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
+export const isTime = (value: string | null | undefined): boolean => !!value && HHMM.test(value)
+export const hasTime = (h: TimeRange | null | undefined): boolean => !!h && (isTime(h.from) || isTime(h.to))
+
+/** Keyingi kun (ISO) */
+export const nextDay = (iso: string): string => {
+  const d = fromIso(iso)
+  if (!d) return iso
+  return toIso(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1))
+}
+
+/** Tungi oraliq: bitta kun, ikkala soat bor va "gacha" ≤ "dan" — tugash
+ *  ertasi kunga o'tadi (20:00 → ertasi 08:00) */
+export const isOvernight = (from: string, to: string, h: TimeRange | null | undefined): boolean =>
+  !!h && !!from && from === to && isTime(h.from) && isTime(h.to) && h.to <= h.from
+
+/** Yozuv soat bilan: "14.11.2026, 08:00–20:00", tungida
+ *  "14.11.2026 20:00 → 15.11.2026 08:00", ko'p kunda
+ *  "10.11.2026 14:00 — 14.11.2026". Soat yo'q — `rangeLabel`. */
+export function rangeLabelWithTime(
+  from: string,
+  to: string,
+  h: TimeRange | null | undefined,
+  allLabel: string
+): string {
+  if (!hasTime(h) || !from || !to) return rangeLabel(from, to, allLabel)
+  const tf = isTime(h!.from) ? h!.from : ""
+  const tt = isTime(h!.to) ? h!.to : ""
+  if (isOvernight(from, to, h)) {
+    return `${displayDate(from)} ${tf} → ${displayDate(nextDay(to))} ${tt}`
+  }
+  if (from === to) return `${displayDate(from)}, ${tf || "00:00"}–${tt || "24:00"}`
+  return `${displayDate(from)}${tf ? ` ${tf}` : ""} — ${displayDate(to)}${tt ? ` ${tt}` : ""}`
+}

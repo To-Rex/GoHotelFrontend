@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest"
 
-import { highlightRange, monthGrid, pickDayFor, rangeDays, rangeLabel, toIso } from "./dateRange"
+import {
+  hasTime,
+  highlightRange,
+  isOvernight,
+  monthGrid,
+  nextDay,
+  pickDayFor,
+  rangeDays,
+  rangeLabel,
+  rangeLabelWithTime,
+  toIso,
+} from "./dateRange"
 
 describe("monthGrid", () => {
   it("6 hafta, dushanbadan boshlanadi, butun oyni qamraydi", () => {
@@ -118,5 +129,29 @@ describe("rangeDays / rangeLabel", () => {
     expect(rangeLabel("2026-10-01", "", "Barcha davr")).toBe("01.10.2026 — …")
     expect(rangeLabel("", "2026-10-31", "Barcha davr")).toBe("… — 31.10.2026")
     expect(rangeLabel("", "", "Barcha davr")).toBe("Barcha davr")
+  })
+})
+
+describe("soat bilan yozuv", () => {
+  it("soatsiz — avvalgidek", () => {
+    expect(rangeLabelWithTime("2026-11-14", "2026-11-14", { from: "", to: "" }, "Barcha davr")).toBe("14.11.2026")
+    expect(rangeLabelWithTime("2026-11-14", "2026-11-14", null, "Barcha davr")).toBe("14.11.2026")
+    expect(hasTime({ from: "8:00", to: "" })).toBe(false)
+  })
+
+  it("bir kun, kunduzgi", () => {
+    expect(rangeLabelWithTime("2026-11-14", "2026-11-14", { from: "08:00", to: "20:00" }, "")).toBe("14.11.2026, 08:00–20:00")
+    expect(rangeLabelWithTime("2026-11-14", "2026-11-14", { from: "14:30", to: "" }, "")).toBe("14.11.2026, 14:30–24:00")
+  })
+
+  it("tungi — ertasi kunga, oy chegarasida ham", () => {
+    expect(isOvernight("2026-11-14", "2026-11-14", { from: "20:00", to: "08:00" })).toBe(true)
+    expect(rangeLabelWithTime("2026-11-30", "2026-11-30", { from: "20:00", to: "08:00" }, "")).toBe("30.11.2026 20:00 → 01.12.2026 08:00")
+    expect(nextDay("2026-12-31")).toBe("2027-01-01")
+    expect(isOvernight("2026-11-10", "2026-11-14", { from: "20:00", to: "08:00" })).toBe(false)
+  })
+
+  it("ko'p kun", () => {
+    expect(rangeLabelWithTime("2026-11-10", "2026-11-14", { from: "14:00", to: "" }, "")).toBe("10.11.2026 14:00 — 14.11.2026")
   })
 })

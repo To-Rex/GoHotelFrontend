@@ -70,12 +70,8 @@
   "Tanlangan davrda xodim yaratgan bron yo'q": "The employee created no bookings in the selected period",
   "Tanlangan davrda xodim qilgan do'kon sotuvi yo'q": "The employee made no shop sales in the selected period",
   "Tanlangan davrda xodim kiritgan xarajat yo'q": "The employee entered no expenses in the selected period",
-  "Soat belgilash": "Set hours",
   "Soat": "Hours",
-  "dan": "from",
   "Soatdan": "From time",
   "Soatgacha": "To time",
-  "Boshlanish vaqti tugash vaqtidan keyin — soatlarni yoki sanalarni tekshiring.": "Start is after end — check the hours or dates.",
-  "Hisobot: {{from}} dan {{to}} gacha": "Report: from {{from}} to {{to}}",
   "tungi smena — ertasi kungacha": "night shift — into the next day"
 }

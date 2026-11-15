@@ -72,12 +72,8 @@
   "Tanlangan davrda xodim yaratgan bron yo'q": "За выбранный период сотрудник не создавал броней",
   "Tanlangan davrda xodim qilgan do'kon sotuvi yo'q": "За выбранный период у сотрудника нет продаж магазина",
   "Tanlangan davrda xodim kiritgan xarajat yo'q": "За выбранный период сотрудник не вносил расходов",
-  "Soat belgilash": "Указать часы",
   "Soat": "Часы",
-  "dan": "с",
   "Soatdan": "Со времени",
   "Soatgacha": "До времени",
-  "Boshlanish vaqti tugash vaqtidan keyin — soatlarni yoki sanalarni tekshiring.": "Начало позже окончания — проверьте часы или даты.",
-  "Hisobot: {{from}} dan {{to}} gacha": "Отчёт: с {{from}} до {{to}}",
   "tungi smena — ertasi kungacha": "ночная смена — до следующего дня"
 }
