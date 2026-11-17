@@ -67,6 +67,13 @@ export interface ShiftSession {
   /** Tasdiq rejimida topshirilgan sessiya kutayotgani:
    *  "close_cash" (kassa topshirildi) | "end_shift" (smena tugallandi) */
   pending_approval?: "close_cash" | "end_shift" | null;
+  /** Kunlik kesim bo'yicha topshirilgan sessiya: pul HAQIQATDA topshirilgan
+   *  vaqt. Sessiya `ended_at` da — kesim momentida yopilgan; kesimdan keyingi
+   *  tushum davom etayotgan sessiyada. Oddiy topshirishda — yo'q. */
+  handed_at?: string | null;
+  /** Kesim bo'yicha topshirishda kassada qoldirilgan summa (keyingi
+   *  sessiyaning boshlang'ich kassasi). `expected_cash` dan ayirilgan. */
+  carried_cash?: number | null;
   /** To'lov usullari tarkibi — yopilgan sessiyada (tarixda) va yopilish
    *  hisobotida keladi; ochiq sessiyada "ko'r sanash" qoidasi bo'yicha
    *  yashiriladi */
@@ -131,6 +138,9 @@ const useShiftMutation = <T = ShiftSession>(fn: (payload: any) => Promise<T>) =>
       // Kassa harakati o'zgardi — nazorat ko'rsatkichlari ham yangilansin
       qc.invalidateQueries({ queryKey: ["cashOverview"] });
       qc.invalidateQueries({ queryKey: ["shiftHandovers"] });
+      // Sessiya almashdi: kassadagi summa va kesim variantlari endi boshqa
+      // (kesim bo'yicha topshirgach keyingi kun ham shu yerdan topshiriladi)
+      qc.invalidateQueries({ queryKey: ["shiftExpectedCash"] });
     },
   });
 };
@@ -148,10 +158,18 @@ export const useContinueShift = () =>
   });
 
 export const useCloseCash = () =>
-  useShiftMutation(async (payload: { counted_cash: number; notes?: string }) => {
-    const { data } = await api.post<ShiftSession>("/shifts/close-cash", payload);
-    return data;
-  });
+  useShiftMutation(
+    async (payload: {
+      counted_cash: number;
+      notes?: string;
+      /** Kunlik kesim bo'yicha topshirish: `CashCut.cut_at`. Yuborilmasa —
+       *  hozirgacha bo'lgan hamma pul (avvalgidek). */
+      cut_at?: string;
+    }) => {
+      const { data } = await api.post<ShiftSession>("/shifts/close-cash", payload);
+      return data;
+    }
+  );
 
 export const useEndShift = () =>
   useShiftMutation(async (payload: { counted_cash: number; notes?: string }) => {
@@ -235,6 +253,42 @@ export interface CashBreakdown {
   /** Shu sessiyada qabul qilingan to'lovlar usul bo'yicha (naqd ham,
    *  naqdsiz ham). Naqd qism yuqoridagi maydonlarda; naqdsiz turlar kassaga
    *  kirmaydi — faqat shu sessiya ko'rsatkichi (har smenada 0 dan) */
+  methods: ShiftMethodRow[];
+  non_cash_income: number;
+  /** Kunlik kesim bo'yicha topshirish variantlari, eskidan yangiga.
+   *  Sessiya oxirgi kesimdan keyin ochilgan bo'lsa — bo'sh (yoki eski
+   *  serverda umuman yo'q): dialog faqat "hamma pul"ni taklif qiladi. */
+  cuts?: CashCut[];
+}
+
+/** Kunlik kesim bo'yicha topshirish varianti (backend: `plan_cuts`).
+ *
+ *  Sessiya bir necha kun ochiq tursa, uning oynasiga bir necha kesim
+ *  momenti tushadi va ular sessiyani kunlarga bo'ladi. Topshirish KETMA-KET:
+ *  variant "shu kesimgacha bo'lgan hamma kunlar"ni bildiradi, shuning uchun
+ *  summalar (kunning o'zinikidan tashqari) sessiya boshidan yig'ilgan. */
+export interface CashCut {
+  /** Kesim momenti (ISO) — topshirishda serverga shu yuboriladi */
+  cut_at: string;
+  /** Shu kesim kunining boshi: sessiya boshlanishi yoki avvalgi kesim */
+  from_at: string;
+  /** Kesim yopgan ish kuni, "YYYY-MM-DD" (00:05 dagi kesim — kechagi kun) */
+  day: string;
+  /** Faqat SHU kunning sof naqd harakati (tushum − xarajat) */
+  day_cash: number;
+  opening_cash: number;
+  payments_cash: number;
+  shop_cash: number;
+  expenses_cash: number;
+  /** Kesim momentida kassada bo'lishi kerak bo'lgan pul */
+  expected_cash: number;
+  /** Kesimdan keyingi sof naqd harakat (manfiy — xarajat tushumdan ko'p) */
+  after_cash: number;
+  /** Kassada qoladigan qism: kesimdan keyingi naqd xarajat shu puldan
+   *  to'langan — uni topshirib bo'lmaydi */
+  carried_cash: number;
+  /** Topshiriladigan summa: expected_cash − carried_cash */
+  due_cash: number;
   methods: ShiftMethodRow[];
   non_cash_income: number;
 }
@@ -325,6 +379,11 @@ export interface ShiftHandover {
   /** Tasdiq rejimida: "close_cash" | "end_shift" (aks holda yo'q) — admin/
    *  menejer tasdiqlashi kerak */
   pending_approval?: "close_cash" | "end_shift" | null;
+  /** Kunlik kesim bo'yicha topshirilgan: `ended_at` — kesim momenti,
+   *  `handed_at` — pul haqiqatda topshirilgan vaqt (aks holda yo'q) */
+  handed_at?: string | null;
+  /** Kesim bo'yicha topshirishda kassada qoldirilgan summa */
+  carried_cash?: number | null;
   /** Qabul qiluvchining yangi sessiyasi boshlang'ich kassasi */
   received_opening_cash?: number | null;
 }

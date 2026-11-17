@@ -1129,6 +1129,11 @@ export const ShiftsHistoryPage = () => {
                       {tr("majburiy")}
                     </span>
                   )}
+                  {s.handed_at && (
+                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
+                      {tr("kesim bo'yicha")}
+                    </span>
+                  )}
                   {s.continue_after_end && (
                     <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">
                       {tr("davom etgan")}
@@ -1338,6 +1343,11 @@ export const ShiftsHistoryPage = () => {
                               {tr("majburiy")}
                             </span>
                           )}
+                          {s.handed_at && (
+                            <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
+                              {tr("kesim bo'yicha")}
+                            </span>
+                          )}
                           {s.continue_after_end && (
                             <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">
                               {tr("davom etgan")}
@@ -1426,6 +1436,11 @@ export const ShiftsHistoryPage = () => {
                         {tr("majburiy yopilgan")}
                       </span>
                     )}
+                    {detailTarget.handed_at && (
+                      <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
+                        {tr("kesim bo'yicha")}
+                      </span>
+                    )}
                     {detailTarget.continue_after_end && (
                       <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">
                         {tr("davom etgan")}
@@ -1472,6 +1487,16 @@ export const ShiftsHistoryPage = () => {
                   ))}
                 </div>
 
+                {/* Kunlik kesim bo'yicha topshirilgan: sessiya kesim momentida
+                    yopilgan, pul esa keyinroq topshirilgan */}
+                {detailTarget.handed_at && (
+                  <p className="rounded-xl bg-indigo-50 px-3 py-2 text-xs leading-relaxed text-indigo-600">
+                    {tr("Kunlik kesim bo'yicha topshirilgan: sessiya kesim vaqtida yopildi, pul {{time}} da topshirildi. Kesimdan keyingi tushum keyingi sessiyada.", {
+                      time: format(new Date(detailTarget.handed_at), "dd.MM HH:mm"),
+                    })}
+                  </p>
+                )}
+
                 {/* Kassa */}
                 <div>
                   <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
@@ -1484,6 +1509,16 @@ export const ShiftsHistoryPage = () => {
                         {tr("{{opening_cash}} so'm", { opening_cash: fmt(detailTarget.opening_cash) })}
                       </span>
                     </div>
+                    {/* Kesim bo'yicha topshirishda kassada qoldirilgan qism —
+                        "Kutilgan" summadan allaqachon ayirilgan */}
+                    {Number(detailTarget.carried_cash || 0) > 0 && (
+                      <div className="flex justify-between rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
+                        <span>{tr("Kassada qoldirildi")}</span>
+                        <span className="font-bold tabular-nums">
+                          {tr("{{v}} so'm", { v: fmt(detailTarget.carried_cash) })}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
                       <span className="text-gray-500">{tr("Kutilgan")}</span>
                       <span className="font-bold tabular-nums">

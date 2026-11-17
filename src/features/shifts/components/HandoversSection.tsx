@@ -29,6 +29,7 @@ import { tr } from "@/i18n"
 
 const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 const stamp = (value?: string | null) => (value ? format(new Date(value), "dd.MM.yyyy HH:mm") : "—")
+const shortStamp = (value?: string | null) => (value ? format(new Date(value), "dd.MM HH:mm") : "—")
 
 const KIND_STYLE: Record<HandoverKind, string> = {
   HANDOVER: "bg-primary-50 text-primary-700",
@@ -198,6 +199,13 @@ export function HandoversSection({
                         <Clock className="h-3 w-3" />
                         {stamp(h.ended_at)}
                       </span>
+                      {/* Kunlik kesim bo'yicha: yuqoridagi vaqt — kesim momenti,
+                          pul esa keyinroq topshirilgan */}
+                      {h.handed_at && (
+                        <span className="block text-[11px] text-gray-400">
+                          {tr("topshirildi: {{time}}", { time: shortStamp(h.handed_at) })}
+                        </span>
+                      )}
                       {h.branch_name && <span className="block text-[11px] text-gray-400">{h.branch_name}</span>}
                     </div>
 
@@ -215,6 +223,14 @@ export function HandoversSection({
                         <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", KIND_STYLE[h.kind])}>
                           {handoverKindLabel(h.kind)}
                         </span>
+                        {h.handed_at && (
+                          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
+                            {tr("Kunlik kesim: {{from}} → {{to}}", {
+                              from: shortStamp(h.started_at),
+                              to: shortStamp(h.ended_at),
+                            })}
+                          </span>
+                        )}
                         {h.force_closed && h.kind !== "FORCE_TAKEN" && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-700">
                             <ShieldAlert className="h-3 w-3" />
@@ -227,6 +243,13 @@ export function HandoversSection({
                           </span>
                         )}
                       </div>
+                      {h.handed_at && Number(h.carried_cash || 0) > 0 && (
+                        <p className="mt-1 text-[11px] text-amber-700">
+                          {tr("Kassada qoldirildi: {{amount}} so'm (kesimdan keyingi xarajatlar uchun)", {
+                            amount: fmt(h.carried_cash),
+                          })}
+                        </p>
+                      )}
                       {mismatch != null && (
                         <p className="mt-1 flex items-center gap-1 text-[11px] text-amber-700">
                           <AlertTriangle className="h-3 w-3" />

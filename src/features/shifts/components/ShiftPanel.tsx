@@ -42,6 +42,14 @@ import {
 import { cn } from "@/lib/utils"
 import { tr } from "@/i18n"
 import { NonCashMethods } from "./NonCashMethods"
+import { CashCutPicker } from "./CashCutPicker"
+import {
+  amountDue,
+  cashLeftAfter,
+  hasCuts,
+  selectedCut,
+  type CutChoice,
+} from "../lib/cashCuts"
 
 const fmtMoney = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 
@@ -72,9 +80,19 @@ export const ShiftPanel = () => {
   // panelda esa faqat naqdsiz usullar qatori o'qiladi.
   const myActive = !!state?.my_session && state.my_session.status === "ACTIVE"
   // Dialog ochilganda kassada bo'lishi kerak bo'lgan summa (tarkibi bilan)
-  const { data: expectedData, isFetching: expectedFetching } = useExpectedCash(
-    !!countDialog || myActive
-  )
+  const {
+    data: expectedData,
+    isFetching: expectedFetching,
+    refetch: refetchExpected,
+  } = useExpectedCash(!!countDialog || myActive)
+  // Kunlik kesim bo'yicha topshirish: qaysi kesimgacha (`null` — xodim hali
+  // tanlamagan, standart: oxirgi kesimgacha). Faqat "Kassani topshirish"da;
+  // smenani tugallashda kassa keyingi xodimga butunligicha o'tadi.
+  const [cutChoice, setCutChoice] = useState<CutChoice | null>(null)
+  const cutMode = countDialog === "cash" && hasCuts(expectedData)
+  const activeCut = cutMode ? selectedCut(expectedData, cutChoice) : null
+  // Topshiriladigan summa: tanlangan kesimgacha yoki kassadagi hamma pul
+  const dueNow = amountDue(expectedData, activeCut)
   const [counted, setCounted] = useState("")
   const [notes, setNotes] = useState("")
   const [countError, setCountError] = useState<string | null>(null)
@@ -100,10 +118,11 @@ export const ShiftPanel = () => {
       return
     }
     if (editedRef.current || !expectedData) return
-    const v = Math.max(0, Math.round(Number(expectedData.expected_cash || 0)))
+    // Kesim tanlovi o'zgarsa summa ham almashadi (`dueNow`, `cutChoice`)
+    const v = Math.max(0, Math.round(dueNow))
     setCounted(String(v))
     setCountError(null)
-  }, [countDialog, expectedData])
+  }, [countDialog, expectedData, dueNow, cutChoice])
   // Yopilgandan keyingi hisobot (kutilgan/sanalgan/farq)
   const [report, setReport] = useState<ShiftSession | null>(null)
 
@@ -148,8 +167,15 @@ export const ShiftPanel = () => {
     }
     setCountError(null)
     try {
-      const fn = countDialog === "cash" ? closeCashMutation : endShiftMutation
-      const res = await fn.mutateAsync({ counted_cash: n, notes: notes || undefined })
+      const payload = { counted_cash: n, notes: notes || undefined }
+      const res =
+        countDialog === "cash"
+          ? await closeCashMutation.mutateAsync({
+              ...payload,
+              // Kesim tanlangan bo'lsa — faqat o'sha kesimgacha topshiriladi
+              cut_at: activeCut?.cut_at,
+            })
+          : await endShiftMutation.mutateAsync(payload)
       setCountDialog(null)
       setCounted("")
       setNotes("")
@@ -157,6 +183,20 @@ export const ShiftPanel = () => {
     } catch (e) {
       setCountError(apiErrorMessage(e))
     }
+  }
+
+  // Sanash dialogini ochish: tanlov tozalanadi va hisob yangidan olinadi —
+  // kesim variantlari vaqtga bog'liq (yangi kesim kelgan bo'lishi mumkin)
+  const openCount = (kind: "cash" | "end") => {
+    setCutChoice(null)
+    setCountDialog(kind)
+    void refetchExpected()
+  }
+
+  // Kesim tanlovi: summa maydoni yangi tanlovga qayta to'ldiriladi
+  const chooseCut = (choice: CutChoice) => {
+    editedRef.current = false
+    setCutChoice(choice)
   }
 
   const submitAccept = async () => {
@@ -404,13 +444,13 @@ export const ShiftPanel = () => {
               )}
               <Button
                 variant="outline"
-                onClick={() => setCountDialog("cash")}
+                onClick={() => openCount("cash")}
                 className="border-sky-300 text-sky-700 hover:bg-sky-50"
               >
                 <ArrowRightLeft className="mr-1.5 h-4 w-4" />
                 {tr("Kassani topshirish")}
               </Button>
-              <Button onClick={() => setCountDialog("end")}>
+              <Button onClick={() => openCount("end")}>
                 <CheckCircle2 className="mr-1.5 h-4 w-4" />
                 {tr("Smenani tugallash")}
               </Button>
@@ -433,7 +473,7 @@ export const ShiftPanel = () => {
               {tr("Kunlik kassa kesimi vaqti keldi ({{day_close}}) —", { day_close: state.day_close })}{" "}
               {cutRequired ? (
                 <>
-                  {tr("kassani topshiring. Topshirilmaguncha bron va to'lov qabul qilib bo'lmaydi; topshirgach yangi kassa 0 dan ochiladi.")}
+                  {tr("kassani topshiring. Topshirilmaguncha bron va to'lov qabul qilib bo'lmaydi; kesimgacha bo'lgan pul topshirilgach ish davom etadi.")}
                 </>
               ) : (
                 <>
@@ -479,6 +519,16 @@ export const ShiftPanel = () => {
           </DialogHeader>
           {report && (
             <div className="space-y-2 py-2 text-sm">
+              {/* Kunlik kesim bo'yicha topshirildi — qaysi davr uchun */}
+              {report.handed_at && report.started_at && report.ended_at && (
+                <div className="flex flex-wrap justify-between gap-x-3 rounded-lg bg-sky-50 px-3 py-2 text-sky-700">
+                  <span>{tr("Kunlik kesim bo'yicha")}</span>
+                  <span className="font-semibold tabular-nums">
+                    {format(new Date(report.started_at), "dd.MM HH:mm")} →{" "}
+                    {format(new Date(report.ended_at), "dd.MM HH:mm")}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between rounded-lg bg-gray-50 px-3 py-2">
                 <span className="text-gray-500">{tr("Kutilgan summa")}</span>
                 <span className="font-bold tabular-nums">
@@ -505,9 +555,22 @@ export const ShiftPanel = () => {
                   {!report.cash_diff && tr(" — mos keldi")}
                 </span>
               </div>
+              {report.handed_at && Number(report.carried_cash || 0) > 0 && (
+                <div className="flex justify-between rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
+                  <span>{tr("Kassada qoldirildi")}</span>
+                  <span className="font-bold tabular-nums">
+                    {tr("{{v}} so'm", { v: fmtMoney(report.carried_cash) })}
+                  </span>
+                </div>
+              )}
               {/* Smenada qabul qilingan naqdsiz to'lovlar — kassaga kirmaydi */}
               {report.methods && (
                 <NonCashMethods rows={report.methods} compact className="px-3" />
+              )}
+              {report.handed_at && (
+                <p className="px-3 text-xs leading-relaxed text-gray-500">
+                  {tr("Kesimdan keyingi tushum kassada qoldi — u yangi kassa hisobida davom etadi.")}
+                </p>
               )}
             </div>
           )}
@@ -526,6 +589,10 @@ export const ShiftPanel = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
+            {/* Kunlik kesim bo'yicha topshirish — qaysi kungacha */}
+            {cutMode && (
+              <CashCutPicker data={expectedData} choice={cutChoice} onChange={chooseCut} />
+            )}
             {/* Kassada bo'lishi kerak bo'lgan summa — tarkibi bilan */}
             {expectedData && (
               <div
@@ -538,29 +605,43 @@ export const ShiftPanel = () => {
                 )}
               >
                 <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                  {tr("Kassada bo'lishi kerak")}
+                  {activeCut ? tr("Topshiriladigan summa") : tr("Kassada bo'lishi kerak")}
                   {expectedFetching && <Loader2 className="h-3 w-3 animate-spin" />}
                 </p>
                 <p className="text-xl font-bold tabular-nums text-primary-700">
-                  {tr("{{expected_cash}} so'm", { expected_cash: fmtMoney(expectedData.expected_cash) })}
+                  {tr("{{expected_cash}} so'm", { expected_cash: fmtMoney(dueNow) })}
                 </p>
+                {/* Tarkib: kesim tanlangan bo'lsa — o'sha kesimgacha */}
                 <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
-                  {tr("Boshlang'ich {{opening_cash}} + naqd to'lovlar {{payments_cash}} + do'kon {{shop_cash}} − naqd xarajatlar {{expenses_cash}}", { opening_cash: fmtMoney(expectedData.opening_cash), payments_cash: fmtMoney(expectedData.payments_cash), shop_cash: fmtMoney(expectedData.shop_cash), expenses_cash: fmtMoney(expectedData.expenses_cash) })}
+                  {tr("Boshlang'ich {{opening_cash}} + naqd to'lovlar {{payments_cash}} + do'kon {{shop_cash}} − naqd xarajatlar {{expenses_cash}}", { opening_cash: fmtMoney((activeCut ?? expectedData).opening_cash), payments_cash: fmtMoney((activeCut ?? expectedData).payments_cash), shop_cash: fmtMoney((activeCut ?? expectedData).shop_cash), expenses_cash: fmtMoney((activeCut ?? expectedData).expenses_cash) })}
                 </p>
+                {/* Kesimdan keyingi naqd xarajat shu kunlarning pulidan
+                    to'langan — u kassada yo'q, shuning uchun topshirilmaydi
+                    (kamomad ham yozilmaydi) */}
+                {activeCut && activeCut.carried_cash > 0 && (
+                  <p className="mt-1 text-[11px] leading-relaxed text-amber-700">
+                    {tr("Kesimdan keyingi naqd xarajatlar shu puldan to'langan: {{carried}} so'm topshirilmaydi, yangi kassaning boshlang'ich summasi bo'ladi.", { carried: fmtMoney(activeCut.carried_cash) })}
+                  </p>
+                )}
                 {/* Naqdsiz turlar kassaga kirmaydi — alohida ko'rsatiladi */}
                 <NonCashMethods
-                  rows={expectedData.methods}
+                  rows={(activeCut ?? expectedData).methods}
                   compact
                   className="mt-1.5 border-t border-primary-100/70 pt-1.5"
                 />
+                {activeCut && cashLeftAfter(expectedData, activeCut) > 0 && (
+                  <p className="mt-1.5 border-t border-primary-100/70 pt-1.5 text-[11px] leading-relaxed text-gray-500">
+                    {tr("Topshirgach kassada qoladi: {{left}} so'm — yangi kassa hisobida davom etadi.", { left: fmtMoney(cashLeftAfter(expectedData, activeCut)) })}
+                  </p>
+                )}
               </div>
             )}
             <p className="rounded-xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600">
-              {tr("Kassadagi")}{" "}<b>{tr("haqiqiy pulni sanab")}</b>{" "}{tr("kiriting — farq bo'lsa sizning hisobingizga yoziladi.")}
+              {activeCut ? tr("Shu kunlar uchun") : tr("Kassadagi")}{" "}<b>{activeCut ? tr("topshirayotgan pulni sanab") : tr("haqiqiy pulni sanab")}</b>{" "}{tr("kiriting — farq bo'lsa sizning hisobingizga yoziladi.")}
             </p>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">
-                {tr("Kassadagi haqiqiy summa (so'm) *")}
+                {activeCut ? tr("Topshirilayotgan summa (so'm) *") : tr("Kassadagi haqiqiy summa (so'm) *")}
               </label>
               <Input
                 type="number"
@@ -583,7 +664,8 @@ export const ShiftPanel = () => {
                 placeholder={tr("Ixtiyoriy")}
               />
             </div>
-            {countDialog === "cash" && (
+            {/* Kesim bo'yicha topshirishda nima bo'lishi yuqorida aytilgan */}
+            {countDialog === "cash" && !activeCut && (
               <p className="text-xs text-gray-400">
                 {tr("Kassa yopilib, ishni davom ettirishingiz uchun yangi kassa 0 so'mdan ochiladi.")}
               </p>
