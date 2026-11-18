@@ -8,6 +8,7 @@ import {
   cutRows,
   defaultCutChoice,
   effectiveCutChoice,
+  handoverPeriod,
   hasCuts,
   parseDay,
   selectedCut,
@@ -143,6 +144,23 @@ describe("davrlar ro'yxati", () => {
 
   it("qator bosilganda aynan o'sha tanlov o'rnatiladi", () => {
     expect(cutRows(three, null).map((r) => r.choice)).toEqual([C16, C17, C18, ALL_CASH])
+  })
+})
+
+describe("topshirilayotgan davr", () => {
+  it("kassa ochilgandan tanlangan kesimgacha; kunlar soni", () => {
+    expect(handoverPeriod(three, null)).toEqual({ from: START, to: C18, days: 3 })
+    expect(handoverPeriod(three, C16)).toEqual({ from: START, to: C16, days: 1 })
+    expect(handoverPeriod(three, C17)).toEqual({ from: START, to: C17, days: 2 })
+  })
+
+  it("hamma pul — hozirgacha", () => {
+    expect(handoverPeriod(three, ALL_CASH)).toEqual({ from: START, to: null, days: 3 })
+  })
+
+  it("kesim yo'q — davr ko'rsatilmaydi", () => {
+    expect(handoverPeriod(data(), null)).toBeNull()
+    expect(handoverPeriod(undefined, null)).toBeNull()
   })
 })
 

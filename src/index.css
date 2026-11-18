@@ -470,6 +470,13 @@ html.theme-fade *::after {
 .dark .text-sky-600,
 .dark .text-sky-700 { color: #38bdf8; }
 .dark .border-sky-300 { border-color: rgb(14 165 233 / 0.4); }
+/* Kassa paneli: naqdsiz to'lovlar bloki, "topshirildi" holati, kesim eslatmasi */
+.dark .bg-sky-50\/60 { background-color: rgb(14 165 233 / 0.1); }
+.dark .hover\:bg-sky-50:hover { background-color: rgb(14 165 233 / 0.15); }
+.dark .text-sky-800 { color: #7dd3fc; }
+.dark .text-sky-700\/80 { color: rgb(56 189 248 / 0.8); }
+.dark .border-sky-100,
+.dark .border-sky-200 { border-color: rgb(14 165 233 / 0.3); }
 
 /* --- Indigo (booking kalendar urg'ulari) --- */
 .dark .bg-indigo-50,

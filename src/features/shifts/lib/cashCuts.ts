@@ -69,6 +69,31 @@ export const cashLeftAfter = (
   cut: CashCut | null
 ): number => (cut ? Number(data?.expected_cash || 0) - Number(cut.due_cash || 0) : 0)
 
+/** Topshirilayotgan davr: kassa ochilgan paytdan tanlangan kesimgacha. */
+export interface HandoverPeriod {
+  from: string
+  /** Davr oxiri (ISO); `null` — hozirgacha (hamma pul topshiriladi) */
+  to: string | null
+  /** Davrga kirgan tugagan (kesim yopgan) kunlar soni */
+  days: number
+}
+
+/** Joriy tanlov qaysi davrni qamrashi. Kesim yo'q bo'lsa — `null`
+ *  (davr ko'rsatilmaydi: kassa ochilgandan hozirgacha, bitta kun ichida). */
+export const handoverPeriod = (
+  data: CashBreakdown | undefined | null,
+  choice: CutChoice | null
+): HandoverPeriod | null => {
+  const cuts = cutsOf(data)
+  if (cuts.length === 0) return null
+  const effective = effectiveCutChoice(data, choice)
+  const index = cuts.findIndex((c) => c.cut_at === effective)
+  if (effective === ALL_CASH || index < 0) {
+    return { from: cuts[0].from_at, to: null, days: cuts.length }
+  }
+  return { from: cuts[0].from_at, to: cuts[index].cut_at, days: index + 1 }
+}
+
 export interface CutRow {
   /** Bosilganda o'rnatiladigan tanlov */
   choice: CutChoice
