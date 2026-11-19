@@ -3,9 +3,12 @@ import { format } from "date-fns"
 import {
   AlertTriangle,
   ArrowRightLeft,
+  CalendarCheck,
+  CalendarClock,
   CheckCircle2,
   Loader2,
   PencilLine,
+  RefreshCw,
   ShieldCheck,
 } from "lucide-react"
 
@@ -37,9 +40,12 @@ import {
 import {
   amountDue,
   cashLeftAfter,
+  closedDaysOnly,
+  dayOffset,
   handoverPeriod,
   hasCuts,
   selectedCut,
+  shiftSplit,
   type CutChoice,
 } from "../lib/cashCuts"
 import { CashCutPicker } from "./CashCutPicker"
@@ -50,6 +56,14 @@ export type CountKind = "cash" | "end"
 
 const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 const stamp = (iso: string) => format(new Date(iso), "dd.MM HH:mm")
+/** Kesim momenti so'z bilan: "bugun 23:00" / "ertaga 00:05" / "21.11 00:05" */
+const cutMoment = (iso: string): string => {
+  const time = format(new Date(iso), "HH:mm")
+  const offset = dayOffset(iso)
+  if (offset === 0) return tr("bugun {{time}}", { time })
+  if (offset === 1) return tr("ertaga {{time}}", { time })
+  return stamp(iso)
+}
 /** Maydondagi minglik ajratgich — `fmt` bilan bir xil (brauzer tili bo'yicha) */
 const GROUP = groupSeparator()
 const formatCount = (raw: string) => formatCountInput(raw, GROUP)
@@ -105,10 +119,19 @@ function SectionTitle({ step, children }: { step?: number; children: ReactNode }
 
    Kutilgan summa maydonga avtomatik yozib qo'yiladi — xodim sanab, kerak
    bo'lsa tuzatadi. Kompyuterda maydon darhol tanlangan holda turadi: yozishni
-   boshlasa, eski qiymat almashadi. */
+   boshlasa, eski qiymat almashadi.
+
+   "Faqat yopilgan kunlar" rejimi (sozlama):
+     - "Kassani topshirish" — tanlov yo'q: kunlar ro'yxati faqat ko'rsatadi,
+       yopilgan kunlarning hammasi birga topshiriladi. Yopilgan kun bo'lmasa
+       sanash o'rniga tushuntirish chiqadi: bugungi tushum qachon topshirilishi.
+     - "Smenani tugallash" — smena kunlik kesimda yopiladi: yopilgan kunlar
+       va bugungi tushum alohida ko'rsatiladi, kassadagi pul esa butunligicha
+       keyingi xodimga o'tadi (bir marta sanaladi). */
 export function CashCountDialog({
   kind,
   approval,
+  closedDays = false,
   onClose,
   onDone,
 }: {
@@ -116,6 +139,10 @@ export function CashCountDialog({
   kind: CountKind | null
   /** Tasdiq rejimi: topshirilgan kassa admin/menejer tasdig'ini kutadi */
   approval: boolean
+  /** "Faqat yopilgan kunlar" rejimi (sozlamadan) — hisob kelguncha ham
+   *  oyna to'g'ri ko'rinishda ochilishi uchun. Hisob kelgach serverning
+   *  o'z javobi (`closed_days_only`) ustun. */
+  closedDays?: boolean
   onClose: () => void
   /** Topshirildi — yopilgan sessiya hisoboti bilan */
   onDone: (report: ShiftSession) => void
@@ -125,6 +152,8 @@ export function CashCountDialog({
   const endShift = useEndShift()
   const saving = closeCash.isPending || endShift.isPending
   const { data: expected, isFetching, refetch } = useExpectedCash(open)
+  // Faqat yopilgan kunlar rejimi: hisob kelgach — serverning javobi
+  const strict = expected ? closedDaysOnly(expected) : closedDays
 
   // Yopilish animatsiyasi davomida oyna oxirgi ko'rinishida qoladi
   // (`kind` allaqachon `null`), aks holda sarlavha bir lahzaga almashardi.
@@ -153,6 +182,17 @@ export function CashCountDialog({
   }
 
   const cutMode = shown === "cash" && hasCuts(expected)
+  // Yopilgan kunlar rejimida kassani topshirish: tanlov yo'q (`locked`).
+  // Hisob kelmaguncha nima topshirilishi noma'lum (`waiting`); yopilgan kun
+  // bo'lmasa topshiradigan narsa yo'q (`blocked`) — sanash o'rniga tushuntirish.
+  const locked = shown === "cash" && strict
+  const waiting = locked && !expected
+  const blocked = locked && !!expected && !hasCuts(expected)
+  // Smenani tugallash: smena kunlik kesimda yopiladi (rejim yoqilgan va
+  // sessiyaga kesim tushgan bo'lsa)
+  const split = shown === "end" ? shiftSplit(expected) : null
+  // Keng ekranda ikki ustun: chapda kunlar (yoki kesim bo'yicha bo'linish)
+  const wide = !blocked && (cutMode || !!split)
   const activeCut = cutMode ? selectedCut(expected, cutChoice) : null
   // Topshiriladigan summa: tanlangan kesimgacha yoki kassadagi hamma pul
   const due = amountDue(expected, activeCut)
@@ -195,6 +235,22 @@ export function CashCountDialog({
     return () => cancelAnimationFrame(frame)
   }, [open, expected, due, cutChoice])
 
+  // Yopilgan kunlar rejimida oyna hisob kelguncha maydonsiz ochilishi mumkin
+  // (`waiting`). Hisob kelib maydon paydo bo'lgach, kompyuterda unga fokus
+  // beriladi — xuddi oyna ochilgandagidek.
+  const wasWaiting = useRef(false)
+  useEffect(() => {
+    if (waiting) {
+      wasWaiting.current = true
+      return
+    }
+    if (!wasWaiting.current) return
+    wasWaiting.current = false
+    if (!open || blocked || window.matchMedia?.("(pointer: coarse)").matches) return
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  }, [waiting, blocked, open])
+
   // Formatlash bo'shliq qo'shadi/oladi — kursor yozilayotgan raqam yonida qolsin
   const caretRef = useRef<number | null>(null)
   useLayoutEffect(() => {
@@ -234,6 +290,8 @@ export function CashCountDialog({
   }
 
   const submit = async () => {
+    // Yopilgan kunlar rejimi: hisobsiz yoki yopilgan kunsiz topshirib bo'lmaydi
+    if (waiting || blocked) return
     // Bo'sh maydon jimgina 0 bo'lib o'tib ketmasligi kerak
     if (countedValue === null) {
       setNeedCount(true)
@@ -313,10 +371,14 @@ export function CashCountDialog({
   const title = shown === "cash" ? tr("Kassani topshirish") : tr("Smenani tugallash")
   const description =
     shown === "end"
-      ? tr("Smena yopiladi va keyingi xodim qabul qilishi kutiladi.")
-      : activeCut
-        ? tr("Tanlangan kungacha bo'lgan pul topshiriladi. Undan keyingi tushum kassada qoladi va yangi kassa hisobida davom etadi.")
-        : tr("Kassa yopilib, ishni davom ettirishingiz uchun yangi kassa 0 so'mdan ochiladi.")
+      ? split
+        ? tr("Smena kunlik kesim bo'yicha yopiladi. Kassadagi pul keyingi xodimga o'tadi — u qabul qilishi kutiladi.")
+        : tr("Smena yopiladi va keyingi xodim qabul qilishi kutiladi.")
+      : locked
+        ? tr("Kassa yopilgan kunlar bo'yicha topshiriladi: kunlik kesim yopgan kunlarning hammasi birga. Bugungi tushum kassada qoladi.")
+        : activeCut
+          ? tr("Tanlangan kungacha bo'lgan pul topshiriladi. Undan keyingi tushum kassada qoladi va yangi kassa hisobida davom etadi.")
+          : tr("Kassa yopilib, ishni davom ettirishingiz uchun yangi kassa 0 so'mdan ochiladi.")
   const submitLabel =
     shown === "end"
       ? tr("Smenani tugallash")
@@ -332,7 +394,7 @@ export function CashCountDialog({
           // Ikki ustunli ko'rinishda oyna tepadan mahkamlanadi (o'rtaga emas):
           // kun tanlanganda o'ng ustun balandligi o'zgaradi va o'rtaga
           // tekislangan oyna sakrab, ro'yxat kursor ostidan qochardi.
-          cutMode &&
+          wide &&
             "md:top-[var(--cash-top)] md:max-h-[calc(100dvh_-_1rem_-_var(--cash-top))] md:max-w-[820px] md:translate-y-0 md:[--cash-top:max(1rem,calc(50dvh_-_21rem))]"
         )}
         onOpenAutoFocus={(event) => {
@@ -371,10 +433,63 @@ export function CashCountDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {waiting || blocked ? (
+          // Yopilgan kunlar rejimi: sanaladigan narsa (hali) yo'q
+          <div className="min-w-0 flex-1 overflow-y-auto px-5 py-5">
+            {blocked ? (
+              <div className="flex flex-col items-center text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                  <CalendarClock className="h-6 w-6" />
+                </span>
+                <p className="mt-3 text-base font-bold text-gray-900">
+                  {tr("Hali topshiriladigan kun yo'q")}
+                </p>
+                <p className="mt-1 max-w-sm text-sm leading-relaxed text-gray-500">
+                  {tr("Kassada hozir faqat bugungi tushum bor. Uni kunlik kesimdan keyin topshirasiz.")}
+                </p>
+                {expected?.next_cut_at && (
+                  <div
+                    className={cn(
+                      "mt-4 flex w-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-left transition-opacity",
+                      isFetching && "opacity-60"
+                    )}
+                  >
+                    <span className="text-sm text-gray-500">{tr("Keyingi kunlik kesim")}</span>
+                    <span className="text-sm font-bold tabular-nums text-gray-900">
+                      {cutMoment(expected.next_cut_at)}
+                    </span>
+                  </div>
+                )}
+                <p className="mt-3 max-w-sm text-xs leading-relaxed text-gray-400">
+                  {tr("Ishni tugatayotgan bo'lsangiz, «Smenani tugallash»ni bosing — kassadagi pul keyingi xodimga o'tadi.")}
+                </p>
+              </div>
+            ) : isFetching ? (
+              <div className="space-y-3">
+                <Skeleton className="h-24 w-full rounded-xl" />
+                <Skeleton className="h-14 w-full rounded-xl" />
+              </div>
+            ) : (
+              // Hisobni olib bo'lmadi: kesimsiz topshirish mumkin emas
+              <div className="flex flex-col items-center text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                  <AlertTriangle className="h-6 w-6" />
+                </span>
+                <p className="mt-3 text-sm font-semibold text-gray-900">
+                  {tr("Kassa hisobini olib bo'lmadi")}
+                </p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => void refetch()}>
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                  {tr("Qayta urinish")}
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
         <div
           className={cn(
             "flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4",
-            cutMode && "md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:items-start md:gap-6"
+            wide && "md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:items-start md:gap-6"
           )}
         >
           {cutMode ? (
@@ -383,10 +498,69 @@ export function CashCountDialog({
             // tiziladi: kunlar → sanash → tarkib, ya'ni summa maydoni
             // tafsilotlardan oldin keladi.
             <div className="contents md:flex md:min-w-0 md:flex-col md:gap-4">
-              {/* 1-qadam: kunlik kesim bo'yicha — qaysi kungacha */}
+              {/* 1-qadam: kunlik kesim bo'yicha — qaysi kungacha. Yopilgan
+                  kunlar rejimida tanlov yo'q — ro'yxat faqat ko'rsatadi. */}
               <section className="order-1 min-w-0 space-y-2.5">
-                <SectionTitle step={1}>{tr("Qaysi kungacha topshirasiz?")}</SectionTitle>
-                <CashCutPicker data={expected} choice={cutChoice} onChange={chooseCut} />
+                <SectionTitle step={1}>
+                  {locked ? tr("Topshiriladigan kunlar") : tr("Qaysi kungacha topshirasiz?")}
+                </SectionTitle>
+                <CashCutPicker
+                  data={expected}
+                  choice={cutChoice}
+                  onChange={chooseCut}
+                  locked={locked}
+                />
+              </section>
+              {details && <div className="order-3 min-w-0">{details}</div>}
+            </div>
+          ) : split ? (
+            // Smena kunlik kesimda yopiladi: yopilgan kunlar va bugungi
+            // tushum alohida — yig'indisi kassadagi (sanaladigan) pul
+            <div className="contents md:flex md:min-w-0 md:flex-col md:gap-4">
+              <section className="order-1 min-w-0 space-y-2.5">
+                <SectionTitle>{tr("Smena kunlik kesimda yopiladi")}</SectionTitle>
+                <div
+                  className={cn(
+                    "overflow-hidden rounded-xl border border-gray-200 bg-white transition-opacity",
+                    isFetching && "opacity-60"
+                  )}
+                >
+                  <div className="flex items-center gap-3 bg-primary-50/60 px-3 py-2.5">
+                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary-600 text-white">
+                      <CalendarCheck className="h-3 w-3" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-gray-900">
+                        {split.days > 1
+                          ? tr("Yopilgan kunlar · {{count}} kun", { count: split.days })
+                          : tr("Yopilgan kun")}
+                      </span>
+                      <span className="block text-[11px] tabular-nums text-gray-400">
+                        {stamp(split.from)} → {stamp(split.cutAt)}
+                      </span>
+                    </span>
+                    <span className="flex-shrink-0 text-sm font-bold tabular-nums text-gray-900">
+                      {fmt(split.closedCash)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 border-t border-gray-100 px-3 py-2.5">
+                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 bg-white" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-gray-900">
+                        {tr("Bugun (kesimdan keyin)")}
+                      </span>
+                      <span className="block text-[11px] tabular-nums text-gray-400">
+                        {stamp(split.cutAt)} → {trc("shift", "hozir")}
+                      </span>
+                    </span>
+                    <span className="flex-shrink-0 text-sm font-bold tabular-nums text-gray-900">
+                      {fmt(split.todayCash)}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[11px] leading-relaxed text-gray-500">
+                  {tr("Kassadagi hamma pul keyingi xodimga o'tadi. Bugungi tushum kunlik kesimdan keyin topshiriladi.")}
+                </p>
               </section>
               {details && <div className="order-3 min-w-0">{details}</div>}
             </div>
@@ -519,14 +693,15 @@ export function CashCountDialog({
             </div>
           </section>
 
-          {!cutMode && details && <div className="order-3 min-w-0">{details}</div>}
+          {!wide && details && <div className="order-3 min-w-0">{details}</div>}
         </div>
+        )}
 
         <div className="min-w-0 flex-shrink-0 space-y-2.5 border-t border-gray-100 bg-gray-50/60 px-5 py-3.5">
           {/* Tasdiq rejimi: topshirilgan kassa admin/menejer tasdig'ini kutadi.
               Tugma yonida — bosishdan oldin albatta ko'rinsin (aylanadigan
               qismda bo'lsa, past ekranda ko'rinmay qolardi). */}
-          {shown === "cash" && approval && (
+          {shown === "cash" && approval && !blocked && (
             <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
               <ShieldCheck className="mt-px h-3.5 w-3.5 flex-shrink-0" />
               {tr("Topshirgach admin yoki menejer tasdig'i kutiladi — tasdiqlanguncha ishlab bo'lmaydi.")}
@@ -540,17 +715,26 @@ export function CashCountDialog({
           <div className="flex items-center justify-end gap-2">
             {/* Telefonda tugmalar yonma-yon sig'ishi uchun ichki bo'shliq torroq:
                 asosiy tugmada summa ham yoziladi */}
-            <Button variant="outline" onClick={onClose} className="flex-shrink-0 px-3 sm:px-4">
-              {tr("Bekor qilish")}
-            </Button>
-            <Button
-              onClick={submit}
-              disabled={saving}
-              className="min-w-0 flex-1 px-3 text-[13px] sm:flex-none sm:px-4 sm:text-sm"
-            >
-              {saving && <Loader2 className="mr-2 h-4 w-4 flex-shrink-0 animate-spin" />}
-              <span className="truncate">{submitLabel}</span>
-            </Button>
+            {blocked ? (
+              // Topshiradigan narsa yo'q — faqat yopish
+              <Button onClick={onClose} className="w-full sm:w-auto">
+                {tr("Tushunarli")}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={onClose} className="flex-shrink-0 px-3 sm:px-4">
+                  {tr("Bekor qilish")}
+                </Button>
+                <Button
+                  onClick={submit}
+                  disabled={saving || waiting}
+                  className="min-w-0 flex-1 px-3 text-[13px] sm:flex-none sm:px-4 sm:text-sm"
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 flex-shrink-0 animate-spin" />}
+                  <span className="truncate">{submitLabel}</span>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </DialogContent>

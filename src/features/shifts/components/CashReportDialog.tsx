@@ -25,7 +25,8 @@ const OUTCOME_TONE: Record<Outcome, string> = {
 
    Eng muhimi tepada, bir qarashda: kassa mos keldimi, kamomadmi, ortiqchami.
    Pastda — kutilgan va sanalgan summa, kunlik kesim bo'yicha topshirilgan
-   bo'lsa qaysi davr uchun ekani va kassada nima qolgani. */
+   bo'lsa qaysi davr uchun ekani va kassada nima qolgani. Smena kunlik
+   kesimda yopilgan bo'lsa — qaysi kunlar kesimda yopilgani. */
 export function CashReportDialog({
   report,
   onClose,
@@ -45,6 +46,9 @@ export function CashReportDialog({
   // Kunlik kesim bo'yicha topshirilgan — sessiya kesim momentida yopilgan
   const byCut = !!(r?.handed_at && r.started_at && r.ended_at)
   const carried = Number(r?.carried_cash || 0)
+  // Smena kunlik kesimda yopilgan ("faqat yopilgan kunlar" rejimi): yopilgan
+  // kunlar alohida sessiya, hisobotning o'zi — kesimdan keyingi qism
+  const closedDays = r?.closed_days
 
   return (
     <Dialog open={!!report} onOpenChange={(o) => !o && onClose()}>
@@ -93,6 +97,15 @@ export function CashReportDialog({
                   </dd>
                 </div>
               )}
+              {/* Smena kunlik kesimda yopildi — qaysi kunlar */}
+              {closedDays?.started_at && closedDays.ended_at && (
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-3.5 py-2.5">
+                  <dt className="text-gray-500">{tr("Kunlik kesimda yopildi")}</dt>
+                  <dd className="font-semibold tabular-nums text-sky-700">
+                    {stamp(closedDays.started_at)} → {stamp(closedDays.ended_at)}
+                  </dd>
+                </div>
+              )}
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-3.5 py-2.5">
                 <dt className="text-gray-500">{tr("Kutilgan summa")}</dt>
                 <dd className="font-semibold tabular-nums text-gray-900">
@@ -122,6 +135,12 @@ export function CashReportDialog({
               <p className="flex items-start gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-700">
                 <Info className="mt-px h-3.5 w-3.5 flex-shrink-0" />
                 {tr("Kesimdan keyingi tushum kassada qoldi — u yangi kassa hisobida davom etadi.")}
+              </p>
+            )}
+            {closedDays && (
+              <p className="flex items-start gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-700">
+                <Info className="mt-px h-3.5 w-3.5 flex-shrink-0" />
+                {tr("Smena kunlik kesim bo'yicha yopildi. Kassadagi pul keyingi xodimga o'tadi; bugungi tushum kunlik kesimdan keyin topshiriladi.")}
               </p>
             )}
             {/* Tasdiq rejimi: sessiya hali yopilmagan — tasdiq kutadi */}

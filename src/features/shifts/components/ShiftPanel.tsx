@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Clock,
   KeyRound,
+  CalendarCheck,
 } from "lucide-react"
 import {
   useShiftState,
@@ -97,6 +98,9 @@ export const ShiftPanel = () => {
   const cutDue = isCutDue(state)
   // Kesim majburiymi (sozlamadan). Eski javobda maydon bo'lmasa — majburiy.
   const cutRequired = state.day_close_required !== false
+  // "Faqat yopilgan kunlar" rejimi: kassa kunlik kesim yopgan kunlar bo'yicha
+  // topshiriladi, bugungi tushum — keyingi kesimdan keyin
+  const closedDays = state.handover_closed_days === true
   // Kassa bilan ishlaydigan xodim (resepshn/kassir) — smena ochadi/topshiradi;
   // menejer/admin esa blokni majburiy yopish uchun banner ko'radi
   const cashStaff = isCashStaff(user)
@@ -391,6 +395,15 @@ export const ShiftPanel = () => {
               )}
             </p>
           )}
+          {/* Yopilgan kunlar rejimi: bugungi pul hali topshirilmasligini xodim
+              tugmani bosmasdan oldin bilsin. Kesim kelgan bo'lsa yuqoridagi
+              eslatma yetarli. */}
+          {closedDays && !cutDue && (
+            <p className="mt-3 flex items-start gap-2 rounded-xl bg-sky-50/60 px-3 py-2 text-xs leading-relaxed text-sky-800">
+              <CalendarCheck className="mt-px h-3.5 w-3.5 flex-shrink-0" />
+              {tr("Kassa yopilgan kunlar bo'yicha topshiriladi: bugungi tushumni kunlik kesimdan ({{day_close}}) keyin topshirasiz.", { day_close: state.day_close })}
+            </p>
+          )}
           {workEnded && !my.continue_after_end && !cutDue && (
             <p className="mt-3 rounded-xl bg-amber-100/60 px-3 py-2 text-sm text-amber-800">
               {tr("Ish vaqtingiz tugadi. Keyingi xodim kelmagan bo'lsa \"Davom etish\" ni bosing, aks holda smenani tugallang.")}
@@ -432,6 +445,7 @@ export const ShiftPanel = () => {
       <CashCountDialog
         kind={countDialog}
         approval={!!state.handover_approval}
+        closedDays={closedDays}
         onClose={() => setCountDialog(null)}
         onDone={(done) => {
           setCountDialog(null)

@@ -13,6 +13,11 @@ import type { CashBreakdown, CashCut } from "../api/shifts"
    Oxirgi qator — "kesimdan keyin" — tanlansa, avvalgidek hozirgacha bo'lgan
    hamma pul topshiriladi.
 
+   "Faqat yopilgan kunlar" rejimida (sozlama, `closed_days_only`) tanlov
+   yo'q: har doim oxirgi kesimgacha — yopilgan kunlarning hammasi birga;
+   bugungi tushum topshirilmaydi. Sessiyaga kesim tushmagan bo'lsa — hali
+   topshiradigan narsa yo'q.
+
    Hisob serverda (`plan_cuts`); bu yerda faqat ko'rsatish va tanlov. */
 
 /** "Hamma pul" tanlovi (kesimsiz — avvalgi xatti-harakat). */
@@ -26,6 +31,16 @@ const cutsOf = (data: CashBreakdown | undefined | null): CashCut[] => data?.cuts
 /** Kesim bo'yicha topshirish mumkinmi (sessiyaga kamida bitta kesim tushgan). */
 export const hasCuts = (data: CashBreakdown | undefined | null): boolean =>
   cutsOf(data).length > 0
+
+/** "Faqat yopilgan kunlar" rejimi: xodim tanlamaydi — yopilgan kunlarning
+ *  hammasi birga topshiriladi, bugungi tushum esa keyingi kesimdan keyin. */
+export const closedDaysOnly = (data: CashBreakdown | undefined | null): boolean =>
+  data?.closed_days_only === true
+
+/** Yopilgan kunlar rejimida hali topshiradigan narsa yo'q: kassa oxirgi
+ *  kesimdan keyin ochilgan, unda faqat bugungi pul bor. */
+export const handoverBlocked = (data: CashBreakdown | undefined | null): boolean =>
+  closedDaysOnly(data) && !hasCuts(data)
 
 /** Standart tanlov — eng oxirgi kesim: tugagan kunlarning hammasi
  *  topshiriladi, bugungi (kesimdan keyingi) tushum kassada qoladi.
@@ -41,6 +56,8 @@ export const effectiveCutChoice = (
   data: CashBreakdown | undefined | null,
   choice: CutChoice | null
 ): CutChoice => {
+  // Yopilgan kunlar rejimi: tanlov inobatga olinmaydi — har doim oxirgi kesim
+  if (closedDaysOnly(data)) return defaultCutChoice(data)
   if (choice === ALL_CASH) return ALL_CASH
   if (choice && cutsOf(data).some((c) => c.cut_at === choice)) return choice
   return defaultCutChoice(data)
@@ -92,6 +109,46 @@ export const handoverPeriod = (
     return { from: cuts[0].from_at, to: null, days: cuts.length }
   }
   return { from: cuts[0].from_at, to: cuts[index].cut_at, days: index + 1 }
+}
+
+/** Smena KUNLIK KESIMDA yopilishi ("faqat yopilgan kunlar" rejimida
+ *  "Smenani tugallash"): yopilgan kunlar kesim momentida alohida yopiladi,
+ *  kesimdan keyingi tushum esa kassa bilan birga keyingi xodimga o'tadi. */
+export interface ShiftSplit {
+  /** Yopiladigan davr boshi (kassa ochilgan payt) */
+  from: string
+  /** Oxirgi kunlik kesim — sessiya shu momentda yopiladi */
+  cutAt: string
+  /** Yopiladigan kunlar soni */
+  days: number
+  /** Kesim momentida kassada bo'lishi kerak bo'lgan pul */
+  closedCash: number
+  /** Kesimdan keyingi sof naqd harakat (bugungi tushum − xarajat) */
+  todayCash: number
+}
+
+/** Smena tugallanganda kesim bo'yicha bo'linish. Rejim o'chiq yoki
+ *  sessiyaga kesim tushmagan bo'lsa — `null` (smena avvalgidek yopiladi). */
+export const shiftSplit = (data: CashBreakdown | undefined | null): ShiftSplit | null => {
+  const cuts = cutsOf(data)
+  if (!closedDaysOnly(data) || cuts.length === 0) return null
+  const last = cuts[cuts.length - 1]
+  return {
+    from: cuts[0].from_at,
+    cutAt: last.cut_at,
+    days: cuts.length,
+    closedCash: Number(last.expected_cash || 0),
+    todayCash: Number(last.after_cash || 0),
+  }
+}
+
+/** Moment bugundan necha kalendar kun keyin (mahalliy vaqt): 0 — bugun,
+ *  1 — ertaga. "Keyingi kesim: ertaga 00:05" yozuvi uchun. */
+export const dayOffset = (iso: string, now: Date = new Date()): number => {
+  const at = new Date(iso)
+  const from = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const to = new Date(at.getFullYear(), at.getMonth(), at.getDate())
+  return Math.round((to.getTime() - from.getTime()) / 86_400_000)
 }
 
 export interface CutRow {

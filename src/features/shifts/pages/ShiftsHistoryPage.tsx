@@ -73,6 +73,11 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 // Sessiya davomiyligi daqiqalarda (saralash va o'rtacha uchun)
+/** Sessiyada pul sanalganmi (farq, tuzatish shunga bog'liq). Smena
+ *  tugallanishida kunlik kesimda yopilgan qismda (`kept_in_drawer`) pul
+ *  sanalmagan — kassa butunligicha keyingi sessiyaga o'tgan. */
+const isCounted = (s: ShiftSession): boolean => s.status === "CLOSED" && !s.kept_in_drawer
+
 const durationMins = (s: ShiftSession): number => {
   if (!s.started_at) return 0
   const from = new Date(s.started_at).getTime()
@@ -1100,7 +1105,7 @@ export const ShiftsHistoryPage = () => {
                       {durationLabel(durationMins(s))}
                     </p>
                   </div>
-                  {canEdit && s.status === "CLOSED" && (
+                  {canEdit && isCounted(s) && (
                     <button
                       type="button"
                       title={tr("Sanalgan summani tuzatish")}
@@ -1131,7 +1136,7 @@ export const ShiftsHistoryPage = () => {
                   )}
                   {s.handed_at && (
                     <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
-                      {tr("kesim bo'yicha")}
+                      {s.kept_in_drawer ? tr("kesimda yopilgan") : tr("kesim bo'yicha")}
                     </span>
                   )}
                   {s.continue_after_end && (
@@ -1167,7 +1172,7 @@ export const ShiftsHistoryPage = () => {
                   <div
                     className={cn(
                       "rounded-lg px-1 py-1.5",
-                      s.status !== "CLOSED"
+                      !isCounted(s)
                         ? "bg-gray-50"
                         : diff === 0
                           ? "bg-emerald-50"
@@ -1177,7 +1182,7 @@ export const ShiftsHistoryPage = () => {
                     <p
                       className={cn(
                         "text-[10px]",
-                        s.status !== "CLOSED"
+                        !isCounted(s)
                           ? "text-gray-400"
                           : diff === 0
                             ? "text-emerald-600"
@@ -1189,14 +1194,14 @@ export const ShiftsHistoryPage = () => {
                     <p
                       className={cn(
                         "truncate text-xs font-bold tabular-nums",
-                        s.status !== "CLOSED"
+                        !isCounted(s)
                           ? "text-gray-400"
                           : diff === 0
                             ? "text-emerald-700"
                             : "text-red-600"
                       )}
                     >
-                      {s.status === "CLOSED" ? fmt(diff) : "—"}
+                      {isCounted(s) ? fmt(diff) : "—"}
                     </p>
                   </div>
                 </div>
@@ -1316,14 +1321,14 @@ export const ShiftsHistoryPage = () => {
                       <TableCell
                         className={cn(
                           "whitespace-nowrap text-right font-semibold tabular-nums",
-                          s.status !== "CLOSED"
+                          !isCounted(s)
                             ? "text-gray-400"
                             : diff === 0
                               ? "text-emerald-600"
                               : "text-red-600"
                         )}
                       >
-                        {s.status === "CLOSED" ? fmt(diff) : "—"}
+                        {isCounted(s) ? fmt(diff) : "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-1">
@@ -1345,7 +1350,7 @@ export const ShiftsHistoryPage = () => {
                           )}
                           {s.handed_at && (
                             <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
-                              {tr("kesim bo'yicha")}
+                              {s.kept_in_drawer ? tr("kesimda yopilgan") : tr("kesim bo'yicha")}
                             </span>
                           )}
                           {s.continue_after_end && (
@@ -1379,7 +1384,7 @@ export const ShiftsHistoryPage = () => {
                       </TableCell>
                       {canEdit && (
                         <TableCell className="text-right">
-                          {s.status === "CLOSED" && (
+                          {isCounted(s) && (
                             <button
                               type="button"
                               title={tr("Sanalgan summani tuzatish")}
@@ -1438,7 +1443,7 @@ export const ShiftsHistoryPage = () => {
                     )}
                     {detailTarget.handed_at && (
                       <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
-                        {tr("kesim bo'yicha")}
+                        {detailTarget.kept_in_drawer ? tr("kesimda yopilgan") : tr("kesim bo'yicha")}
                       </span>
                     )}
                     {detailTarget.continue_after_end && (
@@ -1491,9 +1496,15 @@ export const ShiftsHistoryPage = () => {
                     yopilgan, pul esa keyinroq topshirilgan */}
                 {detailTarget.handed_at && (
                   <p className="rounded-xl bg-indigo-50 px-3 py-2 text-xs leading-relaxed text-indigo-600">
-                    {tr("Kunlik kesim bo'yicha topshirilgan: sessiya kesim vaqtida yopildi, pul {{time}} da topshirildi. Kesimdan keyingi tushum keyingi sessiyada.", {
-                      time: format(new Date(detailTarget.handed_at), "dd.MM HH:mm"),
-                    })}
+                    {detailTarget.kept_in_drawer
+                      ? // Smena tugallanishida kesimda yopilgan qism: pul
+                        // sanalmagan va topshirilmagan — kassada qolgan
+                        tr("Smena tugallanganda ({{time}}) kunlik kesim bo'yicha yopilgan. Pul sanalmagan va topshirilmagan — kassada qolib, keyingi sessiyaga o'tgan; sanash va farq o'sha sessiyada.", {
+                          time: format(new Date(detailTarget.handed_at), "dd.MM HH:mm"),
+                        })
+                      : tr("Kunlik kesim bo'yicha topshirilgan: sessiya kesim vaqtida yopildi, pul {{time}} da topshirildi. Kesimdan keyingi tushum keyingi sessiyada.", {
+                          time: format(new Date(detailTarget.handed_at), "dd.MM HH:mm"),
+                        })}
                   </p>
                 )}
 
@@ -1540,7 +1551,7 @@ export const ShiftsHistoryPage = () => {
                     <div
                       className={cn(
                         "flex justify-between rounded-lg px-3 py-2",
-                        detailTarget.status !== "CLOSED"
+                        !isCounted(detailTarget)
                           ? "bg-gray-50 text-gray-400"
                           : Number(detailTarget.cash_diff || 0) === 0
                             ? "bg-emerald-50 text-emerald-700"
@@ -1549,7 +1560,7 @@ export const ShiftsHistoryPage = () => {
                     >
                       <span>{tr("Farq")}</span>
                       <span className="font-bold tabular-nums">
-                        {detailTarget.status === "CLOSED"
+                        {isCounted(detailTarget)
                           ? tr("{{cash_diff}} so'm{{v}}", { cash_diff: fmt(detailTarget.cash_diff), v: Number(detailTarget.cash_diff || 0) === 0
                                 ? tr(" — mos keldi")
                                 : "" })
@@ -1626,7 +1637,7 @@ export const ShiftsHistoryPage = () => {
 
               {/* Futer amallari */}
               <div className="flex justify-end gap-2 border-t bg-gray-50/70 px-5 py-3">
-                {canEdit && detailTarget.status === "CLOSED" && (
+                {canEdit && isCounted(detailTarget) && (
                   <Button
                     variant="outline"
                     onClick={() => {

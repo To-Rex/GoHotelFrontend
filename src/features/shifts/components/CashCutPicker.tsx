@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { format } from "date-fns"
-import { Check } from "lucide-react"
+import { Check, Lock } from "lucide-react"
 
 import { tr, trc } from "@/i18n"
 import { UZ_DAYS, UZ_MONTHS } from "@/lib/clock"
@@ -34,16 +34,23 @@ const dayLabel = (day: string) => {
    tugma ham bor ("Hamma pulni topshirish").
 
    Sessiyaga kesim tushmagan bo'lsa (oxirgi kesimdan keyin ochilgan) —
-   tanlashga hech narsa yo'q, komponent ko'rinmaydi. */
+   tanlashga hech narsa yo'q, komponent ko'rinmaydi.
+
+   `locked` — "faqat yopilgan kunlar" rejimi (sozlama): tanlov yo'q. Ro'yxat
+   faqat ko'rsatadi: yopilgan kunlarning hammasi topshiriladi, bugungi qator
+   esa qulflangan — u keyingi kesimdan keyin topshiriladi. */
 export function CashCutPicker({
   data,
   choice,
   onChange,
+  locked = false,
 }: {
   data: CashBreakdown | undefined
   /** `null` — xodim hali tanlamagan (standart: oxirgi kesimgacha) */
   choice: CutChoice | null
   onChange: (choice: CutChoice) => void
+  /** Tanlov yo'q — faqat ko'rsatish (yopilgan kunlar rejimi) */
+  locked?: boolean
 }) {
   const rows = cutRows(data, choice)
   const listRef = useRef<HTMLDivElement | null>(null)
@@ -69,8 +76,8 @@ export function CashCutPicker({
     <div className="space-y-2">
       <div
         ref={listRef}
-        role="radiogroup"
-        aria-label={tr("Qaysi kungacha topshirasiz?")}
+        role={locked ? "list" : "radiogroup"}
+        aria-label={locked ? tr("Topshiriladigan kunlar") : tr("Qaysi kungacha topshirasiz?")}
         className="relative max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white md:max-h-[19.5rem]"
       >
         {rows.map((row, index) => (
@@ -78,12 +85,17 @@ export function CashCutPicker({
             key={row.choice}
             ref={row.selected ? selectedRef : undefined}
             type="button"
-            role="radio"
-            aria-checked={row.selected}
-            onClick={() => onChange(row.choice)}
+            // Qulflangan ro'yxat — tugmalar emas, oddiy qatorlar: bosilmaydi
+            // va klaviatura fokusiga tushmaydi
+            role={locked ? "listitem" : "radio"}
+            aria-checked={locked ? undefined : row.selected}
+            aria-disabled={locked || undefined}
+            tabIndex={locked ? -1 : undefined}
+            onClick={locked ? undefined : () => onChange(row.choice)}
             className={cn(
-              "flex w-full items-stretch gap-3 px-3 text-left outline-none transition-colors focus-visible:bg-primary-50",
-              row.included ? "bg-primary-50/60" : "hover:bg-gray-50"
+              "flex w-full items-stretch gap-3 px-3 text-left outline-none transition-colors",
+              locked ? "cursor-default" : "focus-visible:bg-primary-50",
+              row.included ? "bg-primary-50/60" : !locked && "hover:bg-gray-50"
             )}
           >
             {/* Vaqt chizig'i: belgi + qo'shni qatorlarga ulanuvchi chiziq.
@@ -113,7 +125,11 @@ export function CashCutPicker({
                     : "border-gray-300 bg-white"
                 )}
               >
-                {row.included && <Check className="h-3 w-3" strokeWidth={3.5} />}
+                {row.included ? (
+                  <Check className="h-3 w-3" strokeWidth={3.5} />
+                ) : (
+                  locked && <Lock className="h-2.5 w-2.5 text-gray-400" strokeWidth={3} />
+                )}
               </span>
             </span>
             <span className="min-w-0 flex-1 py-2.5">
@@ -123,7 +139,11 @@ export function CashCutPicker({
                   row.included ? "text-gray-900" : "text-gray-500"
                 )}
               >
-                {row.kind === "day" && row.day ? dayLabel(row.day) : tr("Kesimdan keyin")}
+                {row.kind === "day" && row.day
+                  ? dayLabel(row.day)
+                  : locked
+                    ? tr("Bugun")
+                    : tr("Kesimdan keyin")}
               </span>
               <span className="block text-[11px] tabular-nums text-gray-400">
                 {stamp(row.from)} → {row.to ? stamp(row.to) : trc("shift", "hozir")}
@@ -149,27 +169,36 @@ export function CashCutPicker({
                   ? tr("sof xarajat")
                   : row.included
                     ? tr("topshiriladi")
-                    : tr("kassada qoladi")}
+                    : locked
+                      ? tr("keyingi kesimda")
+                      : tr("kassada qoladi")}
               </span>
             </span>
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <p className="text-[11px] leading-relaxed text-gray-500">
-          {everything
-            ? tr("Hozirgacha bo'lgan hamma pul topshiriladi.")
-            : tr("Belgilangan kunlar topshiriladi, qolgani kassada qoladi.")}
+      {locked ? (
+        <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-gray-500">
+          <Lock className="mt-0.5 h-3 w-3 flex-shrink-0 text-gray-400" />
+          {tr("Yopilgan kunlar birga topshiriladi. Bugungi tushum keyingi kunlik kesimdan keyin topshiriladi.")}
         </p>
-        {/* "Hamma pul" — oxirgi qatorni bosish bilan bir xil, lekin ochiq aytilgan */}
-        <button
-          type="button"
-          onClick={() => onChange(everything ? defaultCutChoice(data) : ALL_CASH)}
-          className="rounded-md text-[11px] font-semibold text-primary-600 underline-offset-2 outline-none hover:underline focus-visible:underline"
-        >
-          {everything ? tr("Faqat kesimgacha topshirish") : tr("Hamma pulni topshirish")}
-        </button>
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p className="text-[11px] leading-relaxed text-gray-500">
+            {everything
+              ? tr("Hozirgacha bo'lgan hamma pul topshiriladi.")
+              : tr("Belgilangan kunlar topshiriladi, qolgani kassada qoladi.")}
+          </p>
+          {/* "Hamma pul" — oxirgi qatorni bosish bilan bir xil, lekin ochiq aytilgan */}
+          <button
+            type="button"
+            onClick={() => onChange(everything ? defaultCutChoice(data) : ALL_CASH)}
+            className="rounded-md text-[11px] font-semibold text-primary-600 underline-offset-2 outline-none hover:underline focus-visible:underline"
+          >
+            {everything ? tr("Faqat kesimgacha topshirish") : tr("Hamma pulni topshirish")}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

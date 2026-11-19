@@ -513,6 +513,8 @@ export const SettingsPage = () => {
   const [dayCloseRequired, setDayCloseRequired] = useState(true)
   // Tasdiq rejimi: topshirilgan kassa admin/menejer tasdig'ini kutadi
   const [handoverApproval, setHandoverApproval] = useState(false)
+  // Kassa faqat yopilgan kunlar bo'yicha topshiriladi (bugungi pul emas)
+  const [handoverClosedDays, setHandoverClosedDays] = useState(false)
   const [shiftSaved, setShiftSaved] = useState(false)
   const [shiftError, setShiftError] = useState<string | null>(null)
 
@@ -522,6 +524,7 @@ export const SettingsPage = () => {
       setDayClose(shiftSettings.day_close)
       setDayCloseRequired(shiftSettings.day_close_required !== false)
       setHandoverApproval(shiftSettings.handover_approval === true)
+      setHandoverClosedDays(shiftSettings.handover_closed_days === true)
     }
   }, [shiftSettings])
 
@@ -534,6 +537,7 @@ export const SettingsPage = () => {
         day_close: dayClose,
         day_close_required: dayCloseRequired,
         handover_approval: handoverApproval,
+        handover_closed_days: handoverClosedDays,
       })
       setShiftSaved(true)
       window.setTimeout(() => setShiftSaved(false), 3000)
@@ -1391,6 +1395,26 @@ export const SettingsPage = () => {
                           {handoverApproval
                             ? tr("Xodim kassani topshirgach sessiya tasdiq kutadi: faqat admin yoki menejer tasdiqlagach yopiladi va (xodim ishda davom etsa) yangi kassa 0 so'mdan ochiladi. Tasdiq kutilganda qabul tugmasi (keyingi xodim paroli) ishlamaydi.")
                             : tr("O'chiq — hozirgi oqim: topshirilgan kassani keyingi xodim o'z paroli bilan qabul qiladi. Yoqilsa, topshirilgan kassa faqat admin/menejer tasdig'idan keyin yopiladi.")}
+                        </span>
+                      </span>
+                    </label>
+
+                    {/* Faqat yopilgan kunlar — kassa kunlik kesim bo'yicha,
+                        to'liq kunlar bilan topshiriladi; bugungi pul emas */}
+                    <label className="mt-3 flex cursor-pointer items-start gap-2.5 border-t border-gray-200 pt-3">
+                      <Checkbox
+                        checked={handoverClosedDays}
+                        onCheckedChange={(v) => setHandoverClosedDays(v === true)}
+                        className="mt-0.5"
+                      />
+                      <span className="text-sm">
+                        <b className="font-medium text-gray-900">
+                          {tr("Kassa faqat yopilgan kunlar bo'yicha topshirilsin")}
+                        </b>
+                        <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                          {handoverClosedDays
+                            ? tr("Xodim faqat kunlik kesim ({{day_close}}) yopgan kunlarni topshiradi — hammasini birga. Bugungi tushumni kesimdan oldin topshirib bo'lmaydi. Smena ham kunlik kesim bo'yicha yopiladi: yopilgan kunlar alohida yoziladi, kassadagi pul esa keyingi xodimga o'tadi.", { day_close: dayClose })
+                            : tr("O'chiq — hozirgi oqim: xodim qaysi kungacha topshirishni o'zi tanlaydi va bugungi tushumni ham topshira oladi. Yoqilsa, kassa faqat to'liq yopilgan kunlar bilan topshiriladi.")}
                         </span>
                       </span>
                     </label>

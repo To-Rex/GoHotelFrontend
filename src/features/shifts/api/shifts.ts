@@ -15,6 +15,14 @@ export interface ShiftSettings {
    *  topshirilgan sessiya tasdiq kutadi; tasdiqlangach yopiladi va
    *  (kassir davom etsa) yangi kassa 0 so'mdan ochiladi */
   handover_approval: boolean;
+  /** Kassa faqat YOPILGAN KUNLAR bo'yicha topshirilsin:
+   *  false — erkin: xodim qaysi kungacha topshirishni o'zi tanlaydi va
+   *          bugungi (kesimdan keyingi) pulni ham topshira oladi
+   *  true  — kunlik kesim yopgan kunlarning hammasi BIRGA topshiriladi;
+   *          bugungi tushum keyingi kesimdan keyin. Smena tugallanganda ham
+   *          sessiya kesim momentida yopiladi
+   *  Eski serverda maydon yo'q — erkin rejim. */
+  handover_closed_days?: boolean;
 }
 
 // Sanalgan summa tuzatilishi (audit yozuvi) — eski qiymat saqlanadi
@@ -74,6 +82,14 @@ export interface ShiftSession {
   /** Kesim bo'yicha topshirishda kassada qoldirilgan summa (keyingi
    *  sessiyaning boshlang'ich kassasi). `expected_cash` dan ayirilgan. */
   carried_cash?: number | null;
+  /** Smena tugallanishida KUNLIK KESIMDA yopilgan qism ("faqat yopilgan
+   *  kunlar" rejimi): pul sanalmagan va kassadan chiqmagan — kesim
+   *  momentidagi kassa (`carried_cash`) keyingi sessiyaga o'tgan. Bunday
+   *  sessiyada kutilgan/sanalgan summa yo'q. */
+  kept_in_drawer?: boolean;
+  /** Smena tugallash javobida: kesim momentida alohida yopilgan qism
+   *  (yopilgan kunlar). Hisobotning o'zi — kesimdan keyingi sessiya. */
+  closed_days?: ShiftSession;
   /** To'lov usullari tarkibi — yopilgan sessiyada (tarixda) va yopilish
    *  hisobotida keladi; ochiq sessiyada "ko'r sanash" qoidasi bo'yicha
    *  yashiriladi */
@@ -259,6 +275,12 @@ export interface CashBreakdown {
    *  Sessiya oxirgi kesimdan keyin ochilgan bo'lsa — bo'sh (yoki eski
    *  serverda umuman yo'q): dialog faqat "hamma pul"ni taklif qiladi. */
   cuts?: CashCut[];
+  /** "Faqat yopilgan kunlar" rejimi (sozlama): tanlov yo'q — oxirgi
+   *  kesimgacha bo'lgan hamma kunlar birga topshiriladi; `cuts` bo'sh
+   *  bo'lsa hali topshirib bo'lmaydi. Eski serverda yo'q — erkin rejim. */
+  closed_days_only?: boolean;
+  /** Keyingi kunlik kesim momenti (ISO) — bugungi kun qachon yopilishi */
+  next_cut_at?: string;
 }
 
 /** Kunlik kesim bo'yicha topshirish varianti (backend: `plan_cuts`).

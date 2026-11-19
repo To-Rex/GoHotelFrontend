@@ -5,13 +5,17 @@ import {
   ALL_CASH,
   amountDue,
   cashLeftAfter,
+  closedDaysOnly,
   cutRows,
+  dayOffset,
   defaultCutChoice,
   effectiveCutChoice,
+  handoverBlocked,
   handoverPeriod,
   hasCuts,
   parseDay,
   selectedCut,
+  shiftSplit,
 } from "./cashCuts"
 
 /* Kassani kunlik kesim bo'yicha topshirish — tanlov mantig'i.
@@ -168,5 +172,103 @@ describe("parseDay", () => {
   it("sana vaqt zonasidan qat'i nazar o'sha kun bo'lib qoladi", () => {
     const d = parseDay("2026-11-17")
     expect([d.getFullYear(), d.getMonth() + 1, d.getDate()]).toEqual([2026, 11, 17])
+  })
+})
+
+/* "Faqat yopilgan kunlar" rejimi (sozlama): tanlov yo'q — kunlik kesim
+   yopgan kunlarning hammasi birga topshiriladi, bugungi tushum esa keyingi
+   kesimdan keyin. */
+describe("faqat yopilgan kunlar rejimi", () => {
+  const strict: CashBreakdown = { ...three, closed_days_only: true }
+  const todayOnly: CashBreakdown = { ...data([]), expected_cash: 250_000, closed_days_only: true }
+
+  it("rejim faqat server aytganda yoqiladi (eski serverda — erkin)", () => {
+    expect(closedDaysOnly(strict)).toBe(true)
+    for (const d of [three, data(), undefined, null]) expect(closedDaysOnly(d)).toBe(false)
+  })
+
+  it("tanlov inobatga olinmaydi: har doim oxirgi kesimgacha", () => {
+    for (const choice of [null, C16, C17, ALL_CASH, "2026-11-01T19:05:00+00:00"]) {
+      expect(effectiveCutChoice(strict, choice)).toBe(C18)
+      const chosen = selectedCut(strict, choice)
+      expect(chosen?.cut_at).toBe(C18)
+      expect(amountDue(strict, chosen)).toBe(2_550_000)
+      expect(cashLeftAfter(strict, chosen)).toBe(250_000)
+      expect(handoverPeriod(strict, choice)).toEqual({ from: START, to: C18, days: 3 })
+    }
+  })
+
+  it("ro'yxatda yopilgan kunlar belgilangan, bugungi qator — yo'q", () => {
+    const flags = (choice: string | null) =>
+      cutRows(strict, choice).map((r) => `${r.included ? "+" : "-"}${r.selected ? "*" : ""}`)
+    expect(flags(null)).toEqual(["+", "+", "+*", "-"])
+    expect(flags(C16)).toEqual(["+", "+", "+*", "-"])
+    expect(flags(ALL_CASH)).toEqual(["+", "+", "+*", "-"])
+  })
+
+  it("yopilgan kun yo'q — topshirib bo'lmaydi", () => {
+    expect(handoverBlocked(todayOnly)).toBe(true)
+    expect(handoverBlocked(strict)).toBe(false)
+    // Erkin rejimda kesimsiz sessiya — "hamma pul", to'siq yo'q
+    expect(handoverBlocked(data([]))).toBe(false)
+    expect(handoverBlocked(undefined)).toBe(false)
+  })
+
+  it("erkin rejim o'zgarmagan", () => {
+    const free: CashBreakdown = { ...three, closed_days_only: false }
+    expect(effectiveCutChoice(free, C16)).toBe(C16)
+    expect(effectiveCutChoice(free, ALL_CASH)).toBe(ALL_CASH)
+    expect(shiftSplit(free)).toBeNull()
+  })
+})
+
+describe("smena kunlik kesimda yopilishi", () => {
+  const strict: CashBreakdown = { ...three, closed_days_only: true }
+
+  it("yopilgan kunlar va bugungi tushum — yig'indisi kassadagi jami pul", () => {
+    const split = shiftSplit(strict)
+    expect(split).toEqual({
+      from: START,
+      cutAt: C18,
+      days: 3,
+      closedCash: 2_550_000,
+      todayCash: 250_000,
+    })
+    expect(split!.closedCash + split!.todayCash).toBe(strict.expected_cash)
+  })
+
+  it("kesimdan keyin xarajat ko'p bo'lsa bugungi qism manfiy", () => {
+    const d: CashBreakdown = {
+      ...data([
+        cut({ cut_at: C18, from_at: START, day: "2026-11-17", opening_cash: 0, day_cash: 1_000_000, expected_cash: 1_000_000, after_cash: -50_000, carried_cash: 50_000, due_cash: 950_000 }),
+      ]),
+      expected_cash: 950_000,
+      closed_days_only: true,
+    }
+    const split = shiftSplit(d)
+    expect(split?.closedCash).toBe(1_000_000)
+    expect(split?.todayCash).toBe(-50_000)
+    expect(split!.closedCash + split!.todayCash).toBe(d.expected_cash)
+  })
+
+  it("sessiyaga kesim tushmagan yoki rejim o'chiq — bo'linmaydi", () => {
+    expect(shiftSplit({ ...data([]), closed_days_only: true })).toBeNull()
+    expect(shiftSplit(three)).toBeNull()
+    expect(shiftSplit(undefined)).toBeNull()
+  })
+})
+
+describe("dayOffset", () => {
+  const now = new Date(2026, 10, 18, 8, 40)
+
+  it("bugun, ertaga va undan keyin", () => {
+    expect(dayOffset(new Date(2026, 10, 18, 23, 0).toISOString(), now)).toBe(0)
+    expect(dayOffset(new Date(2026, 10, 19, 0, 5).toISOString(), now)).toBe(1)
+    expect(dayOffset(new Date(2026, 10, 20, 0, 5).toISOString(), now)).toBe(2)
+  })
+
+  it("oy va yil chegarasidan o'tadi", () => {
+    expect(dayOffset(new Date(2026, 11, 1, 0, 5).toISOString(), new Date(2026, 10, 30, 23, 50))).toBe(1)
+    expect(dayOffset(new Date(2027, 0, 1, 0, 5).toISOString(), new Date(2026, 11, 31, 12, 0))).toBe(1)
   })
 })
