@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import {
   shiftRestriction,
+  handoverScope,
+  isCutDue,
   allowedRoutesFor,
   SHIFT_ALLOWED_ROUTES,
   SHIFT_REDIRECT_ROUTE,
@@ -208,6 +210,22 @@ describe("kunlik kassa kesimi majburiymi", () => {
     expect(shiftRestriction(reception, overdue(undefined))).toBe("cut_due")
   })
 
+  it("«faqat oldingi smenalar» tartibida kesim ishni to'xtatmaydi", () => {
+    // Xodim o'z smenasidagi pulni topshira olmaydi — "topshirmaguncha ishlab
+    // bo'lmaydi" talabi bajarib bo'lmaydigan bo'lardi. Server holatda
+    // majburiyatni o'chirib yuboradi; eski javob (majburiy) kelsa ham
+    // klient cheklamaydi va eslatma ko'rsatmaydi.
+    const prev = { ...overdue(true), handover_scope: "prev_shifts" } as ShiftState
+    expect(isCutDue(prev)).toBe(false)
+    expect(shiftRestriction(reception, prev)).toBeNull()
+    // Boshqa tartiblarda kesim avvalgidek ishlaydi
+    for (const scope of ["free", "closed_days"] as const) {
+      const state = { ...overdue(true), handover_scope: scope } as ShiftState
+      expect(isCutDue(state)).toBe(true)
+      expect(shiftRestriction(reception, state)).toBe("cut_due")
+    }
+  })
+
   it("kesim o'chirilgan bo'lsa ham boshqa cheklovlar ishlaydi", () => {
     // Smena topshirilgan bo'lsa, kesim sozlamasidan qat'i nazar bloklanadi
     const handedOver = {
@@ -217,5 +235,25 @@ describe("kunlik kassa kesimi majburiymi", () => {
       day_close_required: false,
     } as ShiftState
     expect(shiftRestriction(reception, handedOver)).toBe("handover")
+  })
+})
+
+describe("kassani topshirish tartibi", () => {
+  it("yangi maydon ustun", () => {
+    expect(handoverScope({ handover_scope: "prev_shifts" })).toBe("prev_shifts")
+    expect(handoverScope({ handover_scope: "closed_days" })).toBe("closed_days")
+    expect(handoverScope({ handover_scope: "free", handover_closed_days: true })).toBe("free")
+  })
+
+  it("eski server: faqat ikki holatli bayroq", () => {
+    expect(handoverScope({ handover_closed_days: true })).toBe("closed_days")
+    expect(handoverScope({ handover_closed_days: false })).toBe("free")
+  })
+
+  it("hech narsa yo'q yoki notanish qiymat — erkin", () => {
+    expect(handoverScope(undefined)).toBe("free")
+    expect(handoverScope(null)).toBe("free")
+    expect(handoverScope({})).toBe("free")
+    expect(handoverScope({ handover_scope: "weekly" as never })).toBe("free")
   })
 })

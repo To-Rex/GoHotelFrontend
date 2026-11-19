@@ -4,6 +4,20 @@ import type { User } from "@/store/auth";
 
 // --- Turlar ---
 
+/** Kassani topshirish tartibi — xodim kassadagi pulning qaysi qismini
+ *  topshira oladi (sozlama):
+ *  - "free"        — erkin: qaysi kungacha topshirishni o'zi tanlaydi,
+ *                    bugungi (kesimdan keyingi) pulni ham topshira oladi
+ *  - "closed_days" — faqat kunlik kesim yopgan kunlar, hammasi birga;
+ *                    bugungi tushum keyingi kesimdan keyin. Smena ham kesim
+ *                    momentida yopiladi
+ *  - "prev_shifts" — faqat oldingi smenalardan qolgan pul (qabul qilingan
+ *                    kassa); o'z smenasidagi tushum smena tugagach keyingi
+ *                    xodimga o'tadi va uni o'sha topshiradi */
+export type HandoverScope = "free" | "closed_days" | "prev_shifts";
+
+const HANDOVER_SCOPES: readonly string[] = ["free", "closed_days", "prev_shifts"];
+
 export interface ShiftSettings {
   mode: "simple" | "cash";
   day_close: string; // "HH:MM"
@@ -21,9 +35,22 @@ export interface ShiftSettings {
    *  true  — kunlik kesim yopgan kunlarning hammasi BIRGA topshiriladi;
    *          bugungi tushum keyingi kesimdan keyin. Smena tugallanganda ham
    *          sessiya kesim momentida yopiladi
-   *  Eski serverda maydon yo'q — erkin rejim. */
+   *  Eski (ikki holatli) ko'rinish — `handover_scope === "closed_days"`. */
   handover_closed_days?: boolean;
+  /** Kassani topshirish tartibi. Eski serverda yo'q — `handoverScope()`
+   *  uni eski bayroqdan aniqlaydi. */
+  handover_scope?: HandoverScope;
 }
+
+/** Sozlamadagi topshirish tartibi. Yangi maydon bo'lmasa (eski server) —
+ *  eski bayroqdan: `handover_closed_days` → "closed_days", aks holda erkin. */
+export const handoverScope = (
+  settings: Pick<ShiftSettings, "handover_scope" | "handover_closed_days"> | null | undefined
+): HandoverScope => {
+  const scope = settings?.handover_scope;
+  if (scope && HANDOVER_SCOPES.includes(scope)) return scope;
+  return settings?.handover_closed_days === true ? "closed_days" : "free";
+};
 
 // Sanalgan summa tuzatilishi (audit yozuvi) — eski qiymat saqlanadi
 export interface ShiftCorrection {
@@ -87,6 +114,10 @@ export interface ShiftSession {
    *  momentidagi kassa (`carried_cash`) keyingi sessiyaga o'tgan. Bunday
    *  sessiyada kutilgan/sanalgan summa yo'q. */
   kept_in_drawer?: boolean;
+  /** "Faqat oldingi smenalar" rejimida topshirilgan kassa: oldingi
+   *  smenalardan qolgan pul. Sessiya o'zi boshlangan momentda yopilgan
+   *  (`ended_at` = `started_at`), xodimning o'z tushumi keyingi sessiyada. */
+  prev_shift_cash?: boolean;
   /** Smena tugallash javobida: kesim momentida alohida yopilgan qism
    *  (yopilgan kunlar). Hisobotning o'zi — kesimdan keyingi sessiya. */
   closed_days?: ShiftSession;
@@ -281,6 +312,29 @@ export interface CashBreakdown {
   closed_days_only?: boolean;
   /** Keyingi kunlik kesim momenti (ISO) — bugungi kun qachon yopilishi */
   next_cut_at?: string;
+  /** Topshirish tartibi (sozlama). Eski serverda yo'q — `closed_days_only`
+   *  dan aniqlanadi. */
+  handover_scope?: HandoverScope;
+  /** "Faqat oldingi smenalar" rejimida: oldingi smenalardan qolgan pulni
+   *  topshirish hisobi (faqat shu rejimda keladi). */
+  prev_shifts?: PrevShiftsPlan;
+}
+
+/** Oldingi smenalardan qolgan pulni topshirish hisobi (backend:
+ *  `_prev_shifts_plan`). Kunlik kesim varianti bilan bir xil shakl, faqat
+ *  "kesim" — sessiya boshlanishi:
+ *  - `expected_cash` — smena boshida kassada bo'lgan (qabul qilingan) pul;
+ *  - `after_cash`    — xodimning o'z smenasidagi sof naqd harakat;
+ *  - `carried_cash`  — o'z smenasidagi xarajatga ketgan qism (topshirilmaydi);
+ *  - `due_cash`      — topshiriladigan summa (0 — topshiradigan narsa yo'q);
+ *  - `cut_at`        — topshirishda serverga shu yuboriladi. */
+export interface PrevShiftsPlan extends CashCut {
+  /** Kassa kimdan qabul qilingani; 0 dan ochilgan smenada — yo'q */
+  received_from?: {
+    user_name: string;
+    accepted_at: string | null;
+    counted_cash: number | null;
+  } | null;
 }
 
 /** Kunlik kesim bo'yicha topshirish varianti (backend: `plan_cuts`).
@@ -406,6 +460,9 @@ export interface ShiftHandover {
   handed_at?: string | null;
   /** Kesim bo'yicha topshirishda kassada qoldirilgan summa */
   carried_cash?: number | null;
+  /** "Faqat oldingi smenalar" rejimida topshirilgan: oldingi smenalardan
+   *  qolgan pul (`ended_at` = `started_at`) */
+  prev_shift_cash?: boolean;
   /** Qabul qiluvchining yangi sessiyasi boshlang'ich kassasi */
   received_opening_cash?: number | null;
 }
@@ -490,6 +547,10 @@ export const isWorkEnded = (user: User | null): boolean => {
  *  hozir kesim vaqtidan o'tgan bo'lsa — kassani topshirish kerak. */
 export const isCutDue = (state: ShiftState | undefined): boolean => {
   if (!state || state.mode !== "cash" || !state.my_session?.started_at) return false;
+  // "Faqat oldingi smenalar" rejimida xodim o'z smenasidagi pulni topshira
+  // olmaydi — kunlik kesimda "kassani topshiring" talabi qo'llanmaydi
+  // (aks holda u bajarib bo'lmaydigan talab bilan ishdan to'silib qolardi).
+  if (handoverScope(state) === "prev_shifts") return false;
   const cut = parseHM(state.day_close);
   if (cut === null) return false;
   const now = new Date();

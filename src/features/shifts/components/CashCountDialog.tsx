@@ -5,11 +5,14 @@ import {
   ArrowRightLeft,
   CalendarCheck,
   CalendarClock,
+  Check,
   CheckCircle2,
   Loader2,
+  Lock,
   PencilLine,
   RefreshCw,
   ShieldCheck,
+  Users,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -25,7 +28,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { apiErrorMessage } from "@/lib/apiError"
 import { cn } from "@/lib/utils"
 import { tr, trc } from "@/i18n"
-import { useCloseCash, useEndShift, useExpectedCash, type ShiftSession } from "../api/shifts"
+import {
+  useCloseCash,
+  useEndShift,
+  useExpectedCash,
+  type HandoverScope,
+  type ShiftSession,
+} from "../api/shifts"
 import {
   breakdownRows,
   caretForDigits,
@@ -40,12 +49,14 @@ import {
 import {
   amountDue,
   cashLeftAfter,
-  closedDaysOnly,
   dayOffset,
+  handoverBlocked,
   handoverPeriod,
-  hasCuts,
+  handoverScopeOf,
+  prevShiftsPlan,
   selectedCut,
   shiftSplit,
+  showsDays,
   type CutChoice,
 } from "../lib/cashCuts"
 import { CashCutPicker } from "./CashCutPicker"
@@ -68,10 +79,12 @@ const cutMoment = (iso: string): string => {
 const GROUP = groupSeparator()
 const formatCount = (raw: string) => formatCountInput(raw, GROUP)
 
-const breakdownLabel = (key: BreakdownRow["key"]): string => {
+/** `prev` — oldingi smenalar pulini topshirish: boshlang'ich kassa — aynan
+ *  qabul qilingan pul, "sarflangan" esa xodimning o'z smenasidagi xarajat */
+const breakdownLabel = (key: BreakdownRow["key"], prev = false): string => {
   switch (key) {
     case "opening":
-      return tr("Boshlang'ich kassa")
+      return prev ? tr("Smena boshida qabul qilingan") : tr("Boshlang'ich kassa")
     case "payments":
       return tr("Naqd to'lovlar")
     case "shop":
@@ -79,7 +92,7 @@ const breakdownLabel = (key: BreakdownRow["key"]): string => {
     case "expenses":
       return tr("Naqd xarajatlar")
     case "carried":
-      return tr("Kesimdan keyin sarflangan")
+      return prev ? tr("Smenangizda sarflangan") : tr("Kesimdan keyin sarflangan")
   }
 }
 
@@ -121,17 +134,26 @@ function SectionTitle({ step, children }: { step?: number; children: ReactNode }
    bo'lsa tuzatadi. Kompyuterda maydon darhol tanlangan holda turadi: yozishni
    boshlasa, eski qiymat almashadi.
 
-   "Faqat yopilgan kunlar" rejimi (sozlama):
-     - "Kassani topshirish" — tanlov yo'q: kunlar ro'yxati faqat ko'rsatadi,
-       yopilgan kunlarning hammasi birga topshiriladi. Yopilgan kun bo'lmasa
-       sanash o'rniga tushuntirish chiqadi: bugungi tushum qachon topshirilishi.
+   Topshirish tartibi cheklangan bo'lsa (sozlama) — tanlov yo'q:
+
+   "Faqat yopilgan kunlar":
+     - "Kassani topshirish" — kunlar ro'yxati faqat ko'rsatadi, yopilgan
+       kunlarning hammasi birga topshiriladi. Yopilgan kun bo'lmasa sanash
+       o'rniga tushuntirish chiqadi: bugungi tushum qachon topshirilishi.
      - "Smenani tugallash" — smena kunlik kesimda yopiladi: yopilgan kunlar
        va bugungi tushum alohida ko'rsatiladi, kassadagi pul esa butunligicha
-       keyingi xodimga o'tadi (bir marta sanaladi). */
+       keyingi xodimga o'tadi (bir marta sanaladi).
+
+   "Faqat oldingi smenalar":
+     - "Kassani topshirish" — faqat oldingi smenalardan qolgan (qabul
+       qilingan) pul topshiriladi; xodimning o'z smenasidagi tushum kassada
+       qoladi. Bunday pul bo'lmasa — tushuntirish chiqadi.
+     - "Smenani tugallash" — avvalgidek: kassa butunligicha keyingi xodimga
+       o'tadi (endi u oldingi smena puli sifatida topshira oladi). */
 export function CashCountDialog({
   kind,
   approval,
-  closedDays = false,
+  scope: scopeHint = "free",
   onClose,
   onDone,
 }: {
@@ -139,10 +161,10 @@ export function CashCountDialog({
   kind: CountKind | null
   /** Tasdiq rejimi: topshirilgan kassa admin/menejer tasdig'ini kutadi */
   approval: boolean
-  /** "Faqat yopilgan kunlar" rejimi (sozlamadan) — hisob kelguncha ham
-   *  oyna to'g'ri ko'rinishda ochilishi uchun. Hisob kelgach serverning
-   *  o'z javobi (`closed_days_only`) ustun. */
-  closedDays?: boolean
+  /** Topshirish tartibi (sozlamadan) — hisob kelguncha ham oyna to'g'ri
+   *  ko'rinishda ochilishi uchun. Hisob kelgach serverning o'z javobi
+   *  (`handover_scope`) ustun. */
+  scope?: HandoverScope
   onClose: () => void
   /** Topshirildi — yopilgan sessiya hisoboti bilan */
   onDone: (report: ShiftSession) => void
@@ -152,8 +174,8 @@ export function CashCountDialog({
   const endShift = useEndShift()
   const saving = closeCash.isPending || endShift.isPending
   const { data: expected, isFetching, refetch } = useExpectedCash(open)
-  // Faqat yopilgan kunlar rejimi: hisob kelgach — serverning javobi
-  const strict = expected ? closedDaysOnly(expected) : closedDays
+  // Topshirish tartibi: hisob kelgach — serverning javobi
+  const scope: HandoverScope = expected ? handoverScopeOf(expected) : scopeHint
 
   // Yopilish animatsiyasi davomida oyna oxirgi ko'rinishida qoladi
   // (`kind` allaqachon `null`), aks holda sarlavha bir lahzaga almashardi.
@@ -181,25 +203,40 @@ export function CashCountDialog({
     }
   }
 
-  const cutMode = shown === "cash" && hasCuts(expected)
-  // Yopilgan kunlar rejimida kassani topshirish: tanlov yo'q (`locked`).
-  // Hisob kelmaguncha nima topshirilishi noma'lum (`waiting`); yopilgan kun
-  // bo'lmasa topshiradigan narsa yo'q (`blocked`) — sanash o'rniga tushuntirish.
-  const locked = shown === "cash" && strict
+  // Kunlar ro'yxati: kunlik kesim bilan ishlaydigan rejimlarda
+  const cutMode = shown === "cash" && showsDays(expected)
+  // Cheklangan rejimda kassani topshirish: tanlov yo'q (`locked`). Hisob
+  // kelmaguncha nima topshirilishi noma'lum (`waiting`); topshiradigan narsa
+  // bo'lmasa (`blocked`: yopilgan kun yoki oldingi smena puli yo'q) —
+  // sanash o'rniga tushuntirish.
+  const locked = shown === "cash" && scope !== "free"
   const waiting = locked && !expected
-  const blocked = locked && !!expected && !hasCuts(expected)
+  const blocked = locked && !!expected && handoverBlocked(expected)
+  // Oldingi smenalar rejimi: topshiriladigani — smena boshida qabul qilingan pul
+  const prev = shown === "cash" ? prevShiftsPlan(expected) : null
   // Smenani tugallash: smena kunlik kesimda yopiladi (rejim yoqilgan va
   // sessiyaga kesim tushgan bo'lsa)
   const split = shown === "end" ? shiftSplit(expected) : null
-  // Keng ekranda ikki ustun: chapda kunlar (yoki kesim bo'yicha bo'linish)
-  const wide = !blocked && (cutMode || !!split)
-  const activeCut = cutMode ? selectedCut(expected, cutChoice) : null
+  // Keng ekranda ikki ustun: chapda kunlar (yoki nima topshirilishi)
+  const wide = !blocked && (cutMode || !!split || !!prev)
+  const activeCut =
+    shown === "cash" && (cutMode || prev) ? selectedCut(expected, cutChoice) : null
   // Topshiriladigan summa: tanlangan kesimgacha yoki kassadagi hamma pul
   const due = amountDue(expected, activeCut)
   const left = cashLeftAfter(expected, activeCut)
   const period = cutMode ? handoverPeriod(expected, cutChoice) : null
   const source = activeCut ?? expected
   const rows = breakdownRows(source, activeCut?.carried_cash)
+  // Oldingi smenalar: tushuntirishda kassa kimdan va qachon qabul qilingani
+  const receivedFrom = prev?.received_from
+  const receivedLine = receivedFrom
+    ? receivedFrom.accepted_at
+      ? tr("{{name}}dan qabul qilingan · {{time}}", {
+          name: receivedFrom.user_name,
+          time: stamp(receivedFrom.accepted_at),
+        })
+      : tr("{{name}}dan qabul qilingan", { name: receivedFrom.user_name })
+    : null
 
   const countedValue = parseCountInput(counted)
   // Hisob hali kelmagan bo'lsa solishtiradigan narsa yo'q
@@ -336,7 +373,7 @@ export function CashCountDialog({
         <dl className="mt-2 space-y-1 text-xs">
           {rows.map((row) => (
             <div key={row.key} className="flex items-baseline justify-between gap-3">
-              <dt className="min-w-0 text-gray-500">{breakdownLabel(row.key)}</dt>
+              <dt className="min-w-0 text-gray-500">{breakdownLabel(row.key, !!prev)}</dt>
               <dd
                 className={cn(
                   "flex-shrink-0 font-semibold tabular-nums",
@@ -356,15 +393,20 @@ export function CashCountDialog({
           qatorda. */}
       {activeCut && activeCut.carried_cash > 0 && (
         <p className="mt-1.5 text-[11px] leading-relaxed text-amber-700">
-          {tr("Kesimdan keyingi xarajatga ketgan — topshirilmaydi va kamomad hisoblanmaydi.")}
+          {prev
+            ? tr("Smenangizdagi xarajatga ketgan — topshirilmaydi va kamomad hisoblanmaydi.")
+            : tr("Kesimdan keyingi xarajatga ketgan — topshirilmaydi va kamomad hisoblanmaydi.")}
         </p>
       )}
-      {/* Naqdsiz turlar kassaga kirmaydi — alohida ko'rsatiladi */}
-      <NonCashMethods
-        rows={source?.methods}
-        compact
-        className={cn("mt-2", rows.length > 0 && "border-t border-gray-200 pt-2")}
-      />
+      {/* Naqdsiz turlar kassaga kirmaydi — alohida ko'rsatiladi. Oldingi
+          smenalar pulida to'lov usullari yo'q (u qabul qilingan naqd pul). */}
+      {!prev && (
+        <NonCashMethods
+          rows={source?.methods}
+          compact
+          className={cn("mt-2", rows.length > 0 && "border-t border-gray-200 pt-2")}
+        />
+      )}
     </div>
   ) : null
 
@@ -374,11 +416,13 @@ export function CashCountDialog({
       ? split
         ? tr("Smena kunlik kesim bo'yicha yopiladi. Kassadagi pul keyingi xodimga o'tadi — u qabul qilishi kutiladi.")
         : tr("Smena yopiladi va keyingi xodim qabul qilishi kutiladi.")
-      : locked
-        ? tr("Kassa yopilgan kunlar bo'yicha topshiriladi: kunlik kesim yopgan kunlarning hammasi birga. Bugungi tushum kassada qoladi.")
-        : activeCut
-          ? tr("Tanlangan kungacha bo'lgan pul topshiriladi. Undan keyingi tushum kassada qoladi va yangi kassa hisobida davom etadi.")
-          : tr("Kassa yopilib, ishni davom ettirishingiz uchun yangi kassa 0 so'mdan ochiladi.")
+      : scope === "prev_shifts"
+        ? tr("Faqat oldingi smenalardan qolgan pul topshiriladi. Smenangizdagi tushum kassada qoladi va smena tugagach keyingi xodimga o'tadi.")
+        : locked
+          ? tr("Kassa yopilgan kunlar bo'yicha topshiriladi: kunlik kesim yopgan kunlarning hammasi birga. Bugungi tushum kassada qoladi.")
+          : activeCut
+            ? tr("Tanlangan kungacha bo'lgan pul topshiriladi. Undan keyingi tushum kassada qoladi va yangi kassa hisobida davom etadi.")
+            : tr("Kassa yopilib, ishni davom ettirishingiz uchun yangi kassa 0 so'mdan ochiladi.")
   const submitLabel =
     shown === "end"
       ? tr("Smenani tugallash")
@@ -436,7 +480,26 @@ export function CashCountDialog({
         {waiting || blocked ? (
           // Yopilgan kunlar rejimi: sanaladigan narsa (hali) yo'q
           <div className="min-w-0 flex-1 overflow-y-auto px-5 py-5">
-            {blocked ? (
+            {blocked && scope === "prev_shifts" ? (
+              // Oldingi smenalar rejimi: qabul qilingan pul yo'q (yoki
+              // smenadagi xarajatga ketgan) — kassada faqat o'z tushumi
+              <div className="flex flex-col items-center text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                  <Users className="h-6 w-6" />
+                </span>
+                <p className="mt-3 text-base font-bold text-gray-900">
+                  {tr("Topshiriladigan pul yo'q")}
+                </p>
+                <p className="mt-1 max-w-sm text-sm leading-relaxed text-gray-500">
+                  {Number(expected?.prev_shifts?.expected_cash || 0) >= 1
+                    ? tr("Oldingi smenalardan qolgan pul smenangizdagi xarajatlarga sarflangan. Kassada faqat sizning smenangizdagi tushum bor.")
+                    : tr("Kassada faqat sizning smenangizdagi tushum bor. U smena tugagach keyingi xodimga o'tadi va uni o'sha topshiradi.")}
+                </p>
+                <p className="mt-3 max-w-sm text-xs leading-relaxed text-gray-400">
+                  {tr("Ishni tugatayotgan bo'lsangiz, «Smenani tugallash»ni bosing — kassadagi pul keyingi xodimga o'tadi.")}
+                </p>
+              </div>
+            ) : blocked ? (
               <div className="flex flex-col items-center text-center">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
                   <CalendarClock className="h-6 w-6" />
@@ -513,6 +576,69 @@ export function CashCountDialog({
               </section>
               {details && <div className="order-3 min-w-0">{details}</div>}
             </div>
+          ) : prev ? (
+            // Oldingi smenalar rejimi: nima topshiriladi va nima qoladi —
+            // kassadagi pulning ikki qismi (yig'indisi — kassadagi jami pul).
+            // Smenadagi xarajatga ketgan qism "Summa tarkibi"da ko'rinadi.
+            <div className="contents md:flex md:min-w-0 md:flex-col md:gap-4">
+              <section className="order-1 min-w-0 space-y-2.5">
+                <SectionTitle step={1}>{tr("Nima topshiriladi?")}</SectionTitle>
+                <div
+                  className={cn(
+                    "overflow-hidden rounded-xl border border-gray-200 bg-white transition-opacity",
+                    isFetching && "opacity-60"
+                  )}
+                >
+                  <div className="flex items-center gap-3 bg-primary-50/60 px-3 py-2.5">
+                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-primary-600 bg-primary-600 text-white">
+                      <Check className="h-3 w-3" strokeWidth={3.5} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-gray-900">
+                        {tr("Oldingi smenalardan qolgan pul")}
+                      </span>
+                      <span className="block text-[11px] text-gray-400">
+                        {receivedLine ?? tr("smena boshida kassada bo'lgan pul")}
+                      </span>
+                    </span>
+                    <span className="flex-shrink-0 text-right">
+                      <span className="block text-sm font-bold tabular-nums text-gray-900">
+                        {fmt(due)}
+                      </span>
+                      <span className="block text-[11px] font-medium text-primary-600">
+                        {tr("topshiriladi")}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 border-t border-gray-100 px-3 py-2.5">
+                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 bg-white">
+                      <Lock className="h-2.5 w-2.5 text-gray-400" strokeWidth={3} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-gray-500">
+                        {tr("Mening smenam")}
+                      </span>
+                      <span className="block text-[11px] tabular-nums text-gray-400">
+                        {stamp(prev.cut_at)} → {trc("shift", "hozir")}
+                      </span>
+                    </span>
+                    <span className="flex-shrink-0 text-right">
+                      <span className="block text-sm font-bold tabular-nums text-gray-400">
+                        {fmt(left)}
+                      </span>
+                      <span className="block text-[11px] font-medium text-gray-400">
+                        {tr("kassada qoladi")}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+                <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-gray-500">
+                  <Lock className="mt-0.5 h-3 w-3 flex-shrink-0 text-gray-400" />
+                  {tr("Smenangizdagi tushum smena tugagach keyingi xodimga o'tadi — uni o'sha topshiradi.")}
+                </p>
+              </section>
+              {details && <div className="order-3 min-w-0">{details}</div>}
+            </div>
           ) : split ? (
             // Smena kunlik kesimda yopiladi: yopilgan kunlar va bugungi
             // tushum alohida — yig'indisi kassadagi (sanaladigan) pul
@@ -568,7 +694,9 @@ export function CashCountDialog({
 
           {/* 2-qadam: pulni sanab kiritish */}
           <section className="order-2 min-w-0 space-y-3">
-            <SectionTitle step={cutMode ? 2 : undefined}>{tr("Pulni sanab kiriting")}</SectionTitle>
+            <SectionTitle step={cutMode || prev ? 2 : undefined}>
+              {tr("Pulni sanab kiriting")}
+            </SectionTitle>
 
             {/* Topshiriladigan (kassada bo'lishi kerak bo'lgan) summa */}
             {expected ? (

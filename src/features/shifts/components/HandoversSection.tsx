@@ -38,10 +38,14 @@ const KIND_STYLE: Record<HandoverKind, string> = {
   FORCE_TAKEN: "bg-orange-100 text-orange-700",
 }
 
-export const handoverKindLabel = (kind: HandoverKind): string => {
+/** `prevShift` — "faqat oldingi smenalar" rejimida topshirilgan: kassadan
+ *  kunlik kesim emas, oldingi smenalardan qolgan pul olingan */
+export const handoverKindLabel = (kind: HandoverKind, prevShift = false): string => {
   if (kind === "HANDOVER") return tr("Keyingi smenaga o'tdi")
   if (kind === "PENDING") return tr("Qabul kutilmoqda")
-  if (kind === "CASH_OUT") return tr("Kassadan olindi (kesim)")
+  if (kind === "CASH_OUT") {
+    return prevShift ? tr("Kassadan olindi (oldingi smena puli)") : tr("Kassadan olindi (kesim)")
+  }
   return tr("Majburiy yopildi — pulni rahbar oldi")
 }
 
@@ -221,9 +225,11 @@ export function HandoversSection({
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", KIND_STYLE[h.kind])}>
-                          {handoverKindLabel(h.kind)}
+                          {handoverKindLabel(h.kind, h.prev_shift_cash === true)}
                         </span>
-                        {h.handed_at && (
+                        {/* Oldingi smena puli — tur yorlig'ining o'zida aytilgan;
+                            kunlik kesim davri unga tegishli emas */}
+                        {h.handed_at && !h.prev_shift_cash && (
                           <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
                             {tr("Kunlik kesim: {{from}} → {{to}}", {
                               from: shortStamp(h.started_at),
@@ -245,9 +251,13 @@ export function HandoversSection({
                       </div>
                       {h.handed_at && Number(h.carried_cash || 0) > 0 && (
                         <p className="mt-1 text-[11px] text-amber-700">
-                          {tr("Kassada qoldirildi: {{amount}} so'm (kesimdan keyingi xarajatlar uchun)", {
-                            amount: fmt(h.carried_cash),
-                          })}
+                          {h.prev_shift_cash
+                            ? tr("Kassada qoldirildi: {{amount}} so'm (smenadagi xarajatlar uchun)", {
+                                amount: fmt(h.carried_cash),
+                              })
+                            : tr("Kassada qoldirildi: {{amount}} so'm (kesimdan keyingi xarajatlar uchun)", {
+                                amount: fmt(h.carried_cash),
+                              })}
                         </p>
                       )}
                       {mismatch != null && (

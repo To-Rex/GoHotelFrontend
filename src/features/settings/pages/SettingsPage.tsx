@@ -67,7 +67,12 @@ import {
   type HkAssignMode,
 } from "@/features/housekeeping/api/housekeeping"
 import { ChecklistTemplateEditor } from "@/features/housekeeping/components/ChecklistTemplateEditor"
-import { useShiftSettings, useSaveShiftSettings } from "@/features/shifts/api/shifts"
+import {
+  useShiftSettings,
+  useSaveShiftSettings,
+  handoverScope as resolveHandoverScope,
+  type HandoverScope,
+} from "@/features/shifts/api/shifts"
 import {
   useWorkHoursSettings,
   useSaveWorkHoursSettings,
@@ -513,8 +518,9 @@ export const SettingsPage = () => {
   const [dayCloseRequired, setDayCloseRequired] = useState(true)
   // Tasdiq rejimi: topshirilgan kassa admin/menejer tasdig'ini kutadi
   const [handoverApproval, setHandoverApproval] = useState(false)
-  // Kassa faqat yopilgan kunlar bo'yicha topshiriladi (bugungi pul emas)
-  const [handoverClosedDays, setHandoverClosedDays] = useState(false)
+  // Kassani topshirish tartibi: erkin / faqat yopilgan kunlar / faqat
+  // oldingi smenalar
+  const [handoverScope, setHandoverScope] = useState<HandoverScope>("free")
   const [shiftSaved, setShiftSaved] = useState(false)
   const [shiftError, setShiftError] = useState<string | null>(null)
 
@@ -524,7 +530,7 @@ export const SettingsPage = () => {
       setDayClose(shiftSettings.day_close)
       setDayCloseRequired(shiftSettings.day_close_required !== false)
       setHandoverApproval(shiftSettings.handover_approval === true)
-      setHandoverClosedDays(shiftSettings.handover_closed_days === true)
+      setHandoverScope(resolveHandoverScope(shiftSettings))
     }
   }, [shiftSettings])
 
@@ -537,7 +543,9 @@ export const SettingsPage = () => {
         day_close: dayClose,
         day_close_required: dayCloseRequired,
         handover_approval: handoverApproval,
-        handover_closed_days: handoverClosedDays,
+        handover_scope: handoverScope,
+        // Eski (ikki holatli) ko'rinish — server ikkalasini ham tushunadi
+        handover_closed_days: handoverScope === "closed_days",
       })
       setShiftSaved(true)
       window.setTimeout(() => setShiftSaved(false), 3000)
@@ -1361,20 +1369,36 @@ export const SettingsPage = () => {
                     </p>
 
                     {/* Kesim majburiymi — ish to'xtaydimi yoki faqat eslatiladimi */}
-                    <label className="mt-3 flex cursor-pointer items-start gap-2.5 border-t border-gray-200 pt-3">
+                    {/* "Faqat oldingi smenalar" tartibida xodim o'z smenasidagi
+                        pulni topshira olmaydi — kesim majburiyati qo'llanmaydi
+                        (saqlangan qiymat boshqa tartibga qaytilganda tiklanadi) */}
+                    <label
+                      className={cn(
+                        "mt-3 flex items-start gap-2.5 border-t border-gray-200 pt-3",
+                        handoverScope === "prev_shifts" ? "cursor-not-allowed" : "cursor-pointer"
+                      )}
+                    >
                       <Checkbox
-                        checked={dayCloseRequired}
+                        checked={dayCloseRequired && handoverScope !== "prev_shifts"}
+                        disabled={handoverScope === "prev_shifts"}
                         onCheckedChange={(v) => setDayCloseRequired(v === true)}
                         className="mt-0.5"
                       />
                       <span className="text-sm">
-                        <b className="font-medium text-gray-900">
+                        <b
+                          className={cn(
+                            "font-medium",
+                            handoverScope === "prev_shifts" ? "text-gray-400" : "text-gray-900"
+                          )}
+                        >
                           {tr("Kesim vaqtida kassa topshirish majburiy")}
                         </b>
                         <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
-                          {dayCloseRequired
-                            ? tr("Kesim vaqti kelgach xodim kassani topshirmaguncha bron va to'lov qabul qila olmaydi — faqat kassa va hisobot sahifalari ochiq qoladi.")
-                            : tr("Xodim ishlashda davom etaveradi, kassa hisobotlari sahifasida esa eslatma turadi. Diqqat: topshirilmagan pul kassada yig'ilib boradi va har kungi farqni kuzatish qiyinlashadi.")}
+                          {handoverScope === "prev_shifts"
+                            ? tr("«Faqat oldingi smenalar» tartibida qo'llanmaydi: xodim o'z smenasidagi pulni topshira olmaydi, shuning uchun kesim vaqtida ish to'xtatilmaydi.")
+                            : dayCloseRequired
+                              ? tr("Kesim vaqti kelgach xodim kassani topshirmaguncha bron va to'lov qabul qila olmaydi — faqat kassa va hisobot sahifalari ochiq qoladi.")
+                              : tr("Xodim ishlashda davom etaveradi, kassa hisobotlari sahifasida esa eslatma turadi. Diqqat: topshirilmagan pul kassada yig'ilib boradi va har kungi farqni kuzatish qiyinlashadi.")}
                         </span>
                       </span>
                     </label>
@@ -1399,25 +1423,69 @@ export const SettingsPage = () => {
                       </span>
                     </label>
 
-                    {/* Faqat yopilgan kunlar — kassa kunlik kesim bo'yicha,
-                        to'liq kunlar bilan topshiriladi; bugungi pul emas */}
-                    <label className="mt-3 flex cursor-pointer items-start gap-2.5 border-t border-gray-200 pt-3">
-                      <Checkbox
-                        checked={handoverClosedDays}
-                        onCheckedChange={(v) => setHandoverClosedDays(v === true)}
-                        className="mt-0.5"
-                      />
-                      <span className="text-sm">
-                        <b className="font-medium text-gray-900">
-                          {tr("Kassa faqat yopilgan kunlar bo'yicha topshirilsin")}
-                        </b>
-                        <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
-                          {handoverClosedDays
-                            ? tr("Xodim faqat kunlik kesim ({{day_close}}) yopgan kunlarni topshiradi — hammasini birga. Bugungi tushumni kesimdan oldin topshirib bo'lmaydi. Smena ham kunlik kesim bo'yicha yopiladi: yopilgan kunlar alohida yoziladi, kassadagi pul esa keyingi xodimga o'tadi.", { day_close: dayClose })
-                            : tr("O'chiq — hozirgi oqim: xodim qaysi kungacha topshirishni o'zi tanlaydi va bugungi tushumni ham topshira oladi. Yoqilsa, kassa faqat to'liq yopilgan kunlar bilan topshiriladi.")}
-                        </span>
-                      </span>
-                    </label>
+                    {/* Kassani topshirish tartibi — xodim kassadagi pulning
+                        qaysi qismini topshira oladi (uchtadan bittasi) */}
+                    <div className="mt-3 border-t border-gray-200 pt-3">
+                      <p className="text-sm font-medium text-gray-900">
+                        {tr("Kassani topshirish tartibi")}
+                      </p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+                        {tr("Xodim kassadagi pulning qaysi qismini topshira oladi.")}
+                      </p>
+                      <div
+                        role="radiogroup"
+                        aria-label={tr("Kassani topshirish tartibi")}
+                        className="mt-2.5 grid gap-2 lg:grid-cols-3"
+                      >
+                        {(
+                          [
+                            {
+                              key: "free",
+                              title: tr("Erkin"),
+                              text: tr("Xodim qaysi kungacha topshirishni o'zi tanlaydi va bugungi tushumni ham topshira oladi."),
+                            },
+                            {
+                              key: "closed_days",
+                              title: tr("Faqat yopilgan kunlar"),
+                              text: tr("Kunlik kesim ({{day_close}}) yopgan kunlar birga topshiriladi. Bugungi tushum kesimdan keyin; smena ham kesim bo'yicha yopiladi.", { day_close: dayClose }),
+                            },
+                            {
+                              key: "prev_shifts",
+                              title: tr("Faqat oldingi smenalar"),
+                              text: tr("Xodim faqat oldingi smenadan qabul qilib olgan pulni topshiradi. O'z smenasidagi tushum smena tugagach keyingi xodimga o'tadi — uni o'sha topshiradi."),
+                            },
+                          ] as { key: HandoverScope; title: string; text: string }[]
+                        ).map((option) => {
+                          const active = handoverScope === option.key
+                          return (
+                            <button
+                              key={option.key}
+                              type="button"
+                              role="radio"
+                              aria-checked={active}
+                              onClick={() => setHandoverScope(option.key)}
+                              className={cn(
+                                "relative flex flex-col justify-start rounded-xl border bg-white p-3 text-left transition-all",
+                                active
+                                  ? "border-primary-400 bg-primary-50/40 ring-2 ring-primary-400/30"
+                                  : "border-gray-200 hover:border-primary-200 hover:bg-gray-50"
+                              )}
+                            >
+                              {active && (
+                                <CheckCircle2 className="absolute right-2.5 top-2.5 h-4 w-4 text-primary-600" />
+                              )}
+                              <p className="pr-6 text-sm font-semibold text-gray-900">{option.title}</p>
+                              <p className="mt-1 text-xs leading-snug text-gray-600">{option.text}</p>
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {handoverScope === "prev_shifts" && (
+                        <p className="mt-2 text-xs leading-relaxed text-gray-500">
+                          {tr("Eslatma: bitta xodim bir necha kun ketma-ket ishlasa, smena almashmaguncha u hech narsa topshira olmaydi — pul kassada yig'iladi.")}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 

@@ -293,7 +293,14 @@
   "Sanoqqa to'lovdagi barcha tahrirlar kiradi (kim qilganidan qat'i nazar). Chegaraga yetgan to'lovni faqat administrator yoki menejer tahrirlaydi.": "Считаются все изменения платежа (кем бы они ни были сделаны). Платёж, достигший лимита, меняют только администратор или менеджер.",
   "Qabulxona to'lovni tahrirlashi": "Изменение платежей ресепшеном",
   "Qabulxona xodimi xato kiritilgan to'lov turini (naqd, karta, online) o'zi tuzata oladimi. Administrator va menejer doim tahrirlaydi; bu sozlama faqat qabulxona uchun. Har tahrir tarixda ko'rinadi.": "Может ли сотрудник ресепшена сам исправить ошибочный способ оплаты (наличные, карта, онлайн). Администратор и менеджер меняют всегда; эта настройка только для ресепшена. Каждое изменение видно в истории.",
-  "Kassa faqat yopilgan kunlar bo'yicha topshirilsin": "Сдавать кассу только за закрытые дни",
-  "Xodim faqat kunlik kesim ({{day_close}}) yopgan kunlarni topshiradi — hammasini birga. Bugungi tushumni kesimdan oldin topshirib bo'lmaydi. Smena ham kunlik kesim bo'yicha yopiladi: yopilgan kunlar alohida yoziladi, kassadagi pul esa keyingi xodimga o'tadi.": "Сотрудник сдаёт только дни, закрытые ежедневным закрытием кассы ({{day_close}}), — все сразу. Сегодняшние поступления нельзя сдать до закрытия. Смена тоже закрывается по ежедневному закрытию: закрытые дни записываются отдельно, а деньги в кассе переходят следующему сотруднику.",
-  "O'chiq — hozirgi oqim: xodim qaysi kungacha topshirishni o'zi tanlaydi va bugungi tushumni ham topshira oladi. Yoqilsa, kassa faqat to'liq yopilgan kunlar bilan topshiriladi.": "Выключено — текущий порядок: сотрудник сам выбирает, по какой день сдать кассу, и может сдать и сегодняшние поступления. Если включить, касса сдаётся только за полностью закрытые дни."
+  "«Faqat oldingi smenalar» tartibida qo'llanmaydi: xodim o'z smenasidagi pulni topshira olmaydi, shuning uchun kesim vaqtida ish to'xtatilmaydi.": "Не применяется в порядке «Только предыдущие смены»: сотрудник не может сдать деньги своей смены, поэтому работа в момент закрытия кассы не останавливается.",
+  "Kassani topshirish tartibi": "Порядок сдачи кассы",
+  "Xodim kassadagi pulning qaysi qismini topshira oladi.": "Какую часть денег в кассе сотрудник может сдать.",
+  "Erkin": "Свободный",
+  "Xodim qaysi kungacha topshirishni o'zi tanlaydi va bugungi tushumni ham topshira oladi.": "Сотрудник сам выбирает, по какой день сдать кассу, и может сдать и сегодняшние поступления.",
+  "Faqat yopilgan kunlar": "Только закрытые дни",
+  "Kunlik kesim ({{day_close}}) yopgan kunlar birga topshiriladi. Bugungi tushum kesimdan keyin; smena ham kesim bo'yicha yopiladi.": "Дни, закрытые ежедневным закрытием кассы ({{day_close}}), сдаются вместе. Сегодняшние поступления — после закрытия; смена тоже закрывается по закрытию кассы.",
+  "Faqat oldingi smenalar": "Только предыдущие смены",
+  "Xodim faqat oldingi smenadan qabul qilib olgan pulni topshiradi. O'z smenasidagi tushum smena tugagach keyingi xodimga o'tadi — uni o'sha topshiradi.": "Сотрудник сдаёт только деньги, принятые от предыдущей смены. Поступления его собственной смены после её завершения переходят следующему сотруднику — сдаёт их уже он.",
+  "Eslatma: bitta xodim bir necha kun ketma-ket ishlasa, smena almashmaguncha u hech narsa topshira olmaydi — pul kassada yig'iladi.": "Обратите внимание: если один сотрудник работает несколько дней подряд, до смены сотрудника он ничего не сможет сдать — деньги будут накапливаться в кассе."
 }

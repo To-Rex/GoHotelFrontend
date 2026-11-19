@@ -78,6 +78,14 @@ const STATUS_STYLES: Record<string, string> = {
  *  sanalmagan — kassa butunligicha keyingi sessiyaga o'tgan. */
 const isCounted = (s: ShiftSession): boolean => s.status === "CLOSED" && !s.kept_in_drawer
 
+/** Kesim momentida yopilgan sessiya belgisi: nima sababdan shunday yopilgan */
+const cutBadge = (s: ShiftSession): string =>
+  s.prev_shift_cash
+    ? tr("oldingi smena puli")
+    : s.kept_in_drawer
+      ? tr("kesimda yopilgan")
+      : tr("kesim bo'yicha")
+
 const durationMins = (s: ShiftSession): number => {
   if (!s.started_at) return 0
   const from = new Date(s.started_at).getTime()
@@ -1136,7 +1144,7 @@ export const ShiftsHistoryPage = () => {
                   )}
                   {s.handed_at && (
                     <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
-                      {s.kept_in_drawer ? tr("kesimda yopilgan") : tr("kesim bo'yicha")}
+                      {cutBadge(s)}
                     </span>
                   )}
                   {s.continue_after_end && (
@@ -1350,7 +1358,7 @@ export const ShiftsHistoryPage = () => {
                           )}
                           {s.handed_at && (
                             <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
-                              {s.kept_in_drawer ? tr("kesimda yopilgan") : tr("kesim bo'yicha")}
+                              {cutBadge(s)}
                             </span>
                           )}
                           {s.continue_after_end && (
@@ -1443,7 +1451,7 @@ export const ShiftsHistoryPage = () => {
                     )}
                     {detailTarget.handed_at && (
                       <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
-                        {detailTarget.kept_in_drawer ? tr("kesimda yopilgan") : tr("kesim bo'yicha")}
+                        {cutBadge(detailTarget)}
                       </span>
                     )}
                     {detailTarget.continue_after_end && (
@@ -1496,7 +1504,13 @@ export const ShiftsHistoryPage = () => {
                     yopilgan, pul esa keyinroq topshirilgan */}
                 {detailTarget.handed_at && (
                   <p className="rounded-xl bg-indigo-50 px-3 py-2 text-xs leading-relaxed text-indigo-600">
-                    {detailTarget.kept_in_drawer
+                    {detailTarget.prev_shift_cash
+                      ? // Oldingi smenalar puli topshirilgan: sessiya o'zi
+                        // boshlangan momentda yopilgan
+                        tr("Oldingi smenalardan qolgan pul topshirilgan ({{time}}). Xodimning o'z smenasidagi tushum keyingi sessiyada davom etadi.", {
+                          time: format(new Date(detailTarget.handed_at), "dd.MM HH:mm"),
+                        })
+                      : detailTarget.kept_in_drawer
                       ? // Smena tugallanishida kesimda yopilgan qism: pul
                         // sanalmagan va topshirilmagan — kassada qolgan
                         tr("Smena tugallanganda ({{time}}) kunlik kesim bo'yicha yopilgan. Pul sanalmagan va topshirilmagan — kassada qolib, keyingi sessiyaga o'tgan; sanash va farq o'sha sessiyada.", {

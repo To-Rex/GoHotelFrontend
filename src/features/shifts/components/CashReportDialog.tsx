@@ -43,8 +43,11 @@ export function CashReportDialog({
   // Farq serverda hisoblangan (sanalgan − kutilgan)
   const diff = Number(r?.cash_diff || 0)
   const outcome: Outcome = Math.abs(diff) < 1 ? "match" : diff < 0 ? "short" : "over"
+  // "Faqat oldingi smenalar" rejimida topshirilgan: oldingi smenalardan
+  // qolgan pul; xodimning o'z tushumi kassada qolgan
+  const prevShift = r?.prev_shift_cash === true
   // Kunlik kesim bo'yicha topshirilgan — sessiya kesim momentida yopilgan
-  const byCut = !!(r?.handed_at && r.started_at && r.ended_at)
+  const byCut = !prevShift && !!(r?.handed_at && r.started_at && r.ended_at)
   const carried = Number(r?.carried_cash || 0)
   // Smena kunlik kesimda yopilgan ("faqat yopilgan kunlar" rejimi): yopilgan
   // kunlar alohida sessiya, hisobotning o'zi — kesimdan keyingi qism
@@ -97,6 +100,13 @@ export function CashReportDialog({
                   </dd>
                 </div>
               )}
+              {/* Oldingi smenalar puli topshirildi */}
+              {prevShift && (
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-3.5 py-2.5">
+                  <dt className="text-gray-500">{tr("Topshirildi")}</dt>
+                  <dd className="font-semibold text-sky-700">{tr("Oldingi smenalar puli")}</dd>
+                </div>
+              )}
               {/* Smena kunlik kesimda yopildi — qaysi kunlar */}
               {closedDays?.started_at && closedDays.ended_at && (
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-3.5 py-2.5">
@@ -118,7 +128,7 @@ export function CashReportDialog({
                   {tr("{{counted_cash}} so'm", { counted_cash: fmt(r.counted_cash) })}
                 </dd>
               </div>
-              {byCut && carried > 0 && (
+              {(byCut || prevShift) && carried > 0 && (
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-3.5 py-2.5">
                   <dt className="text-gray-500">{tr("Kassada qoldirildi")}</dt>
                   <dd className="font-semibold tabular-nums text-amber-700">
@@ -129,12 +139,19 @@ export function CashReportDialog({
             </dl>
 
             {/* Smenada qabul qilingan naqdsiz to'lovlar — kassaga kirmaydi */}
-            {r.methods && <NonCashMethods rows={r.methods} compact className="px-1" />}
+            {/* Oldingi smenalar pulida to'lov usullari yo'q — u qabul qilingan naqd */}
+            {r.methods && !prevShift && <NonCashMethods rows={r.methods} compact className="px-1" />}
 
             {byCut && (
               <p className="flex items-start gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-700">
                 <Info className="mt-px h-3.5 w-3.5 flex-shrink-0" />
                 {tr("Kesimdan keyingi tushum kassada qoldi — u yangi kassa hisobida davom etadi.")}
+              </p>
+            )}
+            {prevShift && (
+              <p className="flex items-start gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-700">
+                <Info className="mt-px h-3.5 w-3.5 flex-shrink-0" />
+                {tr("Smenangizdagi tushum kassada qoldi — smena tugagach keyingi xodimga o'tadi.")}
               </p>
             )}
             {closedDays && (

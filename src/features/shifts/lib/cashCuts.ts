@@ -1,4 +1,4 @@
-import type { CashBreakdown, CashCut } from "../api/shifts"
+import type { CashBreakdown, CashCut, HandoverScope, PrevShiftsPlan } from "../api/shifts"
 
 /* Kassani kunlik kesim bo'yicha topshirish — tanlov mantig'i.
 
@@ -18,6 +18,11 @@ import type { CashBreakdown, CashCut } from "../api/shifts"
    bugungi tushum topshirilmaydi. Sessiyaga kesim tushmagan bo'lsa — hali
    topshiradigan narsa yo'q.
 
+   "Faqat oldingi smenalar" rejimida (`handover_scope: "prev_shifts"`) kunlik
+   kesim ishlatilmaydi: topshiriladigani — oldingi smenalardan qolgan pul
+   (`prev_shifts`), xodimning o'z smenasidagi tushum esa kassada qoladi.
+   Bunday pul bo'lmasa — topshiradigan narsa yo'q.
+
    Hisob serverda (`plan_cuts`); bu yerda faqat ko'rsatish va tanlov. */
 
 /** "Hamma pul" tanlovi (kesimsiz — avvalgi xatti-harakat). */
@@ -32,15 +37,45 @@ const cutsOf = (data: CashBreakdown | undefined | null): CashCut[] => data?.cuts
 export const hasCuts = (data: CashBreakdown | undefined | null): boolean =>
   cutsOf(data).length > 0
 
+/** Hisobdagi topshirish tartibi. Yangi maydon bo'lmasa (eski server) —
+ *  `closed_days_only` dan; u ham bo'lmasa — erkin. */
+export const handoverScopeOf = (data: CashBreakdown | undefined | null): HandoverScope => {
+  const scope = data?.handover_scope
+  if (scope === "free" || scope === "closed_days" || scope === "prev_shifts") return scope
+  return data?.closed_days_only === true ? "closed_days" : "free"
+}
+
 /** "Faqat yopilgan kunlar" rejimi: xodim tanlamaydi — yopilgan kunlarning
  *  hammasi birga topshiriladi, bugungi tushum esa keyingi kesimdan keyin. */
 export const closedDaysOnly = (data: CashBreakdown | undefined | null): boolean =>
-  data?.closed_days_only === true
+  handoverScopeOf(data) === "closed_days"
 
-/** Yopilgan kunlar rejimida hali topshiradigan narsa yo'q: kassa oxirgi
- *  kesimdan keyin ochilgan, unda faqat bugungi pul bor. */
-export const handoverBlocked = (data: CashBreakdown | undefined | null): boolean =>
-  closedDaysOnly(data) && !hasCuts(data)
+/** "Faqat oldingi smenalar" rejimi: topshiriladigani — oldingi smenalardan
+ *  qolgan pul; xodimning o'z smenasidagi tushum topshirilmaydi. */
+export const prevShiftsOnly = (data: CashBreakdown | undefined | null): boolean =>
+  handoverScopeOf(data) === "prev_shifts"
+
+/** Oldingi smenalardan qolgan pulni topshirish hisobi (faqat shu rejimda). */
+export const prevShiftsPlan = (
+  data: CashBreakdown | undefined | null
+): PrevShiftsPlan | null => (prevShiftsOnly(data) ? (data?.prev_shifts ?? null) : null)
+
+/** Kunlar ro'yxati ko'rsatiladimi: sessiyaga kesim tushgan va rejim kunlik
+ *  kesim bilan ishlaydi ("oldingi smenalar"da kesim ishlatilmaydi). */
+export const showsDays = (data: CashBreakdown | undefined | null): boolean =>
+  !prevShiftsOnly(data) && hasCuts(data)
+
+/** Cheklangan rejimda topshiradigan narsa yo'q:
+ *  - yopilgan kunlar: kassa oxirgi kesimdan keyin ochilgan — unda faqat
+ *    bugungi pul bor;
+ *  - oldingi smenalar: qabul qilingan pul yo'q (yoki smenadagi xarajatga
+ *    ketgan) — kassada faqat xodimning o'z tushumi. */
+export const handoverBlocked = (data: CashBreakdown | undefined | null): boolean => {
+  const scope = handoverScopeOf(data)
+  if (scope === "closed_days") return !hasCuts(data)
+  if (scope === "prev_shifts") return Number(data?.prev_shifts?.due_cash || 0) < 1
+  return false
+}
 
 /** Standart tanlov — eng oxirgi kesim: tugagan kunlarning hammasi
  *  topshiriladi, bugungi (kesimdan keyingi) tushum kassada qoladi.
@@ -56,6 +91,8 @@ export const effectiveCutChoice = (
   data: CashBreakdown | undefined | null,
   choice: CutChoice | null
 ): CutChoice => {
+  // Oldingi smenalar rejimi: yagona variant — smena boshidagi pul
+  if (prevShiftsOnly(data)) return data?.prev_shifts?.cut_at ?? ALL_CASH
   // Yopilgan kunlar rejimi: tanlov inobatga olinmaydi — har doim oxirgi kesim
   if (closedDaysOnly(data)) return defaultCutChoice(data)
   if (choice === ALL_CASH) return ALL_CASH
@@ -68,6 +105,8 @@ export const selectedCut = (
   data: CashBreakdown | undefined | null,
   choice: CutChoice | null
 ): CashCut | null => {
+  // Oldingi smenalar rejimi: topshiriladigani — smena boshidagi pul
+  if (prevShiftsOnly(data)) return data?.prev_shifts ?? null
   const effective = effectiveCutChoice(data, choice)
   if (effective === ALL_CASH) return null
   return cutsOf(data).find((c) => c.cut_at === effective) ?? null
@@ -102,7 +141,8 @@ export const handoverPeriod = (
   choice: CutChoice | null
 ): HandoverPeriod | null => {
   const cuts = cutsOf(data)
-  if (cuts.length === 0) return null
+  // Oldingi smenalar rejimida davr yo'q — pul smena boshida qabul qilingan
+  if (cuts.length === 0 || prevShiftsOnly(data)) return null
   const effective = effectiveCutChoice(data, choice)
   const index = cuts.findIndex((c) => c.cut_at === effective)
   if (effective === ALL_CASH || index < 0) {
@@ -176,7 +216,7 @@ export const cutRows = (
   choice: CutChoice | null
 ): CutRow[] => {
   const cuts = cutsOf(data)
-  if (!data || cuts.length === 0) return []
+  if (!data || cuts.length === 0 || prevShiftsOnly(data)) return []
   const effective = effectiveCutChoice(data, choice)
   const stopIndex =
     effective === ALL_CASH ? cuts.length : cuts.findIndex((c) => c.cut_at === effective)

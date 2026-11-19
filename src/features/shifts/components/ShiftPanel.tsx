@@ -11,6 +11,7 @@ import {
   Clock,
   KeyRound,
   CalendarCheck,
+  Users,
 } from "lucide-react"
 import {
   useShiftState,
@@ -23,6 +24,7 @@ import {
   isWorkEnded,
   isCutDue,
   isCashStaff,
+  handoverScope,
   type ShiftSession,
 } from "../api/shifts"
 import { useAuthStore } from "@/store/auth"
@@ -98,9 +100,11 @@ export const ShiftPanel = () => {
   const cutDue = isCutDue(state)
   // Kesim majburiymi (sozlamadan). Eski javobda maydon bo'lmasa — majburiy.
   const cutRequired = state.day_close_required !== false
-  // "Faqat yopilgan kunlar" rejimi: kassa kunlik kesim yopgan kunlar bo'yicha
-  // topshiriladi, bugungi tushum — keyingi kesimdan keyin
-  const closedDays = state.handover_closed_days === true
+  // Kassani topshirish tartibi (sozlama):
+  //   "closed_days" — kunlik kesim yopgan kunlar; bugungi tushum kesimdan keyin
+  //   "prev_shifts" — faqat oldingi smenalardan qolgan pul; o'z tushumi emas
+  const scope = handoverScope(state)
+  const closedDays = scope === "closed_days"
   // Kassa bilan ishlaydigan xodim (resepshn/kassir) — smena ochadi/topshiradi;
   // menejer/admin esa blokni majburiy yopish uchun banner ko'radi
   const cashStaff = isCashStaff(user)
@@ -404,6 +408,13 @@ export const ShiftPanel = () => {
               {tr("Kassa yopilgan kunlar bo'yicha topshiriladi: bugungi tushumni kunlik kesimdan ({{day_close}}) keyin topshirasiz.", { day_close: state.day_close })}
             </p>
           )}
+          {/* Oldingi smenalar rejimi: o'z smenasidagi tushum topshirilmaydi */}
+          {scope === "prev_shifts" && (
+            <p className="mt-3 flex items-start gap-2 rounded-xl bg-sky-50/60 px-3 py-2 text-xs leading-relaxed text-sky-800">
+              <Users className="mt-px h-3.5 w-3.5 flex-shrink-0" />
+              {tr("Kassa oldingi smenalar bo'yicha topshiriladi: faqat qabul qilib olgan pulingizni topshirasiz. Smenangizdagi tushum smena tugagach keyingi xodimga o'tadi.")}
+            </p>
+          )}
           {workEnded && !my.continue_after_end && !cutDue && (
             <p className="mt-3 rounded-xl bg-amber-100/60 px-3 py-2 text-sm text-amber-800">
               {tr("Ish vaqtingiz tugadi. Keyingi xodim kelmagan bo'lsa \"Davom etish\" ni bosing, aks holda smenani tugallang.")}
@@ -427,7 +438,10 @@ export const ShiftPanel = () => {
             </p>
             <p className="text-sm text-sky-700/80">
               {my.pending_approval
-                ? my.pending_approval === "close_cash" && my.handed_at
+                ? my.pending_approval === "close_cash" && my.prev_shift_cash
+                  ? // Oldingi smenalar puli topshirilgan: o'z tushumi kassada
+                    tr("Admin yoki menejer tasdig'i kutilmoqda — tasdiqlangach ish davom etadi, smenangizdagi tushum kassangizda qoladi. Bu vaqtda ishlash mumkin emas.")
+                  : my.pending_approval === "close_cash" && my.handed_at
                   ? // Kunlik kesim bo'yicha topshirilgan: yangi kassa noldan
                     // emas — kesimdan keyingi tushum bilan davom etadi
                     tr("Admin yoki menejer tasdig'i kutilmoqda — tasdiqlangach ish davom etadi, kesimdan keyingi tushum kassangizda qoladi. Bu vaqtda ishlash mumkin emas.")
@@ -445,7 +459,7 @@ export const ShiftPanel = () => {
       <CashCountDialog
         kind={countDialog}
         approval={!!state.handover_approval}
-        closedDays={closedDays}
+        scope={scope}
         onClose={() => setCountDialog(null)}
         onDone={(done) => {
           setCountDialog(null)
