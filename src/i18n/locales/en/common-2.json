@@ -234,5 +234,8 @@
   "Qo'llash": "Apply",
   "Oxirgi 30 kun": "Last 30 days",
   "Soatni tozalash": "Clear time",
-  "ertasi kun: {{date}}": "next day: {{date}}"
+  "ertasi kun: {{date}}": "next day: {{date}}",
+  "Yordamchi": "Assistant",
+  "AI sarfi": "AI usage",
+  "AI yordamchi": "AI assistant"
 }

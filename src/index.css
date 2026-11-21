@@ -543,3 +543,31 @@ html.theme-fade *::after {
 /* Saralash sarlavhalari hover'da ko'rinib turishi uchun */
 .dark .hover\:text-gray-900:hover { color: hsl(var(--foreground)); }
 .dark .hover\:border-red-200:hover { border-color: rgb(239 68 68 / 0.4); }
+
+/* --- AI yordamchi grafiklari ---
+   Turkum ranglari belgilangan TARTIBDA (aylantirilmaydi): qo'shni juftlar
+   rang ko'rlikda ham ajraladi (validatsiyalangan palitra). Qorong'i mavzu —
+   o'sha ranglarning qorong'i fon uchun tanlangan qadamlari, avtomatik
+   teskari emas. Matn grafik rangida emas — oddiy matn ranglarida. */
+.ai-viz {
+  --ai-s1: #2a78d6;
+  --ai-s2: #eb6834;
+  --ai-s3: #1baf7a;
+  --ai-s4: #eda100;
+  --ai-s5: #e87ba4;
+  --ai-s6: #008300;
+  --ai-s7: #6250d6;
+  --ai-s8: #e34948;
+  --ai-grid: hsl(var(--border));
+  --ai-surface: hsl(var(--card));
+}
+.dark .ai-viz {
+  --ai-s1: #3987e5;
+  --ai-s2: #d95926;
+  --ai-s3: #199e70;
+  --ai-s4: #c98500;
+  --ai-s5: #d55181;
+  --ai-s6: #0ca30c;
+  --ai-s7: #9085e9;
+  --ai-s8: #e66767;
+}

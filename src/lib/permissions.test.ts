@@ -111,8 +111,8 @@ describe("Menejer marshrutlari bir xil belgida", () => {
     expect(SETTINGS_ROUTES).toContain(normalizeRoute("/SETTINGS"))
   })
 
-  it("qurilmalar va ilovalar avvalgidek administratorlarda", () => {
-    expect(ADMIN_ONLY_ROUTES).toEqual(["/devices", "/apps"])
+  it("qurilmalar, ilovalar va AI sarfi — faqat administratorlarda", () => {
+    expect(ADMIN_ONLY_ROUTES).toEqual(["/devices", "/apps", "/ai-usage"])
   })
 })
 

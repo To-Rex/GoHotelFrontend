@@ -31,6 +31,8 @@ import { WarehousePage } from "./features/shop/pages/WarehousePage";
 import { MessagesPage } from "./features/messages/pages/MessagesPage";
 import { FeedbackPage } from "./features/feedback/pages/FeedbackPage";
 import { AppsPage as AppStoreDownloadsPage } from "./features/apps/pages/AppsPage";
+import AssistantPage from "./features/assistant/pages/AssistantPage";
+import AiUsagePage from "./features/assistant/pages/AiUsagePage";
 import { useAuthStore } from "./store/auth";
 
 // Ildiz darvozasi: tizimga kirganlar avvalgidek boshqaruv panelini ko'radi,
@@ -96,6 +98,8 @@ function App() {
           <Route path="messages" element={<MessagesPage />} />
           {/* Talab, taklif va shikoyatlar — mehmon murojaatlari kitobi */}
           <Route path="feedback" element={<FeedbackPage />} />
+          <Route path="assistant" element={<AssistantPage />} />
+          <Route path="ai-usage" element={<AiUsagePage />} />
           {/* Boshqaruv bo'limlari (admin/menejer) */}
           <Route path="room-types" element={<RoomTypesPage />} />
           <Route path="amenities" element={<AmenitiesPage />} />

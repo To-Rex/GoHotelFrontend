@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { FaceRequiredGate } from "@/features/auth/components/FaceRequiredGate";
 import { ReceiptPrintNotice } from "@/features/reservations/lib/receiptPrinter";
+import { AiReminders } from "@/features/assistant/components/AiReminders";
 import { useAuthStore } from "@/store/auth";
 import { usePermissions } from "@/lib/permissions";
 import { LANDING_GATE_ROUTE } from "./LandingRedirect";
@@ -24,7 +25,7 @@ import { tr } from "@/i18n";
 
 // Ekranni to'liq egallashi kerak bo'lgan sahifalar: bu yerda max-w-7xl cheklovi va
 // p-6 padding qo'llanmaydi, sahifaning o'zi butun bo'sh joyni boshqaradi.
-const FULL_BLEED_ROUTES = ["/booking"];
+const FULL_BLEED_ROUTES = ["/booking", "/assistant"];
 
 // Barcha sahifalar to'liq KENGLIKDA ochiladi: scroll va padding odatdagidek,
 // markazlash (max-w) cheklovi yo'q — kontent butun bo'sh joyni egallaydi.
@@ -168,6 +169,8 @@ export const MainLayout = () => {
         <FaceRequiredGate />
         {/* To'lovdan keyingi bron cheki natijasi (oyna yopilgandan keyin ham) */}
         <ReceiptPrintNotice />
+        {/* Yordamchi rejalari: vaqti kelgan eslatmalar (yordamchi ochiq bo'lsa) */}
+        <AiReminders />
         <main
           className={cn(
             "flex-1 min-h-0",

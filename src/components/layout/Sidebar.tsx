@@ -17,6 +17,7 @@ import {
 } from "@/features/shifts/api/shifts";
 import { useStaffMessages } from "@/features/messages/api/messages";
 import { useNavOrder, applyNavOrder } from "@/features/settings/api/navOrder";
+import { useAiMe } from "@/features/assistant/api/assistant";
 import { tr } from "@/i18n";
 
 export const Sidebar = () => {
@@ -45,8 +46,17 @@ export const Sidebar = () => {
 
   // Foydalanuvchining ruxsatlariga mos sahifalargina ko'rsatiladi. Smena
   // cheklovi bo'lsa, ochiq qolgan sahifalardan boshqasi ko'rsatilmaydi.
+  // AI yordamchi: sahifa faqat sozlovchi ochgan xodimlarga; sarf sahifasi —
+  // administratorga (yordamchi sozlangan bo'lsa)
+  const { data: ai } = useAiMe(!!user);
+  const aiVisible = (href: string) =>
+    href === "/assistant"
+      ? !!ai?.allowed
+      : href === "/ai-usage"
+        ? !!ai?.can_manage_usage && (!!ai.enabled || !!ai.can_configure)
+        : true;
   const allowed = (href: string) =>
-    canRoute(href) && (!restriction || openRoutes.includes(href));
+    canRoute(href) && aiVisible(href) && (!restriction || openRoutes.includes(href));
 
   // Belgilangan tartib — joriy filialning barcha xodimlariga
   // birdek amal qiladi. Tartib faqat JOYLASHUVni o'zgartiradi: qaysi sahifa

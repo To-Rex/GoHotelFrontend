@@ -302,5 +302,6 @@
   "Kunlik kesim ({{day_close}}) yopgan kunlar birga topshiriladi. Bugungi tushum kesimdan keyin; smena ham kesim bo'yicha yopiladi.": "Дни, закрытые ежедневным закрытием кассы ({{day_close}}), сдаются вместе. Сегодняшние поступления — после закрытия; смена тоже закрывается по закрытию кассы.",
   "Faqat oldingi smenalar": "Только предыдущие смены",
   "Xodim faqat oldingi smenadan qabul qilib olgan pulni topshiradi. O'z smenasidagi tushum smena tugagach keyingi xodimga o'tadi — uni o'sha topshiradi.": "Сотрудник сдаёт только деньги, принятые от предыдущей смены. Поступления его собственной смены после её завершения переходят следующему сотруднику — сдаёт их уже он.",
-  "Eslatma: bitta xodim bir necha kun ketma-ket ishlasa, smena almashmaguncha u hech narsa topshira olmaydi — pul kassada yig'iladi.": "Обратите внимание: если один сотрудник работает несколько дней подряд, до смены сотрудника он ничего не сможет сдать — деньги будут накапливаться в кассе."
+  "Eslatma: bitta xodim bir necha kun ketma-ket ishlasa, smena almashmaguncha u hech narsa topshira olmaydi — pul kassada yig'iladi.": "Обратите внимание: если один сотрудник работает несколько дней подряд, до смены сотрудника он ничего не сможет сдать — деньги будут накапливаться в кассе.",
+  "Provayder (ChatGPT, Claude, DeepSeek, Deploy.com...), API kalit, limitlar va yordamchidan kim foydalanishi": "Провайдер (ChatGPT, Claude, DeepSeek, Deploy.com...), API-ключ, лимиты и кто пользуется ассистентом"
 }

@@ -104,7 +104,7 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
 // Qurilmalar ro'yxati kirish huquqini beradi — uni tahrirlash tizimga
 // kirish huquqini tarqatish bilan barobar, shuning uchun faqat admin
 // "/apps" — o'rnatish fayllari: tarqatish administratorning ishi
-export const ADMIN_ONLY_ROUTES = ["/devices", "/apps"];
+export const ADMIN_ONLY_ROUTES = ["/devices", "/apps", "/ai-usage"];
 
 // Sozlamalar — FAQAT sozlovchi (CONFIGURATOR) va tizim ma'muri (SUPER_ADMIN).
 // Mehmonxona administratori ham, xodimlar ham bu sahifalarni umuman

@@ -245,5 +245,8 @@
   "Qo'llash": "Применить",
   "Oxirgi 30 kun": "Последние 30 дней",
   "Soatni tozalash": "Очистить время",
-  "ertasi kun: {{date}}": "следующий день: {{date}}"
+  "ertasi kun: {{date}}": "следующий день: {{date}}",
+  "Yordamchi": "Ассистент",
+  "AI sarfi": "Расход ИИ",
+  "AI yordamchi": "ИИ-ассистент"
 }

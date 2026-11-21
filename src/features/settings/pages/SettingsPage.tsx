@@ -38,6 +38,7 @@ import {
   Gavel,
   BellRing,
   PenLine,
+  Bot,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -49,6 +50,7 @@ import { PenaltySettingsCard } from "../components/PenaltySettingsCard"
 import { DebtReminderCard } from "../components/DebtReminderCard"
 import { PaymentEditSettingsCard } from "../components/PaymentEditSettingsCard"
 import { SmsKeysCard } from "../components/SmsKeysCard"
+import { AiSettingsCard } from "@/features/assistant/components/AiSettingsCard"
 import {
   useBookingDefaults,
   useSaveBookingDefaults,
@@ -231,6 +233,14 @@ const SETTING_GROUPS = [
     icon: MessageSquareText,
     iconClass: "bg-teal-50 text-teal-600",
     cards: ["sms-keys"],
+  },
+  {
+    key: "ai",
+    label: tr("AI yordamchi"),
+    desc: tr("Provayder (ChatGPT, Claude, DeepSeek, Deploy.com...), API kalit, limitlar va yordamchidan kim foydalanishi"),
+    icon: Bot,
+    iconClass: "bg-primary-50 text-primary-600",
+    cards: ["ai-assistant"],
   },
   {
     key: "danger",
@@ -1922,6 +1932,8 @@ export const SettingsPage = () => {
           )}
 
           {group === "sms" && <SmsKeysCard />}
+
+          {group === "ai" && <AiSettingsCard />}
 
           {group === "danger" && (
             <>

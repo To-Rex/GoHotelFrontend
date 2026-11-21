@@ -300,5 +300,6 @@
   "Kunlik kesim ({{day_close}}) yopgan kunlar birga topshiriladi. Bugungi tushum kesimdan keyin; smena ham kesim bo'yicha yopiladi.": "Days closed by the daily close ({{day_close}}) are handed over together. Today's takings go after the close; a shift is also closed at the daily close.",
   "Faqat oldingi smenalar": "Previous shifts only",
   "Xodim faqat oldingi smenadan qabul qilib olgan pulni topshiradi. O'z smenasidagi tushum smena tugagach keyingi xodimga o'tadi — uni o'sha topshiradi.": "Staff hand over only the cash accepted from the previous shift. Their own shift's takings pass to the next employee when the shift ends, and that employee hands them over.",
-  "Eslatma: bitta xodim bir necha kun ketma-ket ishlasa, smena almashmaguncha u hech narsa topshira olmaydi — pul kassada yig'iladi.": "Note: if one employee works several days in a row, they cannot hand over anything until the shift changes — the cash builds up in the drawer."
+  "Eslatma: bitta xodim bir necha kun ketma-ket ishlasa, smena almashmaguncha u hech narsa topshira olmaydi — pul kassada yig'iladi.": "Note: if one employee works several days in a row, they cannot hand over anything until the shift changes — the cash builds up in the drawer.",
+  "Provayder (ChatGPT, Claude, DeepSeek, Deploy.com...), API kalit, limitlar va yordamchidan kim foydalanishi": "Provider (ChatGPT, Claude, DeepSeek, Deploy.com...), API key, limits and who can use the assistant"
 }

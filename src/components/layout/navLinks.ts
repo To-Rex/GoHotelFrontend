@@ -22,6 +22,8 @@ import {
   MonitorSmartphone,
   AppWindow,
   BookOpenText,
+  Bot,
+  Gauge,
   type LucideIcon,
 } from "lucide-react"
 import { applyNavOrder } from "@/features/settings/api/navOrder"
@@ -44,6 +46,8 @@ export interface NavLink {
 /** Asosiy ish sahifalari */
 export const MAIN_NAV_LINKS: NavLink[] = [
   { name: tr("Boshqaruv"), href: "/", icon: LayoutDashboard },
+  // AI yordamchi — faqat sozlovchi ochgan xodimlarga ko'rinadi (Sidebar)
+  { name: tr("Yordamchi"), href: "/assistant", icon: Bot },
   // Sahifa nomi ("Booking"/"Бронирование"), "Bron qilish" amali emas
   { name: trc("nav", "Bron qilish"), href: "/booking", icon: CalendarDays },
   { name: tr("Xonalar"), href: "/rooms", icon: DoorOpen },
@@ -71,7 +75,13 @@ export const MANAGEMENT_NAV_LINKS: NavLink[] = [
   { name: tr("Xodimlar"), href: "/employees", icon: UserCog },
   { name: tr("Smenalar"), href: "/shifts", icon: History },
   { name: tr("Ruxsatnomalar"), href: "/permissions", icon: ShieldCheck },
+  // AI yordamchi sarfi va limitlari — administrator (yordamchi sozlangan bo'lsa)
+  { name: tr("AI sarfi"), href: "/ai-usage", icon: Gauge },
 ]
+
+/** AI yordamchi sahifalari — ko'rinishi /ai/me javobiga bog'liq, shuning
+ *  uchun kirish darvozasi (birinchi ochiq sahifa) ularni tanlamaydi. */
+export const AI_ROUTES = ["/assistant", "/ai-usage"]
 
 /**
  * Yon menyudagi BIRINCHI ochiq sahifa.
@@ -95,7 +105,7 @@ export const firstSidebarRoute = (
   // Saralash menyu bilan BIR XIL funksiyada — ikkinchi nusxa yozilsa,
   // vaqt o'tib ikkalasi bir-biridan chetga chiqib ketardi
   const firstOf = (links: NavLink[]): string | undefined =>
-    applyNavOrder(links.filter((l) => visible(l.href)), order)[0]?.href
+    applyNavOrder(links.filter((l) => visible(l.href) && !AI_ROUTES.includes(l.href)), order)[0]?.href
 
   return firstOf(MAIN_NAV_LINKS) ?? firstOf(MANAGEMENT_NAV_LINKS) ?? fallback
 }
