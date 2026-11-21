@@ -13,6 +13,7 @@ import {
   Loader2,
   ArrowDownLeft,
   ArrowUpRight,
+  Tag,
 } from "lucide-react"
 import {
   useShopProducts,
@@ -43,6 +44,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { tr, trc } from "@/i18n"
+import { usePermissions } from "@/lib/permissions"
+import { BatchPricesDialog } from "../components/BatchPricesDialog"
 
 const fmt = (n: number | null | undefined) => Number(n || 0).toLocaleString()
 
@@ -81,6 +84,11 @@ const productStats = (p: ShopProduct) => {
    inventarizatsiya va harakatlar jurnali. /shop (sotuv) sahifasiga tegilmaydi. */
 export const WarehousePage = () => {
   const { data: products = [], isLoading } = useShopProducts(true)
+  // Sahifa faqat do'kon boshqaruvchisiga ochiladi (marshrut ruxsati); narx
+  // tahrirlash ham shu doirada — server ham tekshiradi
+  const { isAdmin, can } = usePermissions()
+  const canManage =
+    isAdmin || can("service.manage", "service.create", "service.update", "hotel_service.manage")
   const { data: movements = [], isLoading: movesLoading } = useWarehouseMovements(100)
 
   const addBatchMutation = useAddShopBatch()
@@ -112,6 +120,8 @@ export const WarehousePage = () => {
 
   // --- Dialoglar ---
   const [batchesFor, setBatchesFor] = useState<ShopProduct | null>(null)
+  // Narx va olish narxi — id saqlanadi, mahsulot ro'yxatdan (yangilansa ham so'nggisi)
+  const [pricesForId, setPricesForId] = useState<string | null>(null)
 
   const [kirimFor, setKirimFor] = useState<ShopProduct | null>(null)
   const [kQty, setKQty] = useState("")
@@ -671,11 +681,33 @@ export const WarehousePage = () => {
                 </div>
               ))}
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:justify-between">
+            {canManage && batchesFor && batchesFor.batches.length > 0 ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPricesForId(batchesFor.id)
+                  setBatchesFor(null)
+                }}
+              >
+                <Tag className="mr-1.5 h-4 w-4" />
+                {tr("Narxlarni o'zgartirish")}
+              </Button>
+            ) : (
+              <span />
+            )}
             <Button onClick={() => setBatchesFor(null)}>{tr("Yopish")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Narx va olish narxi (kirim narxlari) */}
+      {canManage && (
+        <BatchPricesDialog
+          product={pricesForId ? products.find((p) => p.id === pricesForId) ?? null : null}
+          onClose={() => setPricesForId(null)}
+        />
+      )}
 
       {/* Kirim dialogi */}
       <Dialog open={!!kirimFor} onOpenChange={(o) => !o && setKirimFor(null)}>

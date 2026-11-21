@@ -294,6 +294,41 @@ export const useAddShopBatch = () => {
   });
 };
 
+/** Partiya narxlarini o'zgartirish (sotuv va/yoki olish narxi) — bitta
+ *  tranzaksiyada. Har qatorda faqat yuborilgan maydon o'zgaradi:
+ *  `cost_price: null` — olish narxini olib tashlash. Sotuv narxi keyingi
+ *  sotuvlarga ta'sir qiladi, o'tgan cheklar o'zgarmaydi. */
+export interface BatchPriceChange {
+  batch_id: string;
+  sale_price?: number;
+  cost_price?: number | null;
+}
+
+export const useUpdateBatchPrices = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      productId,
+      items,
+      note,
+    }: {
+      productId: string;
+      items: BatchPriceChange[];
+      note?: string;
+    }) => {
+      const { data } = await api.put<ShopProduct & { changed: number }>(
+        `/shop/products/${productId}/batches`,
+        { items, note: note || undefined }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      invalidateShop(qc);
+      qc.invalidateQueries({ queryKey: ['warehouseMovements'] });
+    },
+  });
+};
+
 // --- Ombor (warehouse) ---
 
 export interface WarehouseMovement {

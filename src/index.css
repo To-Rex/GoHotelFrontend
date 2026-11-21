@@ -509,6 +509,10 @@ html.theme-fade *::after {
 .dark .bg-rose-50.text-rose-600,
 .dark .bg-rose-50.text-rose-700 { color: #fb7185; }
 
+/* --- Namuna matni (placeholder): tun rejimida och kulrang kiritilgan
+   qiymatdek ko'rinardi — xiraroq tus (narx, summa maydonlari) --- */
+.dark .placeholder\:text-gray-300::placeholder { color: #6b7280; }
+
 /* --- Booking sahifasidagi qoldiq neytral tuslar --- */
 .dark .bg-gray-50\/60 { background-color: hsl(var(--muted)); }
 .dark .hover\:bg-gray-50\/50:hover { background-color: hsl(var(--muted)); }

@@ -24,6 +24,7 @@ import {
   RefreshCw,
   X,
   UserRound,
+  Tag,
 } from "lucide-react"
 import {
   useShopProducts,
@@ -91,6 +92,7 @@ import {
   PAYMENT_METHOD_LABELS,
 } from "@/lib/paymentMethods"
 import { tr, trc } from "@/i18n"
+import { BatchPricesDialog } from "../components/BatchPricesDialog"
 
 // i18n:keys — mahsulot kategoriyasi bazaga o'zbekcha yoziladi va filtrda
 // solishtiriladi; ekranda tr(kategoriya) bilan tarjima qilinadi
@@ -409,6 +411,15 @@ export const ShopPage = () => {
       alert(apiErrorMessage(e))
     }
   }
+
+  // ---- Narx va olish narxi (partiyalar) ----
+  // Ro'yxat yangilansa ham oyna eng so'nggi partiyalar bilan ishlasin —
+  // id saqlanadi, mahsulot ro'yxatdan olinadi
+  const [pricesForId, setPricesForId] = useState<string | null>(null)
+  const pricesFor = useMemo(
+    () => (pricesForId ? products.find((p) => p.id === pricesForId) ?? null : null),
+    [products, pricesForId]
+  )
 
   // ---- Partiya dialogi ----
   const [batchModal, setBatchModal] = useState(false)
@@ -801,6 +812,17 @@ export const ShopPage = () => {
                           title={tr("Partiya qo'shish (kirim)")}
                         >
                           <PackagePlus size={13} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPricesForId(p.id)
+                          }}
+                          className="flex h-7 w-7 items-center justify-center rounded-md bg-background/90 text-primary shadow-sm ring-1 ring-border hover:bg-primary hover:text-primary-foreground"
+                          title={tr("Narx va olish narxi")}
+                          aria-label={tr("Narx va olish narxi")}
+                        >
+                          <Tag size={13} />
                         </button>
                         <button
                           onClick={(e) => {
@@ -1444,6 +1466,33 @@ export const ShopPage = () => {
                 {tr("Faol (sotuvda ko'rinadi)")}
               </label>
             )}
+            {/* Narx partiyada (kirimda) — alohida oynada, har partiya o'z narxi bilan */}
+            {editing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setProductModal(false)
+                  setPricesForId(editing.id)
+                }}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Tag size={15} className="text-primary" />
+                  <span>
+                    <span className="block text-sm font-medium">{tr("Narx va olish narxi")}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {editing.current_price != null
+                        ? tr("Hozirgi narx: {{price}} So'm · partiyalar: {{count}}", {
+                            price: fmt(editing.current_price),
+                            count: editing.batches.length,
+                          })
+                        : tr("Partiyalar: {{count}}", { count: editing.batches.length })}
+                    </span>
+                  </span>
+                </span>
+                <span className="text-xs font-medium text-primary">{tr("O'zgartirish")}</span>
+              </button>
+            )}
             {!editing && (
               <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
                 {tr("Mahsulot yaratilgach, unga")}{" "}<b>{tr("partiya qo'shing")}</b>{" "}{tr("(miqdor + narx) — shundan keyin sotuvga chiqadi.")}
@@ -1465,6 +1514,9 @@ export const ShopPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* ---------- Narx va olish narxi ---------- */}
+      {canManage && <BatchPricesDialog product={pricesFor} onClose={() => setPricesForId(null)} />}
+
       {/* ---------- Partiya dialogi ---------- */}
       <Dialog open={batchModal} onOpenChange={setBatchModal}>
         <DialogContent className="sm:max-w-md">
@@ -1480,6 +1532,17 @@ export const ShopPage = () => {
                   .filter((b) => b.remaining > 0)
                   .map((b) => tr("{{remaining}} dona @ {{sale_price}}", { remaining: b.remaining, sale_price: fmt(b.sale_price) }))
                   .join(", ") || tr("qoldiq yo'q") })}
+                {/* Mavjud partiyalar narxini kirim qilmasdan o'zgartirish */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBatchModal(false)
+                    setPricesForId(batchProduct.id)
+                  }}
+                  className="mt-1 block font-medium text-primary hover:underline"
+                >
+                  {tr("Mavjud narxlarni o'zgartirish")}
+                </button>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
