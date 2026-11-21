@@ -26,6 +26,7 @@ import { DebtorsPanel } from "../components/DebtorsPanel"
 import { InvoicesSection } from "../components/InvoicesSection"
 import { PaymentsSection } from "../components/PaymentsSection"
 import { ShopSection } from "../components/ShopSection"
+import { ShopProfitPanel } from "../components/ShopProfitPanel"
 import { PenaltiesSection } from "../components/PenaltiesSection"
 import { CashNowCard } from "@/features/shifts/components/CashNowCard"
 import { PAYMENT_METHOD_LABELS } from "@/lib/paymentMethods"
@@ -79,7 +80,7 @@ const SECTIONS = [
   {
     key: "shop",
     label: tr("Do'kon"),
-    desc: tr("Bronga yozilgan qarzlar va davrda to'langan savdolar"),
+    desc: tr("Foyda va zarar, bronga yozilgan qarzlar va davrda to'langan savdolar"),
     icon: Store,
     iconClass: "bg-violet-50 text-violet-600",
   },
@@ -800,7 +801,12 @@ export const FinancePage = () => {
           )}
 
           {section === "shop" && (
-            <ShopSection dateFrom={dateFrom} dateTo={dateTo} />
+            <div className="space-y-8">
+              {/* Foyda va zarar — ruxsati borlarga (administrator, moliya,
+                  do'kon boshqaruvchisi); qolganlarga panel ko'rinmaydi */}
+              <ShopProfitPanel dateFrom={dateFrom} dateTo={dateTo} />
+              <ShopSection dateFrom={dateFrom} dateTo={dateTo} />
+            </div>
           )}
 
           {section === "penalties" && (

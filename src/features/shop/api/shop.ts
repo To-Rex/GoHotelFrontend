@@ -226,6 +226,8 @@ const invalidateShop = (qc: ReturnType<typeof useQueryClient>) => {
   // Bronga yozilgan savdo — mehmon qarzining bir qismi
   qc.invalidateQueries({ queryKey: ['debtors'] });
   qc.invalidateQueries({ queryKey: ['reservationDebt'] });
+  // Moliya → Do'kon: foyda va zarar statistikasi
+  qc.invalidateQueries({ queryKey: ['shopProfit'] });
 };
 
 export const useCreateShopProduct = () => {
@@ -320,6 +322,8 @@ export const useWarehouseMovements = (limit = 100) =>
 const invalidateWarehouse = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ['shopProducts'] });
   qc.invalidateQueries({ queryKey: ['warehouseMovements'] });
+  // Spisaniye va inventarizatsiya — do'kon zarari
+  qc.invalidateQueries({ queryKey: ['shopProfit'] });
 };
 
 // Spisaniye: singan/muddati o'tgan mahsulotni sabab bilan chiqarish
