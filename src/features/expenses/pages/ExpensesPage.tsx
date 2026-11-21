@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { format } from "date-fns"
-import { TrendingDown, Plus, Trash2, Loader2, User as UserIcon, Tags, X, FilterX } from "lucide-react"
+import { TrendingDown, Plus, Trash2, Loader2, User as UserIcon, Tags, X, FilterX, Pencil } from "lucide-react"
 import { useExpenses, useDeleteExpense } from "../api/expenses"
 import { useExpenseCategories } from "../api/expenseCategories"
 import type { Expense } from "@/types/api"
@@ -38,7 +38,9 @@ import {
 import { tr } from "@/i18n"
 import { CategoryChip } from "../components/CategoryChip"
 import { ExpenseCategoriesDialog } from "../components/ExpenseCategoriesDialog"
+import { ExpenseEditHistoryDialog, ExpenseEditedMark } from "../components/ExpenseEditHistory"
 import { ExpenseFormDialog } from "../components/ExpenseFormDialog"
+import { ToggleFilter } from "@/features/finance/components/FilterControls"
 import { categoryVisual, formatAmountInput } from "../lib/categoryStyle"
 import {
   EMPTY_FILTERS,
@@ -49,6 +51,7 @@ import {
   activeFilterCount,
   applyExpenseFilters,
   categoryOf,
+  editedCount,
   hasCategory,
   toggleCategory,
   userOptions,
@@ -67,7 +70,12 @@ import { groupExpenses, partsLabel, type ExpenseGroup } from "../lib/expenseGrou
    va sahifalash brauzerda: davr ro'yxati serverdan to'liq keladi.
    Qoidalar `lib/expenseFilters.ts` da, mexanika `lib/tableState.ts`
    (shaxsiy hisobot bilan bir xil). Qisman to'lov bo'laklari bitta
-   xarajat bo'lib ko'rinadi (`lib/expenseGroups.ts`). */
+   xarajat bo'lib ko'rinadi (`lib/expenseGroups.ts`).
+
+   Tahrirlash — faqat administrator, super admin va sozlovchi (qalam
+   tugmasi; server ham faqat shularga ruxsat beradi). Tahrirlangan
+   xarajat nomi yonida sariq belgi — bosilsa kim, qachon, nimadan nimaga
+   o'zgartirgani ochiladi; belgi va tarix HAMMAGA ko'rinadi. */
 
 // Nomlar va ro'yxat butun ilova uchun bitta joyda
 const METHOD_LABELS = PAYMENT_METHOD_LABELS
@@ -117,11 +125,15 @@ function SortHead({
 }
 
 export const ExpensesPage = () => {
-  const { can } = usePermissions()
+  const { can, isAdmin } = usePermissions()
   // Xarajat kiritish barcha rollar uchun ochiq (backend ham shunday);
   // o'chirish esa expense.delete ruxsati bilan (admin avtomatik)
   const canCreate = true
   const canDelete = can("expense.delete")
+  // Tahrirlash — FAQAT administrator, super admin va sozlovchi (ruxsat
+  // belgisi bilan berilmaydi; server ham shunday tekshiradi)
+  const canEdit = isAdmin
+  const showActions = canEdit || canDelete
   const user = useAuthStore((s) => s.user)
 
   const todayStr = format(new Date(), "yyyy-MM-dd")
@@ -214,6 +226,7 @@ export const ExpensesPage = () => {
   const filterCount = activeFilterCount(filters) + (table.search.trim() ? 1 : 0)
   const filtering = filterCount > 0
   const users = useMemo(() => userOptions(groups), [groups])
+  const editedTotal = useMemo(() => editedCount(groups), [groups])
 
   const total = inRange.reduce((s, e) => s + Number(e.amount || 0), 0)
   const matchedTotal = matched.reduce((s, g) => s + g.amount, 0)
@@ -232,9 +245,25 @@ export const ExpensesPage = () => {
   const toggleUser = (id: string) =>
     setFilters((f) => ({ ...f, user: f.user === id ? null : id }))
 
-  // --- Oynalar: yangi xarajat va toifalar ---
+  // --- Oynalar: yangi xarajat, tahrirlash, tahrir tarixi va toifalar ---
   const [modalOpen, setModalOpen] = useState(false)
+  // Tahrirlanayotgan xarajat KALITI: ro'yxat yangilansa ham oyna eng
+  // so'nggi qiymatlarni oladi (guruh obyekti har yangilanishda almashadi)
+  const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [historyKey, setHistoryKey] = useState<string | null>(null)
   const [categoriesOpen, setCategoriesOpen] = useState(false)
+  const editing = useMemo(
+    () => (editingKey ? groups.find((g) => g.key === editingKey) ?? null : null),
+    [groups, editingKey]
+  )
+  const historyGroup = useMemo(
+    () => (historyKey ? groups.find((g) => g.key === historyKey) ?? null : null),
+    [groups, historyKey]
+  )
+  const closeForm = () => {
+    setModalOpen(false)
+    setEditingKey(null)
+  }
 
   const onDelete = async (g: ExpenseGroup<Expense>) => {
     const e = g.main
@@ -470,6 +499,15 @@ export const ExpensesPage = () => {
               onChange={(e) => setFilters((f) => ({ ...f, maxAmount: formatAmountInput(e.target.value) }))}
             />
           </div>
+          {/* Faqat tahrirlanganlar — davrda tahrirlangan xarajat bo'lsa yoki filtr yoqilgan bo'lsa */}
+          {(editedTotal > 0 || filters.edited) && (
+            <ToggleFilter
+              checked={filters.edited}
+              onChange={(edited) => setFilters((f) => ({ ...f, edited }))}
+            >
+              {tr("Tahrirlanganlar ({{count}})", { count: editedTotal })}
+            </ToggleFilter>
+          )}
           {/* Mobilda jadval sarlavhasi yo'q — saralash shu tanlagichda */}
           <select
             className={cn(filterControlClass, "flex-1 md:hidden")}
@@ -522,6 +560,11 @@ export const ExpensesPage = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900 leading-tight">{e.title}</p>
+                      <ExpenseEditedMark
+                        expense={e}
+                        onOpen={() => setHistoryKey(g.key)}
+                        className="mt-1"
+                      />
                       {e.notes && (
                         <p className="mt-0.5 truncate text-xs leading-tight text-gray-400">
                           {e.notes}
@@ -552,15 +595,31 @@ export const ExpensesPage = () => {
 
                   <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-2.5">
                     {userButton(e, true)}
-                    {canDelete && (
-                      <button
-                        type="button"
-                        title={tr("O'chirish")}
-                        onClick={() => onDelete(g)}
-                        className="ml-auto p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    {showActions && (
+                      <div className="ml-auto flex flex-shrink-0 items-center gap-0.5">
+                        {canEdit && (
+                          <button
+                            type="button"
+                            title={tr("Tahrirlash")}
+                            aria-label={tr("Tahrirlash")}
+                            onClick={() => setEditingKey(g.key)}
+                            className="p-1.5 rounded-md text-gray-400 hover:bg-primary-50 hover:text-primary-700"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            title={tr("O'chirish")}
+                            aria-label={tr("O'chirish")}
+                            onClick={() => onDelete(g)}
+                            className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -589,13 +648,13 @@ export const ExpensesPage = () => {
               <SortHead state={table} setState={setTable} column="payment_method">{tr("To'lov turi")}</SortHead>
               <SortHead state={table} setState={setTable} column="created_by_name">{tr("Kim kiritgan")}</SortHead>
               <SortHead state={table} setState={setTable} column="amount" align="right">{tr("Summa")}</SortHead>
-              {canDelete && <TableHead className="text-right">{tr("Amallar")}</TableHead>}
+              {showActions && <TableHead className="text-right">{tr("Amallar")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {view.total === 0 ? (
               <TableRow>
-                <TableCell colSpan={canDelete ? 7 : 6} className="py-12">
+                <TableCell colSpan={showActions ? 7 : 6} className="py-12">
                   <div className="flex flex-col items-center gap-2 text-gray-400">
                     <TrendingDown className="h-8 w-8" />
                     <p className="text-sm">{emptyText}</p>
@@ -618,7 +677,10 @@ export const ExpensesPage = () => {
                   <TableRow key={g.key}>
                     <TableCell className="text-gray-600">{e.expense_date}</TableCell>
                     <TableCell>
-                      <p className="font-medium text-gray-900 leading-tight">{e.title}</p>
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+                        <p className="font-medium text-gray-900 leading-tight">{e.title}</p>
+                        <ExpenseEditedMark expense={e} onOpen={() => setHistoryKey(g.key)} />
+                      </div>
                       {e.notes && (
                         <p className="text-xs text-gray-400 leading-tight mt-0.5 max-w-[280px] truncate">
                           {e.notes}
@@ -658,16 +720,30 @@ export const ExpensesPage = () => {
                       −{fmt(g.amount)}{" "}
                       <span className="text-xs font-normal text-gray-400">{tr("So'm")}</span>
                     </TableCell>
-                    {canDelete && (
-                      <TableCell className="text-right">
-                        <button
-                          type="button"
-                          title={tr("O'chirish")}
-                          onClick={() => onDelete(g)}
-                          className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                    {showActions && (
+                      <TableCell className="text-right whitespace-nowrap">
+                        {canEdit && (
+                          <button
+                            type="button"
+                            title={tr("Tahrirlash")}
+                            aria-label={tr("Tahrirlash")}
+                            onClick={() => setEditingKey(g.key)}
+                            className="p-1.5 rounded-md text-gray-400 hover:bg-primary-50 hover:text-primary-700"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            title={tr("O'chirish")}
+                            aria-label={tr("O'chirish")}
+                            onClick={() => onDelete(g)}
+                            className="p-1.5 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </TableCell>
                     )}
                   </TableRow>
@@ -687,8 +763,9 @@ export const ExpensesPage = () => {
       </div>
 
       <ExpenseFormDialog
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen || editing !== null}
+        onClose={closeForm}
+        expense={editing}
         categories={categories}
         categoriesReady={categoriesReady}
         categoriesLoading={categoriesQuery.isLoading}
@@ -696,6 +773,7 @@ export const ExpensesPage = () => {
         onManageCategories={() => setCategoriesOpen(true)}
         todayStr={todayStr}
       />
+      <ExpenseEditHistoryDialog group={historyGroup} onClose={() => setHistoryKey(null)} />
       <ExpenseCategoriesDialog open={categoriesOpen} onClose={() => setCategoriesOpen(false)} />
     </div>
   )

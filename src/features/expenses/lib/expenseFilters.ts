@@ -4,6 +4,7 @@ import type { Expense } from "@/types/api"
 import { tr } from "@/i18n"
 import { nameKey } from "./categoryStyle"
 import { parseAmountInput } from "./categoryStyle"
+import { editsOf } from "./expenseEdit"
 import type { ExpenseGroup } from "./expenseGroups"
 
 /* Xarajatlar ro'yxatining filtrlari va saralash qoidalari.
@@ -12,7 +13,8 @@ import type { ExpenseGroup } from "./expenseGroups"
    ro'yxat davr bo'yicha serverdan to'liq keladi (1000 tagacha), shuning
    uchun qidiruv, filtr va saralash darhol, so'rovsiz ishlaydi. Toifa
    filtri bir nechta toifani birga oladi (solishtirish uchun), xodim va
-   to'lov turi — bittadan, summa — oraliq. */
+   to'lov turi — bittadan, summa — oraliq, "Tahrirlanganlar" — faqat
+   tahrir qilingan xarajatlar. */
 
 /** Toifasiz xarajat hisobotdagidek "Boshqa" ga yig'iladi (server ham shunday) */
 export const categoryOf = (e: Pick<Expense, "category">): string =>
@@ -31,6 +33,8 @@ export interface ExpenseFilters {
   /** Summa oralig'i — formatlangan satrlar ("150 000"), bo'sh — chegarasiz */
   minAmount: string
   maxAmount: string
+  /** Faqat tahrirlangan xarajatlar */
+  edited: boolean
 }
 
 export const EMPTY_FILTERS: ExpenseFilters = {
@@ -39,6 +43,7 @@ export const EMPTY_FILTERS: ExpenseFilters = {
   method: null,
   minAmount: "",
   maxAmount: "",
+  edited: false,
 }
 
 /** Nechta filtr yoqilgan (qidiruv bundan tashqari — u o'z maydonida ko'rinadi) */
@@ -47,7 +52,8 @@ export function activeFilterCount(f: ExpenseFilters): number {
     (f.categories.length > 0 ? 1 : 0) +
     (f.user ? 1 : 0) +
     (f.method ? 1 : 0) +
-    (parseAmountInput(f.minAmount) !== null || parseAmountInput(f.maxAmount) !== null ? 1 : 0)
+    (parseAmountInput(f.minAmount) !== null || parseAmountInput(f.maxAmount) !== null ? 1 : 0) +
+    (f.edited ? 1 : 0)
   )
 }
 
@@ -113,6 +119,7 @@ export function applyExpenseFilters(
     }
     if (min !== null && g.amount < min) return false
     if (max !== null && g.amount > max) return false
+    if (f.edited && editsOf(g.main).length === 0) return false
     return true
   })
 }
@@ -122,6 +129,10 @@ export interface ExpenseUserOption {
   name: string
   count: number
 }
+
+/** Tahrirlangan xarajatlar soni — "Tahrirlanganlar" filtri shunda ko'rinadi */
+export const editedCount = (groups: readonly ExpenseGroup<Expense>[]): number =>
+  groups.filter((g) => editsOf(g.main).length > 0).length
 
 /** Davrdagi xarajatlarni kiritgan xodimlar — filtr ro'yxati uchun */
 export function userOptions(groups: readonly ExpenseGroup<Expense>[]): ExpenseUserOption[] {

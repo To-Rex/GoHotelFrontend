@@ -3,8 +3,10 @@ import { format, subDays } from "date-fns"
 import {
   Banknote,
   CreditCard,
+  Info,
   Landmark,
   Loader2,
+  Pencil,
   Plus,
   Settings2,
   Smartphone,
@@ -24,15 +26,17 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { apiErrorMessage } from "@/lib/apiError"
-import { PAYMENT_METHODS } from "@/lib/paymentMethods"
+import { PAYMENT_METHODS, canonicalMethod } from "@/lib/paymentMethods"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth"
 import { tr } from "@/i18n"
-import { useCreateExpense, type ExpensePaymentPart } from "../api/expenses"
+import type { Expense } from "@/types/api"
+import { useCreateExpense, useUpdateExpense, type ExpensePaymentPart } from "../api/expenses"
 import { useCreateExpenseCategory, type ExpenseCategory } from "../api/expenseCategories"
 import {
   DEFAULT_CATEGORY_NAMES,
   QUICK_AMOUNTS,
+  categoryVisual,
   findCategory,
   formatAmountInput,
   hashColor,
@@ -40,6 +44,20 @@ import {
   titlePlaceholder,
   visualOf,
 } from "../lib/categoryStyle"
+import {
+  buildUpdatePayload,
+  cashOf,
+  changeCount,
+  changeRows,
+  diffValues,
+  editMoment,
+  editsOf,
+  layoutOf,
+  valuesOfGroup,
+  type ExpenseValues,
+} from "../lib/expenseEdit"
+import type { ExpenseGroup } from "../lib/expenseGroups"
+import { ChangeList } from "./ExpenseEditHistory"
 
 /* Yangi xarajat oynasi.
 
@@ -57,7 +75,15 @@ import {
    40 000 online). Har tur uchun bitta maydon, "qolgani" tugmasi qoldiqni
    shu turga yozadi; yig'indi summaga teng bo'lmaguncha saqlanmaydi.
    Server har bo'lakni alohida qator qilib yozadi — kassadan faqat naqd
-   bo'lak chiqadi, ro'yxatda esa bitta xarajat ko'rinadi. */
+   bo'lak chiqadi, ro'yxatda esa bitta xarajat ko'rinadi.
+
+   TAHRIRLASH (`expense` berilsa; faqat administrator, super admin va
+   sozlovchi): xuddi shu oyna xarajat qiymatlari bilan ochiladi. Pastda
+   "O'zgarishlar" ro'yxati (nimadan nimaga) va ixtiyoriy "Tahrir sababi";
+   hech narsa o'zgarmaguncha saqlanmaydi, serverga faqat o'zgarganlar
+   ketadi. Kim kiritgani va qaysi smenaga tegishli ekani o'zgarmaydi —
+   bu oynaning tepasida aytiladi. Naqd qism o'zgarsa — kassaga ta'siri
+   haqida qisqa eslatma. */
 
 const METHOD_ICONS: Record<string, typeof Banknote> = {
   CASH: Banknote,
@@ -77,9 +103,12 @@ export function ExpenseFormDialog({
   canManageCategories,
   onManageCategories,
   todayStr,
+  expense: expenseProp = null,
 }: {
   open: boolean
   onClose: () => void
+  /** Tahrirlanadigan xarajat (guruh); berilmasa — yangi xarajat */
+  expense?: ExpenseGroup<Expense> | null
   /** Faol toifalar (ro'yxat tartibida) */
   categories: ExpenseCategory[]
   /** Server toifalarni berdi (false — eski server yoki xato: matn maydoni) */
@@ -92,7 +121,22 @@ export function ExpenseFormDialog({
 }) {
   const user = useAuthStore((s) => s.user)
   const createExpense = useCreateExpense()
+  const updateExpense = useUpdateExpense()
   const createCategory = useCreateExpenseCategory()
+  // Yopilish animatsiyasi paytida oxirgi xarajat ushlab turiladi — aks holda
+  // sarlavha bir lahza "Yangi xarajat" ga almashib qolardi
+  const shownExpense = useRef(expenseProp)
+  if (open) shownExpense.current = expenseProp
+  const expense = open ? expenseProp : shownExpense.current
+  const editing = expense !== null
+  const pending = createExpense.isPending || updateExpense.isPending
+  // Tahrirdan oldingi qiymatlar — "O'zgarishlar" shunga nisbatan
+  const before = useMemo(() => (expense ? valuesOfGroup(expense) : null), [expense])
+  // Oyna QAYTA to'ldirilmasin: ro'yxat yangilansa guruh obyekti almashadi,
+  // lekin bu o'sha xarajat — kiritilayotgan qiymatlar yo'qolmasin
+  const expenseKey = expense?.key ?? null
+  const latestExpense = useRef(expense)
+  latestExpense.current = expense
 
   const [amountStr, setAmountStr] = useState("")
   const [categoryName, setCategoryName] = useState("")
@@ -106,25 +150,52 @@ export function ExpenseFormDialog({
   // Qisman to'lov: to'lov turi → kiritilgan summa (formatlangan satr)
   const [splitOn, setSplitOn] = useState(false)
   const [partAmounts, setPartAmounts] = useState<Record<string, string>>({})
+  // Tahrir sababi (faqat tahrirda) — tarixda ko'rinadi
+  const [editNote, setEditNote] = useState("")
   const amountRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
-    setAmountStr("")
-    setCategoryName("")
-    setTitle("")
-    setMethod("CASH")
-    setExpenseDate(todayStr)
-    setNotes("")
+    const source = latestExpense.current
     setError(null)
     setNewCatOpen(false)
     setNewCatName("")
-    setSplitOn(false)
-    setPartAmounts({})
+    setEditNote("")
+    if (source) {
+      const v = valuesOfGroup(source)
+      setAmountStr(formatAmountInput(String(v.amount)))
+      setCategoryName(v.category ?? "")
+      setTitle(v.title)
+      setExpenseDate(v.expense_date || todayStr)
+      setNotes(v.notes ?? "")
+      if (v.payment.length > 1) {
+        setSplitOn(true)
+        setMethod(v.payment[0].payment_method)
+        setPartAmounts(
+          Object.fromEntries(
+            v.payment.map((p) => [canonicalMethod(p.payment_method), formatAmountInput(String(p.amount))])
+          )
+        )
+      } else {
+        setSplitOn(false)
+        setPartAmounts({})
+        // Asl kod saqlanadi (eski "CREDIT_CARD" ham) — tegilmasa o'zgarish emas
+        setMethod(v.payment[0]?.payment_method || "CASH")
+      }
+    } else {
+      setAmountStr("")
+      setCategoryName("")
+      setTitle("")
+      setMethod("CASH")
+      setExpenseDate(todayStr)
+      setNotes("")
+      setSplitOn(false)
+      setPartAmounts({})
+    }
     // Oyna ochilishi bilan summa yoziladi
     const t = window.setTimeout(() => amountRef.current?.focus(), 50)
     return () => window.clearTimeout(t)
-  }, [open, todayStr])
+  }, [open, todayStr, expenseKey])
 
   const yesterdayStr = useMemo(
     () => format(subDays(new Date(`${todayStr}T12:00:00`), 1), "yyyy-MM-dd"),
@@ -146,8 +217,41 @@ export function ExpenseFormDialog({
   const remainder = (amount ?? 0) - partsSum
   // Bo'lingan: yig'indi summaga teng va kamida bitta bo'lak bor
   const splitReady = !splitOn || (amount !== null && remainder === 0 && parts.length > 0)
-  const canSave = amount !== null && effectiveTitle.length > 0 && splitReady && !createExpense.isPending
-  const methodLabelOf = (code: string) => PAYMENT_METHODS.find((m) => m.value === code)?.label || code
+  // Bitta bo'lak qolsa — oddiy xarajat o'sha tur bilan
+  const singleMethod = splitOn && parts.length === 1 ? parts[0].payment_method : method
+
+  /* Tahrir: oynadagi holat va o'zgarishlar (server bilan bir xil qoida) */
+  const formValues: ExpenseValues | null =
+    amount === null
+      ? null
+      : {
+          // Serverga yoziladigan nom: bo'sh qolsa toifa nomi (yangi xarajatdagi kabi)
+          title: title.trim() || categoryName.trim(),
+          amount,
+          category: categoryName.trim() || null,
+          payment:
+            splitOn && parts.length > 1
+              ? layoutOf(parts)
+              : [{ payment_method: singleMethod, amount }],
+          expense_date: expenseDate,
+          notes: notes.trim() || null,
+        }
+  const changes = before && formValues ? diffValues(before, formValues) : {}
+  const changesTotal = changeCount(changes)
+  const editRows = changeRows(changes)
+  const cashChanged =
+    before !== null && formValues !== null && cashOf(before.payment) !== cashOf(formValues.payment)
+
+  const canSave =
+    amount !== null &&
+    effectiveTitle.length > 0 &&
+    splitReady &&
+    (!editing || changesTotal > 0) &&
+    !pending
+  const methodLabelOf = (code: string) =>
+    PAYMENT_METHODS.find((m) => m.value === code)?.label ||
+    PAYMENT_METHODS.find((m) => m.value === canonicalMethod(code))?.label ||
+    code
   const methodLabel =
     splitOn && parts.length > 1
       ? parts.map((p) => `${methodLabelOf(p.payment_method)} ${fmt(p.amount)}`).join(" + ")
@@ -163,7 +267,8 @@ export function ExpenseFormDialog({
       return
     }
     // Tanlangan tur butun summani oladi — xodim faqat ikkinchisini yozadi
-    setPartAmounts(amount !== null ? { [method]: formatAmountInput(String(amount)) } : {})
+    const key = canonicalMethod(method)
+    setPartAmounts(amount !== null && key !== "OTHER" ? { [key]: formatAmountInput(String(amount)) } : {})
     setSplitOn(true)
   }
 
@@ -190,8 +295,20 @@ export function ExpenseFormDialog({
       return
     }
     setError(null)
-    // Bitta bo'lak qolsa — oddiy xarajat o'sha tur bilan
-    const singleMethod = splitOn && parts.length === 1 ? parts[0].payment_method : method
+    if (expense && before && formValues) {
+      const payload = buildUpdatePayload(before, formValues, editNote)
+      if (!payload) {
+        setError(tr("Hech narsa o'zgarmadi"))
+        return
+      }
+      try {
+        await updateExpense.mutateAsync({ id: expense.main.id, hotelId: user?.hotel_id, ...payload })
+        onClose()
+      } catch (e) {
+        setError(apiErrorMessage(e))
+      }
+      return
+    }
     try {
       await createExpense.mutateAsync({
         // Nom bo'sh qolsa toifa nomi (bazadagi o'zbekcha yozilishi) yoziladi
@@ -249,13 +366,29 @@ export function ExpenseFormDialog({
             qatorlari, uzun yig'ma satr) tor ekranda oynani kengaytirmasin */}
         <DialogHeader className="min-w-0 border-b border-gray-100 px-5 pt-5 pb-4 text-left">
           <DialogTitle className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
-              <TrendingDown className="h-4 w-4" />
-            </span>
-            {tr("Yangi xarajat")}
+            {editing ? (
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <Pencil className="h-4 w-4" />
+              </span>
+            ) : (
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                <TrendingDown className="h-4 w-4" />
+              </span>
+            )}
+            {editing ? tr("Xarajatni tahrirlash") : tr("Yangi xarajat")}
           </DialogTitle>
           <DialogDescription className="text-xs text-gray-500">
-            {tr("Summa, toifa va sana — qolgani ixtiyoriy. Kim kiritgani avtomatik yoziladi.")}
+            {expense
+              ? [
+                  tr("Kiritgan: {{name}}", { name: expense.main.created_by_name || tr("Noma'lum") }),
+                  editMoment(expense.main.created_at) || null,
+                  editsOf(expense.main).length > 0
+                    ? tr("{{count}} marta tahrirlangan", { count: editsOf(expense.main).length })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : tr("Summa, toifa va sana — qolgani ixtiyoriy. Kim kiritgani avtomatik yoziladi.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -333,6 +466,30 @@ export function ExpenseFormDialog({
             ) : categoriesReady ? (
               <>
                 <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+                  {/* Xarajatdagi toifa ro'yxatda yo'q (arxivga tushgan yoki eski
+                      nom) — tanlangan holda alohida turadi, jimgina yo'qolmaydi */}
+                  {categoryName.trim() && !selected && (() => {
+                    const { Icon, color } = categoryVisual(categoryName, categories)
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setCategoryName("")}
+                        aria-pressed
+                        title={tr("Ro'yxatda yo'q toifa: {{name}}", { name: tr(categoryName) })}
+                        className={cn(
+                          "flex min-w-0 flex-col items-center gap-1.5 rounded-xl border px-1.5 py-2.5 text-center transition-all ring-2",
+                          color.selected
+                        )}
+                      >
+                        <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", color.solid)}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="w-full truncate text-[11px] leading-tight font-medium text-gray-900">
+                          {tr(categoryName)}
+                        </span>
+                      </button>
+                    )
+                  })()}
                   {categories.map((c) => {
                     const { Icon, color } = visualOf(c)
                     const isSel = selected?.id === c.id
@@ -494,12 +651,15 @@ export function ExpenseFormDialog({
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                 {PAYMENT_METHODS.map((m) => {
                   const Icon = METHOD_ICONS[m.value] || Banknote
-                  const isSel = method === m.value
+                  // Eski kod (CREDIT_CARD) ham o'z kanonik tugmasida ko'rinadi
+                  const isSel = method === m.value || canonicalMethod(method) === m.value
                   return (
                     <button
                       key={m.value}
                       type="button"
-                      onClick={() => setMethod(m.value)}
+                      onClick={() => {
+                        if (!isSel) setMethod(m.value)
+                      }}
                       aria-pressed={isSel}
                       title={m.label}
                       className={cn(
@@ -643,6 +803,53 @@ export function ExpenseFormDialog({
             />
           </div>
 
+          {/* TAHRIR SABABI va O'ZGARISHLAR — faqat tahrirda */}
+          {editing && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600" htmlFor="expense-edit-note">
+                {tr("Tahrir sababi")}
+                <span className="ml-1 font-normal text-gray-400">({tr("ixtiyoriy")})</span>
+              </label>
+              <Input
+                id="expense-edit-note"
+                value={editNote}
+                maxLength={500}
+                onChange={(e) => setEditNote(e.target.value)}
+                onKeyDown={onEnter}
+                placeholder={tr("Masalan: summa noto'g'ri yozilgan edi")}
+              />
+            </div>
+          )}
+
+          {editing && (
+            <div
+              className={cn(
+                "rounded-xl border px-3 py-2.5",
+                changesTotal > 0 ? "border-amber-200 bg-amber-50/60" : "border-dashed border-gray-200"
+              )}
+              aria-live="polite"
+            >
+              {changesTotal > 0 ? (
+                <>
+                  <p className="mb-1.5 text-xs font-semibold text-amber-800">
+                    {tr("O'zgarishlar ({{count}})", { count: changesTotal })}
+                  </p>
+                  <ChangeList rows={editRows} />
+                  {cashChanged && (
+                    <p className="mt-2 flex gap-1.5 text-[11px] leading-4 text-gray-600">
+                      <Info className="mt-px h-3 w-3 flex-shrink-0 text-amber-600" aria-hidden />
+                      {tr("Naqd qism o'zgaradi: xodimning smenasi hali ochiq bo'lsa, kassadagi kutilgan summa ham o'zgaradi. Topshirilgan kassa hisobotlari o'zgarmaydi.")}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-gray-400">
+                  {tr("Hali hech narsa o'zgarmadi — kerakli maydonni tahrirlang.")}
+                </p>
+              )}
+            </div>
+          )}
+
           {error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm whitespace-pre-line text-red-600">{error}</p>
           )}
@@ -673,8 +880,8 @@ export function ExpenseFormDialog({
               {tr("Bekor qilish")}
             </Button>
             <Button onClick={save} disabled={!canSave}>
-              {createExpense.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {tr("Saqlash")}
+              {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editing ? tr("O'zgarishlarni saqlash") : tr("Saqlash")}
             </Button>
           </div>
         </DialogFooter>

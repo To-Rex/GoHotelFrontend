@@ -97,5 +97,25 @@
   "gacha": "to",
   "Summa gacha": "Amount to",
   "Tozalash ({{count}})": "Clear ({{count}})",
-  "Topildi: {{count}} ta xarajat, {{total}} So'm": "Found: {{count}} expenses, {{total}} UZS"
+  "Topildi: {{count}} ta xarajat, {{total}} So'm": "Found: {{count}} expenses, {{total}} UZS",
+  "Sabab": "Reason",
+  "Xarajat tahrirlangan": "Expense edited",
+  "Xarajat tahrirlangan — tarixni ko'rish": "Expense edited — view history",
+  "Kim, qachon va nimani o'zgartirgani. Kim kiritgani va qaysi smenaga tegishli ekani tahrirda o'zgarmaydi.": "Who changed what and when. Editing does not change who entered the expense or which shift it belongs to.",
+  "Kiritgan: {{name}}": "Entered by: {{name}}",
+  "Bu xarajat tahrirlanmagan": "This expense has not been edited",
+  "Hech narsa o'zgarmadi": "Nothing has changed",
+  "Xarajatni tahrirlash": "Edit expense",
+  "{{count}} marta tahrirlangan": {
+    "one": "edited {{count}} time",
+    "other": "edited {{count}} times"
+  },
+  "Ro'yxatda yo'q toifa: {{name}}": "Category not in the list: {{name}}",
+  "Tahrir sababi": "Reason for the edit",
+  "Masalan: summa noto'g'ri yozilgan edi": "For example: the amount was entered incorrectly",
+  "O'zgarishlar ({{count}})": "Changes ({{count}})",
+  "Naqd qism o'zgaradi: xodimning smenasi hali ochiq bo'lsa, kassadagi kutilgan summa ham o'zgaradi. Topshirilgan kassa hisobotlari o'zgarmaydi.": "The cash part changes: if the employee's shift is still open, the expected cash in the drawer changes too. Reports for cash already handed over stay the same.",
+  "Hali hech narsa o'zgarmadi — kerakli maydonni tahrirlang.": "Nothing has changed yet — edit the field you need.",
+  "O'zgarishlarni saqlash": "Save changes",
+  "Tahrirlanganlar ({{count}})": "Edited ({{count}})"
 }

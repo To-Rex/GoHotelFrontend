@@ -97,5 +97,27 @@
   "gacha": "до",
   "Summa gacha": "Сумма до",
   "Tozalash ({{count}})": "Сбросить ({{count}})",
-  "Topildi: {{count}} ta xarajat, {{total}} So'm": "Найдено: расходов — {{count}}, {{total}} сум"
+  "Topildi: {{count}} ta xarajat, {{total}} So'm": "Найдено: расходов — {{count}}, {{total}} сум",
+  "Sabab": "Причина",
+  "Xarajat tahrirlangan": "Расход изменён",
+  "Xarajat tahrirlangan — tarixni ko'rish": "Расход изменён — открыть историю",
+  "Kim, qachon va nimani o'zgartirgani. Kim kiritgani va qaysi smenaga tegishli ekani tahrirda o'zgarmaydi.": "Кто, когда и что изменил. Автор записи и смена, к которой она относится, при изменении не меняются.",
+  "Kiritgan: {{name}}": "Внёс: {{name}}",
+  "Bu xarajat tahrirlanmagan": "Этот расход не изменялся",
+  "Hech narsa o'zgarmadi": "Ничего не изменилось",
+  "Xarajatni tahrirlash": "Изменение расхода",
+  "{{count}} marta tahrirlangan": {
+    "one": "изменён {{count}} раз",
+    "few": "изменён {{count}} раза",
+    "many": "изменён {{count}} раз",
+    "other": "изменён {{count}} раза"
+  },
+  "Ro'yxatda yo'q toifa: {{name}}": "Категории нет в списке: {{name}}",
+  "Tahrir sababi": "Причина изменения",
+  "Masalan: summa noto'g'ri yozilgan edi": "Например: сумма была указана неверно",
+  "O'zgarishlar ({{count}})": "Изменения ({{count}})",
+  "Naqd qism o'zgaradi: xodimning smenasi hali ochiq bo'lsa, kassadagi kutilgan summa ham o'zgaradi. Topshirilgan kassa hisobotlari o'zgarmaydi.": "Меняется наличная часть: если смена сотрудника ещё открыта, ожидаемая сумма в кассе тоже изменится. Отчёты по уже сданной кассе не меняются.",
+  "Hali hech narsa o'zgarmadi — kerakli maydonni tahrirlang.": "Пока ничего не изменено — исправьте нужное поле.",
+  "O'zgarishlarni saqlash": "Сохранить изменения",
+  "Tahrirlanganlar ({{count}})": "Изменённые ({{count}})"
 }

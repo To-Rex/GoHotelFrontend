@@ -318,6 +318,40 @@ export interface Expense {
   /** Qisman (aralash) to'lov: bir xarajatning bo'laklari shu kalit bilan
    *  bog'langan — har bo'lak alohida qator, o'z to'lov turi bilan */
   split_group?: string | null;
+  /** Tahrirlar tarixi (eng eskisi birinchi). Bo'sh — tahrirlanmagan.
+   *  Bo'lingan xarajatda barcha bo'laklarda bir xil. */
+  edit_history?: ExpenseEdit[] | null;
+}
+
+/** Xarajat to'lov tarkibining bir bo'lagi (tarixda) */
+export interface ExpensePaymentLayoutPart {
+  payment_method: string;
+  amount: number;
+}
+
+export interface ExpenseEditChange<T> {
+  old: T;
+  new: T;
+}
+
+/** Xarajatning bitta tahriri (`expenses.edit_history` yozuvi) */
+export interface ExpenseEdit {
+  /** ISO vaqt (UTC) */
+  at: string;
+  by?: string | null;
+  by_name?: string | null;
+  /** ADMIN / SUPER_ADMIN / CONFIGURATOR */
+  by_role?: string | null;
+  /** Tahrir sababi */
+  note?: string | null;
+  changes: {
+    amount?: ExpenseEditChange<number>;
+    payment?: ExpenseEditChange<ExpensePaymentLayoutPart[]>;
+    category?: ExpenseEditChange<string | null>;
+    title?: ExpenseEditChange<string>;
+    expense_date?: ExpenseEditChange<string>;
+    notes?: ExpenseEditChange<string | null>;
+  };
 }
 
 /** To'lov usuli bo'yicha bir qator (GET /finance/summary) */

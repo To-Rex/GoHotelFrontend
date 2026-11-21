@@ -487,6 +487,28 @@ html.theme-fade *::after {
 .dark .text-indigo-600 { color: #a5b4fc; }
 .dark .border-indigo-100 { border-color: rgb(99 102 241 / 0.4); }
 
+/* --- Xarajat toifalari palitrasining qolgan tuslari (slate, lime, teal,
+   fuchsia, rose): chip, belgi va TANLANGAN kartochka foni. Ular bu ro'yxatda
+   yo'q edi — tun rejimida tanlangan toifa och fonda qolib, nomi ko'rinmasdi
+   (xarajatni tahrirlash oynasi toifa tanlangan holda ochiladi). Matn rangi
+   faqat O'Z och fonidagi elementda yoritiladi — boshqa joylardagi (panel,
+   bosh sahifa) shu tusdagi matnga tegilmaydi. --- */
+.dark .bg-slate-50 { background-color: rgb(100 116 139 / 0.18); }
+.dark .bg-slate-100.text-slate-600,
+.dark .bg-slate-100.text-slate-700 { color: #cbd5e1; }
+.dark .bg-lime-50 { background-color: rgb(132 204 22 / 0.15); }
+.dark .bg-lime-50.text-lime-600,
+.dark .bg-lime-50.text-lime-700 { color: #a3e635; }
+.dark .bg-teal-50 { background-color: rgb(20 184 166 / 0.15); }
+.dark .bg-teal-50.text-teal-600,
+.dark .bg-teal-50.text-teal-700 { color: #2dd4bf; }
+.dark .bg-fuchsia-50 { background-color: rgb(217 70 239 / 0.15); }
+.dark .bg-fuchsia-50.text-fuchsia-600,
+.dark .bg-fuchsia-50.text-fuchsia-700 { color: #e879f9; }
+.dark .bg-rose-50 { background-color: rgb(244 63 94 / 0.15); }
+.dark .bg-rose-50.text-rose-600,
+.dark .bg-rose-50.text-rose-700 { color: #fb7185; }
+
 /* --- Booking sahifasidagi qoldiq neytral tuslar --- */
 .dark .bg-gray-50\/60 { background-color: hsl(var(--muted)); }
 .dark .hover\:bg-gray-50\/50:hover { background-color: hsl(var(--muted)); }

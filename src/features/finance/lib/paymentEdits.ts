@@ -231,6 +231,8 @@ export function roleLabel(role: string | null | undefined): string | null {
       return tr("Administrator")
     case "SUPER_ADMIN":
       return tr("Tizim ma'muri")
+    case "CONFIGURATOR":
+      return tr("Sozlovchi")
     case "MANAGER":
       return tr("Menejer")
     case "RECEPTION":

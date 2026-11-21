@@ -78,6 +78,54 @@ export const useCreateExpense = () => {
   });
 };
 
+/** Xarajatni tahrirlash — faqat O'ZGARGAN maydonlar yuboriladi
+ *  (`lib/expenseEdit.ts` → buildUpdatePayload). Server: PUT /expenses/{id}. */
+export interface ExpenseUpdatePayload {
+  title?: string;
+  amount?: number;
+  category?: string | null;
+  /** Bitta to'lov turi (bo'lingan xarajat ham shu bilan bitta turga qaytadi) */
+  payment_method?: string;
+  /** 2+ bo'lak, yig'indisi `amount` ga teng */
+  payments?: ExpensePaymentPart[];
+  expense_date?: string;
+  notes?: string | null;
+  /** Tahrir sababi — tarixda ko'rinadi */
+  note?: string;
+}
+
+/* Xarajat o'zgarsa yangilanadigan ma'lumotlar: ro'yxat, kassa (naqd qism),
+   moliya yig'indisi, shaxsiy hisobot, xodimlar hisoboti va smena tarixi. */
+const EXPENSE_AFFECTED_KEYS = [
+  ['expenses'],
+  ['shiftExpectedCash'],
+  ['financeSummary'],
+  ['myReport'],
+  ['reportStaff'],
+  ['cashOverview'],
+  ['shiftHistory'],
+  ['expenseCategories'],
+];
+
+export const useUpdateExpense = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      hotelId,
+      ...body
+    }: ExpenseUpdatePayload & { id: string; hotelId?: string }) => {
+      const { data } = await api.put<Expense & { parts?: Expense[] }>(`/expenses/${id}`, body, {
+        params: hotelId ? { hotel_id: hotelId } : {},
+      });
+      return data;
+    },
+    onSuccess: () => {
+      for (const queryKey of EXPENSE_AFFECTED_KEYS) qc.invalidateQueries({ queryKey });
+    },
+  });
+};
+
 export const useDeleteExpense = () => {
   const qc = useQueryClient();
   return useMutation({
