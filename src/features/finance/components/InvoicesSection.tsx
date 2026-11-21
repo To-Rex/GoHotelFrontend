@@ -37,7 +37,9 @@ import {
   setSearch,
   toggleSort,
 } from "@/lib/tableState"
-import { tr, trc } from "@/i18n"
+import { tr } from "@/i18n"
+import { INVOICE_STATUS_BADGE, INVOICE_STATUS_LABELS } from "../lib/financeStats"
+import { InvoiceStatsPanel } from "./InvoiceStatsPanel"
 
 /** Hisob-fakturalar jadvali — sahifalab, qidirib, filtrlab va saralab.
 
@@ -46,23 +48,9 @@ import { tr, trc } from "@/i18n"
     "Qarzi bor", "Chegirmali", umumiy summa oralig'i. "Topildi" satrida
     butun natija bo'yicha jami summa va qoldiq. Mobilda — saralash tanlagichi. */
 
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: tr("Qoralama"),
-  ISSUED: tr("Taqdim etilgan"),
-  PARTIALLY_PAID: tr("Qisman to'langan"),
-  PAID: tr("To'langan"),
-  VOID: trc("invoice", "Bekor qilingan"),
-  REFUNDED: tr("Qaytarilgan"),
-}
-
-const statusBadge: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-600",
-  ISSUED: "bg-blue-100 text-blue-700",
-  PARTIALLY_PAID: "bg-amber-100 text-amber-700",
-  PAID: "bg-emerald-100 text-emerald-700",
-  VOID: "bg-red-100 text-red-600",
-  REFUNDED: "bg-purple-100 text-purple-700",
-}
+// Holat nomlari va ranglari — statistika paneli bilan bir xil (`lib/financeStats`)
+const STATUS_LABELS = INVOICE_STATUS_LABELS
+const statusBadge = INVOICE_STATUS_BADGE
 
 const fmt = (n: number) => Number(n || 0).toLocaleString()
 
@@ -163,6 +151,19 @@ export function InvoicesSection({
 
   return (
     <div className="space-y-2">
+      {/* Statistika — jadval bilan bir xil davr, holat, qidiruv va filtrlar */}
+      <div className="pb-2">
+        <InvoiceStatsPanel
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          status={status}
+          onStatus={onStatus}
+          search={state.search}
+          onSearch={(value) => setState((s) => setSearch(s, value))}
+          filters={filters}
+          filtering={filtering}
+        />
+      </div>
       {/* Sarlavha bo'lim menyusining yonida — bu yerda faqat filtrlar */}
       <div className="space-y-2 rounded-xl border bg-gray-50/60 p-2.5">
         <div className="flex flex-wrap items-center gap-2">

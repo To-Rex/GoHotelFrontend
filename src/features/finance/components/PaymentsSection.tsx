@@ -31,6 +31,7 @@ import {
   type PurposeTone,
 } from "../lib/paymentPurpose"
 import { EditedMark, PaymentEditHistoryDialog } from "./PaymentEditHistory"
+import { PaymentStatsPanel } from "./PaymentStatsPanel"
 import { PaymentMethodEditDialog } from "./PaymentMethodEditDialog"
 import {
   AllChip,
@@ -442,6 +443,18 @@ export function PaymentsSection({
 
   return (
     <div className="space-y-2">
+      {/* Statistika — jadval bilan bir xil davr, qidiruv va filtrlar; kesim
+          bosilsa shu filtr qo'yiladi */}
+      <div className="pb-2">
+        <PaymentStatsPanel
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          search={state.search}
+          filters={filters}
+          setFilters={setFilters}
+          filtering={filtering}
+        />
+      </div>
       {/* Sarlavha bo'lim menyusining yonida yoziladi — bu yerda qisqa
           izoh va qidiruv turadi */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

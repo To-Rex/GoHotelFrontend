@@ -73,7 +73,7 @@ const SECTIONS = [
   {
     key: "payments",
     label: tr("To'lovlar"),
-    desc: tr("Davrda qabul qilingan to'lovlar — qidirish va saralash mumkin"),
+    desc: tr("Statistika va davrda qabul qilingan to'lovlar — qidirish, filtrlash va saralash mumkin"),
     icon: Wallet,
     iconClass: "bg-emerald-50 text-emerald-600",
   },
@@ -87,7 +87,7 @@ const SECTIONS = [
   {
     key: "invoices",
     label: tr("Hisob-fakturalar"),
-    desc: tr("Hujjatlar, to'langan summa va qolgan qarz"),
+    desc: tr("Statistika, hujjatlar, to'langan summa va qolgan qarz"),
     icon: ReceiptText,
     iconClass: "bg-blue-50 text-blue-600",
   },
