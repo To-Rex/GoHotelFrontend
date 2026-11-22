@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import type { ActionField, AiAction, AiMessage } from "../api/assistant"
+import type { ActionField, AiAction, AiMessage, AiPlan } from "../api/assistant"
 import { parseSse } from "../api/stream"
 import { changedValues, fieldDisplay, inputValue, resultSummary } from "./actions"
 import { formatAxisLabel, formatCell, formatCompact, formatNumber, valueLabel } from "./format"
 import { parseInline, parseMarkdown, safeHref } from "./markdown"
+import { CHAT_MIN_WIDTH, HISTORY_WIDTH, PLANS_WIDTH, panelDock, parsePanelParam } from "./panels"
+import { groupPlans } from "./plans"
 import { appendBlock, appendDelta, lastReplies, replaceAction, upsertStep } from "./segments"
 
 describe("markdown — xavfsiz tahlil", () => {
@@ -168,5 +170,53 @@ describe("amal kartasi", () => {
       { label: "Jami", value: 1000000 },
     ])
     expect(resultSummary(null)).toEqual([])
+  })
+})
+
+describe("yon panellar — joylashuv", () => {
+  it("joy yetsa chat yonida, yetmasa tortma", () => {
+    // Telefon / planshet: ikkalasi ham tortma
+    expect(panelDock(390)).toEqual({ history: false, plans: false, both: false })
+    expect(panelDock(HISTORY_WIDTH + CHAT_MIN_WIDTH - 1)).toEqual({ history: false, plans: false, both: false })
+    // Suhbatlar sig'adi, rejalar (kengroq) hali sig'maydi
+    expect(panelDock(HISTORY_WIDTH + CHAT_MIN_WIDTH)).toEqual({ history: true, plans: false, both: false })
+    // Noutbuk (1366 − menyu): har biri alohida sig'adi, birga — yo'q
+    expect(panelDock(1110)).toEqual({ history: true, plans: true, both: false })
+    // Keng ekran: ikkalasi birga
+    expect(panelDock(HISTORY_WIDTH + PLANS_WIDTH + CHAT_MIN_WIDTH)).toEqual({ history: true, plans: true, both: true })
+  })
+
+  it("havola parametri faqat ma'lum panellar uchun", () => {
+    expect(parsePanelParam("plans")).toBe("plans")
+    expect(parsePanelParam("history")).toBe("history")
+    expect(parsePanelParam("settings")).toBeNull()
+    expect(parsePanelParam(null)).toBeNull()
+  })
+})
+
+describe("rejalar — bo'limlarga ajratish", () => {
+  const plan = (id: string, over: Partial<AiPlan>): AiPlan => ({
+    id, title: id, note: null, kind: "task", status: "open", due_at: null, due_local: null, overdue: false,
+    notified_at: null, done_at: null, created_via: "manual", conversation_id: null, created_at: null, ...over,
+  })
+
+  it("muddati o'tgan, bugun, keyinroq, muddatsiz va yopilgan", () => {
+    const g = groupPlans(
+      [
+        plan("a", { due_local: "2026-11-21T09:00", overdue: true }),
+        plan("b", { due_local: "2026-11-22T18:00" }),
+        plan("c", { due_local: "2026-11-25T09:00" }),
+        plan("d", {}),
+        plan("e", { status: "done", due_local: "2026-11-22T08:00" }),
+        plan("f", { status: "cancelled" }),
+      ],
+      "2026-11-22",
+    )
+    expect(g.overdue.map((p) => p.id)).toEqual(["a"])
+    expect(g.today.map((p) => p.id)).toEqual(["b"])
+    expect(g.later.map((p) => p.id)).toEqual(["c"])
+    expect(g.nodate.map((p) => p.id)).toEqual(["d"])
+    // Bajarilgan/bekor qilingan — bugungi bo'lsa ham tugma belgisiga kirmaydi
+    expect(g.closed.map((p) => p.id)).toEqual(["e", "f"])
   })
 })

@@ -15,7 +15,23 @@ import {
   type Conversation,
 } from "../api/assistant"
 import { formatCompact } from "../lib/format"
+import { groupPlans } from "../lib/plans"
 import { PlanRow } from "./SmallBlocks"
+
+/** Panel sarlavhasidagi yopish tugmasi (chat sarlavhasi bilan bir balandlikda). */
+function CloseButton({ onClose }: { onClose: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClose}
+      title={tr("Yopish")}
+      aria-label={tr("Yopish")}
+      className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      <X className="h-4 w-4" />
+    </button>
+  )
+}
 
 // ---------------------------------------------------------------- suhbatlar --
 
@@ -35,6 +51,7 @@ export function ConversationList({
   onSelect,
   onNew,
   onDeleted,
+  onClose,
 }: {
   items: Conversation[]
   activeId: string | null
@@ -44,6 +61,7 @@ export function ConversationList({
   onSelect: (id: string) => void
   onNew: () => void
   onDeleted: (id: string) => void
+  onClose?: () => void
 }) {
   const rename = useRenameConversation()
   const remove = useDeleteConversation()
@@ -59,6 +77,12 @@ export function ConversationList({
 
   return (
     <div className="flex h-full flex-col">
+      {onClose && (
+        <div className="flex h-14 flex-shrink-0 items-center justify-between gap-2 border-b border-border px-3">
+          <p className="text-sm font-semibold text-foreground">{tr("Suhbatlar")}</p>
+          <CloseButton onClose={onClose} />
+        </div>
+      )}
       <div className="space-y-2 p-3">
         <button
           type="button"
@@ -169,22 +193,7 @@ export function ConversationList({
 
 // ------------------------------------------------------------------ rejalar --
 
-function group(plans: AiPlan[]) {
-  const today = hotelClock(new Date())?.ymd ?? ""
-  const out: Record<"overdue" | "today" | "later" | "nodate" | "closed", AiPlan[]> = {
-    overdue: [], today: [], later: [], nodate: [], closed: [],
-  }
-  for (const p of plans) {
-    if (p.status !== "open") out.closed.push(p)
-    else if (p.overdue) out.overdue.push(p)
-    else if (!p.due_local) out.nodate.push(p)
-    else if (p.due_local.slice(0, 10) === today) out.today.push(p)
-    else out.later.push(p)
-  }
-  return out
-}
-
-export function PlansPanel() {
+export function PlansPanel({ onClose }: { onClose?: () => void }) {
   const { data: plans = [], isLoading } = usePlans("recent")
   const create = useCreatePlan()
   const [adding, setAdding] = useState(false)
@@ -192,7 +201,7 @@ export function PlansPanel() {
   const [kind, setKind] = useState<AiPlan["kind"]>("task")
   const [due, setDue] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const groups = useMemo(() => group(plans), [plans])
+  const groups = useMemo(() => groupPlans(plans), [plans])
 
   const add = async () => {
     if (!title.trim()) return
@@ -222,16 +231,19 @@ export function PlansPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+      <div className="flex h-14 flex-shrink-0 items-center justify-between gap-2 border-b border-border px-3">
         <p className="text-sm font-semibold text-foreground">{tr("Rejalar")}</p>
-        <button
-          type="button"
-          onClick={() => setAdding((x) => !x)}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          {tr("Qo'shish")}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setAdding((x) => !x)}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {tr("Qo'shish")}
+          </button>
+          {onClose && <CloseButton onClose={onClose} />}
+        </div>
       </div>
       {adding && (
         <div className="space-y-2 border-b border-border p-3">

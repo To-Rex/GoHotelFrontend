@@ -7,6 +7,7 @@ import { HOTEL_UTC_OFFSET_MINUTES } from "@/lib/hotelTime"
 
 import { useAiMe, useDuePlans, useUpdatePlan, type AiPlan } from "../api/assistant"
 import { formatLocalDue } from "../lib/format"
+import { PANEL_PARAM } from "../lib/panels"
 
 /* Sayt ichidagi eslatma: yordamchi rejalaridan vaqti kelganlari (har
    daqiqa so'raladi). Mobil ilovaga server push ham yuboradi. Yopilgan
@@ -103,7 +104,8 @@ export function AiReminders() {
               {tr("15 daqiqadan keyin")}
             </button>
             <Link
-              to="/assistant"
+              // Rejalar paneli endi yopiq turadi — havola uni ochib beradi
+              to={`/assistant?${PANEL_PARAM}=plans`}
               onClick={() => hide(p)}
               className="ml-auto inline-flex items-center rounded-lg px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
             >

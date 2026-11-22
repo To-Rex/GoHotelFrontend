@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import {
@@ -7,10 +7,11 @@ import {
   CalendarPlus,
   CalendarRange,
   FileSpreadsheet,
+  ListTodo,
   Lock,
   Map as MapIcon,
+  MessageSquarePlus,
   MessagesSquare,
-  PanelRight,
   Settings,
   Sparkles,
   X,
@@ -20,7 +21,6 @@ import { MAIN_NAV_LINKS, MANAGEMENT_NAV_LINKS } from "@/components/layout/navLin
 import { tr } from "@/i18n"
 import { usePermissions } from "@/lib/permissions"
 import { useDebouncedValue } from "@/lib/useDebouncedValue"
-import { cn } from "@/lib/utils"
 
 import {
   aiKeys,
@@ -29,6 +29,7 @@ import {
   useConversation,
   useConversations,
   useCreateConversation,
+  usePlans,
   type AiAction,
   type AiLimits,
   type AiMessage,
@@ -36,13 +37,28 @@ import {
 import { StreamHttpError, streamMessage, type SendBody } from "../api/stream"
 import { ChatMessage, type MessageHandlers } from "../components/ChatMessage"
 import { Composer } from "../components/Composer"
+import { PanelToggle, SidePanel } from "../components/SidePanel"
 import { ConversationList, PlansPanel, UsageMeter } from "../components/Sidebars"
+import {
+  HISTORY_OVERLAY_MAX,
+  HISTORY_WIDTH,
+  PANEL_PARAM,
+  PLANS_OVERLAY_MAX,
+  PLANS_WIDTH,
+  panelDock,
+  parsePanelParam,
+  type PanelKey,
+} from "../lib/panels"
+import { groupPlans } from "../lib/plans"
 import { appendBlock, appendDelta, replaceAction, upsertStep } from "../lib/segments"
+import { useElementWidth } from "../lib/useElementWidth"
 
 /* "Yordamchi" — AI chat. Xodim o'z roli doirasida savol beradi, hisobot,
    grafik va Excel oladi, ish buyuradi (bron, xarajat...) — yozuvchi amal
    faqat karta orqali, xodim tasdiqlaganda bajariladi. Suhbatlar har
-   xodimga alohida saqlanadi (chapda), rejalar — o'ngda. */
+   xodimga alohida saqlanadi. Suhbatlar tarixi (chapda) va rejalar (o'ngda)
+   boshida yopiq — chat butun kenglikni oladi; sarlavhadagi tugma bilan
+   siljib chiqadi (lib/panels.ts). */
 
 // i18n:keys
 const SUGGESTIONS: { icon: typeof Sparkles; text: string }[] = [
@@ -93,22 +109,21 @@ export default function AssistantPage() {
   const conversation = useConversation(allowed ? activeId : null)
   const create = useCreateConversation()
   const { canRoute } = usePermissions()
+  // Rejalar paneli bilan bir xil so'rov (kesh umumiy) — tugmadagi belgi uchun
+  const plans = usePlans("recent", allowed)
+  const planGroups = useMemo(() => groupPlans(plans.data ?? []), [plans.data])
+  const urgentPlans = planGroups.overdue.length + planGroups.today.length
 
   const [messages, setMessages] = useState<AiMessage[]>([])
   const [live, setLive] = useState<AiMessage | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [limits, setLimits] = useState<AiLimits | null>(null)
-  const [listOpen, setListOpen] = useState(false)
-  // Keng ekranda rejalar paneli (eslab qolinadi); torda — faqat bosilganda tortma
-  const [plansDrawer, setPlansDrawer] = useState(false)
-  const [plansOpen, setPlansOpen] = useState(() => {
-    try {
-      return localStorage.getItem("ai.plans.open") !== "0"
-    } catch {
-      return true
-    }
-  })
+  // Yon panellar — boshida yopiq. Joy yetsa chat yonida turadi, yetmasa tortma.
+  const [rootRef, rootWidth] = useElementWidth<HTMLDivElement>()
+  const dock = panelDock(rootWidth)
+  const [panels, setPanels] = useState<Record<PanelKey, boolean>>({ history: false, plans: false })
+  const lastOpenedRef = useRef<PanelKey>("history")
   const abortRef = useRef<AbortController | null>(null)
   const streamConvRef = useRef<string | null>(null)
   const queueRef = useRef<string[]>([])
@@ -121,13 +136,40 @@ export default function AssistantPage() {
     [canRoute],
   )
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("ai.plans.open", plansOpen ? "1" : "0")
-    } catch {
-      // saqlab bo'lmasa — faqat shu sessiyada
+  const closeHistory = useCallback(() => setPanels((p) => (p.history ? { ...p, history: false } : p)), [])
+  const closePlans = useCallback(() => setPanels((p) => (p.plans ? { ...p, plans: false } : p)), [])
+  const togglePanel = (key: PanelKey) => {
+    if (panels[key]) {
+      setPanels((p) => ({ ...p, [key]: false }))
+      return
     }
-  }, [plansOpen])
+    lastOpenedRef.current = key
+    // Ikkalasi yonma-yon sig'masa — ikkinchisi yopiladi, chat torayib ketmasin
+    setPanels((p) => (dock.both ? { ...p, [key]: true } : { history: key === "history", plans: key === "plans" }))
+  }
+
+  // Oyna torayib, ochiq ikkala panel yonma-yon sig'may qolsa — avvalroq ochilgani yopiladi
+  useLayoutEffect(() => {
+    if (!panels.history || !panels.plans || dock.both) return
+    const older: PanelKey = lastOpenedRef.current === "history" ? "plans" : "history"
+    setPanels((p) => ({ ...p, [older]: false }))
+  }, [panels.history, panels.plans, dock.both])
+
+  // Havola orqali ochish (/assistant?panel=plans) — panel ochiladi, parametr olib tashlanadi
+  const panelParam = parsePanelParam(params.get(PANEL_PARAM))
+  useEffect(() => {
+    if (!panelParam) return
+    lastOpenedRef.current = panelParam
+    setPanels({ history: panelParam === "history", plans: panelParam === "plans" })
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete(PANEL_PARAM)
+        return next
+      },
+      { replace: true },
+    )
+  }, [panelParam, setParams])
 
   // Serverdagi tarix — oqim yo'q paytda (oqim tugagach qayta o'qiladi)
   useEffect(() => {
@@ -282,13 +324,14 @@ export default function AssistantPage() {
     setParams({}, { replace: false })
     setMessages([])
     setNotice(null)
-    setListOpen(false)
+    // Tortma bo'lib chiqqan bo'lsa — yopiladi; chat yonida tursa — ochiq qoladi
+    if (!dock.history) closeHistory()
   }
 
   const select = (id: string) => {
     setParams({ c: id })
     setNotice(null)
-    setListOpen(false)
+    if (!dock.history) closeHistory()
   }
 
   // ------------------------------------------------------------ ko'rinish --
@@ -326,62 +369,70 @@ export default function AssistantPage() {
   const blocked = !!shownLimits?.blocked
   const all = live ? [...messages, live] : messages
   const title = conversation.data?.title ?? (activeId ? "" : tr("Yangi suhbat"))
-  const list = (
-    <ConversationList
-      items={conversations.data ?? []}
-      activeId={activeId}
-      loading={conversations.isLoading}
-      search={search}
-      onSearch={setSearch}
-      onSelect={select}
-      onNew={newChat}
-      onDeleted={(id) => id === activeId && newChat()}
-    />
-  )
-
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      {/* Suhbatlar — keng ekranda doim, torda — tortma */}
-      <aside className="hidden w-72 flex-shrink-0 border-r border-border bg-card lg:block">{list}</aside>
-      {listOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/45" onClick={() => setListOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-[85%] max-w-xs bg-card shadow-2xl">{list}</div>
-        </div>
-      )}
+    <div ref={rootRef} className="flex h-full min-h-0 bg-background">
+      {/* Suhbatlar tarixi — chapda, tugma bilan siljib chiqadi */}
+      <SidePanel
+        id="ai-history-panel"
+        side="left"
+        open={panels.history}
+        docked={dock.history}
+        width={HISTORY_WIDTH}
+        overlayMaxWidth={HISTORY_OVERLAY_MAX}
+        label={tr("Suhbatlar")}
+        onClose={closeHistory}
+      >
+        <ConversationList
+          items={conversations.data ?? []}
+          activeId={activeId}
+          loading={conversations.isLoading}
+          search={search}
+          onSearch={setSearch}
+          onSelect={select}
+          onNew={newChat}
+          onDeleted={(id) => id === activeId && newChat()}
+          onClose={closeHistory}
+        />
+      </SidePanel>
 
-      <section className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 flex-shrink-0 items-center gap-2 border-b border-border bg-card px-3">
-          <button
-            type="button"
-            onClick={() => setListOpen(true)}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-muted lg:hidden"
-            title={tr("Suhbatlar")}
-          >
-            <MessagesSquare className="h-4 w-4" />
-          </button>
-          <div className="min-w-0 flex-1">
+      <section className="@container flex min-w-0 flex-1 flex-col">
+        <header className="flex h-14 flex-shrink-0 items-center gap-1.5 border-b border-border bg-card px-2 sm:gap-2 sm:px-3">
+          <PanelToggle
+            active={panels.history}
+            controls="ai-history-panel"
+            onClick={() => togglePanel("history")}
+            icon={MessagesSquare}
+            label={tr("Suhbatlar")}
+          />
+          <div className="min-w-0 flex-1 px-1">
             <p className="truncate text-sm font-semibold text-foreground">{title || tr("Suhbat")}</p>
             <p className="truncate text-[11px] text-muted-foreground">
               {[me.data.provider_label, me.data.model].filter(Boolean).join(" · ")}
             </p>
           </div>
+          {/* Tarix yopiq bo'lsa ham yangi suhbatni bir bosishda boshlash mumkin */}
+          {activeId && (
+            <button
+              type="button"
+              onClick={newChat}
+              title={tr("Yangi suhbat")}
+              aria-label={tr("Yangi suhbat")}
+              className="flex-shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+            </button>
+          )}
           <UsageMeter limits={shownLimits} />
-          <button
-            type="button"
-            onClick={() => {
-              if (window.matchMedia("(min-width: 1280px)").matches) setPlansOpen((x) => !x)
-              else setPlansDrawer(true)
-            }}
-            className={cn(
-              "rounded-lg p-2 transition-colors",
-              plansOpen ? "xl:bg-primary/10 xl:text-primary" : "",
-              "text-muted-foreground hover:bg-muted",
-            )}
-            title={tr("Rejalar")}
-          >
-            <PanelRight className="h-4 w-4" />
-          </button>
+          <PanelToggle
+            active={panels.plans}
+            controls="ai-plans-panel"
+            onClick={() => togglePanel("plans")}
+            icon={ListTodo}
+            label={tr("Rejalar")}
+            badge={urgentPlans}
+            badgeTone={planGroups.overdue.length ? "danger" : "primary"}
+            badgeLabel={tr("Bugungi va muddati o'tgan rejalar: {{count}}", { count: urgentPlans })}
+          />
         </header>
 
         <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto">
@@ -452,19 +503,19 @@ export default function AssistantPage() {
         </div>
       </section>
 
-      {plansOpen && (
-        <aside className="hidden w-80 flex-shrink-0 border-l border-border bg-card xl:block">
-          <PlansPanel />
-        </aside>
-      )}
-      {plansDrawer && (
-        <div className="fixed inset-0 z-50 xl:hidden">
-          <div className="absolute inset-0 bg-black/45" onClick={() => setPlansDrawer(false)} />
-          <div className="absolute right-0 top-0 h-full w-[88%] max-w-sm bg-card shadow-2xl">
-            <PlansPanel />
-          </div>
-        </div>
-      )}
+      {/* Rejalar — o'ngda, tugma bilan siljib chiqadi */}
+      <SidePanel
+        id="ai-plans-panel"
+        side="right"
+        open={panels.plans}
+        docked={dock.plans}
+        width={PLANS_WIDTH}
+        overlayMaxWidth={PLANS_OVERLAY_MAX}
+        label={tr("Rejalar")}
+        onClose={closePlans}
+      >
+        <PlansPanel onClose={closePlans} />
+      </SidePanel>
     </div>
   )
 }

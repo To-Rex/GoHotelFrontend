@@ -227,5 +227,6 @@
   "Hisobot, grafik va Excel tayyorlayman, bron yoki xarajat kabi ishlarni tasdiqlashingiz uchun kartaga tayyorlab beraman, eslatmalar qo'yaman.": "I prepare reports, charts and Excel files, set up bookings, expenses and other actions as cards for you to confirm, and set reminders.",
   "Javob tayyorlanmoqda…": "Preparing the answer…",
   "Oylik token limiti tugagan": "Monthly token limit used up",
-  "Yordamchi xato qilishi mumkin — kartalarni tekshirib tasdiqlang. Ma'lumotlar o'chirilmaydi.": "The assistant can make mistakes — check cards before confirming. Data is never deleted."
+  "Yordamchi xato qilishi mumkin — kartalarni tekshirib tasdiqlang. Ma'lumotlar o'chirilmaydi.": "The assistant can make mistakes — check cards before confirming. Data is never deleted.",
+  "Bugungi va muddati o'tgan rejalar: {{count}}": "Plans due today or overdue: {{count}}"
 }

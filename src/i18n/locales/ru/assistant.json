@@ -227,5 +227,6 @@
   "Hisobot, grafik va Excel tayyorlayman, bron yoki xarajat kabi ishlarni tasdiqlashingiz uchun kartaga tayyorlab beraman, eslatmalar qo'yaman.": "Готовлю отчёты, графики и Excel, оформляю брони, расходы и другие действия карточкой для вашего подтверждения, ставлю напоминания.",
   "Javob tayyorlanmoqda…": "Готовлю ответ…",
   "Oylik token limiti tugagan": "Месячный лимит токенов исчерпан",
-  "Yordamchi xato qilishi mumkin — kartalarni tekshirib tasdiqlang. Ma'lumotlar o'chirilmaydi.": "Ассистент может ошибаться — проверяйте карточки перед подтверждением. Данные не удаляются."
+  "Yordamchi xato qilishi mumkin — kartalarni tekshirib tasdiqlang. Ma'lumotlar o'chirilmaydi.": "Ассистент может ошибаться — проверяйте карточки перед подтверждением. Данные не удаляются.",
+  "Bugungi va muddati o'tgan rejalar: {{count}}": "Планы на сегодня и просроченные: {{count}}"
 }
