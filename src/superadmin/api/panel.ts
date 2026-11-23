@@ -927,6 +927,10 @@ export interface ApiLogEntry {
 
 export interface ApiLogList {
   items: ApiLogEntry[]
+  /** Filtrga mos yozuvlar soni (ro'yxat chegarasidan oldin) */
+  matched_total?: number
+  /** Holatdan BOSHQA filtrlarga mos yozuvlar soni kod bo'yicha: {"200": 310, "401": 12} */
+  status_counts?: Record<string, number>
   captured_total: number
   max_entries: number
   /** Bazadan o'qilgan (saqlash muddati ichidagi) xatolar soni */
@@ -936,8 +940,12 @@ export interface ApiLogList {
 }
 
 export interface ApiLogFilters {
+  /** "GET" yoki bir nechtasi: "GET,POST" */
   method?: string
+  /** Holat ifodasi: "400,401,422", "4xx", "500-504", "!200,!304" */
   status?: string
+  /** Faqat oxirgi N daqiqa */
+  since_minutes?: number
   q?: string
   /** Mehmonxona (kompaniya) ID si */
   hotel_id?: string
@@ -962,6 +970,7 @@ export const useApiLogs = (
           status: filters.status || undefined,
           q: filters.q?.trim() || undefined,
           hotel_id: filters.hotel_id || undefined,
+          since_minutes: filters.since_minutes || undefined,
           sort: filters.sort || undefined,
           order: filters.order || undefined,
         },

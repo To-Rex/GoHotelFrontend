@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react"
+﻿import { useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import {
   ArrowDown,
@@ -31,6 +31,18 @@ import {
   PanelNotice,
   PanelSelect,
 } from "../components/ui"
+import { MethodPicker, StatusPicker } from "../components/ApiLogFilters"
+import {
+  SINCE_LABELS,
+  SINCE_OPTIONS,
+  buildStatusParam,
+  focusCode,
+  parseMethodsParam,
+  parseSinceParam,
+  parseStatusParam,
+  statusLabel,
+  type StatusSelection,
+} from "../lib/apiLogFilters"
 import { tr, trc } from "@/i18n"
 
 /**
@@ -49,33 +61,54 @@ import { tr, trc } from "@/i18n"
  * Har bir yozuvda mehmonxona/filial/foydalanuvchi konteksti ham bor:
  * kompaniya bo'yicha filtr, ustunlar bo'yicha saralash va to'liq
  * tafsilotlar (request/response, user-agent, IP) shu yerga tayanadi.
+ *
+ * Filtrlar: holat kodlari (bir nechtasi birga, har birining soni bilan;
+ * "faqat shular" yoki "shularsiz"), metodlar (bir nechtasi), davr, URL.
+ * Kompaniya, holat, metod va davr URL'da turadi — sahifa yangilansa yoki
+ * havola yuborilsa ham filtr saqlanadi.
  */
 export function ApiLogsPage() {
   const [params, setParams] = useSearchParams()
-  const [method, setMethod] = useState("")
-  const [status, setStatus] = useState("")
-  const [hotelId, setHotelId] = useState(params.get("hotel_id") || "")
+  const hotelId = params.get("hotel_id") || ""
+  const status = params.get("status") || ""
+  const statusSel = useMemo(() => parseStatusParam(status), [status])
+  const methods = useMemo(() => parseMethodsParam(params.get("method")), [params])
+  const since = parseSinceParam(params.get("since"))
   const [q, setQ] = useState("")
   const [sort, setSort] = useState<SortKey>("ts")
   const [order, setOrder] = useState<SortOrder>("desc")
   const [paused, setPaused] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
 
-  useEffect(() => {
-    setHotelId(params.get("hotel_id") || "")
-  }, [params])
-
-  const changeHotel = (value: string) => {
-    setHotelId(value)
-    const next = new URLSearchParams(params)
-    if (value) next.set("hotel_id", value)
-    else next.delete("hotel_id")
+  /* Filtr URL'da. Har bir o'zgarish URL'ning ENG SO'NGGI holatidan
+     hisoblanadi (window.location): router URL'ni darhol yozadi, sahifa esa
+     biroz keyin yangilanadi — ketma-ket tez bosishda oldingi tanlov
+     yo'qolmasligi uchun eski render qiymatiga tayanilmaydi. */
+  const patchParams = (
+    patch: (current: URLSearchParams) => Record<string, string | null>
+  ) => {
+    const next = new URLSearchParams(window.location.search)
+    for (const [key, value] of Object.entries(patch(next))) {
+      if (value) next.set(key, value)
+      else next.delete(key)
+    }
     setParams(next, { replace: true })
   }
+  const changeHotel = (value: string) => patchParams(() => ({ hotel_id: value || null }))
+  const changeStatus = (update: (current: StatusSelection) => StatusSelection) =>
+    patchParams((cur) => ({
+      status: buildStatusParam(update(parseStatusParam(cur.get("status")))) || null,
+    }))
+  const changeMethods = (update: (current: string[]) => string[]) =>
+    patchParams((cur) => ({
+      method: update(parseMethodsParam(cur.get("method"))).join(",") || null,
+    }))
+  const changeSince = (value: string) => patchParams(() => ({ since: value || null }))
 
   const { data: hotels = [] } = useHotels()
+  const method = methods.join(",")
   const { data, isLoading, isError, refetch, isFetching } = useApiLogs(
-    { method, status, q, hotel_id: hotelId, sort, order },
+    { method, status, q, hotel_id: hotelId, since_minutes: since, sort, order },
     !paused
   )
   const clearLogs = useClearApiLogs()
@@ -96,9 +129,11 @@ export function ApiLogsPage() {
       )
     : 0
   const maxDuration = Math.max(1, ...rows.map((row) => row.duration_ms))
+  const matched = data?.matched_total ?? rows.length
   const hasFilters = !!(
     method ||
     status ||
+    since ||
     hotelId ||
     q.trim() ||
     sort !== "ts" ||
@@ -123,12 +158,10 @@ export function ApiLogsPage() {
   }
 
   const resetFilters = () => {
-    setMethod("")
-    setStatus("")
     setQ("")
     setSort("ts")
     setOrder("desc")
-    changeHotel("")
+    patchParams(() => ({ hotel_id: null, status: null, method: null, since: null }))
   }
 
   return (
@@ -184,7 +217,10 @@ export function ApiLogsPage() {
 
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label={tr("Jami")} value={data?.captured_total ?? 0} />
-        <Stat label={tr("Ko'rsatilgan")} value={rows.length} />
+        <Stat
+          label={tr("Ko'rsatilgan")}
+          value={matched > rows.length ? `${rows.length} / ${matched}` : rows.length}
+        />
         <Stat
           label={tr("Xatolar")}
           value={errors}
@@ -201,60 +237,58 @@ export function ApiLogsPage() {
         />
       </div>
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.2fr)_8rem_8rem_minmax(0,1fr)_auto]">
-        <PanelSelect
-          value={hotelId}
-          onChange={(e) => changeHotel(e.target.value)}
-          aria-label={tr("Kompaniya")}
-          title={tr("Kompaniya")}
-        >
-          <option value="">{tr("Barcha kompaniyalar")}</option>
-          {[...(hotels as PanelHotel[])]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((hotel) => (
-              <option key={hotel.id} value={hotel.id}>
-                {hotel.name}
+      <PanelCard className="mb-4 space-y-3 p-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.1fr)_11rem_minmax(0,1.4fr)_auto]">
+          <PanelSelect
+            value={hotelId}
+            onChange={(e) => changeHotel(e.target.value)}
+            aria-label={tr("Kompaniya")}
+            title={tr("Kompaniya")}
+          >
+            <option value="">{tr("Barcha kompaniyalar")}</option>
+            {[...(hotels as PanelHotel[])]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((hotel) => (
+                <option key={hotel.id} value={hotel.id}>
+                  {hotel.name}
+                </option>
+              ))}
+          </PanelSelect>
+          <PanelSelect
+            value={since ? String(since) : ""}
+            onChange={(e) => changeSince(e.target.value)}
+            aria-label={tr("Davr")}
+            title={tr("Davr")}
+          >
+            <option value="">{tr("Butun davr")}</option>
+            {[...SINCE_OPTIONS, ...(since && !SINCE_LABELS[since] ? [since] : [])].map((minutes) => (
+              <option key={minutes} value={minutes}>
+                {sinceLabel(minutes)}
               </option>
             ))}
-        </PanelSelect>
-        <PanelSelect
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-          aria-label={tr("Metod")}
-        >
-          <option value="">{tr("Barcha metodlar")}</option>
-          {["GET", "POST", "PUT", "PATCH", "DELETE"].map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </PanelSelect>
-        <PanelSelect
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          aria-label={tr("Holat")}
-        >
-          <option value="">{tr("Barcha holatlar")}</option>
-          <option value="2xx">{tr("2xx — muvaffaqiyat")}</option>
-          <option value="3xx">{tr("3xx — yo'naltirish")}</option>
-          <option value="4xx">{tr("4xx — mijoz xatosi")}</option>
-          <option value="5xx">{tr("5xx — server xatosi")}</option>
-        </PanelSelect>
-        <PanelInput
-          placeholder={tr("URL bo'yicha qidirish: /reservations, /guests...")}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          </PanelSelect>
+          <PanelInput
+            placeholder={tr("URL bo'yicha qidirish: /reservations, /guests...")}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <PanelButton
+            variant="ghost"
+            onClick={resetFilters}
+            disabled={!hasFilters}
+            title={tr("Filtrlarni tozalash")}
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span className="hidden sm:inline">{tr("Filtrlarni tozalash")}</span>
+          </PanelButton>
+        </div>
+        <MethodPicker methods={methods} onChange={changeMethods} />
+        <StatusPicker
+          selection={statusSel}
+          counts={data?.status_counts}
+          onChange={changeStatus}
         />
-        <PanelButton
-          variant="ghost"
-          onClick={resetFilters}
-          disabled={!hasFilters}
-          title={tr("Filtrlarni tozalash")}
-        >
-          <RotateCcw className="h-4 w-4" />
-          <span className="hidden sm:inline">{tr("Filtrlarni tozalash")}</span>
-        </PanelButton>
-      </div>
+      </PanelCard>
 
       {isError && (
         <div className="mb-4">
@@ -336,6 +370,13 @@ export function ApiLogsPage() {
                     onToggle={() =>
                       setOpenId(openId === row.id ? null : row.id)
                     }
+                    statusSelected={
+                      statusSel.mode === "include" &&
+                      statusSel.tokens.includes(String(row.status))
+                    }
+                    onStatusClick={() =>
+                      changeStatus((current) => focusCode(current, row.status))
+                    }
                   />
                 ))}
               </tbody>
@@ -363,6 +404,12 @@ const USER_TONE: Record<string, string> = {
   ADMIN: "bg-violet-500/10 text-violet-300",
   EMPLOYEE: "bg-sky-500/10 text-sky-300",
   CONFIGURATOR: "bg-teal-500/10 text-teal-300",
+}
+
+/** Davr nomi; ro'yxatda yo'q qiymat (URL qo'lda yozilgan) — daqiqada. */
+function sinceLabel(minutes: number): string {
+  const label = SINCE_LABELS[minutes]
+  return label ? tr(label) : `${minutes} min`
 }
 
 function statusTone(status: number): string {
@@ -528,6 +575,8 @@ function LogRow({
   maxDuration,
   open,
   onToggle,
+  statusSelected,
+  onStatusClick,
 }: {
   row: ApiLogEntry
   company: string
@@ -535,6 +584,10 @@ function LogRow({
   maxDuration: number
   open: boolean
   onToggle: () => void
+  /** Shu kod holat filtrida tanlanganmi */
+  statusSelected: boolean
+  /** Holat belgisini bosish — shu kod bo'yicha filtrlash */
+  onStatusClick: () => void
 }) {
   const date = new Date(row.ts)
   const time = date.toLocaleTimeString("uz-UZ", { hour12: false })
@@ -587,14 +640,28 @@ function LogRow({
           {row.path}
         </td>
         <td className="whitespace-nowrap px-3 py-2">
-          <span
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onStatusClick()
+            }}
+            title={[
+              statusLabel(row.status),
+              statusSelected
+                ? tr("Filtrdan olib tashlash")
+                : tr("Shu holat bo'yicha filtrlash"),
+            ]
+              .filter(Boolean)
+              .join(" — ")}
             className={cn(
-              "rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold",
-              statusTone(row.status)
+              "rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold transition-shadow hover:ring-1 hover:ring-white/30",
+              statusTone(row.status),
+              statusSelected && "ring-1 ring-white/40"
             )}
           >
             {row.status}
-          </span>
+          </button>
           {row.stored && (
             <span
               className="ml-1.5 inline-flex items-center gap-0.5 rounded-md bg-white/5 px-1 py-0.5 text-[10px] text-slate-400"
