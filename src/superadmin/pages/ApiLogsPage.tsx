@@ -7,10 +7,10 @@ import {
   ChevronsUpDown,
   Copy,
   Database,
+  Loader2,
   Pause,
   Play,
   RotateCcw,
-  Search,
   Trash2,
 } from "lucide-react"
 
@@ -22,16 +22,16 @@ import {
   type ApiLogEntry,
   type PanelHotel,
 } from "../api/panel"
-import { PanelButton, PanelNotice } from "../components/ui"
-import { MethodPicker, StatusPanel } from "../components/ApiLogFilters"
 import {
-  Emblem,
-  GirihPattern,
-  HoshiyaRule,
-  Rosette,
-  StarMark,
-  StarSpinner,
-} from "../components/ornament"
+  PanelButton,
+  PanelCard,
+  PanelEmpty,
+  PanelHeading,
+  PanelInput,
+  PanelNotice,
+  PanelSelect,
+} from "../components/ui"
+import { MethodPicker, StatusPicker } from "../components/ApiLogFilters"
 import {
   SINCE_LABELS,
   SINCE_OPTIONS,
@@ -43,12 +43,6 @@ import {
   statusLabel,
   type StatusSelection,
 } from "../lib/apiLogFilters"
-import {
-  METHOD_COLOR,
-  UZ,
-  durationColor,
-  statusColor,
-} from "../lib/ornament"
 import { tr, trc } from "@/i18n"
 
 /**
@@ -72,10 +66,6 @@ import { tr, trc } from "@/i18n"
  * "faqat shular" yoki "shularsiz"), metodlar (bir nechtasi), davr, URL.
  * Kompaniya, holat, metod va davr URL'da turadi — sahifa yangilansa yoki
  * havola yuborilsa ham filtr saqlanadi.
- *
- * Ko'rinish: minimal, o'zbek naqshi bilan — sarlavha fonida girih to'ri,
- * bo'limlar orasida hoshiya, belgilar sakkiz qirrali yulduz; holat
- * sinflari koshin ranglarida (feruza, lojuvard, tilla, anor — lib/ornament).
  */
 export function ApiLogsPage() {
   const [params, setParams] = useSearchParams()
@@ -174,103 +164,86 @@ export function ApiLogsPage() {
     patchParams(() => ({ hotel_id: null, status: null, method: null, since: null }))
   }
 
-  const subtitle = tr(
-    "Jonli jurnal — xotiradagi oxirgi so'rovlar ({{v}} tagacha); xatolar (4xx/5xx) bazada {{d}} kun saqlanadi",
-    { v: data?.max_entries ?? 500, d: retentionDays }
-  )
-
   return (
-    <div className="space-y-4">
-      {/* Sarlavha — girih to'ri ustida, ostida hoshiya va ko'rsatkichlar */}
-      <header className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0f1216]">
-        <GirihPattern className="text-[#bf8a24] opacity-[0.3] [mask-image:linear-gradient(100deg,transparent_34%,black_82%)]" />
-        <div className="relative flex flex-wrap items-start justify-between gap-4 px-5 pb-5 pt-5 sm:px-6">
-          <div className="flex min-w-0 items-start gap-3.5">
-            <Emblem />
-            <div className="min-w-0">
-              <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-[#f1e9d8]">
-                {tr("So'rovlar jurnali")}
-              </h1>
-              <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-slate-400">{subtitle}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-black/30 px-3 text-xs text-slate-300">
-              <StarMark
-                className={cn("h-3 w-3", !paused && "animate-pulse motion-reduce:animate-none")}
-                style={{ color: paused ? UZ.tilla : UZ.feruza }}
-              />
-              {paused ? tr("Pauza") : tr("jonli")}
-            </span>
-            <PanelButton
-              variant="ghost"
-              onClick={() => setPaused((value) => !value)}
-              title={
-                paused
-                  ? tr("Jonli yangilanishni davom ettirish")
-                  : tr("Yangilanishni to'xtatib turish")
-              }
-            >
-              {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-              {paused ? tr("Davom ettirish") : tr("Pauza")}
-            </PanelButton>
-            <PanelButton
-              variant="ghost"
-              onClick={() => refetch()}
-              title={tr("Hozir yangilash")}
-            >
-              <RotateCcw className={cn("h-4 w-4", isFetching && "animate-spin")} />
-            </PanelButton>
-            <PanelButton
-              variant="ghost"
-              onClick={() => clearLogs.mutate()}
-              disabled={clearLogs.isPending}
-              title={tr("Jonli jurnalni tozalash (bazada saqlangan xatolar {{d}} kungacha qoladi)", { d: retentionDays })}
-            >
-              <Trash2 className="h-4 w-4" />
-              {trc("clear", "Tozalash")}
-            </PanelButton>
-          </div>
-        </div>
-        <HoshiyaRule className="relative" />
-        <dl className="relative grid grid-cols-2 gap-px bg-white/[0.05] sm:grid-cols-3 lg:grid-cols-5">
-          <Stat label={tr("Jami")} value={data?.captured_total ?? 0} />
-          <Stat
-            label={tr("Ko'rsatilgan")}
-            value={matched > rows.length ? `${rows.length} / ${matched}` : rows.length}
-          />
-          <Stat label={tr("Xatolar")} value={errors} color={errors ? UZ.anor : undefined} />
-          <Stat
-            label={tr("Saqlangan xatolar ({{d}} kun)", { d: retentionDays })}
-            value={data?.stored_errors ?? 0}
-            color={data?.stored_errors ? UZ.tilla : undefined}
-          />
-          <Stat
-            label={tr("O'rtacha davomiylik")}
-            value={`${avgDuration} ms`}
-            color={rows.length ? durationColor(avgDuration) : undefined}
-          />
-        </dl>
-      </header>
-
-      {/* Filtrlar */}
-      <section className="rounded-2xl border border-white/[0.07] bg-[#0f1216] p-4 sm:p-5">
-        <div className="flex flex-wrap gap-2.5">
-          <label className="flex h-10 min-w-[16rem] flex-1 items-center gap-2.5 rounded-xl border border-white/[0.07] bg-black/25 px-3 transition-colors focus-within:border-[#1fa694]/60">
-            <Search className="h-4 w-4 flex-shrink-0 text-slate-500" />
-            <input
-              placeholder={tr("URL bo'yicha qidirish: /reservations, /guests...")}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              className="h-full w-full bg-transparent font-mono text-[13px] text-slate-100 placeholder:font-sans placeholder:text-slate-600 focus:outline-none"
+    <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PanelHeading
+          title={tr("So'rovlar jurnali")}
+          subtitle={tr(
+            "Jonli jurnal — xotiradagi oxirgi so'rovlar ({{v}} tagacha); xatolar (4xx/5xx) bazada {{d}} kun saqlanadi",
+            { v: data?.max_entries ?? 500, d: retentionDays }
+          )}
+        />
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-slate-400">
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                paused ? "bg-amber-400" : "animate-pulse bg-emerald-400"
+              )}
             />
-          </label>
-          <select
+            {paused ? tr("Pauza") : tr("jonli")}
+          </span>
+          <PanelButton
+            variant="ghost"
+            onClick={() => setPaused((value) => !value)}
+            title={
+              paused
+                ? tr("Jonli yangilanishni davom ettirish")
+                : tr("Yangilanishni to'xtatib turish")
+            }
+          >
+            {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            {paused ? tr("Davom ettirish") : tr("Pauza")}
+          </PanelButton>
+          <PanelButton
+            variant="ghost"
+            onClick={() => refetch()}
+            title={tr("Hozir yangilash")}
+          >
+            <RotateCcw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+          </PanelButton>
+          <PanelButton
+            variant="ghost"
+            onClick={() => clearLogs.mutate()}
+            disabled={clearLogs.isPending}
+            title={tr("Jonli jurnalni tozalash (bazada saqlangan xatolar {{d}} kungacha qoladi)", { d: retentionDays })}
+          >
+            <Trash2 className="h-4 w-4" />
+            {trc("clear", "Tozalash")}
+          </PanelButton>
+        </div>
+      </div>
+
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <Stat label={tr("Jami")} value={data?.captured_total ?? 0} />
+        <Stat
+          label={tr("Ko'rsatilgan")}
+          value={matched > rows.length ? `${rows.length} / ${matched}` : rows.length}
+        />
+        <Stat
+          label={tr("Xatolar")}
+          value={errors}
+          tone={errors ? "text-rose-300" : "text-slate-100"}
+        />
+        <Stat
+          label={tr("Saqlangan xatolar ({{d}} kun)", { d: retentionDays })}
+          value={data?.stored_errors ?? 0}
+          tone={data?.stored_errors ? "text-amber-200" : "text-slate-100"}
+        />
+        <Stat
+          label={tr("O'rtacha davomiylik")}
+          value={`${avgDuration} ms`}
+        />
+      </div>
+
+      <PanelCard className="mb-4 space-y-3 p-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.1fr)_11rem_minmax(0,1.4fr)_auto]">
+          <PanelSelect
             value={hotelId}
             onChange={(e) => changeHotel(e.target.value)}
             aria-label={tr("Kompaniya")}
             title={tr("Kompaniya")}
-            className={FIELD + " w-full sm:w-56"}
           >
             <option value="">{tr("Barcha kompaniyalar")}</option>
             {[...(hotels as PanelHotel[])]
@@ -280,13 +253,12 @@ export function ApiLogsPage() {
                   {hotel.name}
                 </option>
               ))}
-          </select>
-          <select
+          </PanelSelect>
+          <PanelSelect
             value={since ? String(since) : ""}
             onChange={(e) => changeSince(e.target.value)}
             aria-label={tr("Davr")}
             title={tr("Davr")}
-            className={FIELD + " w-full sm:w-44"}
           >
             <option value="">{tr("Butun davr")}</option>
             {[...SINCE_OPTIONS, ...(since && !SINCE_LABELS[since] ? [since] : [])].map((minutes) => (
@@ -294,77 +266,99 @@ export function ApiLogsPage() {
                 {sinceLabel(minutes)}
               </option>
             ))}
-          </select>
-          <button
-            type="button"
+          </PanelSelect>
+          <PanelInput
+            placeholder={tr("URL bo'yicha qidirish: /reservations, /guests...")}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <PanelButton
+            variant="ghost"
             onClick={resetFilters}
             disabled={!hasFilters}
             title={tr("Filtrlarni tozalash")}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.07] px-3.5 text-[13px] text-slate-300 transition-colors hover:bg-white/[0.04] hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RotateCcw className="h-4 w-4" />
             <span className="hidden sm:inline">{tr("Filtrlarni tozalash")}</span>
-          </button>
+          </PanelButton>
         </div>
-        <div className="mt-4">
-          <MethodPicker methods={methods} onChange={changeMethods} />
-        </div>
-        <HoshiyaRule className="my-4 opacity-60" />
-        <StatusPanel
+        <MethodPicker methods={methods} onChange={changeMethods} />
+        <StatusPicker
           selection={statusSel}
           counts={data?.status_counts}
           onChange={changeStatus}
         />
-      </section>
+      </PanelCard>
 
       {isError && (
-        <PanelNotice>
-          {tr("Jurnalni yuklab bo'lmadi. Qayta urinib ko'ring.")}
-        </PanelNotice>
+        <div className="mb-4">
+          <PanelNotice>
+            {tr("Jurnalni yuklab bo'lmadi. Qayta urinib ko'ring.")}
+          </PanelNotice>
+        </div>
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-16" style={{ color: UZ.tilla }}>
-          <StarSpinner />
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
         </div>
       ) : rows.length === 0 ? (
-        <div className="flex flex-col items-center rounded-2xl border border-dashed border-white/[0.08] px-6 py-14 text-center">
-          <Rosette className="opacity-60" style={{ color: UZ.tilla }} />
-          <p className="mt-5 text-sm text-slate-300">
-            {hasFilters
-              ? tr("Filtrga mos yozuv topilmadi")
-              : tr(
-                  "Hozircha yozuv yo'q — so'rovlar kelishi bilan shu yerda ko'rinadi"
-                )}
-          </p>
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] px-3.5 text-[13px] text-slate-300 transition-colors hover:bg-white/[0.04] hover:text-slate-100"
-            >
-              <RotateCcw className="h-4 w-4" />
-              {tr("Filtrlarni tozalash")}
-            </button>
-          )}
-        </div>
+        <PanelEmpty>
+          {hasFilters
+            ? tr("Filtrga mos yozuv topilmadi")
+            : tr(
+                "Hozircha yozuv yo'q — so'rovlar kelishi bilan shu yerda ko'rinadi"
+              )}
+        </PanelEmpty>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0f1216]">
+        <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#101216]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1060px] text-sm">
-              <thead className="sticky top-0 z-10 border-b border-white/[0.06] bg-[#0c0e12]/95 text-left text-[11px] uppercase tracking-[0.12em] text-slate-500 backdrop-blur">
+              <thead className="sticky top-0 z-10 bg-slate-950/95 text-left text-xs text-slate-400 backdrop-blur">
                 <tr>
-                  <SortHead label={tr("Vaqt")} column="ts" sort={sort} order={order} onSort={changeSort} />
-                  <th className="px-3 py-3 font-semibold">{tr("Kompaniya")}</th>
-                  <SortHead label={tr("Metod")} column="method" sort={sort} order={order} onSort={changeSort} />
-                  <SortHead label="URL" column="path" sort={sort} order={order} onSort={changeSort} />
-                  <SortHead label={tr("Holat")} column="status" sort={sort} order={order} onSort={changeSort} />
-                  <SortHead label={tr("Vaqt (ms)")} column="duration_ms" sort={sort} order={order} onSort={changeSort} />
-                  <th className="px-3 py-3 font-semibold">{tr("Foydalanuvchi")}</th>
-                  <th className="px-3 py-3 font-semibold">IP</th>
+                  <SortHead
+                    label={tr("Vaqt")}
+                    column="ts"
+                    sort={sort}
+                    order={order}
+                    onSort={changeSort}
+                  />
+                  <th className="px-3 py-2.5 font-medium">{tr("Kompaniya")}</th>
+                  <SortHead
+                    label={tr("Metod")}
+                    column="method"
+                    sort={sort}
+                    order={order}
+                    onSort={changeSort}
+                  />
+                  <SortHead
+                    label="URL"
+                    column="path"
+                    sort={sort}
+                    order={order}
+                    onSort={changeSort}
+                  />
+                  <SortHead
+                    label={tr("Holat")}
+                    column="status"
+                    sort={sort}
+                    order={order}
+                    onSort={changeSort}
+                  />
+                  <SortHead
+                    label={tr("Vaqt (ms)")}
+                    column="duration_ms"
+                    sort={sort}
+                    order={order}
+                    onSort={changeSort}
+                  />
+                  <th className="px-3 py-2.5 font-medium">
+                    {tr("Foydalanuvchi")}
+                  </th>
+                  <th className="px-3 py-2.5 font-medium">IP</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody className="divide-y divide-white/[0.06]">
                 {rows.map((row) => (
                   <LogRow
                     key={row.id}
@@ -397,25 +391,31 @@ export function ApiLogsPage() {
 type SortKey = "ts" | "duration_ms" | "status" | "method" | "path"
 type SortOrder = "asc" | "desc"
 
-const FIELD =
-  "h-10 rounded-xl border border-white/[0.07] bg-black/25 px-3 text-[13px] text-slate-100 transition-colors focus:border-[#1fa694]/60 focus:outline-none [&>option]:bg-[#12151a]"
-
-const USER_COLOR: Record<string, string> = {
-  SUPER_ADMIN: UZ.anor,
-  ADMIN: UZ.lojuvard,
-  EMPLOYEE: UZ.feruza,
-  CONFIGURATOR: UZ.tilla,
+const METHOD_TONE: Record<string, string> = {
+  GET: "bg-sky-500/10 text-sky-300",
+  POST: "bg-emerald-500/10 text-emerald-300",
+  PUT: "bg-amber-500/10 text-amber-300",
+  PATCH: "bg-amber-500/10 text-amber-300",
+  DELETE: "bg-rose-500/10 text-rose-300",
 }
 
-const tinted = (color: string, bg = 14, ring = 34) => ({
-  background: `color-mix(in oklab, ${color} ${bg}%, transparent)`,
-  boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${color} ${ring}%, transparent)`,
-})
+const USER_TONE: Record<string, string> = {
+  SUPER_ADMIN: "bg-fuchsia-500/10 text-fuchsia-300",
+  ADMIN: "bg-violet-500/10 text-violet-300",
+  EMPLOYEE: "bg-sky-500/10 text-sky-300",
+  CONFIGURATOR: "bg-teal-500/10 text-teal-300",
+}
 
 /** Davr nomi; ro'yxatda yo'q qiymat (URL qo'lda yozilgan) — daqiqada. */
 function sinceLabel(minutes: number): string {
   const label = SINCE_LABELS[minutes]
   return label ? tr(label) : `${minutes} min`
+}
+
+function statusTone(status: number): string {
+  if (status >= 500) return "bg-rose-500/15 text-rose-300"
+  if (status >= 400) return "bg-amber-500/15 text-amber-300"
+  return "bg-emerald-500/10 text-emerald-300"
 }
 
 /** JSON matnni o'qishga qulay ko'rinishga keltiradi; JSON bo'lmasa asliday. */
@@ -431,23 +431,26 @@ function pretty(text: string | null | undefined): string {
 function Stat({
   label,
   value,
-  color,
+  tone,
 }: {
   label: string
   value: number | string
-  /** Urg'u rangi (yulduz belgisi) — qiymat e'tibor talab qilganda */
-  color?: string
+  tone?: string
 }) {
   return (
-    <div className="flex flex-col justify-between gap-1.5 bg-[#0f1216] px-5 py-4">
-      <dt className="flex items-start gap-1.5 text-[10px] font-semibold uppercase leading-snug tracking-[0.14em] text-slate-500">
-        <StarMark className="mt-px h-2.5 w-2.5" style={{ color: color ?? "#3a414d" }} />
-        <span>{label}</span>
-      </dt>
-      <dd className="font-mono text-[22px] font-medium tabular-nums tracking-tight text-[#f1e9d8]">
+    <PanelCard className="p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 text-xl font-semibold tracking-tight",
+          tone || "text-slate-100"
+        )}
+      >
         {value}
-      </dd>
-    </div>
+      </p>
+    </PanelCard>
   )
 }
 
@@ -466,21 +469,21 @@ function SortHead({
 }) {
   const active = sort === column
   return (
-    <th className="px-3 py-3 font-semibold">
+    <th className="px-3 py-2.5 font-medium">
       <button
         type="button"
         onClick={() => onSort(column)}
         className={cn(
-          "inline-flex items-center gap-1.5 uppercase tracking-[0.12em] transition-colors hover:text-slate-200",
-          active ? "text-[#f1e9d8]" : "text-slate-500"
+          "inline-flex items-center gap-1.5 transition-colors hover:text-slate-200",
+          active ? "text-slate-200" : "text-slate-400"
         )}
       >
         {label}
         {active ? (
           order === "asc" ? (
-            <ArrowUp className="h-3 w-3" style={{ color: UZ.tilla }} />
+            <ArrowUp className="h-3 w-3" />
           ) : (
-            <ArrowDown className="h-3 w-3" style={{ color: UZ.tilla }} />
+            <ArrowDown className="h-3 w-3" />
           )
         ) : (
           <ChevronsUpDown className="h-3 w-3 opacity-40" />
@@ -503,11 +506,11 @@ function Meta({
 }) {
   return (
     <div className={cn("min-w-0", className)}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+      <p className="text-[10px] uppercase tracking-wide text-slate-500">
         {label}
       </p>
       <p
-        className={cn("mt-0.5 truncate text-xs text-slate-200", mono && "font-mono")}
+        className={cn("truncate text-xs text-slate-300", mono && "font-mono")}
         title={value}
       >
         {value}
@@ -538,10 +541,9 @@ function BodyBlock({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-black/35">
-      <div className="flex items-center justify-between gap-2 border-b border-white/[0.05] px-3 py-1.5">
-        <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-          <StarMark className="h-2 w-2" style={{ color: UZ.tilla }} />
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
           {title}
         </p>
         <button
@@ -552,14 +554,14 @@ function BodyBlock({
           className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200 disabled:opacity-40"
         >
           {copied ? (
-            <Check className="h-3 w-3" style={{ color: UZ.feruza }} />
+            <Check className="h-3 w-3 text-emerald-400" />
           ) : (
             <Copy className="h-3 w-3" />
           )}
           {copied ? tr("Nusxalandi") : tr("Nusxalash")}
         </button>
       </div>
-      <pre className="max-h-72 overflow-auto p-3 font-mono text-[11px] leading-relaxed text-slate-300">
+      <pre className="max-h-72 overflow-auto rounded-lg bg-black/30 p-3 font-mono text-[11px] leading-relaxed text-slate-300">
         {value}
       </pre>
     </div>
@@ -593,9 +595,9 @@ function LogRow({
     day: "2-digit",
     month: "2-digit",
   })
-  const sColor = statusColor(row.status)
-  const dColor = durationColor(row.duration_ms)
-  const uColor = USER_COLOR[row.user_type || ""]
+  const userTone = USER_TONE[row.user_type || ""] || "bg-white/5 text-slate-400"
+  const durationTone =
+    row.duration_ms > 1000 ? "text-amber-300" : "text-slate-400"
 
   return (
     <>
@@ -603,41 +605,41 @@ function LogRow({
         onClick={onToggle}
         className={cn(
           "cursor-pointer transition-colors hover:bg-white/[0.02]",
-          open && "bg-white/[0.03]"
+          open && "bg-white/[0.02]"
         )}
       >
         <td
-          className="whitespace-nowrap px-3 py-2.5 text-xs"
+          className="whitespace-nowrap px-3 py-2 text-xs text-slate-400"
           title={date.toLocaleString("uz-UZ")}
         >
-          <p className="font-mono text-slate-200">{time}</p>
-          <p className="font-mono text-[10px] text-slate-500">{day}</p>
+          <p className="text-slate-300">{time}</p>
+          <p className="text-[10px] text-slate-500">{day}</p>
         </td>
-        <td className="max-w-[12rem] px-3 py-2.5">
+        <td className="max-w-[12rem] px-3 py-2">
           <span
-            className="inline-flex max-w-full items-center truncate rounded-md border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 text-[11px] text-slate-300"
+            className="inline-flex max-w-full items-center gap-1 truncate rounded-md bg-white/5 px-1.5 py-0.5 text-[11px] text-slate-300"
             title={company}
           >
             {company}
           </span>
         </td>
-        <td className="px-3 py-2.5">
-          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-slate-200">
-            <i
-              aria-hidden
-              className="h-3 w-[3px] rounded-full"
-              style={{ background: METHOD_COLOR[row.method] ?? "#5b6372" }}
-            />
+        <td className="px-3 py-2">
+          <span
+            className={cn(
+              "rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold",
+              METHOD_TONE[row.method] || "bg-white/5 text-slate-300"
+            )}
+          >
             {row.method}
           </span>
         </td>
         <td
-          className="max-w-[360px] truncate px-3 py-2.5 font-mono text-xs text-slate-300"
+          className="max-w-[360px] truncate px-3 py-2 font-mono text-xs text-slate-300"
           title={row.path}
         >
           {row.path}
         </td>
-        <td className="whitespace-nowrap px-3 py-2.5">
+        <td className="whitespace-nowrap px-3 py-2">
           <button
             type="button"
             onClick={(e) => {
@@ -652,62 +654,60 @@ function LogRow({
             ]
               .filter(Boolean)
               .join(" — ")}
-            className="group inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-50 transition-shadow"
-            style={tinted(sColor, statusSelected ? 24 : 13, statusSelected ? 70 : 32)}
+            className={cn(
+              "rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold transition-shadow hover:ring-1 hover:ring-white/30",
+              statusTone(row.status),
+              statusSelected && "ring-1 ring-white/40"
+            )}
           >
-            <StarMark
-              className={cn(
-                "h-2.5 w-2.5 transition-transform duration-300 motion-reduce:transition-none group-hover:rotate-45",
-                statusSelected && "rotate-[22.5deg]"
-              )}
-              style={{ color: sColor }}
-            />
             {row.status}
           </button>
           {row.stored && (
             <span
-              className="ml-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-slate-300"
-              style={tinted(UZ.tilla, 10, 28)}
+              className="ml-1.5 inline-flex items-center gap-0.5 rounded-md bg-white/5 px-1 py-0.5 text-[10px] text-slate-400"
               title={tr("Bazada saqlangan xato — {{d}} kungacha turadi", { d: retentionDays })}
             >
-              <Database className="h-3 w-3" style={{ color: UZ.tilla }} />
+              <Database className="h-3 w-3" />
               {tr("saqlangan")}
             </span>
           )}
         </td>
-        <td className="px-3 py-2.5">
-          <p className="font-mono text-xs tabular-nums text-slate-300">
+        <td className="px-3 py-2">
+          <p className={cn("text-xs tabular-nums", durationTone)}>
             {row.duration_ms} ms
           </p>
-          <span className="mt-1 block h-1 w-16 overflow-hidden rounded-full bg-white/[0.05]">
+          <span className="mt-1 block h-1 w-16 overflow-hidden rounded-full bg-white/5">
             <span
-              className="block h-full rounded-full"
+              className={cn(
+                "block h-full rounded-full",
+                row.duration_ms > 1000 ? "bg-amber-400" : "bg-emerald-400/70"
+              )}
               style={{
-                background: dColor,
-                width: `${Math.max(4, Math.min(100, (row.duration_ms / maxDuration) * 100))}%`,
+                width: `${Math.min(
+                  100,
+                  (row.duration_ms / maxDuration) * 100
+                )}%`,
               }}
             />
           </span>
         </td>
-        <td className="px-3 py-2.5">
+        <td className="px-3 py-2">
           <span
-            className="rounded-md px-1.5 py-0.5 text-[11px] text-slate-200"
-            style={uColor ? tinted(uColor, 12, 30) : { background: "rgba(255,255,255,0.04)" }}
+            className={cn(
+              "rounded-md px-1.5 py-0.5 text-[11px]",
+              userTone
+            )}
             title={row.user_id || row.user_type || ""}
           >
             {row.user_type || "—"}
           </span>
         </td>
-        <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{row.ip || "—"}</td>
+        <td className="px-3 py-2 text-xs text-slate-500">{row.ip || "—"}</td>
       </tr>
       {open && (
-        <tr>
-          <td
-            colSpan={8}
-            className="bg-black/25 px-5 py-4"
-            style={{ boxShadow: `inset 3px 0 0 ${sColor}` }}
-          >
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <tr className="bg-black/20">
+          <td colSpan={8} className="px-4 py-3">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Meta label={tr("Kompaniya")} value={company} />
               <Meta label={tr("Filial")} value={row.branch_id || "—"} mono />
               <Meta
@@ -722,7 +722,7 @@ function LogRow({
                 className="sm:col-span-2"
               />
             </div>
-            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
               <BodyBlock title={tr("So'rov tanasi")} text={row.request_body} />
               <BodyBlock title={tr("Javob")} text={row.response_body} />
               {row.error && (
