@@ -10,13 +10,19 @@ import { tr } from "@/i18n"
      kompyuterda ishlaydi — shuning uchun qurilma alohida belgilanadi
      (`isFiscalDevice`).
    - "server" — so'rovni backend yuboradi (manzil internetdan ko'rinadigan
-     bo'lsa, masalan E-POS sinov muhiti). Istalgan qurilmadan ishlaydi. */
+     bo'lsa, masalan E-POS sinov muhiti). Istalgan qurilmadan ishlaydi.
+
+   TOKEN har kompaniya/filialniki va bazada shifrlangan. "Server" rejimida u
+   brauzerga umuman kelmaydi. "Brauzer" rejimida so'rovni brauzer yuborgani
+   uchun token kerak bo'ladi: u serverdan faqat kassirga, faqat kerak paytda
+   olinadi va faqat XOTIRADA turadi (localStorage'ga yozilmaydi). */
 
 export interface FiscalConfig {
   enabled: boolean
   transport: "browser" | "server"
   url: string
-  token: string
+  /** Filialga E-POS tokeni kiritilganmi (tokenning o'zi bu yerda kelmaydi) */
+  token_set: boolean
   auto_open_shift: boolean
   epos_prints: boolean
   company_name: string
@@ -58,13 +64,41 @@ export const setFiscalDevice = (on: boolean) => {
 
 /** Shu qurilma fiskal cheklarni yubora oladimi. */
 export const fiscalActive = (cfg: FiscalConfig | null | undefined): cfg is FiscalConfig =>
-  !!cfg && cfg.enabled && cfg.can_operate && (cfg.transport === "server" || isFiscalDevice())
+  !!cfg &&
+  cfg.enabled &&
+  cfg.token_set &&
+  cfg.can_operate &&
+  (cfg.transport === "server" || isFiscalDevice())
 
 export class EposUnreachable extends Error {}
 
+/** E-POS manzili. `token` — faqat sozlama oynasida hali saqlanmagan tokenni
+ *  sinash uchun; odatda berilmaydi va serverdan olinadi. */
+export type EposTarget = Pick<FiscalConfig, "transport" | "url"> & { token?: string }
+
+const TOKEN_TTL_MS = 5 * 60_000
+let cachedToken: { at: number; value: string } | null = null
+
+/** Token keshini tozalash (sozlama o'zgarganda). */
+export const resetTokenCache = () => {
+  cachedToken = null
+}
+
+/** Token — serverdan, faqat xotirada (5 daqiqa). Diskka yozilmaydi. */
+async function loadToken(): Promise<string> {
+  if (cachedToken && Date.now() - cachedToken.at < TOKEN_TTL_MS) return cachedToken.value
+  try {
+    const { data } = await api.post<{ token: string }>("/fiscal/token")
+    cachedToken = { at: Date.now(), value: data.token }
+    return data.token
+  } catch (e: any) {
+    throw new EposUnreachable(e?.response?.data?.detail || tr("E-POS tokenini olib bo'lmadi"))
+  }
+}
+
 /** E-POS'ga bitta so'rov. Aloqa bo'lmasa — `EposUnreachable`. */
 export async function eposCall(
-  cfg: Pick<FiscalConfig, "transport" | "url" | "token">,
+  cfg: EposTarget,
   body: Record<string, unknown>,
   timeoutMs = 45000
 ): Promise<any> {
@@ -78,13 +112,15 @@ export async function eposCall(
       )
     }
   }
+  // Chek so'rovida token serverdan birga keladi; xizmat so'rovlari uchun olinadi
+  const token = (typeof body.token === "string" && body.token) || cfg.token || (await loadToken())
   const ctrl = new AbortController()
   const timer = window.setTimeout(() => ctrl.abort(), timeoutMs)
   try {
     const res = await fetch(cfg.url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: cfg.token, ...body }),
+      body: JSON.stringify({ ...body, token }),
       signal: ctrl.signal,
     })
     return await res.json()
@@ -160,7 +196,7 @@ export interface EposStatus {
   error?: string
 }
 
-export async function eposStatus(cfg: Pick<FiscalConfig, "transport" | "url" | "token">): Promise<EposStatus> {
+export async function eposStatus(cfg: EposTarget): Promise<EposStatus> {
   try {
     const version = await eposCall(cfg, { method: "getVersion" }, 8000)
     if (version?.error) return { ok: false, error: eposErrorText(version.message) }
@@ -177,7 +213,7 @@ export async function eposStatus(cfg: Pick<FiscalConfig, "transport" | "url" | "
 }
 
 export async function eposShift(
-  cfg: Pick<FiscalConfig, "transport" | "url" | "token">,
+  cfg: EposTarget,
   action: "open" | "close"
 ): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -196,7 +232,7 @@ export async function eposShift(
 /** IKPU kodi uchun o'ram (o'lchov birligi) kodlari — E-POS'dan. Noto'g'ri
  *  juftlikni E-POS chek yuborishda rad etadi, shuning uchun ro'yxatdan tanlanadi. */
 export async function eposPackages(
-  cfg: Pick<FiscalConfig, "transport" | "url" | "token">,
+  cfg: EposTarget,
   classCode: string
 ): Promise<{ ok: boolean; items: { code: string; name: string }[]; error?: string }> {
   try {

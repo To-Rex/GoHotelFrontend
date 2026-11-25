@@ -87,5 +87,13 @@
   "E-POS javobida fiskal belgi yo'q": "The E-POS response has no fiscal sign",
   "E-POS bilan aloqa yo'q": "No connection to E-POS",
   "Bu IKPU uchun o'ram kodi topilmadi — kodni tekshiring": "No package code found for this IKPU — check the code",
-  "O'ram kodlarini E-POS'dan olish (avval 17 xonali IKPU kiriting)": "Fetch package codes from E-POS (enter the 17-digit IKPU first)"
+  "O'ram kodlarini E-POS'dan olish (avval 17 xonali IKPU kiriting)": "Fetch package codes from E-POS (enter the 17-digit IKPU first)",
+  "E-POS tokenini olib bo'lmadi": "Could not get the E-POS token",
+  "E-POS token": "E-POS token",
+  "saqlangan: ••••{{hint}}": "saved: ••••{{hint}}",
+  "Almashtirish uchun yangi tokenni kiriting": "Enter a new token to replace it",
+  "E-POS bergan tokenni kiriting": "Enter the token issued by E-POS",
+  "Tokenni E-POS beradi — har kompaniya va filialda o'ziniki. Bazada shifrlangan holda saqlanadi va bu yerda qayta ko'rsatilmaydi (faqat oxirgi 4 belgisi).": "E-POS issues the token — each company and branch has its own. It is stored encrypted in the database and is never shown here again (only the last 4 characters).",
+  "E-POS token kiritilmagan — fiskal cheklar yuborilmaydi. Sozlovchi uni Sozlamalar → «Fiskal modul (E-POS)» bo'limida kiritadi.": "The E-POS token is not set — fiscal receipts are not sent. The configurator enters it in Settings → “Fiscal module (E-POS)”.",
+  "Yashirish": "Hide"
 }

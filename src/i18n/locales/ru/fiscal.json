@@ -87,5 +87,13 @@
   "E-POS javobida fiskal belgi yo'q": "В ответе E-POS нет фискального признака",
   "E-POS bilan aloqa yo'q": "Нет связи с E-POS",
   "Bu IKPU uchun o'ram kodi topilmadi — kodni tekshiring": "Для этого ИКПУ код упаковки не найден — проверьте код",
-  "O'ram kodlarini E-POS'dan olish (avval 17 xonali IKPU kiriting)": "Получить коды упаковки из E-POS (сначала введите 17-значный ИКПУ)"
+  "O'ram kodlarini E-POS'dan olish (avval 17 xonali IKPU kiriting)": "Получить коды упаковки из E-POS (сначала введите 17-значный ИКПУ)",
+  "E-POS tokenini olib bo'lmadi": "Не удалось получить токен E-POS",
+  "E-POS token": "Токен E-POS",
+  "saqlangan: ••••{{hint}}": "сохранён: ••••{{hint}}",
+  "Almashtirish uchun yangi tokenni kiriting": "Чтобы заменить, введите новый токен",
+  "E-POS bergan tokenni kiriting": "Введите токен, выданный E-POS",
+  "Tokenni E-POS beradi — har kompaniya va filialda o'ziniki. Bazada shifrlangan holda saqlanadi va bu yerda qayta ko'rsatilmaydi (faqat oxirgi 4 belgisi).": "Токен выдаёт E-POS — у каждой компании и филиала свой. В базе хранится в зашифрованном виде и здесь больше не показывается (только последние 4 символа).",
+  "E-POS token kiritilmagan — fiskal cheklar yuborilmaydi. Sozlovchi uni Sozlamalar → «Fiskal modul (E-POS)» bo'limida kiritadi.": "Токен E-POS не введён — фискальные чеки не отправляются. Настройщик вводит его в Настройки → «Фискальный модуль (E-POS)».",
+  "Yashirish": "Скрыть"
 }

@@ -12,6 +12,10 @@ vi.stubGlobal("localStorage", {
 })
 vi.stubGlobal("window", globalThis)
 
+// Token serverdan olinadi (POST /fiscal/token) — testda soxta javob
+const tokenPost = vi.fn(async () => ({ data: { token: "T" } }))
+vi.mock("@/lib/api", () => ({ api: { post: (...args: unknown[]) => tokenPost(...(args as [])) } }))
+
 vi.mock("../api/fiscal", () => ({
   claimReceipt: vi.fn(),
   completeReceipt: vi.fn(),
@@ -26,6 +30,7 @@ import * as server from "../api/fiscal"
 import { fiscalizeTarget, latestStamp, resetConfigCache, runFiscalQueue, useFiscalStore } from "./engine"
 import {
   eposErrorText,
+  eposStatus,
   fiscalActive,
   fiscalDateText,
   isDuplicate,
@@ -39,7 +44,7 @@ const CFG: FiscalConfig = {
   enabled: true,
   transport: "browser",
   url: "http://localhost:8347/uzpos",
-  token: "T",
+  token_set: true,
   auto_open_shift: true,
   epos_prints: false,
   company_name: "Registon Grand",
@@ -95,6 +100,8 @@ describe("E-POS javoblari", () => {
     expect(fiscalActive(CFG)).toBe(true)
     expect(fiscalActive({ ...CFG, enabled: false })).toBe(false)
     expect(fiscalActive({ ...CFG, can_operate: false })).toBe(false)
+    // Token kiritilmagan filial chek yubormaydi
+    expect(fiscalActive({ ...CFG, token_set: false })).toBe(false)
     expect(fiscalActive(null)).toBe(false)
   })
 })
@@ -136,7 +143,7 @@ describe("fiskal cheklarni yuborish", () => {
     api.fetchFiscalConfig.mockResolvedValue(CFG)
     api.fetchPending.mockResolvedValue({ enabled: true, targets: [], receipts: [], count: 0 })
     api.prepareTarget.mockResolvedValue([receipt()] as any)
-    api.claimReceipt.mockResolvedValue({ ...receipt({ status: "sent", attempts: 1 }), request: { method: "fastSale" }, verify: false } as any)
+    api.claimReceipt.mockResolvedValue({ ...receipt({ status: "sent", attempts: 1 }), request: { token: "T", method: "fastSale" }, verify: false } as any)
     api.completeReceipt.mockImplementation(async (id, stamp) => ({ ...receipt({ id, status: "done" }), ...stamp }) as any)
     api.failReceipt.mockResolvedValue(receipt({ status: "failed" }) as any)
   })
@@ -148,7 +155,9 @@ describe("fiskal cheklarni yuborish", () => {
     fetchMock.mockResolvedValueOnce(reply(FAST))
     const run = await fiscalizeTarget({ source: "RESERVATION", reservation_id: "res1" })
     expect(api.prepareTarget).toHaveBeenCalledWith({ source: "RESERVATION", reservation_id: "res1" })
+    // Chek so'rovida token serverdan birga kelgan — alohida so'ralmaydi
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ token: "T", method: "fastSale" })
+    expect(tokenPost).not.toHaveBeenCalled()
     expect(api.completeReceipt).toHaveBeenCalledWith("r1", STAMP)
     expect(run.errors).toEqual([])
     expect(run.done[0]).toMatchObject({ status: "done", qr_url: STAMP.qr_url })
@@ -163,7 +172,7 @@ describe("fiskal cheklarni yuborish", () => {
   })
 
   it("avval yuborilgan bo'lishi mumkin — E-POS'dan so'raladi, qayta yuborilmaydi", async () => {
-    api.claimReceipt.mockResolvedValue({ ...receipt({ status: "sent", attempts: 2 }), request: { method: "fastSale" }, verify: true } as any)
+    api.claimReceipt.mockResolvedValue({ ...receipt({ status: "sent", attempts: 2 }), request: { token: "T", method: "fastSale" }, verify: true } as any)
     fetchMock.mockResolvedValueOnce(
       reply({ error: false, data: { exists: true, receipt: { terminal_id: "UZ1", receipt_seq: 2478, fiscal_sign: "256123", date_time: "20260305235115", qr_code_url: STAMP.qr_url } } })
     )
@@ -191,6 +200,9 @@ describe("fiskal cheklarni yuborish", () => {
     const run = await fiscalizeTarget({ source: "RESERVATION", reservation_id: "res1" })
     expect(methods()).toEqual(["fastSale", "openZreport", "fastSale"])
     expect(run.done).toHaveLength(1)
+    // Xizmat so'rovi (smenani ochish) uchun token serverdan olinadi
+    expect(tokenPost).toHaveBeenCalledWith("/fiscal/token")
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ method: "openZreport", token: "T" })
   })
 
   it("E-POS xatosi va aloqa yo'qligi — chek xato holatida navbatda qoladi", async () => {
@@ -220,11 +232,30 @@ describe("fiskal cheklarni yuborish", () => {
       receipts: [receipt({ id: "old", status: "failed", attempts: 1 })],
     } as any)
     api.prepareTarget.mockResolvedValue([receipt({ id: "new" })] as any)
-    api.claimReceipt.mockImplementation(async (id) => ({ ...receipt({ id, status: "sent" }), request: { method: "fastSale" }, verify: false }) as any)
+    api.claimReceipt.mockImplementation(async (id) => ({ ...receipt({ id, status: "sent" }), request: { token: "T", method: "fastSale" }, verify: false }) as any)
     fetchMock.mockResolvedValue(reply(FAST))
     const run = await runFiscalQueue()
     expect(api.claimReceipt.mock.calls.map((c) => c[0])).toEqual(["old", "new"])
     expect(run.done).toHaveLength(2)
+  })
+
+  it("token faqat xotirada: bir marta olinadi, sozlama o'zgarsa qayta so'raladi", async () => {
+    tokenPost.mockClear()
+    fetchMock.mockResolvedValue(reply({ error: false, message: "Communicator--3.23.6" }))
+    await eposStatus({ transport: "browser", url: CFG.url })
+    await eposStatus({ transport: "browser", url: CFG.url })
+    expect(tokenPost).toHaveBeenCalledTimes(1)
+    expect(storage.size === 0 || ![...storage.values()].includes("T")).toBe(true)   // diskka yozilmaydi
+    resetConfigCache()
+    await eposStatus({ transport: "browser", url: CFG.url })
+    expect(tokenPost).toHaveBeenCalledTimes(2)
+    // Server tokenni bermasa — tushunarli xato, so'rov yuborilmaydi
+    resetConfigCache()
+    fetchMock.mockClear()
+    tokenPost.mockRejectedValueOnce({ response: { data: { detail: "E-POS token kiritilmagan" } } })
+    const status = await eposStatus({ transport: "browser", url: CFG.url })
+    expect(status).toEqual({ ok: false, error: "E-POS token kiritilmagan" })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it("qayta chiqarishda oxirgi fiskal chek (qaytarim emas) olinadi", async () => {

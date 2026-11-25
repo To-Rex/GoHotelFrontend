@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react"
-import { CheckCircle2, Loader2, PlugZap, ReceiptText, RotateCcw, XCircle } from "lucide-react"
+import { CheckCircle2, Eye, EyeOff, KeyRound, Loader2, PlugZap, ReceiptText, RotateCcw, XCircle } from "lucide-react"
 
 import { tr } from "@/i18n"
 import { apiErrorMessage } from "@/lib/apiError"
@@ -62,7 +62,7 @@ const KIND_LABEL: Record<ReceiptKind, string> = {
   refund: "Qaytarim",
 }
 
-type Form = Omit<FiscalSettings, "problems" | "default_url" | "enabled_at" | "token">
+type Form = Omit<FiscalSettings, "problems" | "default_url" | "enabled_at" | "token_set" | "token_hint">
 
 const toForm = (s: FiscalSettings): Form => ({
   enabled: s.enabled,
@@ -90,6 +90,9 @@ export function FiscalSettingsCard() {
   const [saved, setSaved] = useState(false)
   const [status, setStatus] = useState<EposStatus | null>(null)
   const [testing, setTesting] = useState(false)
+  // Token faqat YOZILADI: saqlangani serverdan qaytmaydi (faqat oxirgi 4 belgisi)
+  const [token, setToken] = useState("")
+  const [showToken, setShowToken] = useState(false)
 
   useEffect(() => {
     if (data) setForm(toForm(data))
@@ -107,8 +110,14 @@ export function FiscalSettingsCard() {
     setError(null)
     setSaved(false)
     try {
-      const next = await save.mutateAsync({ ...form, ...override })
+      const next = await save.mutateAsync({
+        ...form,
+        ...override,
+        ...(token.trim() ? { token: token.trim() } : {}),
+      })
       setForm(toForm(next))
+      setToken("")
+      setShowToken(false)
       resetConfigCache()
       setSaved(true)
       return true
@@ -123,12 +132,12 @@ export function FiscalSettingsCard() {
     if (!form || !data) return
     setTesting(true)
     setStatus(null)
-    // "Server orqali" rejimida server SAQLANGAN manzilga murojaat qiladi — avval saqlaymiz
-    if (form.transport === "server" && !(await submit())) {
+    // Avval saqlanadi: token va manzil serverda — sinov aynan saqlangan sozlama bilan
+    if (!(await submit())) {
       setTesting(false)
       return
     }
-    setStatus(await eposStatus({ transport: form.transport, url: form.url, token: data.token }))
+    setStatus(await eposStatus({ transport: form.transport, url: form.url }))
     setTesting(false)
   }
 
@@ -195,6 +204,46 @@ export function FiscalSettingsCard() {
                   placeholder={data.default_url}
                 />
               </Labeled>
+            </div>
+            <div className="mt-3">
+              <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                <KeyRound className="h-3.5 w-3.5" />
+                {tr("E-POS token")}
+                {data.token_set && (
+                  <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] text-emerald-700">
+                    {tr("saqlangan: ••••{{hint}}", { hint: data.token_hint })}
+                  </span>
+                )}
+              </span>
+              <div className="flex gap-1">
+                <input
+                  className={cn(FIELD, "font-mono text-xs")}
+                  type={showToken ? "text" : "password"}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  value={token}
+                  onChange={(e) => {
+                    setToken(e.target.value)
+                    setSaved(false)
+                  }}
+                  placeholder={
+                    data.token_set
+                      ? tr("Almashtirish uchun yangi tokenni kiriting")
+                      : tr("E-POS bergan tokenni kiriting")
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowToken((x) => !x)}
+                  title={showToken ? tr("Yashirish") : tr("Ko'rsatish")}
+                  className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                >
+                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                {tr("Tokenni E-POS beradi — har kompaniya va filialda o'ziniki. Bazada shifrlangan holda saqlanadi va bu yerda qayta ko'rsatilmaydi (faqat oxirgi 4 belgisi).")}
+              </p>
             </div>
             {form.transport === "browser" && (
               <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-gray-200 p-3">

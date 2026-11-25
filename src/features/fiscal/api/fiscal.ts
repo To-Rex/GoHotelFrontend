@@ -55,7 +55,9 @@ export interface FiscalSettings {
   enabled: boolean
   transport: "browser" | "server"
   url: string
-  token: string
+  /** Token kiritilganmi va oxirgi 4 belgisi (tokenning o'zi javobda kelmaydi) */
+  token_set: boolean
+  token_hint: string
   company_name: string
   company_address: string
   company_inn: string
@@ -99,7 +101,7 @@ export const useFiscalSettings = (enabled = true) =>
 export const useSaveFiscalSettings = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: Partial<FiscalSettings>) =>
+    mutationFn: async (payload: Partial<FiscalSettings> & { token?: string; clear_token?: boolean }) =>
       (await api.put<FiscalSettings>("/fiscal/settings", payload)).data,
     onSuccess: (data) => {
       qc.setQueryData(fiscalKeys.settings, data)

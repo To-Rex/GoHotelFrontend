@@ -22,6 +22,7 @@ import {
   isFiscalDevice,
   isShiftClosed,
   parseResult,
+  resetTokenCache,
   setFiscalDevice,
   type FiscalConfig,
   type FiscalStamp,
@@ -93,6 +94,7 @@ export async function loadConfig(force = false): Promise<FiscalConfig | null> {
 
 export const resetConfigCache = () => {
   cachedConfig = null
+  resetTokenCache()
 }
 
 const stampOf = (r: Partial<FiscalStamp>): FiscalStamp | null =>

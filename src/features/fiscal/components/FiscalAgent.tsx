@@ -127,7 +127,7 @@ export function FiscalNavButton() {
   const ref = useRef<HTMLDivElement>(null)
 
   const visible = !!cfg?.enabled && cfg.can_operate
-  const usable = !!cfg && (cfg.transport === "server" || device)
+  const usable = !!cfg && cfg.token_set && (cfg.transport === "server" || device)
 
   const refresh = async () => {
     if (!cfg) return
@@ -183,7 +183,8 @@ export function FiscalNavButton() {
     void refresh()
   }
 
-  const tone = failed.length ? "bg-red-500" : !usable ? "bg-gray-300" : waiting ? "bg-amber-500" : "bg-emerald-500"
+  const tone =
+    failed.length || !cfg.token_set ? "bg-red-500" : !usable ? "bg-gray-300" : waiting ? "bg-amber-500" : "bg-emerald-500"
 
   return (
     <div ref={ref} className="relative">
@@ -205,6 +206,11 @@ export function FiscalNavButton() {
             <span className="text-[11px] text-muted-foreground">{cfg.company_inn && `STIR ${cfg.company_inn}`}</span>
           </div>
 
+          {!cfg.token_set && (
+            <p className="mt-3 rounded-lg bg-red-50 px-2.5 py-2 text-[11px] leading-snug text-red-700">
+              {tr("E-POS token kiritilmagan — fiskal cheklar yuborilmaydi. Sozlovchi uni Sozlamalar → «Fiskal modul (E-POS)» bo'limida kiritadi.")}
+            </p>
+          )}
           {cfg.transport === "browser" && (
             <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border p-2.5">
               <input
