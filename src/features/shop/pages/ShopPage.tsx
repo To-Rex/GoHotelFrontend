@@ -67,6 +67,10 @@ import {
   printTest,
   printShopReceipt,
 } from "@/lib/tprints"
+import { fiscalizeTarget, latestStamp, loadConfig, stampOf } from "@/features/fiscal/lib/engine"
+import { fiscalActive } from "@/features/fiscal/lib/epos"
+import { useFiscalConfig } from "@/features/fiscal/api/fiscal"
+import { PackageField } from "@/features/fiscal/components/PackageField"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -319,6 +323,7 @@ export const ShopPage = () => {
       window.setTimeout(() => setSoldBanner(null), 3500)
       // Chek yoqilgan bo'lsa avtomatik chiqariladi (kutmasdan, fonda)
       if (receiptOn) void doPrintReceipt(sale)
+      else void fiscalizeTarget({ source: "SHOP", sale_id: sale.id })
     } catch (e) {
       setSellError(apiErrorMessage(e))
     }
@@ -353,7 +358,11 @@ export const ShopPage = () => {
   const [pCategory, setPCategory] = useState(CATEGORIES[0])
   const [pEmoji, setPEmoji] = useState(EMOJI_SUGGESTIONS[0])
   const [pActive, setPActive] = useState(true)
+  const [pIkpu, setPIkpu] = useState("")
+  const [pPackage, setPPackage] = useState("")
   const [pError, setPError] = useState<string | null>(null)
+  // Fiskal modul (E-POS) yoqilgan filialda mahsulotga IKPU kodi kiritiladi
+  const { data: fiscalConfig } = useFiscalConfig()
 
   const openCreateProduct = () => {
     setEditing(null)
@@ -361,6 +370,8 @@ export const ShopPage = () => {
     setPCategory(CATEGORIES[0])
     setPEmoji(EMOJI_SUGGESTIONS[0])
     setPActive(true)
+    setPIkpu("")
+    setPPackage("")
     setPError(null)
     setProductModal(true)
   }
@@ -371,6 +382,8 @@ export const ShopPage = () => {
     setPCategory(p.category || CATEGORIES[CATEGORIES.length - 1])
     setPEmoji(p.emoji || EMOJI_SUGGESTIONS[0])
     setPActive(p.is_active)
+    setPIkpu(p.ikpu_code || "")
+    setPPackage(p.package_code || "")
     setPError(null)
     setProductModal(true)
   }
@@ -388,12 +401,16 @@ export const ShopPage = () => {
           category: pCategory,
           emoji: pEmoji,
           is_active: pActive,
+          ikpu_code: pIkpu,
+          package_code: pPackage,
         })
       } else {
         await createProduct.mutateAsync({
           name: pName.trim(),
           category: pCategory,
           emoji: pEmoji,
+          ikpu_code: pIkpu,
+          package_code: pPackage,
         })
       }
       setProductModal(false)
@@ -503,6 +520,7 @@ export const ShopPage = () => {
     else setPayTarget(updated)
     // To'lov cheki — chek rejimi yoqiq bo'lsa
     if (receiptOn && updated) void doPrintReceipt(updated)
+    else if (updated) void fiscalizeTarget({ source: "SHOP", sale_id: updated.id })
   }
 
   const onCancelSale = async (s: ShopSale) => {
@@ -562,14 +580,34 @@ export const ShopPage = () => {
   // Chek chiqarish — xatoda sotuv jarayonini TO'XTATMAYDI (sotuv allaqachon
   // saqlangan), faqat ogohlantirish va qayta urinish imkonini ko'rsatadi
   const doPrintReceipt = async (sale: ShopSale) => {
+    /* Fiskal modul (E-POS) yoqilgan kassada: avval sotuv to'lovi
+       fiskallashtiriladi, keyin chek soliq havolasi QR kodi bilan chiqadi.
+       Yangi to'lov bo'lmasa (qayta chiqarish) — oxirgi fiskal chek olinadi.
+       Fiskal chek yuborilmasa ham bosma chek chiqadi, xato alohida aytiladi. */
+    const cfg = await loadConfig()
+    let fiscal = null
+    let fiscalError: string | null = null
+    if (cfg?.enabled) {
+      if (fiscalActive(cfg)) {
+        const run = await fiscalizeTarget({ source: "SHOP", sale_id: sale.id })
+        const done = run.done.find((x) => x.kind !== "refund")
+        fiscal = done ? stampOf(done) : null
+        fiscalError = run.errors[0] ?? null
+      }
+      fiscal = fiscal ?? (await latestStamp({ sale_id: sale.id }))
+    }
     const r = await printShopReceipt(
       sale,
       user?.hotel_name || "GoHotel",
       guestNameFor(sale),
-      receiptDesign
+      receiptDesign,
+      fiscal ? { ...fiscal, inn: cfg?.company_inn } : null
     )
     if (!r.ok) {
       setPrintError(r.error || tr("Chek chiqmadi"))
+      setPrintRetrySale(sale)
+    } else if (fiscalError) {
+      setPrintError(tr("Chek chiqdi, lekin fiskal chek yuborilmadi: {{error}}", { error: fiscalError }))
       setPrintRetrySale(sale)
     } else {
       setPrintError(null)
@@ -1455,6 +1493,31 @@ export const ShopPage = () => {
                 </div>
               </div>
             </div>
+            {fiscalConfig?.enabled && (
+              <div className="grid grid-cols-[minmax(0,1fr)_10rem] gap-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    {tr("IKPU kodi (fiskal chek uchun)")}
+                  </label>
+                  <Input
+                    value={pIkpu}
+                    inputMode="numeric"
+                    onChange={(e) => setPIkpu(e.target.value.replace(/\D/g, "").slice(0, 17))}
+                    placeholder={tr("17 xonali — bo'sh bo'lsa filial standarti")}
+                    className="font-mono text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{tr("O'ram kodi")}</label>
+                  <PackageField
+                    classCode={pIkpu}
+                    value={pPackage}
+                    onChange={setPPackage}
+                    className="h-9 rounded-md border border-input bg-background px-3 font-mono text-xs outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+            )}
             {editing && (
               <label className="flex items-center gap-2 text-sm">
                 <input

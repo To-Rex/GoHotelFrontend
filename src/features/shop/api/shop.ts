@@ -29,6 +29,9 @@ export interface ShopProduct {
   name: string;
   category: string | null;
   emoji: string | null;
+  /** Fiskal chek uchun (ixtiyoriy): IKPU va o'ram kodi */
+  ikpu_code?: string | null;
+  package_code?: string | null;
   is_active: boolean;
   stock: number;
   current_price: number | null;
@@ -233,7 +236,13 @@ const invalidateShop = (qc: ReturnType<typeof useQueryClient>) => {
 export const useCreateShopProduct = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { name: string; category?: string; emoji?: string }) => {
+    mutationFn: async (payload: {
+      name: string;
+      category?: string;
+      emoji?: string;
+      ikpu_code?: string;
+      package_code?: string;
+    }) => {
       const { data } = await api.post<ShopProduct>('/shop/products', payload);
       return data;
     },
@@ -253,6 +262,8 @@ export const useUpdateShopProduct = () => {
       category?: string;
       emoji?: string;
       is_active?: boolean;
+      ikpu_code?: string;
+      package_code?: string;
     }) => {
       const { data } = await api.put<ShopProduct>(`/shop/products/${id}`, payload);
       return data;

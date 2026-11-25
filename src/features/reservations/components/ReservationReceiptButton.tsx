@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/store/auth"
 import { useReceiptSettings } from "@/features/shop/api/shop"
 import { printReservationReceipt } from "@/lib/tprints"
+import { latestStamp, loadConfig } from "@/features/fiscal/lib/engine"
 import { cn } from "@/lib/utils"
 import { tr } from "@/i18n"
 import { buildReservationReceiptData, type ReceiptReservation } from "../lib/receipt"
@@ -61,10 +62,15 @@ export const ReservationReceiptButton = ({
       createdByName,
       services,
     })
+    // Fiskal modul yoqilgan filialda: bronning oxirgi fiskal cheki QR bilan
+    // qayta chiqadi (yangi fiskal chek YARATILMAYDI — bu faqat nusxa)
+    const cfg = await loadConfig()
+    const stamp = cfg?.enabled && reservation.id ? await latestStamp({ reservation_id: reservation.id }) : null
     const result = await printReservationReceipt(
       data,
       user?.hotel_name || "GoHotel",
-      design
+      design,
+      stamp ? { ...stamp, inn: cfg?.company_inn } : null
     )
     setBusy(false)
     if (result.ok) {

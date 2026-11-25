@@ -39,6 +39,7 @@ import {
   BellRing,
   PenLine,
   Bot,
+  ReceiptText,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -51,6 +52,7 @@ import { DebtReminderCard } from "../components/DebtReminderCard"
 import { PaymentEditSettingsCard } from "../components/PaymentEditSettingsCard"
 import { SmsKeysCard } from "../components/SmsKeysCard"
 import { AiSettingsCard } from "@/features/assistant/components/AiSettingsCard"
+import { FiscalSettingsCard } from "@/features/fiscal/components/FiscalSettingsCard"
 import {
   useBookingDefaults,
   useSaveBookingDefaults,
@@ -233,6 +235,14 @@ const SETTING_GROUPS = [
     icon: MessageSquareText,
     iconClass: "bg-teal-50 text-teal-600",
     cards: ["sms-keys"],
+  },
+  {
+    key: "fiscal",
+    label: tr("Fiskal modul (E-POS)"),
+    desc: tr("To'lovlarni E-POS fiskal moduli orqali soliqqa yuborish va chekda soliq QR kodi — har filial uchun alohida"),
+    icon: ReceiptText,
+    iconClass: "bg-emerald-50 text-emerald-600",
+    cards: ["fiscal-epos"],
   },
   {
     key: "ai",
@@ -1933,6 +1943,7 @@ export const SettingsPage = () => {
 
           {group === "sms" && <SmsKeysCard />}
 
+          {group === "fiscal" && <FiscalSettingsCard />}
           {group === "ai" && <AiSettingsCard />}
 
           {group === "danger" && (

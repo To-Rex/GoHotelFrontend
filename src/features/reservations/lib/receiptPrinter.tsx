@@ -4,6 +4,8 @@ import { create } from "zustand"
 import { CheckCircle2, Loader2, Printer, RotateCcw, X } from "lucide-react"
 
 import { useReceiptSettings } from "@/features/shop/api/shop"
+import { fiscalizeTarget, loadConfig, stampOf } from "@/features/fiscal/lib/engine"
+import { fiscalActive } from "@/features/fiscal/lib/epos"
 import { printReservationReceipt } from "@/lib/tprints"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth"
@@ -106,15 +108,38 @@ export const useBookingReceiptPrinter = () => {
     extras: ReceiptExtras = {}
   ): boolean => {
     if (!shouldPrintAfterPayment(useReceiptPrinterStore.getState().autoPrint, paidNow)) {
+      // Chek chiqarilmasa ham to'lov darhol fiskallashtiriladi (fiskal modul
+      // bu kassada faol bo'lmasa — hech narsa qilmaydi)
+      if (paidNow > 0 && reservation.id) {
+        void fiscalizeTarget({ source: "RESERVATION", reservation_id: reservation.id })
+      }
       return false
     }
     const createdByName =
       extras.createdByName ??
       ([user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() || null)
     const data = buildReservationReceiptData(reservation, { ...extras, createdByName })
-    void runWithNotice(tr("Bron {{number}} cheki", { number: reservation.reservation_number }), () =>
-      printReservationReceipt(data, user?.hotel_name || "GoHotel", design)
-    )
+    void runWithNotice(tr("Bron {{number}} cheki", { number: reservation.reservation_number }), async () => {
+      /* Fiskal modul (E-POS) yoqilgan kassada: avval to'lov fiskallashtiriladi,
+         keyin chek soliq havolasi QR kodi bilan chiqadi. Fiskal chek
+         yuborilmasa ham bosma chek chiqadi (pul olingan) — xato alohida
+         aytiladi, to'lov esa fiskal navbatda qoladi. */
+      const cfg = await loadConfig()
+      let fiscal = null
+      let fiscalError: string | null = null
+      if (fiscalActive(cfg) && reservation.id) {
+        const run = await fiscalizeTarget({ source: "RESERVATION", reservation_id: reservation.id })
+        const done = run.done.find((r) => r.kind !== "refund") ?? run.done[0]
+        const stamp = done ? stampOf(done) : null
+        fiscal = stamp ? { ...stamp, inn: cfg.company_inn } : null
+        fiscalError = run.errors[0] ?? null
+      }
+      const printed = await printReservationReceipt(data, user?.hotel_name || "GoHotel", design, fiscal)
+      if (printed.ok && fiscalError) {
+        return { ok: false, error: tr("Chek chiqdi, lekin fiskal chek yuborilmadi: {{error}}", { error: fiscalError }) }
+      }
+      return printed
+    })
     return true
   }
 

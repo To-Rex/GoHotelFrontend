@@ -11,6 +11,7 @@ import {
 } from "@/features/shop/api/shop"
 import { tr } from "@/i18n"
 import { formatHotelMoment } from "@/lib/hotelTime"
+import { fiscalDateText, type FiscalStamp } from "@/features/fiscal/lib/epos"
 
 const URL_KEY = "tprints_url"
 
@@ -178,13 +179,38 @@ const METHOD_LABELS: Record<string, string> = {
   MIXED: tr("Aralash"),
 }
 
+/** Fiskal blok — fiskal moduldan (E-POS) qaytgan ma'lumot va soliq havolasi
+ *  QR kod bo'lib. Fiskal chek bo'lmasa — bo'sh (chek avvalgidek chiqadi). */
+export const fiscalElements = (fiscal?: (FiscalStamp & { inn?: string }) | null): any[] => {
+  if (!fiscal?.fiscal_sign) return []
+  const out: any[] = [
+    { type: "line", style: "dashed" },
+    { type: "text", value: tr("FISKAL CHEK"), align: "center", bold: true },
+  ]
+  if (fiscal.inn) out.push({ type: "row", left: tr("STIR:"), right: fiscal.inn })
+  if (fiscal.terminal_id) out.push({ type: "row", left: tr("Terminal:"), right: fiscal.terminal_id })
+  if (fiscal.receipt_seq) out.push({ type: "row", left: tr("Fiskal chek №:"), right: fiscal.receipt_seq })
+  out.push({ type: "row", left: tr("Fiskal belgi:"), right: fiscal.fiscal_sign })
+  if (fiscal.fiscal_datetime) {
+    out.push({ type: "row", left: tr("Fiskal vaqt:"), right: fiscalDateText(fiscal.fiscal_datetime) })
+  }
+  if (fiscal.qr_url) {
+    out.push(
+      { type: "qr", value: fiscal.qr_url, size: 6 },
+      { type: "text", value: tr("Chekni tekshirish: QR kodni skanerlang (soliq.uz)"), align: "center" }
+    )
+  }
+  return out
+}
+
 /** Chek elementlari — mehmonxonaning saqlangan dizayni bo'yicha quriladi
  *  (eksport — test uchun) */
 export const buildReceiptElements = (
   sale: ShopSale,
   hotelName: string,
   guestName: string | null | undefined,
-  design: ReceiptSettings
+  design: ReceiptSettings,
+  fiscal?: (FiscalStamp & { inn?: string }) | null
 ): any[] => {
   const elements: any[] = [
     { type: "title", value: design.title.trim() || hotelName || "GoHotel", size: 2 },
@@ -278,6 +304,7 @@ export const buildReceiptElements = (
       align: "center",
     })
   }
+  elements.push(...fiscalElements(fiscal))
   elements.push({ type: "line", style: "dashed" })
   if (design.footer_text.trim()) {
     elements.push({
@@ -302,7 +329,8 @@ export const printShopReceipt = async (
   sale: ShopSale,
   hotelName: string,
   guestName?: string | null,
-  design?: ReceiptSettings | null
+  design?: ReceiptSettings | null,
+  fiscal?: (FiscalStamp & { inn?: string }) | null
 ): Promise<{ ok: boolean; error?: string }> => {
   const d = design || DEFAULT_RECEIPT_SETTINGS
   const r = await request("/print", {
@@ -310,7 +338,7 @@ export const printShopReceipt = async (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       paper: d.paper,
-      elements: buildReceiptElements(sale, hotelName, guestName, d),
+      elements: buildReceiptElements(sale, hotelName, guestName, d, fiscal),
     }),
   })
   return { ok: r.ok, error: r.error }
@@ -391,7 +419,8 @@ const money = (n: number) => Number(n || 0).toLocaleString()
 export const buildReservationElements = (
   data: ReservationReceiptData,
   hotelName: string,
-  design: ReceiptSettings
+  design: ReceiptSettings,
+  fiscal?: (FiscalStamp & { inn?: string }) | null
 ): any[] => {
   const elements: any[] = [
     { type: "title", value: design.title.trim() || hotelName || "GoHotel", size: 2 },
@@ -527,6 +556,7 @@ export const buildReservationElements = (
     })
   }
 
+  elements.push(...fiscalElements(fiscal))
   elements.push({ type: "line", style: "dashed" })
   if (design.footer_text.trim()) {
     elements.push({
@@ -550,7 +580,8 @@ export const buildReservationElements = (
 export const printReservationReceipt = async (
   data: ReservationReceiptData,
   hotelName: string,
-  design?: ReceiptSettings | null
+  design?: ReceiptSettings | null,
+  fiscal?: (FiscalStamp & { inn?: string }) | null
 ): Promise<{ ok: boolean; error?: string }> => {
   const d = design || DEFAULT_RECEIPT_SETTINGS
   const r = await request("/print", {
@@ -558,7 +589,7 @@ export const printReservationReceipt = async (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       paper: d.paper,
-      elements: buildReservationElements(data, hotelName, d),
+      elements: buildReservationElements(data, hotelName, d, fiscal),
     }),
   })
   return { ok: r.ok, error: r.error }

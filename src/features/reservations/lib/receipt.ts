@@ -19,6 +19,8 @@ import type { ReservationReceiptData } from "@/lib/tprints"
  *  javoblar ham chek chiqara olishi kerak — chek baribir faqat shu
  *  maydonlardan quriladi. */
 export interface ReceiptReservation {
+  /** Bron id — fiskal chek (E-POS) uchun; bo'lmasa fiskallashtirilmaydi */
+  id?: string
   reservation_number: string
   booking_type: string
   check_in_date: string

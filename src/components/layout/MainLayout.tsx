@@ -5,6 +5,7 @@ import { Navbar } from "./Navbar";
 import { FaceRequiredGate } from "@/features/auth/components/FaceRequiredGate";
 import { ReceiptPrintNotice } from "@/features/reservations/lib/receiptPrinter";
 import { AiReminders } from "@/features/assistant/components/AiReminders";
+import { FiscalAgent } from "@/features/fiscal/components/FiscalAgent";
 import { useAuthStore } from "@/store/auth";
 import { usePermissions } from "@/lib/permissions";
 import { LANDING_GATE_ROUTE } from "./LandingRedirect";
@@ -171,6 +172,8 @@ export const MainLayout = () => {
         <ReceiptPrintNotice />
         {/* Yordamchi rejalari: vaqti kelgan eslatmalar (yordamchi ochiq bo'lsa) */}
         <AiReminders />
+        {/* Fiskal modul (E-POS) yoqilgan kassada fiskal navbatni fonda yuboradi */}
+        <FiscalAgent />
         <main
           className={cn(
             "flex-1 min-h-0",
