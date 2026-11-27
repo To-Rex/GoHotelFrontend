@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ReservationReceiptButton } from "@/features/reservations/components/ReservationReceiptButton"
+import { EmehmonReservationButton } from "@/features/emehmon/components/EmehmonReservationButton"
 import { GuestQuickEdit } from "@/features/guests/components/GuestQuickEdit"
 import { cn } from "@/lib/utils"
 import type { RoomReservation, ReservationOccupant } from "../api/rooms"
@@ -519,6 +520,8 @@ export const ReservationDetailDialog = ({ reservation, onClose }: Props) => {
         </Section>
 
         <DialogFooter className="flex-wrap gap-2">
+          {/* E-mehmon (davlat ro'yxati) — faqat integratsiya yoqilgan filialda ko'rinadi */}
+          <EmehmonReservationButton reservationId={res.id} status={res.status} onOpen={onClose} />
           <ReservationReceiptButton
             reservation={res}
             guestName={res.guest_name || undefined}

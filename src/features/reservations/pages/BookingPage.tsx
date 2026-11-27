@@ -55,6 +55,7 @@ import {
 import { blockingTaskMap, roomBookingBlock } from "@/features/rooms/lib/roomBookable"
 import { useGuests } from "@/features/guests/api/guests"
 import { ReservationReceiptButton } from "../components/ReservationReceiptButton"
+import { EmehmonReservationButton } from "@/features/emehmon/components/EmehmonReservationButton"
 import { ReceiptAutoPrintToggle, useBookingReceiptPrinter } from "../lib/receiptPrinter"
 import { ReservationCompanionsPanel } from "../components/ReservationCompanionsPanel"
 import { ReservationPenaltiesPanel } from "../components/ReservationPenaltiesPanel"
@@ -2787,6 +2788,12 @@ export function BookingPage() {
                         <span />
                       )}
                       <div className="flex flex-wrap items-center justify-end gap-2">
+                        {/* E-mehmon (davlat ro'yxati) — faqat integratsiya yoqilgan filialda ko'rinadi */}
+                        <EmehmonReservationButton
+                          reservationId={res.id}
+                          status={res.status}
+                          onOpen={closeManageModal}
+                        />
                         {/* Chek — istalgan bron uchun, jumladan eskilari uchun ham */}
                         <ReservationReceiptButton
                           reservation={res}

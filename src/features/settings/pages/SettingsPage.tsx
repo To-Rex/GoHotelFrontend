@@ -40,6 +40,7 @@ import {
   PenLine,
   Bot,
   ReceiptText,
+  IdCard,
 } from "lucide-react"
 import { useResetData, type ResetDataResult } from "../api/maintenance"
 import { NavOrderCard } from "../components/NavOrderCard"
@@ -53,6 +54,7 @@ import { PaymentEditSettingsCard } from "../components/PaymentEditSettingsCard"
 import { SmsKeysCard } from "../components/SmsKeysCard"
 import { AiSettingsCard } from "@/features/assistant/components/AiSettingsCard"
 import { FiscalSettingsCard } from "@/features/fiscal/components/FiscalSettingsCard"
+import { EmehmonSettingsCard } from "@/features/emehmon/components/EmehmonSettingsCard"
 import {
   useBookingDefaults,
   useSaveBookingDefaults,
@@ -243,6 +245,14 @@ const SETTING_GROUPS = [
     icon: ReceiptText,
     iconClass: "bg-emerald-50 text-emerald-600",
     cards: ["fiscal-epos"],
+  },
+  {
+    key: "emehmon",
+    label: tr("E-mehmon (davlat ro'yxati)"),
+    desc: tr("Kirgan mehmonlarni E-mehmon tizimida ro'yxatga olish va chiqarish — har filial uchun alohida login va maxfiy kalit"),
+    icon: IdCard,
+    iconClass: "bg-sky-50 text-sky-600",
+    cards: ["emehmon"],
   },
   {
     key: "ai",
@@ -1944,6 +1954,7 @@ export const SettingsPage = () => {
           {group === "sms" && <SmsKeysCard />}
 
           {group === "fiscal" && <FiscalSettingsCard />}
+          {group === "emehmon" && <EmehmonSettingsCard />}
           {group === "ai" && <AiSettingsCard />}
 
           {group === "danger" && (

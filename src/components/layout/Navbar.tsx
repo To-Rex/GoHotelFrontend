@@ -32,6 +32,7 @@ import { switchTheme, type Theme } from "@/lib/theme";
 import { tr, trc } from "@/i18n";
 import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 import { FiscalNavButton } from "@/features/fiscal/components/FiscalAgent";
+import { EmehmonNavButton } from "@/features/emehmon/components/EmehmonAgent";
 import { ContextSwitcher } from "@/features/auth/components/ContextSwitcher";
 
 // Qolgan daqiqalarni odam o'qiydigan ko'rinishga keltiradi: "2 soat 15 daq"
@@ -243,6 +244,8 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
         <ContextSwitcher />
         {/* Fiskal modul (E-POS): holat, fiskal smena va navbat — faqat yoqilgan filialda */}
         <FiscalNavButton />
+        {/* E-mehmon: ro'yxatga olinmagan mehmonlar navbati — faqat yoqilgan filialda */}
+        <EmehmonNavButton />
         {/* Interfeys tili: o'zbekcha / ruscha / inglizcha */}
         <LanguageSwitcher />
         <Button
